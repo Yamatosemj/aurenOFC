@@ -11,7 +11,7 @@ Atualizado em: 2026-10-06 (item 5 em execução)
 - **Base estável (main):** V47
 - **Trabalho ativo:** Estabilização e limpeza pós-V47
 - **Branch/PR ativa:** nenhuma — PR #6, #7, #8, #9, #11, #12 e #13 encerradas por merge
-- **Head da main:** 529b3b0274d3ac76d83789f4a09e9847ed496551
+- **Head da main:** 0c6cc81f72e8831bb104772c89e3bd71279d91f8
 - **Status da PR #6:** merged
 - **Status da PR #9:** merged — item 1 da revisão geral
 - **Status da PR #11:** merged — item 3 da revisão geral
@@ -23,6 +23,8 @@ Atualizado em: 2026-10-06 (item 5 em execução)
 - **Validação da PR #14:** 283 passed, 6 skipped; focused visual Linux/Windows passaram
 - **Status da PR #15:** merged — item 5, terceira extração segura do Harness
 - **Validação da PR #15:** 283 passed, 6 skipped; focused Linux/Windows passaram
+- **Status da PR #16:** merged — item 5, quarta extração segura do Harness
+- **Validação da PR #16:** 283 passed, 6 skipped; focused Linux/Windows passaram
 - **Focused visual CI:** Linux passou; Windows passou
 - **Auditoria final V47:** concluída antes do merge; nenhum bloqueador funcional ou review pendente identificado.
 
@@ -45,7 +47,7 @@ A V47 de geometria/coordenadas foi incorporada à main pelo merge commit c0994db
 - [x] item 4 — remover ou mover somente código confirmado como morto
 - [ ] item 5 — extrair arquivos gigantes em PRs pequenos
 
-Situação desta rodada: versão/config/facade alinhados; a árvore atual contém apenas documentação normativa/operacional no pacote principal; o workflow agora também é acionado por push da main; o trace persistente por tarefa foi implementado e incorporado à main; no item 3, os caminhos sem efeito operacional foram removidos e o PlanBuilder foi preservado por uso real no Harness; no item 4, código sem consumidor foi removido, o wake-word foi movido para `experimental/`, e o verificador manual V46 obsoleto foi removido. `CapabilityResolver`/`IntentResolver`/`TaskSpec` e o caminho de áudio experimental permaneceram por terem chamadas reais, ainda que protegidas por flag. No item 5, a PR #13 extraiu a redação/serialização dos logs para `core/harness_logging.py`, preservando a API e os paths de sessão no Harness; a PR #14 extraiu as três heurísticas determinísticas para `core/harness_heuristics.py`, preservando os métodos estáticos no `AurenHarness` por wrappers compatíveis; a PR #15 extraiu a validação determinística de abas múltiplas para `core/harness_multitab.py`, preservando os métodos públicos do `AurenHarness` por wrappers compatíveis; o item 5 continua em execução para as próximas extrações.
+Situação desta rodada: versão/config/facade alinhados; a árvore atual contém apenas documentação normativa/operacional no pacote principal; o workflow agora também é acionado por push da main; o trace persistente por tarefa foi implementado e incorporado à main; no item 3, os caminhos sem efeito operacional foram removidos e o PlanBuilder foi preservado por uso real no Harness; no item 4, código sem consumidor foi removido, o wake-word foi movido para `experimental/`, e o verificador manual V46 obsoleto foi removido. `CapabilityResolver`/`IntentResolver`/`TaskSpec` e o caminho de áudio experimental permaneceram por terem chamadas reais, ainda que protegidas por flag. No item 5, a PR #13 extraiu a redação/serialização dos logs para `core/harness_logging.py`, preservando a API e os paths de sessão no Harness; a PR #14 extraiu as três heurísticas determinísticas para `core/harness_heuristics.py`, preservando os métodos estáticos no `AurenHarness` por wrappers compatíveis; a PR #15 extraiu a validação determinística de abas múltiplas para `core/harness_multitab.py`, preservando os métodos públicos do `AurenHarness` por wrappers compatíveis; a PR #16 moveu `_ultima_acao_solicitada` para `core/harness_heuristics.py`, preservando o método estático no `AurenHarness`; o item 5 continua em execução para as próximas extrações.
 
 ## O que a PR #6 entrega
 
