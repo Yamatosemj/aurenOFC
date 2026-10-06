@@ -24,5 +24,6 @@ data/memory/
 *.sqlite3
 *.db
 
+RELATORIOS/
 # Arquivos empacotados/artefatos locais
 *.zip
