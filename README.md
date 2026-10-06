@@ -51,7 +51,7 @@ python testes_auren.py --rapido
 python testes_auren.py --completo
 ```
 
-Última validação registrada do snapshot V46 corrigido: **216/216 testes pytest passando**.
+Última validação completa registrada do snapshot V46: **216/216 testes pytest passando**. As alterações de limpeza posteriores são pequenas e não foram revalidadas nesta sessão.
 
 Os resultados gerados por `testes_auren.py` ficam em:
 
