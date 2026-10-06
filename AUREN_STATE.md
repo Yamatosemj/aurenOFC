@@ -4,7 +4,7 @@
 > Antes de iniciar uma nova tarefa, consulte este arquivo e compare com a branch/PR e o CI do GitHub.
 > Não trate roadmap antigo, memória da conversa ou documentos arquivados como estado atual.
 
-Atualizado em: 2026-10-06 (V47 incorporada à main)
+Atualizado em: 2026-10-06 (estabilização pós-V47 em andamento)
 
 ## Estado agora
 
@@ -27,6 +27,8 @@ A V47 de geometria/coordenadas foi incorporada à main pelo merge commit c0994db
 2. confirmar a suíte completa na main pós-merge
 3. separar documentação histórica da documentação normativa
 4. corrigir inconsistências encontradas sem iniciar uma nova capacidade grande
+
+Situação desta rodada: versão/config/facade alinhados; a árvore atual contém apenas documentação normativa/operacional no pacote principal; a suíte completa pós-merge já passou; o workflow agora também é acionado por push da main.
 
 ## O que a PR #6 entrega
 
@@ -64,8 +66,9 @@ Critérios de saída:
 - [x] README.md representa a versão real
 - [x] versão/config/facade estão sincronizados
 - [x] estado oficial atualizado
-- [ ] documentação antiga claramente separada de documentação normativa
-- [ ] suíte completa validada na main
+- [x] documentação antiga claramente separada de documentação normativa
+- [x] suíte completa validada na main
+- [ ] validação visual Windows pós-merge concluída
 - [ ] nenhuma regressão conhecida pendente
 
 ## Depois da estabilização
