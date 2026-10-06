@@ -393,9 +393,6 @@ class AurenHarness:
     def _extrair_destinos_abas(objetivo: str) -> dict[int, str]:
         return _extrair_destinos_abas(objetivo)
 
-    def _multitab_concluida(cls, objetivo: str, historico: list[dict[str, str]]) -> bool:
-        return _multitab_concluida(objetivo, historico)
-
     @classmethod
     def _pode_encerrar_localmente(
         cls,
