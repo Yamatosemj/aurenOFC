@@ -19,6 +19,7 @@ __pycache__/
 
 # Runtime do Auren
 logs/
+browser_profile/
 data/memory/
 *.sqlite3
 *.db
