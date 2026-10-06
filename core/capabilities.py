@@ -292,7 +292,7 @@ CAPABILITY_DEFINITIONS: tuple[Capability, ...] = (
 
     Capability(
         id="localizar_arquivo",
-        descricao="Procurar arquivos usando a ferramenta local existente da V43.",
+        descricao="Procurar arquivos usando a ferramenta local existente.",
         local=True,
         deterministica=True,
         multi_etapa=False,
@@ -334,7 +334,7 @@ CAPABILITY_DEFINITIONS: tuple[Capability, ...] = (
 
 
 class CapabilityRegistry:
-    """Catalogo explicito de capacidades respaldadas pelo V43 atual."""
+    """Catalogo explicito de capacidades respaldadas pelo Core atual."""
 
     def __init__(self, definitions: Iterable[Capability] = CAPABILITY_DEFINITIONS) -> None:
         self._definitions = tuple(definitions)
