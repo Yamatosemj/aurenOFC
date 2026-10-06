@@ -58,6 +58,7 @@ from core.harness_serialization import (
 from core.harness_completion import _mensagem_conclusao_local
 from core.harness_state import _montar_estado
 from core.harness_round_input import _montar_input_da_rodada
+from core.harness_strategy import _salvar_estrategia_em_background as _salvar_estrategia_em_background_impl
 from core.harness_heuristics import (
     _parece_tarefa_visual_composta,
     _parece_tarefa_multietapa_browser,
@@ -543,44 +544,17 @@ class AurenHarness:
         resultado: str,
         sucesso: bool = True,
     ) -> None:
-        """Persiste a estratégia sem bloquear o caminho crítico da resposta."""
-        if not self.context.persiste or not historico:
-            return
-        passos = [
-            f"{h.get('ferramenta', '')}: {h.get('resultado', '')[:240]}"
-            for h in historico
-        ]
-        # Capturado aqui: o runner roda em outra thread, fora do contexto da sessao.
-        chat_id = self._session.chat_id if self._session else None
-
-        def _runner(cancel_event):
-            if cancel_event.is_set():
-                return {"ok": False, "cancelado": True}
-            return self.context.record_strategy(objetivo, passos, resultado, sucesso, chat_id=chat_id)
-
-        try:
-            task_id = self._background_queue.submit(
-                f"salvar estrategia: {objetivo[:120]}",
-                _runner,
-                priority=100,
-            )
-            _write_log(
-                "BACKGROUND_TASK_QUEUED",
-                task_id=self._task_id,
-                background_task_id=task_id,
-                tipo="salvar_estrategia",
-            )
-        except Exception as exc:
-            # A fila é otimização; em falha de infraestrutura fazemos fallback síncrono.
-            try:
-                self.context.record_strategy(objetivo, passos, resultado, sucesso, chat_id=chat_id)
-            except Exception as fallback_exc:
-                _write_log(
-                    "MEMORY_ERROR",
-                    task_id=self._task_id,
-                    erro=f"estrategia: {fallback_exc}",
-                    fila_erro=str(exc),
-                )
+        _salvar_estrategia_em_background_impl(
+            objetivo,
+            historico,
+            resultado,
+            sucesso,
+            context=self.context,
+            background_queue=self._background_queue,
+            task_id=self._task_id,
+            chat_id=self._session.chat_id if self._session else None,
+            write_log=_write_log,
+        )
 
     def _registrar_turno(self, papel: str, texto: str) -> None:
         """Grava um turno no Session/Context do chat atual (falha nunca derruba a tarefa)."""
