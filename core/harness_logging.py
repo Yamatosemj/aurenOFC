@@ -25,6 +25,7 @@ TEXT_SENSITIVE_KEYS = {
     "texto", "text", "conteudo", "content", "valor",
 }
 
+
 def _runtime_redaction_values() -> set[str]:
     values = getattr(_redact_free_text, "_values", None)
     if values is None:
