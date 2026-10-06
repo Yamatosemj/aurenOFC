@@ -114,15 +114,47 @@ def _client_lazy():
         client = get_client()
     return client
 
-def criar_harness() -> AurenHarness:
+def criar_harness(confirmation_channel=None) -> AurenHarness:
     """Unico ponto que monta o Harness. Todo canal (texto, voz, futuros) usa esta funcao."""
+    task_permission_manager = permission_manager
+
+    if confirmation_channel is not None:
+        task_permission_manager = PermissionManager(
+            max_actions=permission_manager.max_actions,
+            max_consecutive_failures=permission_manager.max_consecutive_failures,
+            max_same_failed_actions=permission_manager.max_same_failed_actions,
+            max_no_progress_repeats=permission_manager.max_no_progress_repeats,
+            confirmation_channel=confirmation_channel,
+        )
+        task_permission_manager.policy = dict(permission_manager.policy)
+
+    def _executar_ferramenta_canal(item):
+        return _executar_ferramenta(item, task_permission_manager, memory_store)
+
+    def _comando_rapido_canal(mensagem):
+        tratado, resposta, metadata = _try_experimental_audio(
+            mensagem,
+            executar_ferramenta=_executar_ferramenta_canal,
+        )
+        if metadata.get("enabled"):
+            from core.harness import _write_log
+            _write_log(
+                "CAPABILITY_AUDIO_EXPERIMENT",
+                task_id=getattr(globals().get("harness", None), "_task_id", ""),
+                objetivo=str(mensagem or "").strip(),
+                **metadata,
+            )
+        if tratado:
+            return True, resposta
+        return _comando_rapido(mensagem, _executar_ferramenta_canal)
+
     harness = AurenHarness(
         criar_resposta=criar_resposta,
-        executar_ferramenta=executar_ferramenta,
+        executar_ferramenta=executar_ferramenta if confirmation_channel is None else _executar_ferramenta_canal,
         mostrar_uso=mostrar_uso,
         obter_chamadas=lambda resposta: [item for item in resposta.output if item.type == "function_call"],
-        comando_rapido=comando_rapido,
-        iniciar_tarefa=permission_manager.iniciar_tarefa,
+        comando_rapido=comando_rapido if confirmation_channel is None else _comando_rapido_canal,
+        iniciar_tarefa=permission_manager.iniciar_tarefa if confirmation_channel is None else task_permission_manager.iniciar_tarefa,
         apos_tarefa=None,
         fechar=fechar_navegador,
         obter_metricas_roteamento=obter_metricas_roteamento,

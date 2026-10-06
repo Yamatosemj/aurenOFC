@@ -11,6 +11,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import auren  # noqa: E402
+from voice.confirmation import VoiceConfirmationChannel  # noqa: E402
 from voice.input import PushToTalkRecorder  # noqa: E402
 from voice.speech_response import SpeechResponseFormatter  # noqa: E402
 from voice.stt import LocalPortugueseASR  # noqa: E402
@@ -126,9 +127,11 @@ def _falar_interrompivel(
     return interrompido, sair, latencia
 
 
-def _novo_harness() -> AurenHarness:
+def _novo_harness(confirmation_channel: VoiceConfirmationChannel | None = None) -> AurenHarness:
     # Mesma montagem do texto: mesmo Session/Context, memoria, metricas e callbacks.
-    return auren.criar_harness()
+    if confirmation_channel is None:
+        return auren.criar_harness()
+    return auren.criar_harness(confirmation_channel=confirmation_channel)
 
 
 def _processar_e_falar(
@@ -194,7 +197,16 @@ def main() -> int:
     recorder = PushToTalkRecorder(hotkey="f8")
     stt = LocalPortugueseASR()
     tts = LocalKokoroTTS()
-    harness = _novo_harness()
+    fila_texto: Queue = Queue()
+    fila_audio: Queue = Queue()
+    stop_event = Event()
+    confirmation_channel = VoiceConfirmationChannel(
+        tts=tts,
+        stt=stt,
+        audio_queue=fila_audio,
+        timeout=8.0,
+    )
+    harness = _novo_harness(confirmation_channel)
 
     print("Auren Voice Engine V3 online.")
     print("F8 = segurar para falar | ESC = encerrar")
@@ -202,9 +214,6 @@ def main() -> int:
     print("ASR: Parakeet TDT 0.6B pt-BR TAGARELA (ONNX INT8 local)")
     print("TTS: Kokoro ONNX local")
     print("O primeiro uso baixa os modelos e os deixa em cache local.")
-    fila_texto: Queue = Queue()
-    fila_audio: Queue = Queue()
-    stop_event = Event()
     _iniciar_leitor_texto(fila_texto, stop_event)
     _iniciar_captura_de_voz(recorder, fila_audio, stop_event)
 
