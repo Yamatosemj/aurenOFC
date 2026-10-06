@@ -16,31 +16,30 @@ CACHE_KEY = f"auren-v{AUREN_VERSION}"
 ARCHITECTURE_NAME = "V46 ARI NATIVE SURGERY"
 if (AUREN_VERSION, MODEL, CACHE_KEY, ARCHITECTURE_NAME) != (_CONFIG_AUREN_VERSION, _CONFIG_MODEL, _CONFIG_CACHE_KEY, _CONFIG_ARCHITECTURE_NAME):
     raise RuntimeError("config.py e auren.py estao com versao/modelo incoerentes.")
-from core.prompt import instrucoes
-from core.tools_registry import tools
-from core.response import criar_resposta, get_client, obter_metricas_roteamento
 from core import usage
+from core.harness import AurenHarness
 from core.permission_manager import PermissionManager
+from core.prompt import instrucoes
+from core.response import criar_resposta, get_client, obter_metricas_roteamento
+from core.session import SessionContextManager
+from core.tools_registry import tools
+from core.capability_audio_runtime import try_execute as _try_experimental_audio
+from memory.store import PersistentMemoryStore
+from skills.loader import SkillLibrary
 from tools import applications, browser, files, windows
-from tools.memory import (
-    salvar_memoria_persistente as _salvar_memoria,
-    consultar_memoria_persistente as _consultar_memoria,
-    esquecer_memoria_persistente as _esquecer_memoria,
-)
 from tools.dispatcher import (
     executar_ferramenta as _executar_ferramenta,
     _resultado_ferramenta_bem_sucedido,
     _resolver_ui_automation_para_permissao,
 )
 from tools.fast_paths import comando_rapido as _comando_rapido
-from core.harness import AurenHarness
-from core.session import SessionContextManager
-from skills.loader import SkillLibrary
-from core.capability_audio_runtime import try_execute as _try_experimental_audio
-
-# arquitetura: V44 ARI FUSION
-# versao tecnica preservada: Auren 44
-
+from tools.memory import (
+    salvar_memoria_persistente as _salvar_memoria,
+    consultar_memoria_persistente as _consultar_memoria,
+    esquecer_memoria_persistente as _esquecer_memoria,
+)
+# API publica de compatibilidade: auren.py continua expondo as ferramentas e
+# utilitarios historicamente disponiveis, enquanto a implementacao mora em core/tools.
 from core.facade import (
     abrir_programa, buscar_arquivo, capturar_tela_windows, listar_janelas_windows, focar_janela_windows,
     minimizar_janela_windows, maximizar_janela_windows, obter_geometria_janela_windows,
@@ -60,22 +59,6 @@ from core.facade import (
     _ui_automation_janela, _executar_ui_automation, _pressionar_vk, _powershell_literal,
     _WINDOW_TARGET_CACHE,
 )
-from core.prompt import instrucoes
-from core.tools_registry import tools
-from core.response import criar_resposta, get_client
-from core import usage
-from core.permission_manager import PermissionManager
-from tools import browser, windows
-from tools.memory import (
-    salvar_memoria_persistente as _salvar_memoria,
-    consultar_memoria_persistente as _consultar_memoria,
-    esquecer_memoria_persistente as _esquecer_memoria,
-)
-from tools.dispatcher import executar_ferramenta as _executar_ferramenta, _resultado_ferramenta_bem_sucedido, _resolver_ui_automation_para_permissao
-from tools.fast_paths import comando_rapido as _comando_rapido
-from core.harness import AurenHarness
-from core.capability_audio_runtime import try_execute as _try_experimental_audio
-
 permission_manager = PermissionManager(max_actions=10)
 memory_store = PersistentMemoryStore()
 client = None
@@ -99,7 +82,7 @@ def comando_rapido(mensagem):
     # Experimento controlado: quando habilitado explicitamente, tenta apenas
     # a capacidade local de áudio antes dos atalhos rápidos existentes.
     # Qualquer pedido que não seja resolvido com segurança continua no fluxo
-    # normal V44 (Fast Path -> LocalDecision -> Router -> Luna).
+    # normal V46 (Fast Path -> LocalDecision -> Router -> Luna).
     tratado, resposta, metadata = _try_experimental_audio(
         mensagem,
         executar_ferramenta=executar_ferramenta,
