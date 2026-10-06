@@ -60,6 +60,7 @@ from core.harness_state import _montar_estado
 from core.harness_round_input import _montar_input_da_rodada
 from core.harness_strategy import _salvar_estrategia_em_background as _salvar_estrategia_em_background_impl
 from core.harness_turn import _registrar_turno as _registrar_turno_impl
+from core.harness_session import _garantir_sessao_chat as _garantir_sessao_chat_impl
 from core.harness_heuristics import (
     _parece_tarefa_visual_composta,
     _parece_tarefa_multietapa_browser,
@@ -568,13 +569,16 @@ class AurenHarness:
         )
 
     def _garantir_sessao_chat(self) -> str:
-        if self._session is None:
-            self._session = _create_chat_session()
-            self._chat_started_here = True
-        else:
-            self._chat_started_here = False
-        _CURRENT_SESSION.set(self._session)
-        return self._session.chat_id
+        (
+            self._session,
+            self._chat_started_here,
+            chat_id,
+        ) = _garantir_sessao_chat_impl(
+            self._session,
+            criar_sessao=_create_chat_session,
+            definir_sessao_atual=_CURRENT_SESSION.set,
+        )
+        return chat_id
 
     def _encerrar_sessao_chat(self, status: str = "closed") -> None:
         session = self._session
