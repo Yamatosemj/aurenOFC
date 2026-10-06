@@ -92,6 +92,8 @@ TOOL_GROUPS = {
     "apps_files": {
         "abrir_programa",
         "buscar_arquivo",
+        "inspecionar_arquivo",
+        "ler_arquivo",
     },
     "spotify_desktop": {
         "abrir_programa",
