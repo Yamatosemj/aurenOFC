@@ -1508,6 +1508,9 @@ class AurenHarness:
                     and nome in self.VISION_STATE_MUTATING_TOOLS
                 ):
                     self._vision_reobserve_pending = True
+                    # Uma acao visual invalida o snapshot usado para calcula-la.
+                    # Qualquer nova coordenada visual exige uma nova observacao.
+                    clear_active_vision_geometry()
                 resultado = resultado_estruturado.for_model()
                 imagem_path = None
                 if isinstance(resultado_estruturado.data, dict):

@@ -230,6 +230,145 @@ def test_snapshot_antigo_e_rejeitado_antes_da_permissao(monkeypatch, tmp_path):
     assert autorizacoes == []
 
 
+def test_harness_exige_nova_observacao_apos_acao_visual(monkeypatch, tmp_path):
+    from core.harness import AurenHarness
+    from core.task_manager import TaskManager
+
+    image_path = _png(tmp_path, "screen.png", (960, 540))
+    calls = []
+    pm = PermissionManager(max_actions=50)
+    monkeypatch.setattr(builtins, "input", lambda *_: "s")
+
+    def fake_capture(_args, _memory, _context):
+        calls.append(("captura", None))
+        return ToolResult.success(
+            "Tela capturada.",
+            data={
+                "image_path": image_path,
+                "image_width": 960,
+                "image_height": 540,
+                "virtual_screen_x": 0,
+                "virtual_screen_y": 0,
+                "virtual_screen_width": 1920,
+                "virtual_screen_height": 1080,
+                "dpi_per_monitor_aware": True,
+            },
+        )
+
+    def fake_click(args, _memory, _context):
+        calls.append(("clique", dict(args)))
+        return ToolResult.success("clique executado")
+
+    monkeypatch.setitem(
+        dispatcher.TOOL_HANDLERS,
+        "capturar_tela_windows",
+        fake_capture,
+    )
+    monkeypatch.setitem(
+        dispatcher.TOOL_HANDLERS,
+        "clicar_mouse_windows",
+        fake_click,
+    )
+
+    capture_call = lambda n: SimpleNamespace(
+        type="function_call",
+        name="capturar_tela_windows",
+        arguments="{}",
+        call_id=f"capture-{n}",
+    )
+
+    def model_response(n, _bench):
+        if n == 1:
+            return SimpleNamespace(output=[capture_call(1)], output_text="")
+        if n == 2:
+            return SimpleNamespace(
+                output=[
+                    SimpleNamespace(
+                        type="function_call",
+                        name="clicar_mouse_windows",
+                        arguments=json.dumps({
+                            "x": 480,
+                            "y": 270,
+                            "botao": "esquerdo",
+                            "descricao": "botao visual",
+                            "coordinate_space": "vision_image",
+                            "vision_snapshot_id": "screen",
+                        }),
+                        call_id="click-1",
+                    )
+                ],
+                output_text="",
+            )
+        if n == 3:
+            # O snapshot anterior foi invalidado pelo clique. Tentar reutiliza-lo
+            # deve falhar no Dispatcher, antes da permissao/execucao.
+            return SimpleNamespace(
+                output=[
+                    SimpleNamespace(
+                        type="function_call",
+                        name="clicar_mouse_windows",
+                        arguments=json.dumps({
+                            "x": 500,
+                            "y": 280,
+                            "botao": "esquerdo",
+                            "descricao": "segundo botao visual",
+                            "coordinate_space": "vision_image",
+                            "vision_snapshot_id": "screen",
+                        }),
+                        call_id="click-2",
+                    )
+                ],
+                output_text="",
+            )
+        if n == 4:
+            return SimpleNamespace(output=[capture_call(2)], output_text="")
+        return SimpleNamespace(output=[], output_text="ok")
+
+    def provider(input_items, response_id=None, reasoning="none", tool_choice=None):
+        return model_response(provider.calls + 1, None)
+    provider.calls = 0
+
+    def counted_provider(input_items, response_id=None, reasoning="none", tool_choice=None):
+        provider.calls += 1
+        return model_response(provider.calls, None)
+
+    harness = AurenHarness(
+        criar_resposta=counted_provider,
+        executar_ferramenta=lambda item: dispatcher.executar_ferramenta(item, pm, None),
+        mostrar_uso=lambda: None,
+        obter_chamadas=lambda response: [
+            item for item in response.output
+            if getattr(item, "type", "") == "function_call"
+        ],
+        comando_rapido=lambda _mensagem: (False, ""),
+        iniciar_tarefa=lambda: None,
+        apos_tarefa=None,
+        fechar=lambda: None,
+        task_manager=TaskManager(),
+    )
+
+    tratado, resposta = harness.processar_mensagem("analise minha tela e clique no botao depois confirme")
+    snapshot = harness.task_manager.current_snapshot()
+
+    assert tratado is False
+    assert resposta.output_text == "ok"
+    assert snapshot is not None
+    assert snapshot.state.value == "completed"
+    assert provider.calls == 5
+
+    cliques = [item for item in calls if item[0] == "clique"]
+    capturas = [item for item in calls if item[0] == "captura"]
+    assert len(cliques) == 1
+    assert len(capturas) == 2
+    assert cliques[0][1]["x"] == 960
+    assert cliques[0][1]["y"] == 540
+    assert all(
+        step.success
+        for step in snapshot.steps
+        if step.tool == "capturar_tela_windows"
+    )
+
+
 def test_geometria_sem_dpi_verificado_nao_pode_clicar(monkeypatch, tmp_path):
     geometry = _set_geometry(
         tmp_path,
