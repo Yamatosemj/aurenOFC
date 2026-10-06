@@ -59,6 +59,15 @@ Os resultados gerados por `testes_auren.py` ficam em:
 logs/testes/RESULTADO_TESTE_AUREN.txt
 ```
 
+## Inteligência de Arquivos (V46)
+
+A capacidade de arquivos mantém `buscar_arquivo` como busca existente e adiciona duas tools pelo mesmo Dispatcher, contratos e permissões:
+
+- `inspecionar_arquivo`: metadados, tipo detectado, tamanho, datas, SHA-256, estado e evidências locais de origem. Pode procurar cópias confirmadas por hash.
+- `ler_arquivo`: leitura controlada de `.txt`, `.md`, `.json` e `.csv`, com encoding detectado e continuação por trechos.
+
+Origem e histórico são tratados como evidência: Zone.Identifier/URL só são reportados quando acessíveis; relação entre cópias é confirmada por SHA-256; trajetória completa permanece desconhecida. PDF pode ser identificado por assinatura, mas leitura de conteúdo ainda não está implementada. DOCX, XLSX e OCR continuam fora do escopo desta etapa.
+
 ## Arquitetura atual
 
 ```text
@@ -83,7 +92,7 @@ O Router escolhe o conjunto de ferramentas da rodada. Toda execução de ferrame
 
 ## Estado importante
 
-- **45 tools** no registry/contratos atuais
+- **47 tools** no registry/contratos atuais
 - memória persistente em SQLite
 - browser e automação Windows integrados
 - voice local-first para ASR/TTS

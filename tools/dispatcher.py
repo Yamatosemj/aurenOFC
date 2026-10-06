@@ -4,7 +4,7 @@ import json
 
 from core.utils import normalizar_nome
 from core.tool_contracts import validate_tool_arguments
-from tools import applications, browser, files
+from tools import applications, browser, file_intelligence, files
 from tools import windows
 from tools.memory import salvar_memoria_persistente, consultar_memoria_persistente, esquecer_memoria_persistente
 
@@ -121,6 +121,8 @@ def _preencher_windows_handler(args, memory_store, context):
 TOOL_HANDLERS = {
     "abrir_programa": _sem_memoria(applications.abrir_programa, "programa"),
     "buscar_arquivo": _sem_memoria(files.buscar_arquivo, "consulta"),
+    "inspecionar_arquivo": _sem_memoria(file_intelligence.inspect_file, "caminho", "procurar_copias", "limite_copias"),
+    "ler_arquivo": _sem_memoria(file_intelligence.read_file, "caminho", "inicio", "limite_caracteres"),
     "salvar_memoria_persistente": _com_memoria(salvar_memoria_persistente, "chave", "valor", "categoria"),
     "consultar_memoria_persistente": _com_memoria(consultar_memoria_persistente, "consulta", "limite"),
     "esquecer_memoria_persistente": _com_memoria(esquecer_memoria_persistente, "chave"),
