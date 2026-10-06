@@ -247,7 +247,7 @@ class Router:
 
     A V43 original continua usando o Fast Brain. A novidade aqui é separar
     tambem o *tool routing*: tarefas claramente reconheciveis recebem apenas
-    as ferramentas daquele dominio, enquanto tarefas ambiguas recebem as 44.
+    as ferramentas daquele dominio, enquanto tarefas ambiguas recebem todas as ferramentas disponiveis.
     """
 
     DEFAULT_BRAIN = "fast"
