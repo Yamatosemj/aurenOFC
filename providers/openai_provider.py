@@ -27,7 +27,7 @@ class OpenAIProvider:
 
     @staticmethod
     def _normalizar_tools(toolset):
-        # None significa manter o registry completo da V43 por compatibilidade.
+        # None significa manter o registry completo atual por compatibilidade.
         if toolset is None:
             from core.tools_registry import tools as default_tools
             return default_tools
