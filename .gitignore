@@ -21,6 +21,7 @@ __pycache__/
 logs/
 browser_profile/
 data/memory/
+data/voice/
 *.sqlite3
 *.db
 
