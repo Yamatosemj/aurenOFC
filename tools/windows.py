@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import ctypes
+from contextlib import contextmanager
 from ctypes import wintypes
 import csv
 import io
@@ -68,6 +69,10 @@ def _configurar_user32_api(user32):
         wintypes.HWND, wintypes.UINT, ctypes.c_size_t, ctypes.c_ssize_t
     ]
     user32.PostMessageW.restype = wintypes.BOOL
+
+    if hasattr(user32, "SetThreadDpiAwarenessContext"):
+        user32.SetThreadDpiAwarenessContext.argtypes = [ctypes.c_void_p]
+        user32.SetThreadDpiAwarenessContext.restype = ctypes.c_void_p
 
 def _user32():
     if os.name != "nt":
@@ -1997,12 +2002,40 @@ def pressionar_tecla_windows(tecla):
     except Exception as erro:
         return f"Nao consegui pressionar a tecla global: {erro}"
 
+DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = ctypes.c_void_p(-4)
+
+
+@contextmanager
+def _contexto_dpi_per_monitor_windows(user32):
+    """Executa APIs de tela em coordenadas físicas, quando o Windows oferece PMv2."""
+    setter = getattr(user32, "SetThreadDpiAwarenessContext", None)
+    if setter is None:
+        yield False
+        return
+
+    try:
+        anterior = setter(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)
+    except Exception:
+        yield False
+        return
+
+    try:
+        yield True
+    finally:
+        if anterior:
+            try:
+                setter(anterior)
+            except Exception:
+                pass
+
+
 def _limites_tela_virtual_windows(user32):
-    """Retorna os limites da área de trabalho virtual em coordenadas de tela."""
-    origem_x = int(user32.GetSystemMetrics(76))  # SM_XVIRTUALSCREEN
-    origem_y = int(user32.GetSystemMetrics(77))  # SM_YVIRTUALSCREEN
-    largura = int(user32.GetSystemMetrics(78))   # SM_CXVIRTUALSCREEN
-    altura = int(user32.GetSystemMetrics(79))    # SM_CYVIRTUALSCREEN
+    """Retorna limites da área de trabalho virtual em coordenadas físicas."""
+    with _contexto_dpi_per_monitor_windows(user32):
+        origem_x = int(user32.GetSystemMetrics(76))  # SM_XVIRTUALSCREEN
+        origem_y = int(user32.GetSystemMetrics(77))  # SM_YVIRTUALSCREEN
+        largura = int(user32.GetSystemMetrics(78))   # SM_CXVIRTUALSCREEN
+        altura = int(user32.GetSystemMetrics(79))    # SM_CYVIRTUALSCREEN
     return origem_x, origem_y, largura, altura
 
 
@@ -2412,10 +2445,11 @@ def capturar_tela_windows() -> ToolResult:
     destino_dir.mkdir(parents=True, exist_ok=True)
     destino = destino_dir / f"screen_{datetime.now().strftime('%Y%m%d-%H%M%S-%f')}.png"
     try:
-        imagem = ImageGrab.grab(all_screens=True)
-        imagem.save(destino, format="PNG", optimize=True)
         user32 = _user32()
-        origem_x, origem_y, largura_virtual, altura_virtual = _limites_tela_virtual_windows(user32)
+        with _contexto_dpi_per_monitor_windows(user32) as dpi_aplicado:
+            imagem = ImageGrab.grab(all_screens=True)
+            origem_x, origem_y, largura_virtual, altura_virtual = _limites_tela_virtual_windows(user32)
+        imagem.save(destino, format="PNG", optimize=True)
         largura_imagem, altura_imagem = imagem.size
         return ToolResult.success(
             f"Tela capturada: {destino.name}",
@@ -2428,6 +2462,12 @@ def capturar_tela_windows() -> ToolResult:
                 "virtual_screen_y": origem_y,
                 "virtual_screen_width": largura_virtual,
                 "virtual_screen_height": altura_virtual,
+                "coordinate_space": "windows_virtual_screen_physical_pixels",
+                "dpi_per_monitor_aware": bool(dpi_aplicado),
+                "geometry_match": (
+                    largura_imagem == largura_virtual
+                    and altura_imagem == altura_virtual
+                ),
             },
         )
     except Exception as exc:
