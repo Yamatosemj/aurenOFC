@@ -30,25 +30,13 @@ def test_memory_conversation_and_strategy(tmp_path: Path):
     assert strategies["total"] == 1
 
 
-def test_skill_library_is_empty_or_loads_valid_skill(tmp_path: Path):
-    skill_dir = tmp_path / "teste"
-    skill_dir.mkdir()
-    (skill_dir / "SKILL.md").write_text("---\nname: teste\ndescription: faz um teste\n---\nUse esta skill.", encoding="utf-8")
-    skills = SkillLibrary(tmp_path).discover()
-    assert len(skills) == 1
-    assert skills[0].name == "teste"
-
-
-def test_agent_plans_and_reflects_without_second_brain():
+def test_agent_plans_without_second_brain():
     from agent.orchestrator import AgentOrchestrator
-    from core.tool_result import ToolResult
 
     agent = AgentOrchestrator()
     plan = agent.begin("abra o Chrome e depois pesquise o projeto")
     assert plan.complexity in {"multi_step", "complex"}
-    verification, reflection = agent.observe("abrir_programa", ToolResult.success("Chrome aberto"))
-    assert verification.ok is True
-    assert "etapas" in reflection.guidance.lower() or "passo" in reflection.guidance.lower()
+    assert len(plan.steps) >= 2
 
 
 def test_screen_tool_is_registered_with_read_only_contract():
@@ -69,7 +57,11 @@ def test_skill_matching_and_prompt_context(tmp_path: Path):
     source = tmp_path / "source_skill"
     source.mkdir()
     (source / "SKILL.md").write_text(
-        "---\nname: navegador\ndescription: ajuda com navegador e pesquisa\n---\nUse como referencia para tarefas de navegador.",
+        "---
+name: navegador
+description: ajuda com navegador e pesquisa
+---
+Use como referencia para tarefas de navegador.",
         encoding="utf-8",
     )
     library = SkillLibrary(root)

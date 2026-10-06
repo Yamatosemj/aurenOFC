@@ -2,15 +2,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from brains.deep import DeepBrain
-from brains.fast import FastBrain
 from core.router import Router, get_router
 from core.tools_registry import tools as TOOL_REGISTRY
 from providers.openai_provider import OpenAIProvider
 from config import ARCHITECTURE_NAME, MODEL
 from core.prompt import instrucoes
 from agent.ari_native.response_cache import ResponseCache, build_response_cache_key
-from agent.ari_native.llm_router import LLMRouter
 
 
 class _CachedResponse:
@@ -24,22 +21,17 @@ class _CachedResponse:
 
 
 class AurenOrchestrator:
-    """Coordena Router -> Brain -> Model Provider.
+    """Coordena Router -> Model Provider.
 
-    O Router tambem seleciona o conjunto de ferramentas da rodada. Em tarefas
-    ambiguas ele conserva todas as ferramentas disponiveis; em tarefas claramente
-    classificadas envia apenas o subconjunto pertinente.
+    O Router seleciona o conjunto de ferramentas da rodada. O provider e
+    responsavel diretamente pela chamada ao modelo; nao existe separacao
+    operacional entre "fast" e "deep" neste fluxo.
     """
 
     def __init__(self, *, provider=None, router: Router | None = None) -> None:
         self.provider = provider or OpenAIProvider()
         self.router = router or get_router()
-        self.brains = {
-            "fast": FastBrain(self.provider),
-            "deep": DeepBrain(self.provider),
-        }
         self.response_cache = ResponseCache.from_config()
-        self.llm_router = LLMRouter()
 
     def get_client(self):
         getter = getattr(self.provider, "get_client", None)
@@ -83,7 +75,7 @@ class AurenOrchestrator:
             model=MODEL,
             system_prompt=instrucoes,
             personality=ARCHITECTURE_NAME,
-            scenario=requested_brain or "auto",
+            scenario=requested_brain or "provider",
             history_instruction="Auren V46 safe response cache",
             include_context=True,
         )
@@ -97,26 +89,15 @@ class AurenOrchestrator:
         tool_choice: str | dict | None = None,
         requested_brain: str | None = None,
     ) -> Any:
-        auto_brain = requested_brain
-        if auto_brain is None and isinstance(entrada, str):
-            auto_brain = self.llm_router.route(entrada).role
-        brain_name = self.router.route(
-            entrada,
-            tool_choice=tool_choice,
-            reasoning_effort=reasoning_effort,
-            requested_brain=auto_brain,
-        )
-
         cache_key = None
         if self._cacheable_input(entrada, tool_choice):
-            cache_key = self._cache_key(entrada, brain_name)
+            cache_key = self._cache_key(entrada, requested_brain)
             cached = self.response_cache.get(cache_key)
             if cached is not None:
                 return _CachedResponse(cached, cache_key)
 
         toolset = self.router.select_tools(entrada, TOOL_REGISTRY)
-        brain = self.brains[brain_name]
-        resposta = brain.create_response(
+        resposta = self.provider.create_response(
             entrada,
             response_id=response_id,
             reasoning_effort=reasoning_effort,
