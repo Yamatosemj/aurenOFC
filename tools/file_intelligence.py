@@ -1,0 +1,627 @@
+from __future__ import annotations
+
+import csv
+import hashlib
+import json
+import mimetypes
+import os
+import stat
+from dataclasses import asdict, dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Mapping
+
+from core.tool_result import ToolResult
+
+
+SUPPORTED_READ_EXTENSIONS = frozenset({".txt", ".md", ".json", ".csv"})
+READ_MAX_CHARS = 20_000
+MAX_READ_OFFSET = 1_000_000
+MAX_COPY_SCAN_FILES = 20_000
+COPY_SEARCH_ROOT_NAMES = ("Downloads", "Desktop", "Documents")
+
+
+@dataclass(frozen=True)
+class FileInfo:
+    nome: str
+    extensao: str
+    tipo_detectado: str
+    evidencia_tipo: str
+    mime_type: str | None
+    caminho: str
+    tamanho_bytes: int
+    tamanho_humano: str
+    sha256: str | None
+    datas: Mapping[str, str | None]
+    estado: Mapping[str, Any]
+
+
+@dataclass(frozen=True)
+class FileOriginEvidence:
+    status: str
+    marcacao_zona_internet: str
+    zone_id: int | None
+    url_origem: str | None
+    referrer_url: str | None
+    aplicativo_origem: str | None
+    autor: str | None
+    empresa: str | None
+    fabricante_software: str | None
+    observacoes: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class FileHistoryEvidence:
+    status: str
+    escopo_varredura: str
+    copias_confirmadas: tuple[str, ...]
+    relacao: str
+    trajetoria_completa: str
+    varredura_limitada: bool = False
+
+
+@dataclass(frozen=True)
+class FileContent:
+    formato: str
+    encoding: str
+    inicio: int
+    limite_caracteres: int
+    conteudo: str
+    vazio: bool
+    truncado: bool
+    proximo_inicio: int | None
+
+
+def _human_size(size: int) -> str:
+    value = float(max(0, size))
+    units = ("B", "KB", "MB", "GB", "TB")
+    for unit in units:
+        if value < 1024 or unit == units[-1]:
+            return f"{int(value)} B" if unit == "B" else f"{value:.1f} {unit}"
+        value /= 1024
+    return f"{value:.1f} PB"
+
+
+def _format_timestamp(timestamp: float | None) -> str | None:
+    if timestamp is None:
+        return None
+    try:
+        return datetime.fromtimestamp(timestamp).astimezone().isoformat(timespec="seconds")
+    except (OverflowError, OSError, ValueError):
+        return None
+
+
+def _readable_probe(path: Path) -> bool:
+    try:
+        with path.open("rb") as handle:
+            handle.read(1)
+        return True
+    except (OSError, PermissionError):
+        return False
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        while chunk := handle.read(1024 * 1024):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _decode_sample(data: bytes) -> tuple[str, str]:
+    if data.startswith(b"\xef\xbb\xbf"):
+        return data.decode("utf-8-sig"), "utf-8-sig"
+    if data.startswith((b"\xff\xfe", b"\xfe\xff")):
+        return data.decode("utf-16"), "utf-16"
+    for encoding in ("utf-8", "cp1252", "latin-1"):
+        try:
+            return data.decode(encoding), encoding
+        except UnicodeDecodeError:
+            continue
+    return data.decode("utf-8", errors="replace"), "utf-8-replace"
+
+
+def _detect_encoding(path: Path) -> str:
+    with path.open("rb") as handle:
+        sample = handle.read(128 * 1024)
+    if not sample:
+        return "utf-8"
+    _, encoding = _decode_sample(sample)
+    return encoding
+
+
+def _detect_type(path: Path) -> tuple[str, str, str | None]:
+    extension = path.suffix.lower()
+    mime = mimetypes.guess_type(path.name, strict=False)[0]
+    if extension == ".md" and not mime:
+        mime = "text/markdown"
+    if extension == ".csv" and not mime:
+        mime = "text/csv"
+
+    if extension == ".json":
+        try:
+            if path.stat().st_size <= 1_000_000:
+                text = path.read_text(encoding=_detect_encoding(path), errors="strict")
+                json.loads(text)
+                return "JSON", "extensao+conteudo_validado", "application/json"
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            pass
+        return "JSON", "extensao", mime or "application/json"
+    if extension == ".csv":
+        try:
+            sample = path.read_text(encoding=_detect_encoding(path), errors="strict")[:16_384]
+            if sample.strip():
+                csv.Sniffer().sniff(sample)
+                return "CSV", "extensao+estrutura_csv", "text/csv"
+        except (OSError, UnicodeDecodeError, csv.Error):
+            pass
+        return "CSV", "extensao", "text/csv"
+    if extension == ".md":
+        return "Markdown", "extensao", mime or "text/markdown"
+    if extension == ".txt":
+        return "Texto simples", "extensao", mime or "text/plain"
+
+    try:
+        with path.open("rb") as handle:
+            signature = handle.read(16)
+    except OSError:
+        return "desconhecido", "nao_disponivel", mime
+
+    if signature.startswith(b"%PDF-"):
+        return "PDF", "assinatura_binaria", "application/pdf"
+    if signature.startswith(b"PK\x03\x04"):
+        return "ZIP/contêiner", "assinatura_binaria", mime or "application/zip"
+    if signature.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "PNG", "assinatura_binaria", "image/png"
+    if signature.startswith(b"\xff\xd8\xff"):
+        return "JPEG", "assinatura_binaria", "image/jpeg"
+    if signature.startswith((b"GIF87a", b"GIF89a")):
+        return "GIF", "assinatura_binaria", "image/gif"
+    return "desconhecido", "assinatura_nao_reconhecida", mime
+
+
+def _hidden_attribute(path: Path) -> bool | None:
+    if os.name != "nt":
+        return None
+    try:
+        import ctypes
+        value = ctypes.windll.kernel32.GetFileAttributesW(str(path))
+        if value == 0xFFFFFFFF:
+            return None
+        return bool(value & 0x2)
+    except Exception:
+        return None
+
+
+def _owner(path: Path, file_stat: os.stat_result) -> str | None:
+    if os.name == "nt":
+        return None
+    try:
+        import pwd
+        return pwd.getpwuid(file_stat.st_uid).pw_name
+    except Exception:
+        return None
+
+
+def _state(path: Path, file_stat: os.stat_result, readable: bool) -> dict[str, Any]:
+    return {
+        "existe": True,
+        "acessivel": readable,
+        "somente_leitura": not bool(file_stat.st_mode & stat.S_IWRITE),
+        "oculto": _hidden_attribute(path),
+        "diretorio": False,
+        "link_simbolico": path.is_symlink(),
+        "atalho": None,
+        "permissoes": oct(stat.S_IMODE(file_stat.st_mode)) if os.name != "nt" else None,
+        "proprietario": _owner(path, file_stat),
+    }
+
+
+def _zone_identifier_text(path: Path) -> str | None:
+    if os.name != "nt":
+        return None
+    try:
+        with open(f"{path}:Zone.Identifier", "r", encoding="utf-8", errors="replace") as handle:
+            return handle.read(16 * 1024)
+    except (OSError, PermissionError):
+        return None
+
+
+def _parse_zone_identifier(text_value: str | None) -> dict[str, Any]:
+    result = {"zone_id": None, "host_url": None, "referrer_url": None}
+    if not text_value:
+        return result
+    for raw_line in text_value.splitlines():
+        line = raw_line.strip()
+        if "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        value = value.strip()
+        if key.strip() == "ZoneId":
+            try:
+                result["zone_id"] = int(value)
+            except ValueError:
+                pass
+        elif key.strip() == "HostUrl":
+            result["host_url"] = value or None
+        elif key.strip() == "ReferrerUrl":
+            result["referrer_url"] = value or None
+    return result
+
+
+def _origin(path: Path) -> FileOriginEvidence:
+    zone = _parse_zone_identifier(_zone_identifier_text(path))
+    zone_id = zone["zone_id"]
+    internet_marked = "desconhecido"
+    if zone_id is not None:
+        internet_marked = "confirmado" if zone_id in {3, 4} else "nao_confirmado"
+
+    observations = []
+    if os.name != "nt":
+        observations.append("Zone.Identifier so pode ser consultado no Windows.")
+    if zone_id is None:
+        observations.append("Nenhum Zone.Identifier acessivel foi encontrado.")
+
+    return FileOriginEvidence(
+        status="confirmado" if zone_id is not None else "desconhecido",
+        marcacao_zona_internet=internet_marked,
+        zone_id=zone_id,
+        url_origem=zone.get("host_url"),
+        referrer_url=zone.get("referrer_url"),
+        aplicativo_origem=None,
+        autor=None,
+        empresa=None,
+        fabricante_software=None,
+        observacoes=tuple(observations),
+    )
+
+
+def _copy_search_roots() -> list[Path]:
+    roots: list[Path] = []
+    userprofile_value = os.environ.get("USERPROFILE", "").strip()
+    if userprofile_value:
+        userprofile = Path(userprofile_value).expanduser()
+        roots.extend(userprofile / name for name in COPY_SEARCH_ROOT_NAMES)
+
+    for env_name in ("OneDrive", "OneDriveConsumer", "OneDriveCommercial"):
+        value = os.environ.get(env_name, "").strip()
+        if not value:
+            continue
+        root = Path(value)
+        roots.extend(
+            root / name
+            for name in (
+                "Downloads",
+                "Desktop",
+                "Área de Trabalho",
+                "Documents",
+                "Documentos",
+            )
+        )
+
+    unique: list[Path] = []
+    seen: set[str] = set()
+    for root in roots:
+        try:
+            if not root.exists() or not root.is_dir():
+                continue
+            key = str(root.resolve()).lower()
+        except OSError:
+            continue
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(root)
+    return unique
+
+
+def _history(path: Path, digest: str | None, limit: int) -> FileHistoryEvidence:
+    roots = _copy_search_roots()
+    scope = ", ".join(str(root) for root in roots) if roots else "nenhuma raiz local de busca disponivel"
+    if not digest:
+        return FileHistoryEvidence(
+            status="desconhecido",
+            escopo_varredura=scope,
+            copias_confirmadas=(),
+            relacao="nao comparavel sem SHA-256",
+            trajetoria_completa="desconhecida",
+        )
+
+    try:
+        canonical_self = str(path.resolve()).lower()
+        source_size = path.stat().st_size
+    except OSError:
+        canonical_self = str(path).lower()
+        source_size = -1
+
+    found: list[str] = []
+    scanned = 0
+    limited = False
+    seen_paths: set[str] = set()
+    for root in roots:
+        if limited:
+            break
+        try:
+            walker = os.walk(root, followlinks=False)
+            for current, directories, filenames in walker:
+                directories[:] = [d for d in directories if not Path(current, d).is_symlink()]
+                for filename in filenames:
+                    if scanned >= MAX_COPY_SCAN_FILES:
+                        limited = True
+                        break
+                    candidate = Path(current) / filename
+                    try:
+                        key = str(candidate.resolve()).lower()
+                    except OSError:
+                        key = str(candidate).lower()
+                    if key in seen_paths or key == canonical_self:
+                        continue
+                    seen_paths.add(key)
+                    try:
+                        candidate_stat = candidate.stat()
+                    except OSError:
+                        continue
+                    scanned += 1
+                    if candidate_stat.st_size != source_size:
+                        continue
+                    try:
+                        if _sha256(candidate) == digest:
+                            found.append(str(candidate.resolve()))
+                            if len(found) >= limit:
+                                return FileHistoryEvidence(
+                                    status="confirmado",
+                                    escopo_varredura=scope,
+                                    copias_confirmadas=tuple(found),
+                                    relacao="mesmo SHA-256; relacao confirmada por hash",
+                                    trajetoria_completa="desconhecida",
+                                )
+                    except OSError:
+                        continue
+                if limited:
+                    break
+        except OSError:
+            continue
+
+    return FileHistoryEvidence(
+        status="desconhecido" if limited else "confirmado",
+        escopo_varredura=scope,
+        copias_confirmadas=tuple(found),
+        relacao=(
+            "mesmo SHA-256; relacao confirmada por hash"
+            if found
+            else "nenhuma copia confirmada no escopo consultado"
+        ),
+        trajetoria_completa="desconhecida",
+        varredura_limitada=limited,
+    )
+
+
+def _resolve_path(value: str) -> Path:
+    return Path(str(value or "").strip()).expanduser().resolve(strict=False)
+
+
+def inspect_file(caminho: str, procurar_copias: bool = False, limite_copias: int = 5) -> ToolResult:
+    tool_name = "inspecionar_arquivo"
+    raw = str(caminho or "").strip()
+    if not raw:
+        return ToolResult.failure("O caminho do arquivo e obrigatorio.", error_code="invalid_path", tool_name=tool_name)
+
+    path = _resolve_path(raw)
+    try:
+        path.lstat()
+    except FileNotFoundError:
+        return ToolResult.failure(
+            f"Arquivo nao encontrado: {path}",
+            error_code="file_not_found",
+            data={"caminho": str(path), "existe": False},
+            tool_name=tool_name,
+        )
+    except OSError as exc:
+        return ToolResult.failure(
+            f"Nao foi possivel acessar o estado do arquivo: {exc}",
+            error_code="file_inaccessible",
+            data={"caminho": str(path), "existe": None},
+            tool_name=tool_name,
+        )
+
+    if path.is_symlink() and not path.exists():
+        return ToolResult.failure(
+            f"O link simbolico existe, mas o alvo nao esta disponivel: {path}",
+            error_code="file_not_found",
+            data={"caminho": str(path), "existe": True, "link_simbolico": True, "alvo_existe": False},
+            tool_name=tool_name,
+        )
+
+    if not path.is_file():
+        return ToolResult.failure(
+            f"O caminho informado nao e um arquivo regular: {path}",
+            error_code="not_a_file",
+            data={"caminho": str(path), "existe": True, "diretorio": path.is_dir()},
+            tool_name=tool_name,
+        )
+
+    try:
+        file_stat = path.stat()
+    except OSError as exc:
+        return ToolResult.failure(
+            f"Nao foi possivel ler os metadados do arquivo: {exc}",
+            error_code="file_inaccessible",
+            data={"caminho": str(path), "existe": True},
+            tool_name=tool_name,
+        )
+
+    readable = _readable_probe(path)
+    detected_type, type_evidence, mime = _detect_type(path)
+    digest = None
+    hash_error = None
+    if readable:
+        try:
+            digest = _sha256(path)
+        except (OSError, PermissionError) as exc:
+            hash_error = str(exc)
+
+    info = FileInfo(
+        nome=path.name,
+        extensao=path.suffix.lower(),
+        tipo_detectado=detected_type,
+        evidencia_tipo=type_evidence,
+        mime_type=mime,
+        caminho=str(path),
+        tamanho_bytes=file_stat.st_size,
+        tamanho_humano=_human_size(file_stat.st_size),
+        sha256=digest,
+        datas={
+            "criacao": _format_timestamp(file_stat.st_ctime) if os.name == "nt" else None,
+            "modificacao": _format_timestamp(file_stat.st_mtime),
+            "ultimo_acesso": _format_timestamp(file_stat.st_atime),
+        },
+        estado=_state(path, file_stat, readable),
+    )
+    origin = _origin(path)
+    history = (
+        _history(path, digest, max(1, min(int(limite_copias), 20)))
+        if procurar_copias
+        else FileHistoryEvidence(
+            status="desconhecido",
+            escopo_varredura="nao consultado",
+            copias_confirmadas=(),
+            relacao="nao consultado",
+            trajetoria_completa="desconhecida",
+        )
+    )
+
+    data = {
+        "file_info": asdict(info),
+        "origem": asdict(origin),
+        "historico": asdict(history),
+        "limitacoes": {
+            "formatos_leitura": sorted(SUPPORTED_READ_EXTENSIONS),
+            "pdf": "tipo pode ser detectado por assinatura; leitura de conteudo nao implementada",
+            "docx": "nao implementado",
+            "xlsx": "nao implementado",
+            "ocr": "nao implementado",
+        },
+    }
+    if hash_error:
+        data.setdefault("observacoes", []).append(f"SHA-256 indisponivel: {hash_error}")
+    if os.name != "nt":
+        data.setdefault("observacoes", []).append("Data de criacao do Windows e Zone.Identifier nao estao disponiveis neste ambiente.")
+
+    return ToolResult.success(f"Arquivo inspecionado: {path.name}.", data=data, tool_name=tool_name)
+
+
+def _read_text_range(path: Path, encoding: str, start: int, limit: int) -> tuple[str, bool]:
+    with path.open("r", encoding=encoding, errors="strict", newline="") as handle:
+        remaining = start
+        while remaining > 0:
+            chunk = handle.read(min(64 * 1024, remaining))
+            if not chunk:
+                return "", False
+            remaining -= len(chunk)
+        content = handle.read(limit)
+        return content, bool(handle.read(1))
+
+
+def read_file(caminho: str, inicio: int = 0, limite_caracteres: int = 12_000) -> ToolResult:
+    tool_name = "ler_arquivo"
+    raw = str(caminho or "").strip()
+    if not raw:
+        return ToolResult.failure("O caminho do arquivo e obrigatorio.", error_code="invalid_path", tool_name=tool_name)
+    if not 0 <= inicio <= MAX_READ_OFFSET:
+        return ToolResult.failure(
+            f"Inicio fora do limite permitido: 0..{MAX_READ_OFFSET}.",
+            error_code="invalid_offset",
+            tool_name=tool_name,
+        )
+    if not 1 <= limite_caracteres <= READ_MAX_CHARS:
+        return ToolResult.failure(
+            f"Limite de caracteres fora do intervalo permitido: 1..{READ_MAX_CHARS}.",
+            error_code="invalid_read_limit",
+            tool_name=tool_name,
+        )
+
+    path = _resolve_path(raw)
+    try:
+        path_stat = path.stat()
+    except FileNotFoundError:
+        return ToolResult.failure(
+            f"Arquivo nao encontrado: {path}",
+            error_code="file_not_found",
+            data={"caminho": str(path), "existe": False},
+            tool_name=tool_name,
+        )
+    except OSError as exc:
+        return ToolResult.failure(
+            f"Nao foi possivel acessar o arquivo: {exc}",
+            error_code="file_inaccessible",
+            data={"caminho": str(path)},
+            tool_name=tool_name,
+        )
+
+    if not path.is_file():
+        return ToolResult.failure(
+            f"O caminho informado nao e um arquivo regular: {path}",
+            error_code="not_a_file",
+            tool_name=tool_name,
+        )
+
+    extension = path.suffix.lower()
+    if extension not in SUPPORTED_READ_EXTENSIONS:
+        return ToolResult.failure(
+            f"Formato nao suportado para leitura de conteudo: {extension or 'sem extensao'}.",
+            error_code="unsupported_format",
+            data={"caminho": str(path), "extensao": extension, "formatos_suportados": sorted(SUPPORTED_READ_EXTENSIONS)},
+            tool_name=tool_name,
+        )
+
+    encoding = None
+    try:
+        encoding = _detect_encoding(path)
+        content, truncated = _read_text_range(path, encoding, inicio, limite_caracteres)
+    except UnicodeDecodeError as exc:
+        return ToolResult.failure(
+            f"Nao consegui decodificar o arquivo com seguranca: {exc}",
+            error_code="encoding_error",
+            data={"caminho": str(path), "encoding_tentado": encoding},
+            tool_name=tool_name,
+        )
+    except (OSError, PermissionError) as exc:
+        return ToolResult.failure(
+            f"Falha de leitura do arquivo: {exc}",
+            error_code="read_error",
+            data={"caminho": str(path)},
+            tool_name=tool_name,
+        )
+
+    result = FileContent(
+        formato=extension.lstrip("."),
+        encoding=encoding or "unknown",
+        inicio=inicio,
+        limite_caracteres=limite_caracteres,
+        conteudo=content,
+        vazio=path_stat.st_size == 0,
+        truncado=truncated,
+        proximo_inicio=(inicio + len(content)) if truncated else None,
+    )
+    return ToolResult.success(
+        f"Conteudo lido de {path.name}." if content else f"O arquivo {path.name} esta vazio ou o inicio solicitado esta alem do conteudo.",
+        data={
+            "file_content": asdict(result),
+            "arquivo": {"nome": path.name, "caminho": str(path), "tamanho_bytes": path_stat.st_size},
+            "proxima_leitura": {"inicio": inicio + len(content)} if truncated else None,
+        },
+        tool_name=tool_name,
+    )
+
+
+__all__ = [
+    "FileInfo",
+    "FileOriginEvidence",
+    "FileHistoryEvidence",
+    "FileContent",
+    "SUPPORTED_READ_EXTENSIONS",
+    "inspect_file",
+    "read_file",
+    "_parse_zone_identifier",
+    "_history",
+]
