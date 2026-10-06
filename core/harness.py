@@ -527,6 +527,10 @@ class AurenHarness:
     def _parece_tarefa_multietapa_browser(objetivo: str) -> bool:
         return _parece_tarefa_multietapa_browser(objetivo)
 
+    @classmethod
+    def _multitab_concluida(cls, objetivo: str, historico: list[dict[str, str]]) -> bool:
+        return _multitab_concluida(objetivo, historico)
+
     @staticmethod
     def _parece_tarefa_de_acao(objetivo: str) -> bool:
         return _parece_tarefa_de_acao(objetivo)
