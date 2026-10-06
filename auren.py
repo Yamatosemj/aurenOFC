@@ -36,7 +36,7 @@ from tools.memory import (
 )
 
 # API publica de compatibilidade: auren.py continua expondo as ferramentas e
-# utilitarios historicamente disponiveis, enquanto a implementacao mora em core/tools.
+# utilitarios historicamente disponiveis, enquanto as implementacoes concretas ficam em core/ e tools/.
 from core.facade import (
     abrir_programa, buscar_arquivo, capturar_tela_windows, listar_janelas_windows, focar_janela_windows,
     minimizar_janela_windows, maximizar_janela_windows, obter_geometria_janela_windows,
