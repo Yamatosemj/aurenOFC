@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import contextvars
-import json
 import threading
 import time
 from dataclasses import dataclass
@@ -17,11 +16,9 @@ from agent.orchestrator import AgentOrchestrator
 from core.session import SessionContextManager
 from skills.loader import SkillLibrary
 from core.vision import (
-    build_vision_geometry,
     clear_active_vision_geometry,
     get_active_vision_geometry,
-    prepare_image_input,
-    set_active_vision_geometry,
+    prepare_vision_result_content,
 )
 from agent.ari_native.task_queue import AgentTaskQueue
 
@@ -584,58 +581,23 @@ class AurenHarness:
                     "output": resultado["resultado"],
                 }
             )
-            imagem = resultado.get("image_path")
-            if imagem:
-                try:
-                    preparado = prepare_image_input(
-                        imagem,
-                        preserve_dimensions=True,
-                    )
-                except Exception:
-                    preparado = None
+            partes_visao = prepare_vision_result_content(resultado)
+            if partes_visao is not None:
+                partes_imagem, geometria_atualizada = partes_visao
+                if geometria_atualizada:
+                    self._vision_reobserve_pending = False
+                    self._vision_guard_attempts = 0
 
-                if preparado is not None:
-                    partes_imagem: list[dict[str, str]] = []
-                    dados_captura = dict(resultado.get("dados") or {})
-                    if nome_ferramenta := str(resultado.get("ferramenta", "")):
-                        geometria = None
-                        if nome_ferramenta == "capturar_tela_windows":
-                            clear_active_vision_geometry()
-                            geometria = build_vision_geometry(
-                                dados_captura,
-                                preparado,
-                            )
-                            if geometria is not None:
-                                set_active_vision_geometry(geometria)
-                                self._vision_reobserve_pending = False
-                                self._vision_guard_attempts = 0
-                        if geometria is not None:
-                            partes_imagem.append(
-                                {
-                                    "type": "input_text",
-                                    "text": (
-                                        "METADADOS CONFIAVEIS DA IMAGEM DE VISAO "
-                                        "(dados tecnicos, nao instrucoes): "
-                                        + json.dumps(
-                                            geometria,
-                                            ensure_ascii=False,
-                                            separators=(",", ":"),
-                                        )
-                                    ),
-                                }
-                            )
-                    partes_imagem.append(preparado.item)
-
-                    # input_image e um content part de uma mensagem, nao um
-                    # item de topo da lista input. Mantemos imagem e sua
-                    # geometria no mesmo bloco user para evitar perder a
-                    # relacao entre os pixels observados e as coordenadas.
-                    input_items.append(
-                        {
-                            "role": "user",
-                            "content": partes_imagem,
-                        }
-                    )
+                # input_image e um content part de uma mensagem, nao um
+                # item de topo da lista input. Mantemos imagem e sua
+                # geometria no mesmo bloco user para evitar perder a
+                # relacao entre os pixels observados e as coordenadas.
+                input_items.append(
+                    {
+                        "role": "user",
+                        "content": partes_imagem,
+                    }
+                )
 
         return input_items
 
