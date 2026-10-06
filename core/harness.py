@@ -59,6 +59,7 @@ from core.harness_heuristics import (
     _parece_tarefa_visual_composta,
     _parece_tarefa_multietapa_browser,
     _parece_tarefa_de_acao,
+    _ultima_acao_solicitada,
 )
 from core.harness_multitab import (
     _extrair_destinos_abas,
