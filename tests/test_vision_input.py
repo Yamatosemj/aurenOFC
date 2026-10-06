@@ -138,7 +138,7 @@ def test_preparacao_comprime_sem_redimensionar_quando_preservar_dimensoes(tmp_pa
 
     preparada = prepare_image_input(
         imagem,
-        max_bytes=4_000_000,
+        max_bytes=2_500_000,
         max_width=1920,
         preserve_dimensions=True,
     )
@@ -288,7 +288,7 @@ def test_geometry_metadata_explica_mapeamento_para_o_modelo():
     )
 
     assert geometria is not None
-    assert geometria["coordenadas_acao"] == "windows_virtual_screen"
+    assert geometria["coordenadas_acao"] == "windows_virtual_screen_physical_pixels"
     assert geometria["imagem_enviada_ao_modelo"] == {"width": 1920, "height": 1080}
     assert geometria["escala_imagem_para_windows"]["x"] == pytest.approx(2.0)
     assert geometria["escala_imagem_para_windows"]["y"] == pytest.approx(2.0)
