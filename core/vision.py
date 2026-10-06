@@ -7,9 +7,6 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 
-@dataclass(frozen=True)
-
-
 _ACTIVE_VISION_GEOMETRY: contextvars.ContextVar[dict | None] = contextvars.ContextVar(
     "auren_active_vision_geometry",
     default=None,
@@ -44,6 +41,7 @@ def _vision_snapshot_id(capture_data: dict) -> str:
     return ""
 
 
+@dataclass(frozen=True)
 class PreparedImageInput:
     """Imagem realmente entregue ao modelo e sua geometria de referência."""
 
