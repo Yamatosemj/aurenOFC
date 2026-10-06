@@ -17,10 +17,9 @@ class VerificationEngine:
 
         text = structured.message.strip()
         objective_text = str(objective or "").lower()
-        # Evidência de falha textual não deve passar como sucesso mesmo quando
-        # uma implementação legada não devolveu ToolResult explicitamente.
-        if re.search(r"\b(?:falha|erro|não consegui|nao consegui|bloqueado|negado)\b", text.lower()):
-            return VerificationResult(False, "failed", text, needs_next_step=False)
+
+        # O estado estruturado é a única fonte de verdade sobre sucesso/falha.
+        # O verificador decide apenas se o objetivo ainda exige etapas seguintes.
 
         # Objetivos explicitamente compostos não são marcados como completos
         # só porque um passo teve sucesso. O Harness continua o loop.
