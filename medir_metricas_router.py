@@ -23,7 +23,6 @@ RESPONSE_RE = re.compile(rf"(?ms)^{TS} MODEL_ROUND_RESPONSE\n(.*?)(?=^{TS} [A-Z_
 FAST_RE = re.compile(rf"(?ms)^{TS} TASK_FAST_PATH\n.*?(?=^{TS} [A-Z_]+\n|\Z)")
 LOCAL_RE = re.compile(rf"(?m)^{TS} TASK_LOCAL_COMPLETION\b")
 TASK_END_RE = re.compile(rf"(?m)^(?P<ts>{TS}) TASK_END\n(?P<body>.*?)(?=^{TS} [A-Z_]+\n|\Z)")
-INT_RE = re.compile(r"^  (\w+): (-?\d+)$", re.M)
 FLOAT_RE = re.compile(r"^  latencia_ms: ([0-9]+(?:\.[0-9]+)?)$", re.M)
 JSON_FIELD_RE = re.compile(r"^  (uso|router): (.+)$", re.M)
 
