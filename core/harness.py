@@ -849,7 +849,15 @@ class AurenHarness:
                 except Exception:
                     image_item = None
                 if image_item is not None:
-                    input_items.append(image_item)
+                    # input_image e um content part de uma mensagem, nao um
+                    # item de topo da lista input. Mantemos a imagem associada
+                    # ao resultado da tool em uma mensagem user propria.
+                    input_items.append(
+                        {
+                            "role": "user",
+                            "content": [image_item],
+                        }
+                    )
 
         return input_items
 
