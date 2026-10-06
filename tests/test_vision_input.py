@@ -277,8 +277,10 @@ def test_geometry_metadata_explica_mapeamento_para_o_modelo():
 
     geometria = build_vision_geometry(
         {
+            "image_path": "screen.png",
             "image_width": 2560,
             "image_height": 1440,
+            "dpi_per_monitor_aware": True,
             "virtual_screen_x": -1920,
             "virtual_screen_y": 0,
             "virtual_screen_width": 3840,
@@ -314,8 +316,10 @@ def test_geometry_metadata_marca_transformacao_insegura_quando_captura_diverge()
 
     geometria = build_vision_geometry(
         {
+            "image_path": "screen.png",
             "image_width": 1920,
             "image_height": 1080,
+            "dpi_per_monitor_aware": True,
             "virtual_screen_x": 0,
             "virtual_screen_y": 0,
             "virtual_screen_width": 1920,

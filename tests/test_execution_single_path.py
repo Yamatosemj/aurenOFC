@@ -117,6 +117,8 @@ def test_principais_ferramentas_do_registry_passam_por_contrato_permissao_e_hand
     def valor(spec):
         if "enum" in spec:
             return spec["enum"][0]
+        if "minimum" in spec:
+            return spec["minimum"]
         return {"string": "x", "integer": 1, "number": 1, "boolean": True}[spec["type"]]
 
     pulados = {"preencher_elemento_windows"}  # exige preflight real de UI Automation
