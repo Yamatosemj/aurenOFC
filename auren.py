@@ -150,11 +150,11 @@ def criar_harness(confirmation_channel=None) -> AurenHarness:
 
     harness = AurenHarness(
         criar_resposta=criar_resposta,
-        executar_ferramenta=_executar_ferramenta_canal,
+        executar_ferramenta=executar_ferramenta if confirmation_channel is None else _executar_ferramenta_canal,
         mostrar_uso=mostrar_uso,
         obter_chamadas=lambda resposta: [item for item in resposta.output if item.type == "function_call"],
-        comando_rapido=_comando_rapido_canal,
-        iniciar_tarefa=task_permission_manager.iniciar_tarefa,
+        comando_rapido=comando_rapido if confirmation_channel is None else _comando_rapido_canal,
+        iniciar_tarefa=permission_manager.iniciar_tarefa if confirmation_channel is None else task_permission_manager.iniciar_tarefa,
         apos_tarefa=None,
         fechar=fechar_navegador,
         obter_metricas_roteamento=obter_metricas_roteamento,

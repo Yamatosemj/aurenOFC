@@ -129,6 +129,8 @@ def _falar_interrompivel(
 
 def _novo_harness(confirmation_channel: VoiceConfirmationChannel | None = None) -> AurenHarness:
     # Mesma montagem do texto: mesmo Session/Context, memoria, metricas e callbacks.
+    if confirmation_channel is None:
+        return auren.criar_harness()
     return auren.criar_harness(confirmation_channel=confirmation_channel)
 
 
