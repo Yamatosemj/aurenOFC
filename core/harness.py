@@ -11,10 +11,8 @@ from pathlib import Path
 from typing import Any, Callable
 
 from core.task_manager import TaskManager, TaskState
-from core.capabilities import KNOWN_SERVICES
 from core import usage
 from core.task_trace import TaskTrace, TaskTraceStore
-from core.utils import normalizar_nome
 from core.tool_result import ToolResult, from_legacy
 from agent.orchestrator import AgentOrchestrator
 from core.session import SessionContextManager
