@@ -142,6 +142,38 @@ def test_varias_ferramentas_na_mesma_rodada_sao_executadas_em_ordem():
     assert bench.model_calls == 2
 
 
+def test_imagem_de_tool_e_enviada_como_content_part_de_mensagem(monkeypatch):
+    imagem = {"type": "input_image", "image_url": "data:image/png;base64,TESTE"}
+    monkeypatch.setattr(harness_module, "image_input_item", lambda _path: imagem)
+
+    bench = _Bench(
+        lambda n, b: _resp([_call(n, "capturar_tela_windows")]) if n == 1 else _resp(text="vi a tela"),
+        lambda _i: ToolResult.success(
+            "Tela capturada",
+            data={"image_path": "C:/teste.png", "mime_type": "image/png"},
+            tool_name="capturar_tela_windows",
+        ),
+    )
+
+    _, resposta, task = bench.run("analise minha tela")
+    assert task.state is TaskState.COMPLETED
+    assert resposta.output_text == "vi a tela"
+
+    segunda_rodada = bench.model_inputs[1]
+    assert not any(isinstance(item, dict) and item.get("type") == "input_image" for item in segunda_rodada)
+    mensagens_com_imagem = [
+        item for item in segunda_rodada
+        if isinstance(item, dict)
+        and item.get("role") == "user"
+        and any(
+            isinstance(part, dict) and part.get("type") == "input_image"
+            for part in item.get("content", [])
+        )
+    ]
+    assert len(mensagens_com_imagem) == 1
+    assert mensagens_com_imagem[0]["content"] == [imagem]
+
+
 # --- limite de rodadas / sem loop infinito -----------------------------------
 
 def test_limite_de_rodadas_padrao_encerra_a_tarefa():
