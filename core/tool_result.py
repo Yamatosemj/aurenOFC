@@ -170,6 +170,10 @@ def from_legacy(value: Any, *, tool_name: str | None = None) -> ToolResult:
     normalizado = texto.strip().lower()
     falhou = any(
         normalizado.startswith(marcador)
+        or (
+            marcador == "acao nao executada"
+            and marcador in normalizado
+        )
         for marcador in LEGACY_FAILURE_MARKERS
     )
     if falhou:
