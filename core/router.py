@@ -78,6 +78,7 @@ TOOL_GROUPS = {
         "pressionar_tecla_windows",
         "mover_mouse_windows",
         "clicar_mouse_windows",
+        "arrastar_mouse_windows",
     },
     "process": {
         "listar_processos_windows",
@@ -348,7 +349,8 @@ class Router:
         patterns = (
             r"\b(?:clique|clica|clicar|selecione|seleciona|selecionar|pressione|pressionar)\b",
             r"\b(?:digite|digitar|escreva|escrever)\b",
-            r"\b(?:arraste|arrastar|mova|mover)\b.*\b(?:mouse|cursor|isso|esse|essa)\b",
+            r"\b(?:arraste|arrastar)\b",
+            r"\b(?:mova|mover)\b.*\b(?:mouse|cursor|isso|esse|essa)\b",
         )
         return any(re.search(pattern, texto, flags=re.IGNORECASE) for pattern in patterns)
 
