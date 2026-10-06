@@ -252,6 +252,8 @@ def test_geometry_metadata_explica_mapeamento_para_o_modelo():
 
     geometria = build_vision_geometry(
         {
+            "image_width": 2560,
+            "image_height": 1440,
             "virtual_screen_x": -1920,
             "virtual_screen_y": 0,
             "virtual_screen_width": 3840,
@@ -266,6 +268,8 @@ def test_geometry_metadata_explica_mapeamento_para_o_modelo():
     assert geometria["escala_imagem_para_windows"]["x"] == pytest.approx(2.0)
     assert geometria["escala_imagem_para_windows"]["y"] == pytest.approx(2.0)
     assert geometria["area_de_trabalho_virtual_windows"]["x"] == -1920
+    assert geometria["captura_vs_arquivo_consistente"] is True
+    assert geometria["transformacao_segura"] is True
 
 
 def test_harness_transporta_geometria_da_imagem_enviada(tmp_path):
