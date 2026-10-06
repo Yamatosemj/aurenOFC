@@ -2073,6 +2073,115 @@ def clicar_mouse_windows(x, y, botao="esquerdo", descricao=""):
     except Exception as erro:
         return f"Nao consegui clicar com o mouse: {erro}"
 
+
+def arrastar_mouse_windows(
+    x_inicial,
+    y_inicial,
+    x_final,
+    y_final,
+    botao="esquerdo",
+    duracao_ms=300,
+    descricao="",
+):
+    """Arrasta o mouse entre duas coordenadas globais da area de trabalho."""
+    if os.name != "nt":
+        return "Controle do mouse global so esta disponivel no Windows."
+
+    try:
+        x_inicial = int(x_inicial)
+        y_inicial = int(y_inicial)
+        x_final = int(x_final)
+        y_final = int(y_final)
+        duracao_ms = int(duracao_ms)
+    except (TypeError, ValueError):
+        return ToolResult.failure(
+            "Coordenadas e duracao do arraste devem ser inteiros.",
+            error_code="drag_arguments_invalid",
+        )
+
+    if duracao_ms < 50 or duracao_ms > 3000:
+        return ToolResult.failure(
+            "A duracao do arraste deve ficar entre 50 e 3000 ms.",
+            error_code="drag_duration_invalid",
+        )
+
+    try:
+        user32 = _user32()
+        origem_x, origem_y, largura, altura = _limites_tela_virtual_windows(user32)
+        limite_x = origem_x + largura
+        limite_y = origem_y + altura
+
+        def dentro_da_area(x, y):
+            return origem_x <= x < limite_x and origem_y <= y < limite_y
+
+        for nome_ponto, x, y in (
+            ("origem", x_inicial, y_inicial),
+            ("destino", x_final, y_final),
+        ):
+            if not dentro_da_area(x, y):
+                return ToolResult.failure(
+                    (
+                        f"Coordenadas de {nome_ponto} fora da area de trabalho virtual: "
+                        f"({x}, {y}). Limites detectados: "
+                        f"x={origem_x}..{limite_x - 1}, "
+                        f"y={origem_y}..{limite_y - 1}."
+                    ),
+                    error_code="drag_coordinates_out_of_bounds",
+                )
+
+        button = str(botao).strip().lower()
+        events = {
+            "esquerdo": (0x0002, 0x0004),
+            "left": (0x0002, 0x0004),
+            "direito": (0x0008, 0x0010),
+            "right": (0x0008, 0x0010),
+            "meio": (0x0020, 0x0040),
+            "middle": (0x0020, 0x0040),
+        }
+        down_up = events.get(button)
+        if down_up is None:
+            return ToolResult.failure(
+                "Botao invalido. Use esquerdo, direito ou meio.",
+                error_code="mouse_button_invalid",
+            )
+
+        if not user32.SetCursorPos(x_inicial, y_inicial):
+            return ToolResult.failure(
+                "Nao consegui posicionar o mouse no inicio do arraste.",
+                error_code="drag_start_position_failed",
+            )
+
+        mouse_event = getattr(user32, "mouse_event")
+        mouse_event(down_up[0], 0, 0, 0, 0)
+
+        try:
+            distancia = max(abs(x_final - x_inicial), abs(y_final - y_inicial))
+            passos = max(1, min(120, int(distancia / 8) or 1))
+            intervalo = duracao_ms / 1000 / passos
+
+            for passo in range(1, passos + 1):
+                fracao = passo / passos
+                x = round(x_inicial + (x_final - x_inicial) * fracao)
+                y = round(y_inicial + (y_final - y_inicial) * fracao)
+                if not user32.SetCursorPos(x, y):
+                    return ToolResult.failure(
+                        f"Nao consegui mover o mouse durante o arraste para ({x}, {y}).",
+                        error_code="drag_move_failed",
+                    )
+                if intervalo > 0:
+                    time.sleep(intervalo)
+        finally:
+            mouse_event(down_up[1], 0, 0, 0, 0)
+
+        detalhe = f" ({descricao})" if descricao else ""
+        return (
+            f"Arraste global executado de ({x_inicial}, {y_inicial}) "
+            f"para ({x_final}, {y_final}), botao {button}, "
+            f"duracao {duracao_ms} ms{detalhe}."
+        )
+    except Exception as erro:
+        return f"Nao consegui arrastar com o mouse: {erro}"
+
 def _configurar_api_clipboard_windows():
     """Configura assinaturas ctypes para handles/pointers Win64 corretamente."""
     user32 = _user32()
