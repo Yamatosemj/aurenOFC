@@ -27,7 +27,10 @@ from core.session import SessionContextManager
 from core.tools_registry import tools
 from skills.loader import SkillLibrary
 from tools import applications, browser, files, windows
-from tools.dispatcher import executar_ferramenta as _executar_ferramenta
+from tools.dispatcher import (
+    executar_ferramenta as _executar_ferramenta,
+    _resultado_ferramenta_bem_sucedido,
+)
 from tools.fast_paths import comando_rapido as _comando_rapido
 from tools.memory import (
     salvar_memoria_persistente as _salvar_memoria,
