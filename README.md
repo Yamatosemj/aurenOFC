@@ -2,6 +2,8 @@
 
 Assistente desktop/voz para Windows, versão técnica **V46**, usando o modelo configurado em `config.py` (snapshot atual: `gpt-5.6-luna`).
 
+> **Estado atual do projeto:** consulte [AUREN_STATE.md](AUREN_STATE.md) antes de iniciar ou continuar trabalho no Auren. O estado oficial registra a tarefa ativa, PRs em andamento, CI, próxima fase e backlog.
+
 ## Estrutura
 
 ```text
