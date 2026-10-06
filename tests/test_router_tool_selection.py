@@ -99,3 +99,11 @@ def test_visual_analysis_does_not_expose_action_tools():
     assert "capturar_tela_windows" in names
     assert "clicar_mouse_windows" not in names
     assert "clicar_elemento_windows" not in names
+
+
+def test_visual_drag_route_includes_drag_tool():
+    names = names_for("analise minha tela e arraste o arquivo para a pasta ao lado")
+    assert "capturar_tela_windows" in names
+    assert "arrastar_mouse_windows" in names
+    assert "clicar_mouse_windows" in names
+    assert len(names) < len(tools)
