@@ -19,6 +19,7 @@ __pycache__/
 
 # Runtime do Auren
 logs/
+runtime/
 browser_profile/
 data/memory/
 data/voice/
