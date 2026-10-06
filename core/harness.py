@@ -56,6 +56,7 @@ from core.harness_serialization import (
     _texto_seguro,
 )
 from core.harness_completion import _mensagem_conclusao_local
+from core.harness_state import _montar_estado
 from core.harness_heuristics import (
     _parece_tarefa_visual_composta,
     _parece_tarefa_multietapa_browser,
@@ -471,50 +472,17 @@ class AurenHarness:
         resultado_atual: list[dict[str, str]] | None = None,
         incluir_contexto: bool = False,
     ) -> str:
-        linhas = [
-            "CONTEXTO CONTROLADO DA TAREFA",
-            f"Objetivo original: {objetivo}",
-        ]
-
-        linhas.append("TIPO: execucao controlada pelo harness")
-
-        if incluir_contexto and self._contexto_tarefa:
-            linhas.extend(["", self._contexto_tarefa])
-
-        linhas.extend([
-            "",
-            "Nao repita uma ferramenta que acabou de executar com sucesso.",
-            "EXCECAO VISUAL: em tarefas que exigem verificacao, capturar_tela_windows pode e deve ser chamada novamente depois de uma acao que alterou a tela.",
-            "Nunca reutilize coordenadas de uma captura antiga depois de uma acao que possa mover janelas, itens ou o cursor.",
-            "Use o ultimo estado conhecido e faca apenas o proximo passo necessario.",
-        ])
-
-        if getattr(self, "_vision_reobserve_pending", False):
-            linhas.extend([
-                "",
-                "VERIFICACAO VISUAL PENDENTE: uma acao visual alterou a interface usando o estado de uma captura anterior. Antes de concluir, obtenha uma nova captura da tela ou outro estado confiavel que comprove o resultado.",
-            ])
-
-        if historico:
-            linhas.extend(["", "Historico recente:"])
-
-            for item in historico[-self.DEFAULT_MAX_HISTORY_ITEMS :]:
-                linhas.append(
-                    f"- {item['ferramenta']}({item['argumentos']}): "
-                    f"{item['resultado']}"
-                )
-
-        if resultado_atual:
-            linhas.extend(["", "Resultados da rodada anterior:"])
-
-            for item in resultado_atual:
-                linhas.append(
-                    f"- {item['ferramenta']}({item['argumentos']}): "
-                    f"{item['resultado']}"
-                )
-
-        estado = "\n".join(linhas)
-        return self._texto_seguro(estado, self.MAX_STATE_CHARS)
+        return _montar_estado(
+            objetivo,
+            historico,
+            resultado_atual,
+            incluir_contexto=incluir_contexto,
+            contexto_tarefa=self._contexto_tarefa,
+            vision_reobserve_pending=getattr(self, "_vision_reobserve_pending", False),
+            max_history_items=self.DEFAULT_MAX_HISTORY_ITEMS,
+            max_state_chars=self.MAX_STATE_CHARS,
+            texto_seguro=self._texto_seguro,
+        )
 
     def _montar_input_da_rodada(
         self,
