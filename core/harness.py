@@ -57,7 +57,11 @@ from core.harness_logging import (
     _register_sensitive_values_from_json_text,
     _register_redaction_values_from_objective,
 )
-
+from core.harness_heuristics import (
+    _parece_tarefa_visual_composta,
+    _parece_tarefa_multietapa_browser,
+    _parece_tarefa_de_acao,
+)
 
 
 @dataclass(frozen=True)
