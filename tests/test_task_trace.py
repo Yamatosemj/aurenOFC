@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import sys
-import time
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -131,7 +130,3 @@ def test_harness_records_real_task_trace(tmp_path: Path) -> None:
     assert sum(span["category"] == "model" for span in spans) == 2
     assert any(span["category"] == "tool" and span["name"] == "abrir_programa" for span in spans)
 
-
-if __name__ == "__main__":
-    test_trace_store_persists_spans_and_report(Path("/tmp"))
-    print("TASK_TRACE_TESTS: PASS")
