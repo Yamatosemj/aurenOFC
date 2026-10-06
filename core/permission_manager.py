@@ -547,6 +547,12 @@ class PermissionManager:
                 "Clique global por coordenada exige confirmacao; a descricao do alvo fornecida pelo modelo nao e prova de seguranca.",
             )
 
+        if capacidade == "windows.input" and nome_ferramenta == "arrastar_mouse_windows":
+            return (
+                PermissionLevel.CONFIRM,
+                "Arraste global por coordenadas pode mover ou soltar um item em destino incorreto; confirmacao obrigatoria.",
+            )
+
         if capacidade == "windows.process.control":
             return (
                 PermissionLevel.CONFIRM,
@@ -728,6 +734,11 @@ class PermissionManager:
             protegido = bool(argumentos.get("_uia_protegido"))
             prefixo = "preencher controle protegido " if protegido else "preencher "
             return f"{prefixo}{alvo!r} com {texto!r}"
+
+        if nome_ferramenta == "arrastar_mouse_windows":
+            origem = (argumentos.get("x_inicial"), argumentos.get("y_inicial"))
+            destino = (argumentos.get("x_final"), argumentos.get("y_final"))
+            return f"arrastar de {origem} para {destino} ({argumentos.get('descricao', '')})"
 
         if nome_ferramenta == "pressionar_tecla":
             return f"pressionar a tecla {argumentos.get('tecla', '')!r}"

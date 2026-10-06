@@ -45,6 +45,8 @@ def test_registry_contains_real_v44_capabilities_only():
         "localizar_arquivo",
         "memoria_persistente",
         "analisar_tela",
+        "inspecionar_arquivo",
+        "ler_arquivo",
     }
     assert set(CAPABILITY_REGISTRY.ids()) == expected
 

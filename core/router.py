@@ -78,6 +78,7 @@ TOOL_GROUPS = {
         "pressionar_tecla_windows",
         "mover_mouse_windows",
         "clicar_mouse_windows",
+        "arrastar_mouse_windows",
     },
     "process": {
         "listar_processos_windows",
@@ -184,6 +185,8 @@ DOMAIN_PATTERNS: dict[str, tuple[str, ...]] = {
     ),
     "input": (
         r"\bmouse\b",
+        r"\barrast\w*\b",
+        r"\bsolt\w*\b.*\b(?:mouse|arquivo|item|pasta|janela)\b",
         r"\bteclado\b",
         r"\btecla\b",
         r"\bclicar\b.*\b(x|y)\s*=",
@@ -348,7 +351,8 @@ class Router:
         patterns = (
             r"\b(?:clique|clica|clicar|selecione|seleciona|selecionar|pressione|pressionar)\b",
             r"\b(?:digite|digitar|escreva|escrever)\b",
-            r"\b(?:arraste|arrastar|mova|mover)\b.*\b(?:mouse|cursor|isso|esse|essa)\b",
+            r"\b(?:arraste|arrastar)\b",
+            r"\b(?:mova|mover)\b.*\b(?:mouse|cursor|isso|esse|essa)\b",
         )
         return any(re.search(pattern, texto, flags=re.IGNORECASE) for pattern in patterns)
 

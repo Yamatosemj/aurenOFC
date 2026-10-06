@@ -115,6 +115,7 @@ _CAPABILITY_RULES: tuple[tuple[str, str], ...] = (
     ("pressionar_tecla_windows", "windows.input"),
     ("mover_mouse_windows", "windows.input"),
     ("clicar_mouse_windows", "windows.input"),
+    ("arrastar_mouse_windows", "windows.input"),
     ("obter_audio_windows", "windows.audio.read"),
     ("definir_volume_windows", "windows.audio.control"),
     ("definir_mudo_windows", "windows.audio.control"),
