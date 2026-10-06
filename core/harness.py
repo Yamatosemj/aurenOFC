@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import contextvars
 import json
-import re
 import threading
 import time
 from dataclasses import dataclass
@@ -64,6 +63,7 @@ from core.harness_heuristics import (
     _parece_tarefa_multietapa_browser,
     _parece_tarefa_de_acao,
     _ultima_acao_solicitada,
+    _limite_adaptativo,
 )
 from core.harness_multitab import (
     _extrair_destinos_abas,
@@ -646,14 +646,7 @@ class AurenHarness:
 
     @staticmethod
     def _limite_adaptativo(objetivo: str) -> int:
-        texto = str(objetivo or "").strip().lower()
-        conectores = len(re.findall(r"\b(?:e|depois|em seguida|entao|então|tambem|também)\b", texto))
-        comandos = len(re.findall(r"\b(?:abra|abrir|abra|pesquise|pesquisar|clique|preencha|digite|mova|feche|fechar|procure|encontre|resuma|analise|analise)\b", texto))
-        if conectores >= 3 or comandos >= 4 or len(texto) > 180:
-            return min(18, AurenHarness.DEFAULT_MAX_MODEL_ROUNDS + 6)
-        if conectores >= 1 or comandos >= 2:
-            return min(15, AurenHarness.DEFAULT_MAX_MODEL_ROUNDS + 3)
-        return AurenHarness.DEFAULT_MAX_MODEL_ROUNDS
+        return _limite_adaptativo(objetivo, AurenHarness.DEFAULT_MAX_MODEL_ROUNDS)
 
     def _chamar_modelo_medido(self, *args: Any, **kwargs: Any) -> tuple[Any, float, dict[str, Any]]:
         """Executa uma chamada real ao modelo e mede somente sua latencia.
