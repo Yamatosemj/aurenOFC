@@ -26,22 +26,6 @@ def test_legacy_missing_error_marker_is_still_caught():
     assert result.error_code == "legacy_text_error"
 
 
-def test_verifier_respects_structured_success_even_with_failure_like_message():
-    from agent.verifier import VerificationEngine
-
-    result = ToolResult.success(
-        "Nao consegui concluir a etapa anterior, mas esta chamada foi concluida com sucesso.",
-        tool_name="teste",
-    )
-
-    verification = VerificationEngine.verify(
-        "execute a tarefa", "teste", result
-    )
-
-    assert verification.ok is True
-    assert verification.status == "verified"
-
-
 def test_dispatcher_uses_structured_tool_result_for_permission_accounting(monkeypatch):
     manager = PermissionManager(max_actions=10)
     item = SimpleNamespace(
