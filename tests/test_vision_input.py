@@ -130,6 +130,31 @@ def test_preparacao_registra_resize_quando_limite_exige_reducao(tmp_path):
     assert preparada.scale_y_to_source == pytest.approx(1440 / 1080)
 
 
+
+def test_preparacao_comprime_sem_redimensionar_quando_preservar_dimensoes(tmp_path):
+    imagem = tmp_path / "screen-noisy.png"
+    source = Image.effect_noise((2560, 1440), 100)
+    source.save(imagem, format="PNG")
+
+    preparada = prepare_image_input(
+        imagem,
+        max_bytes=4_000_000,
+        max_width=1920,
+        preserve_dimensions=True,
+    )
+
+    assert preparada is not None
+    assert preparada.source_width == 2560
+    assert preparada.source_height == 1440
+    assert preparada.sent_width == 2560
+    assert preparada.sent_height == 1440
+    assert preparada.resized is False
+    assert preparada.compressed is True
+    assert preparada.mime_type == "image/jpeg"
+
+
+
+
 def test_transformacao_identity_1920x1080():
     assert image_point_to_virtual_screen(
         123,
@@ -270,6 +295,40 @@ def test_geometry_metadata_explica_mapeamento_para_o_modelo():
     assert geometria["area_de_trabalho_virtual_windows"]["x"] == -1920
     assert geometria["captura_vs_arquivo_consistente"] is True
     assert geometria["transformacao_segura"] is True
+
+
+
+def test_geometry_metadata_marca_transformacao_insegura_quando_captura_diverge():
+    from core.vision import PreparedImageInput
+
+    preparada = PreparedImageInput(
+        item={"type": "input_image", "image_url": "data:image/png;base64,AA=="},
+        source_width=2560,
+        source_height=1440,
+        sent_width=1920,
+        sent_height=1080,
+        mime_type="image/png",
+        resized=True,
+        compressed=True,
+    )
+
+    geometria = build_vision_geometry(
+        {
+            "image_width": 1920,
+            "image_height": 1080,
+            "virtual_screen_x": 0,
+            "virtual_screen_y": 0,
+            "virtual_screen_width": 1920,
+            "virtual_screen_height": 1080,
+        },
+        preparada,
+    )
+
+    assert geometria is not None
+    assert geometria["captura_vs_arquivo_consistente"] is False
+    assert geometria["transformacao_segura"] is False
+
+
 
 
 def test_harness_transporta_geometria_da_imagem_enviada(tmp_path):
