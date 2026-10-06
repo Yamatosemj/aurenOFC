@@ -122,6 +122,7 @@ class TaskTraceStore:
         chat_id: str | None,
         objective: str,
         started_at: str | None = None,
+        started_perf: float | None = None,
     ) -> "TaskTrace":
         started_perf = time.perf_counter()
         trace = TaskTrace(
@@ -131,7 +132,11 @@ class TaskTraceStore:
             objective_chars=len(str(objective or "")),
             objective_hash=_objective_hash(objective),
             started_at=started_at or _now_iso(),
-            started_perf=started_perf,
+            started_perf=(
+                float(started_perf)
+                if started_perf is not None
+                else time.perf_counter()
+            ),
         )
         with self._connect() as connection:
             connection.execute(
