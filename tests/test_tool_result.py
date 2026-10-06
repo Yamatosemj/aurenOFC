@@ -39,7 +39,7 @@ def test_verifier_respects_structured_success_even_with_failure_like_message():
     )
 
     assert verification.ok is True
-    assert verification.state == "verified"
+    assert verification.status == "verified"
 
 
 def test_dispatcher_uses_structured_tool_result_for_permission_accounting(monkeypatch):
