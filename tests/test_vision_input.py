@@ -236,9 +236,6 @@ def test_transformacao_rejeita_coordenada_fora_da_imagem():
 
 
 def test_geometry_metadata_explica_mapeamento_para_o_modelo():
-    imagem = _png(__import__("pathlib").Path(__file__).parent, "unused.png", (1, 1))
-    # O arquivo acima nao participa do teste; usamos um PreparedImageInput real
-    # gerado abaixo para manter a verificacao do contrato deterministica.
     from core.vision import PreparedImageInput
 
     preparada = PreparedImageInput(
@@ -327,8 +324,8 @@ def test_harness_transporta_geometria_da_imagem_enviada(tmp_path):
     assert '"x":1920' in texto
 
 
-def test_harness_nao_muda_o_contrato_de_imagem_sem_geometria():
-    imagem = _png(tmp_path=__import__("pathlib").Path(__file__).parent, name="unused2.png", size=(2, 2))
+def test_harness_nao_muda_o_contrato_de_imagem_sem_geometria(tmp_path):
+    imagem = _png(tmp_path, "screen-sem-geometria.png", (2, 2))
     resposta_anterior = SimpleNamespace(output=[])
     entrada = _harness()._montar_input_da_rodada(
         "analise minha tela",
