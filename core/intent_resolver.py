@@ -385,6 +385,34 @@ class IntentResolver:
                     reason="Regra do Registry identificou uma busca local por arquivo.",
                 )
 
+        if capability_id == "inspecionar_arquivo":
+            caminho = _field(data, "caminho", "path", "arquivo", "nome_arquivo", "nome")
+            if caminho:
+                return ResolvedIntent(
+                    capability_id="inspecionar_arquivo",
+                    params={
+                        "caminho": str(caminho).strip(),
+                        "procurar_copias": bool(data.get("procurar_copias", False)),
+                        "limite_copias": int(data.get("limite_copias", 5)),
+                    },
+                    reason_code="matched_file_inspection",
+                    reason="Pedido identifica inspecao estruturada do arquivo.",
+                )
+
+        if capability_id == "ler_arquivo":
+            caminho = _field(data, "caminho", "path", "arquivo", "nome_arquivo", "nome")
+            if caminho:
+                return ResolvedIntent(
+                    capability_id="ler_arquivo",
+                    params={
+                        "caminho": str(caminho).strip(),
+                        "inicio": int(data.get("inicio", 0)),
+                        "limite_caracteres": int(data.get("limite_caracteres", 12000)),
+                    },
+                    reason_code="matched_file_read",
+                    reason="Pedido identifica leitura controlada do conteudo de um arquivo.",
+                )
+
         if capability_id == "memoria_persistente":
             acao = _field(data, "acao", "ação", "operacao", "operação")
             if not acao:
