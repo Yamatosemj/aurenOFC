@@ -112,8 +112,8 @@ def main() -> int:
         "casos": rows,
     }
 
-    out_dir = ROOT / "RELATORIOS"
-    out_dir.mkdir(exist_ok=True)
+    out_dir = ROOT / "logs" / "testes"
+    out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "BASELINE_ROUTER_V43_OURO_LIMPO.json").write_text(
         json.dumps(output, ensure_ascii=False, indent=2),
         encoding="utf-8",
