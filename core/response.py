@@ -20,7 +20,7 @@ def criar_resposta(
     reasoning_effort: str = "none",
     tool_choice: str | dict | None = None,
 ):
-    """Compatibilidade da V43 usando a nova cadeia Orchestrator -> Brain -> Provider."""
+    """Compatibilidade da API legada usando a nova cadeia Orchestrator -> Brain -> Provider."""
     return _orchestrator.create_response(
         entrada,
         response_id=response_id,
