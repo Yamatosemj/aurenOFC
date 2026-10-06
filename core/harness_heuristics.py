@@ -154,3 +154,12 @@ def _ultima_acao_solicitada(objetivo: str) -> str | None:
     return max(encontrados, key=lambda item: item[0])[1]
 
 
+def _limite_adaptativo(objetivo: str, padrao: int = 12) -> int:
+    texto = str(objetivo or "").strip().lower()
+    conectores = len(re.findall(r"\b(?:e|depois|em seguida|entao|então|tambem|também)\b", texto))
+    comandos = len(re.findall(r"\b(?:abra|abrir|abra|pesquise|pesquisar|clique|preencha|digite|mova|feche|fechar|procure|encontre|resuma|analise|analise)\b", texto))
+    if conectores >= 3 or comandos >= 4 or len(texto) > 180:
+        return min(18, padrao + 6)
+    if conectores >= 1 or comandos >= 2:
+        return min(15, padrao + 3)
+    return padrao
