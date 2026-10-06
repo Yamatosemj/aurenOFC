@@ -138,7 +138,7 @@ def test_arraste_com_origem_virtual_negativa_continua_valido(monkeypatch):
         descricao="teste de coordenadas virtuais",
     )
 
-    assert result.ok is True
+    assert "Arraste global executado" in str(result)
     assert fake.positions[0] == (-100, 50)
     assert fake.positions[-1] == (200, 300)
     assert fake.events == [0x0002, 0x0004]
@@ -171,7 +171,7 @@ def test_clique_recebe_coordenada_convertida_da_imagem(monkeypatch):
 
     x, y = image_point_to_virtual_screen(
         960,
-        540,
+        270,
         image_width=1920,
         image_height=540,
         virtual_screen_x=-1920,
@@ -249,7 +249,7 @@ def test_arraste_usa_duas_coordenadas_convertidas_da_imagem(monkeypatch):
         duracao_ms=50,
         descricao="arraste com pontos convertidos da visao",
     )
-    assert result.ok is True
+    assert "Arraste global executado" in str(result)
     assert fake.positions[0] == origem
     assert fake.positions[-1] == destino
     assert fake.events == [0x0002, 0x0004]
