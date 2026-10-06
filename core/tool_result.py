@@ -7,6 +7,7 @@ from typing import Any, Mapping
 
 LEGACY_FAILURE_MARKERS = (
     "acao nao executada:",
+    "acao nao executada",
     "ação não executada:",
     "nao consegui",
     "não consegui",
