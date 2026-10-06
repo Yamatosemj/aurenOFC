@@ -62,7 +62,7 @@ def test_closing_missing_session_does_nothing():
         limpar_sessao_atual=lambda: events.append("clear-current"),
         limpar_estado_harness=lambda: events.append("clear-harness"),
         limpar_redaction=lambda: events.append("clear-redaction"),
-        write_log=lambda **_: events.append("write-log"),
+        write_log=lambda *args, **_: events.append("write-log"),
     )
 
     assert result is False
@@ -81,13 +81,13 @@ def test_closing_session_clears_matching_context_and_all_state():
         limpar_sessao_atual=lambda: (events.append("clear-current"), current.__setitem__(0, None)),
         limpar_estado_harness=lambda: events.append("clear-harness"),
         limpar_redaction=lambda: events.append("clear-redaction"),
-        write_log=lambda **kwargs: events.append(("write-log", kwargs)),
+        write_log=lambda *args, **kwargs: events.append(("write-log", args, kwargs)),
     )
 
     assert result is True
     assert current == [None]
     assert events == [
-        ("write-log", {"chat_id": "chat-close", "status": "closed-by-test"}),
+        ("write-log", ("CHAT_END",), {"chat_id": "chat-close", "status": "closed-by-test"}),
         "clear-current",
         "clear-harness",
         "clear-redaction",
@@ -118,7 +118,7 @@ def test_closing_session_runs_cleanup_when_log_writer_raises():
     session = _Session("chat-error")
     events = []
 
-    def write_log(**_):
+    def write_log(*args, **_):
         events.append("write-log")
         raise RuntimeError("log failure")
 
