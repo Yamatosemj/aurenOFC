@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from core.router import Router
 from core.capability_resolver import CapabilityResolver
-from core.intent_resolver import IntentResolver
 
 
 def main() -> None:
