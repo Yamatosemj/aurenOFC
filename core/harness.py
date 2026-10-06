@@ -55,6 +55,7 @@ from core.harness_serialization import (
     _argumentos_da_chamada,
     _texto_seguro,
 )
+from core.harness_completion import _mensagem_conclusao_local
 from core.harness_heuristics import (
     _parece_tarefa_visual_composta,
     _parece_tarefa_multietapa_browser,
