@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-# Prompt compacto da V43. Regras foram condensadas sem remover as politicas
+# Prompt compacto herdado da base V43. Regras foram condensadas sem remover as politicas
 # operacionais, de seguranca, navegacao, estado dinamico e memoria.
 instrucoes = """Voce e Auren, assistente pessoal do Victor, rodando no computador dele.
 Modelo: GPT-5.6 Luna. Quando perguntarem o modelo, responda exatamente isso.
