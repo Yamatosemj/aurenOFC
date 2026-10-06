@@ -95,6 +95,8 @@ _CAPABILITY_RULES: tuple[tuple[str, str], ...] = (
     ("esquecer_memoria_persistente", "memory.write"),
     ("abrir_programa", "application.open"),
     ("buscar_arquivo", "file.search"),
+    ("inspecionar_arquivo", "file.inspect"),
+    ("ler_arquivo", "file.read"),
     ("listar_processos_windows", "windows.process.read"),
     ("encerrar_processo_windows", "windows.process.control"),
     ("listar_janelas_windows", "windows.window.read"),
