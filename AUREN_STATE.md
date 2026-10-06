@@ -4,18 +4,19 @@
 > Antes de iniciar uma nova tarefa, consulte este arquivo e compare com a branch/PR e o CI do GitHub.
 > Não trate roadmap antigo, memória da conversa ou documentos arquivados como estado atual.
 
-Atualizado em: 2026-10-06 (itens 1, 2 e 3 da revisão geral concluídos)
+Atualizado em: 2026-10-06 (itens 1, 2, 3 e 4 da revisão geral concluídos)
 
 ## Estado agora
 
 - **Base estável (main):** V47
 - **Trabalho ativo:** Estabilização e limpeza pós-V47
 - **Branch/PR ativa:** nenhuma — PR #6, #7, #8 e #9 encerradas por merge
-- **Head da main:** fa0c682a6733182ff82f5a92caf871f5ee549b89
+- **Head da main:** c8f58c3689e63d2cfafefa0260dcb0f0bc74886e
 - **Status da PR #6:** merged
 - **Status da PR #9:** merged — item 1 da revisão geral
 - **Status da PR #11:** merged — item 3 da revisão geral
-- **Validação da PR:** 280 passed, 6 skipped
+- **Status da PR #12:** merged — item 4 da revisão geral
+- **Validação da PR #12:** 283 passed, 6 skipped
 - **Focused visual CI:** Linux passou; Windows passou
 - **Auditoria final V47:** concluída antes do merge; nenhum bloqueador funcional ou review pendente identificado.
 
@@ -35,10 +36,10 @@ A V47 de geometria/coordenadas foi incorporada à main pelo merge commit c0994db
 - [x] item 1 — adicionar `runtime/` ao `.gitignore`
 - [x] item 2 — separar decisão de permissão do canal de confirmação
 - [x] item 3 — decidir por estrutura entre remover ou ligar de verdade
-- [ ] item 4 — remover ou mover somente código confirmado como morto
+- [x] item 4 — remover ou mover somente código confirmado como morto
 - [ ] item 5 — extrair arquivos gigantes em PRs pequenos
 
-Situação desta rodada: versão/config/facade alinhados; a árvore atual contém apenas documentação normativa/operacional no pacote principal; a suíte completa pós-merge anterior passou; o workflow agora também é acionado por push da main; o trace persistente por tarefa foi implementado e incorporado à main; no item 3, os caminhos sem efeito operacional foram removidos e o PlanBuilder foi preservado por uso real no Harness. O verificador manual histórico `tests/verificar_reestruturacao.py` ainda contém referências às estruturas antigas e fica reservado para o item 4.
+Situação desta rodada: versão/config/facade alinhados; a árvore atual contém apenas documentação normativa/operacional no pacote principal; o workflow agora também é acionado por push da main; o trace persistente por tarefa foi implementado e incorporado à main; no item 3, os caminhos sem efeito operacional foram removidos e o PlanBuilder foi preservado por uso real no Harness; no item 4, código sem consumidor foi removido, o wake-word foi movido para `experimental/`, e o verificador manual V46 obsoleto foi removido. `CapabilityResolver`/`IntentResolver`/`TaskSpec` e o caminho de áudio experimental permaneceram por terem chamadas reais, ainda que protegidas por flag.
 
 ## O que a PR #6 entrega
 
