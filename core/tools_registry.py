@@ -409,8 +409,8 @@ tools = [
         "parameters": {
             "type": "object",
             "properties": {
-                "x": {"type": "integer", "description": "Coordenada X em pixels."},
-                "y": {"type": "integer", "description": "Coordenada Y em pixels."}
+                "x": {"type": "integer", "description": "Coordenada X fisica/global da area de trabalho virtual do Windows."},
+                "y": {"type": "integer", "description": "Coordenada Y fisica/global da area de trabalho virtual do Windows."}
             },
             "required": ["x", "y"],
             "additionalProperties": False
@@ -421,14 +421,16 @@ tools = [
     {
         "type": "function",
         "name": "clicar_mouse_windows",
-        "description": "Move o cursor e executa um clique global do mouse no Windows. Descreva o alvo quando souber para permitir classificacao de risco.",
+        "description": "Move o cursor e executa um clique global do mouse no Windows. x/y devem ser coordenadas fisicas globais da area de trabalho virtual do Windows, convertidas da imagem observada quando necessario. Descreva o alvo quando souber para permitir classificacao de risco.",
         "parameters": {
             "type": "object",
             "properties": {
-                "x": {"type": "integer", "description": "Coordenada X em pixels."},
-                "y": {"type": "integer", "description": "Coordenada Y em pixels."},
+                "x": {"type": "integer", "description": "Coordenada X. Em coordinate_space='windows', e coordenada fisica/global do Windows; em 'vision_image', e pixel da imagem enviada ao modelo."},
+                "y": {"type": "integer", "description": "Coordenada Y. Em coordinate_space='windows', e coordenada fisica/global do Windows; em 'vision_image', e pixel da imagem enviada ao modelo."},
                 "botao": {"type": "string", "enum": ["esquerdo", "direito", "meio"]},
-                "descricao": {"type": "string", "description": "Descricao curta do alvo, como 'botao Configuracoes' ou 'botao Comprar'."}
+                "descricao": {"type": "string", "description": "Descricao curta do alvo, como 'botao Configuracoes' ou 'botao Comprar'."},
+                "coordinate_space": {"type": "string", "enum": ["windows", "vision_image"], "description": "Origem das coordenadas. Use 'vision_image' somente para pixels observados na captura visual mais recente; use 'windows' para coordenadas Windows explicitas."},
+                "vision_snapshot_id": {"type": "string", "description": "Identificador do snapshot visual usado para obter as coordenadas. Obrigatorio quando coordinate_space='vision_image'."}
             },
             "required": ["x", "y", "botao", "descricao"],
             "additionalProperties": False
@@ -439,17 +441,19 @@ tools = [
     {
         "type": "function",
         "name": "arrastar_mouse_windows",
-        "description": "Executa um arrastar-e-soltar global do mouse entre duas coordenadas da tela do Windows.",
+        "description": "Executa um arrastar-e-soltar global do mouse. Em coordinate_space='windows', as coordenadas ja sao fisicas/globais do Windows. Em 'vision_image', sao pixels da captura visual mais recente e serao convertidas/validadas pelo runtime.",
         "parameters": {
             "type": "object",
             "properties": {
-                "x_inicial": {"type": "integer", "description": "Coordenada X inicial em pixels."},
-                "y_inicial": {"type": "integer", "description": "Coordenada Y inicial em pixels."},
-                "x_final": {"type": "integer", "description": "Coordenada X final em pixels."},
-                "y_final": {"type": "integer", "description": "Coordenada Y final em pixels."},
+                "x_inicial": {"type": "integer", "description": "Coordenada X fisica/global inicial da area de trabalho virtual do Windows."},
+                "y_inicial": {"type": "integer", "description": "Coordenada Y fisica/global inicial da area de trabalho virtual do Windows."},
+                "x_final": {"type": "integer", "description": "Coordenada X fisica/global final da area de trabalho virtual do Windows."},
+                "y_final": {"type": "integer", "description": "Coordenada Y fisica/global final da area de trabalho virtual do Windows."},
                 "botao": {"type": "string", "enum": ["esquerdo", "direito", "meio"]},
                 "duracao_ms": {"type": "integer", "minimum": 50, "maximum": 3000, "description": "Duracao do arraste em milissegundos. Padrao 300."},
-                "descricao": {"type": "string", "description": "Descricao curta do alvo arrastado e do destino."}
+                "descricao": {"type": "string", "description": "Descricao curta do alvo arrastado e do destino."},
+                "coordinate_space": {"type": "string", "enum": ["windows", "vision_image"], "description": "Origem das coordenadas. Use 'vision_image' somente para pixels observados na captura visual mais recente; use 'windows' para coordenadas Windows explicitas."},
+                "vision_snapshot_id": {"type": "string", "description": "Identificador do snapshot visual usado para obter as coordenadas. Obrigatorio quando coordinate_space='vision_image'."}
             },
             "required": ["x_inicial", "y_inicial", "x_final", "y_final", "botao", "duracao_ms", "descricao"],
             "additionalProperties": False

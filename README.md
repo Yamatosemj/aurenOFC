@@ -1,6 +1,6 @@
 # Auren
 
-Assistente desktop/voz para Windows, versão técnica **V46**, usando o modelo configurado em `config.py` (snapshot atual: `gpt-5.6-luna`).
+Assistente desktop/voz para Windows, versão técnica **V47**, usando o modelo configurado em `config.py` (snapshot atual: `gpt-5.6-luna`).
 
 > **Estado atual do projeto:** consulte [AUREN_STATE.md](AUREN_STATE.md) antes de iniciar ou continuar trabalho no Auren. O estado oficial registra a tarefa ativa, PRs em andamento, CI, próxima fase e backlog.
 
@@ -53,7 +53,7 @@ python testes_auren.py --rapido
 python testes_auren.py --completo
 ```
 
-Última validação completa registrada do snapshot V46: **216/216 testes pytest passando**. As alterações de limpeza posteriores são pequenas e não foram revalidadas nesta sessão.
+A validação automatizada desta etapa é registrada no Pull Request correspondente; números de testes só são atualizados aqui depois de uma execução confirmada.
 
 Os resultados gerados por `testes_auren.py` ficam em:
 
@@ -61,7 +61,7 @@ Os resultados gerados por `testes_auren.py` ficam em:
 logs/testes/RESULTADO_TESTE_AUREN.txt
 ```
 
-## Inteligência de Arquivos (V46)
+## Inteligência de Arquivos (V47)
 
 A capacidade de arquivos mantém `buscar_arquivo` como busca existente e adiciona duas tools pelo mesmo Dispatcher, contratos e permissões:
 
@@ -92,12 +92,16 @@ Modelo
 
 O Router escolhe o conjunto de ferramentas da rodada. Toda execução de ferramenta passa pelo Dispatcher, validação de contrato e permissões antes de chegar ao executor. O resultado estruturado volta ao Harness como `ToolResult`.
 
+## Visão e coordenadas
+
+A captura de tela informa a área de trabalho virtual do Windows, incluindo origem e dimensões. Quando a imagem enviada ao modelo é comprimida ou redimensionada, o Harness transporta a geometria efetivamente entregue e as escalas necessárias para converter pontos observados na imagem para coordenadas da área de trabalho virtual. A camada de Windows usa um contexto DPI por monitor quando disponível para manter a leitura da tela e as coordenadas de entrada no mesmo referencial físico. Conversões com proporção incompatível são rejeitadas em vez de produzir cliques silenciosamente deslocados.
+
 ## Estado importante
 
 - **48 tools** no registry/contratos atuais
 - memória persistente em SQLite
 - browser e automação Windows integrados
-- visão pode observar a tela e executar clique ou arraste global do mouse com confirmação e verificação do estado final
+- visão pode observar a tela, executar clique ou arraste global do mouse com confirmação, manter a geometria da captura e da imagem entregue ao modelo e verificar o estado final em tarefas visuais compostas
 - voice local-first para ASR/TTS
 - `wake_word.py` existe, mas não faz parte do caminho normal de voz atual (PTT/F8)
 - componentes históricos e relatórios antigos não fazem parte deste pacote runtime

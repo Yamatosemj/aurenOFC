@@ -1,4 +1,4 @@
-name: Auren V46 tests
+name: Auren V47 full tests
 
 on:
   push:
@@ -17,5 +17,5 @@ jobs:
         with:
           python-version: "3.13"
       - run: python -m pip install --upgrade pip
-      - run: python -m pip install -r requirements.txt pytest
+      - run: python -m pip install -r requirements.txt pytest "numpy>=2.0.2,<3"
       - run: python -m pytest -q

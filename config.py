@@ -5,10 +5,10 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 BROWSER_PROFILE_DIR = PROJECT_ROOT / "browser_profile"
 MEMORY_DB_PATH = PROJECT_ROOT / "data" / "memory" / "auren_memory.sqlite3"
 
-AUREN_VERSION = 46
+AUREN_VERSION = 47
 MODEL = "gpt-5.6-luna"
 CACHE_KEY = f"auren-v{AUREN_VERSION}"
-ARCHITECTURE_NAME = "V46 ARI NATIVE SURGERY"
+ARCHITECTURE_NAME = "V47 ARI NATIVE VISUAL GEOMETRY"
 
 # Response cache seguro para conversas textuais estaveis (nao para estado atual/acoes)
 RESPONSE_CACHE_MAX_ITEMS = 50

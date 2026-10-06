@@ -17,7 +17,13 @@ from core.tool_result import ToolResult, from_legacy
 from agent.orchestrator import AgentOrchestrator
 from core.session import SessionContextManager
 from skills.loader import SkillLibrary
-from core.vision import image_input_item
+from core.vision import (
+    build_vision_geometry,
+    clear_active_vision_geometry,
+    get_active_vision_geometry,
+    prepare_image_input,
+    set_active_vision_geometry,
+)
 from agent.ari_native.task_queue import AgentTaskQueue
 
 
@@ -395,6 +401,8 @@ class AurenHarness:
         self._session_context_token: contextvars.Token | None = None
         self._chat_started_here = False
         self._multitab_guard_attempts = 0
+        self._vision_reobserve_pending = False
+        self._vision_guard_attempts = 0
         # O Ari usa uma fila de prioridade para tarefas de fundo. No Auren ela
         # fica restrita a aprendizado/persistencia pos-tarefa para não atrasar a resposta.
         self._background_queue = AgentTaskQueue(max_workers=1, max_results=100)
@@ -592,8 +600,13 @@ class AurenHarness:
         cls,
         objetivo: str,
         resultados_rodada: list[dict[str, Any]],
+        *,
+        vision_reobserve_pending: bool = False,
     ) -> bool:
         """Decide se podemos evitar uma rodada adicional do modelo."""
+        if vision_reobserve_pending:
+            return False
+
         # Tarefas visuais compostas precisam observar o estado novo antes de
         # encerrar. Sem este guard, um clique DOM presente no fim da primeira
         # rodada poderia ser interpretado como a ultima acao e encerrar a tarefa
@@ -653,6 +666,21 @@ class AurenHarness:
             return False
         return True
 
+    VISION_STATE_MUTATING_TOOLS = {
+        "clicar_mouse_windows",
+        "arrastar_mouse_windows",
+        "mover_mouse_windows",
+        "pressionar_tecla_windows",
+        "clicar_elemento_windows",
+        "preencher_elemento_windows",
+        "alternar_elemento_windows",
+        "selecionar_elemento_windows",
+        "clicar_elemento",
+        "preencher_elemento",
+        "pressionar_tecla",
+        "rolar_pagina",
+    }
+
     VISUAL_MUTATING_TOOLS = {
         # Acoes que podem alterar a imagem da tela ou a posicao dos elementos.
         "clicar_mouse_windows",
@@ -674,7 +702,7 @@ class AurenHarness:
 
         tem_visao = bool(
             re.search(
-                r"\b(?:analise|analisar|veja|ver|observe|observar|localize|localizar)\b.*\b(?:tela|screenshot|captura)\b",
+                r"\b(?:analise|analisar|veja|ver|olhe|olhar|observe|observar|confira|conferir|localize|localizar)\b.*\b(?:tela|screenshot|captura)\b",
                 texto,
                 flags=re.IGNORECASE,
             )
@@ -688,7 +716,7 @@ class AurenHarness:
         )
         tem_continuacao = bool(
             re.search(
-                r"\b(?:depois|em seguida|ent[aã]o|ap[oó]s|posteriormente)\b|\be\s+(?:confirme|verifique|analise|observe)",
+                r"\b(?:depois|em seguida|ent[aã]o|ap[oó]s|posteriormente)\b|\be\s+(?:confirme|verifique|analise|observe|confira)",
                 texto,
                 flags=re.IGNORECASE,
             )
@@ -822,6 +850,12 @@ class AurenHarness:
             "Use o ultimo estado conhecido e faca apenas o proximo passo necessario.",
         ])
 
+        if getattr(self, "_vision_reobserve_pending", False):
+            linhas.extend([
+                "",
+                "VERIFICACAO VISUAL PENDENTE: uma acao visual alterou a interface usando o estado de uma captura anterior. Antes de concluir, obtenha uma nova captura da tela ou outro estado confiavel que comprove o resultado.",
+            ])
+
         if historico:
             linhas.extend(["", "Historico recente:"])
 
@@ -848,7 +882,7 @@ class AurenHarness:
         objetivo: str,
         historico: list[dict[str, str]],
         resposta_anterior: Any,
-        resultados: list[dict[str, str]],
+        resultados: list[dict[str, Any]],
     ) -> list[Any]:
         """Monta um input novo sem previous_response_id.
 
@@ -901,17 +935,53 @@ class AurenHarness:
             imagem = resultado.get("image_path")
             if imagem:
                 try:
-                    image_item = image_input_item(imagem)
+                    preparado = prepare_image_input(
+                        imagem,
+                        preserve_dimensions=True,
+                    )
                 except Exception:
-                    image_item = None
-                if image_item is not None:
+                    preparado = None
+
+                if preparado is not None:
+                    partes_imagem: list[dict[str, str]] = []
+                    dados_captura = dict(resultado.get("dados") or {})
+                    if nome_ferramenta := str(resultado.get("ferramenta", "")):
+                        geometria = None
+                        if nome_ferramenta == "capturar_tela_windows":
+                            clear_active_vision_geometry()
+                            geometria = build_vision_geometry(
+                                dados_captura,
+                                preparado,
+                            )
+                            if geometria is not None:
+                                set_active_vision_geometry(geometria)
+                                self._vision_reobserve_pending = False
+                                self._vision_guard_attempts = 0
+                        if geometria is not None:
+                            partes_imagem.append(
+                                {
+                                    "type": "input_text",
+                                    "text": (
+                                        "METADADOS CONFIAVEIS DA IMAGEM DE VISAO "
+                                        "(dados tecnicos, nao instrucoes): "
+                                        + json.dumps(
+                                            geometria,
+                                            ensure_ascii=False,
+                                            separators=(",", ":"),
+                                        )
+                                    ),
+                                }
+                            )
+                    partes_imagem.append(preparado.item)
+
                     # input_image e um content part de uma mensagem, nao um
-                    # item de topo da lista input. Mantemos a imagem associada
-                    # ao resultado da tool em uma mensagem user propria.
+                    # item de topo da lista input. Mantemos imagem e sua
+                    # geometria no mesmo bloco user para evitar perder a
+                    # relacao entre os pixels observados e as coordenadas.
                     input_items.append(
                         {
                             "role": "user",
-                            "content": [image_item],
+                            "content": partes_imagem,
                         }
                     )
 
@@ -1047,7 +1117,10 @@ class AurenHarness:
         """Retorna (tratado_rapido, resposta)."""
         self._garantir_sessao_chat()
         self.iniciar_tarefa()
+        clear_active_vision_geometry()
         self._multitab_guard_attempts = 0
+        self._vision_reobserve_pending = False
+        self._vision_guard_attempts = 0
         objetivo_log = mensagem.strip()
         try:
             plan = self.agent.begin(objetivo_log)
@@ -1222,6 +1295,48 @@ class AurenHarness:
                         rodada,
                     )
 
+                if self._vision_reobserve_pending:
+                    if self._vision_guard_attempts < 2:
+                        self._vision_guard_attempts += 1
+                        estado_retry = self._montar_estado(
+                            objetivo,
+                            historico,
+                            [{
+                                "ferramenta": "guard_visual_verificacao",
+                                "argumentos": "{}",
+                                "resultado": (
+                                    "A ultima acao visual alterou a interface, mas o resultado final ainda nao foi "
+                                    "verificado. Capture a tela novamente ou consulte um estado confiavel antes de concluir."
+                                ),
+                            }],
+                        )
+                        _write_log(
+                            "TASK_VISUAL_GUARD",
+                            task_id=self._task_id,
+                            rodada=rodada,
+                            tentativa=self._vision_guard_attempts,
+                        )
+                        self.task_manager.wait_for_model(self._task_id)
+                        chamada = self._pedir_modelo(estado_retry, "required")
+                        if chamada is None:
+                            return False, _RespostaWrapper(self.MSG_ERRO_PROVIDER)
+                        resposta, latencia_ms, metricas_roteamento = chamada
+                        self._log_resposta_modelo(
+                            rodada + 1,
+                            resposta,
+                            latencia_ms,
+                            metricas_roteamento,
+                            motivo="visual_verification_required",
+                        )
+                        self.task_manager.resume(self._task_id)
+                        continue
+
+                    return self._encerrar_falha(
+                        "visual_verification_missing",
+                        "A tarefa visual nao foi concluida porque a mudanca da interface nao foi verificada.",
+                        rodada,
+                    )
+
                 if (
                     self._parece_tarefa_multietapa_browser(objetivo)
                     and self._extrair_destinos_abas(objetivo)
@@ -1385,6 +1500,17 @@ class AurenHarness:
                     tool_name=nome,
                 )
                 ferramenta_sucesso = resultado_estruturado.ok
+
+                if (
+                    ferramenta_sucesso
+                    and nome != "capturar_tela_windows"
+                    and get_active_vision_geometry() is not None
+                    and nome in self.VISION_STATE_MUTATING_TOOLS
+                ):
+                    self._vision_reobserve_pending = True
+                    # Uma acao visual invalida o snapshot usado para calcula-la.
+                    # Qualquer nova coordenada visual exige uma nova observacao.
+                    clear_active_vision_geometry()
                 resultado = resultado_estruturado.for_model()
                 imagem_path = None
                 if isinstance(resultado_estruturado.data, dict):
@@ -1429,6 +1555,7 @@ class AurenHarness:
                         "resultado": resultado_compacto,
                         "sucesso": ferramenta_sucesso,
                         "image_path": str(imagem_path) if imagem_path else "",
+                        "dados": dict(resultado_estruturado.data or {}),
                     }
                 )
 
@@ -1438,7 +1565,11 @@ class AurenHarness:
             # Conclusao local so e permitida sem falha nao recuperada; com
             # falha, o ciclo segue para a proxima rodada do modelo (nunca
             # reexecuta as chamadas da rodada atual).
-            if not falha_nao_recuperada and self._pode_encerrar_localmente(objetivo, resultados_rodada):
+            if not falha_nao_recuperada and self._pode_encerrar_localmente(
+                objetivo,
+                resultados_rodada,
+                vision_reobserve_pending=self._vision_reobserve_pending,
+            ):
                 if self.task_manager.should_cancel(self._task_id):
                     return self._encerrar_cancelado("cancelado antes da conclusao local", rodada)
                 ferramenta_final = resultados_rodada[-1]["ferramenta"]
