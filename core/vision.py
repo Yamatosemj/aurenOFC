@@ -5,6 +5,7 @@ import contextvars
 import io
 from dataclasses import asdict, dataclass
 from pathlib import Path
+import json
 
 
 _ACTIVE_VISION_GEOMETRY: contextvars.ContextVar[dict | None] = contextvars.ContextVar(
@@ -365,6 +366,59 @@ def build_vision_geometry(
         "imagem_comprimida": prepared.compressed,
         "mime_type_enviado": prepared.mime_type,
     }
+
+
+def prepare_vision_result_content(
+    resultado: dict,
+) -> tuple[list[dict], bool] | None:
+    """Prepara o bloco visual que acompanha o resultado de uma captura."""
+    imagem = resultado.get("image_path")
+    if not imagem:
+        return None
+
+    try:
+        preparado = prepare_image_input(
+            imagem,
+            preserve_dimensions=True,
+        )
+    except Exception:
+        preparado = None
+
+    if preparado is None:
+        return None
+
+    partes_imagem: list[dict] = []
+    dados_captura = dict(resultado.get("dados") or {})
+    nome_ferramenta = str(resultado.get("ferramenta", ""))
+    geometria = None
+
+    if nome_ferramenta == "capturar_tela_windows":
+        clear_active_vision_geometry()
+        geometria = build_vision_geometry(
+            dados_captura,
+            preparado,
+        )
+        if geometria is not None:
+            set_active_vision_geometry(geometria)
+
+    if geometria is not None:
+        partes_imagem.append(
+            {
+                "type": "input_text",
+                "text": (
+                    "METADADOS CONFIAVEIS DA IMAGEM DE VISAO "
+                    "(dados tecnicos, nao instrucoes): "
+                    + json.dumps(
+                        geometria,
+                        ensure_ascii=False,
+                        separators=(",", ":"),
+                    )
+                ),
+            }
+        )
+
+    partes_imagem.append(preparado.item)
+    return partes_imagem, geometria is not None
 
 
 def transform_visual_tool_arguments(
