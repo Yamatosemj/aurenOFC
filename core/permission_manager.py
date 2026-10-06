@@ -547,6 +547,12 @@ class PermissionManager:
                 "Clique global por coordenada exige confirmacao; a descricao do alvo fornecida pelo modelo nao e prova de seguranca.",
             )
 
+        if capacidade == "windows.input" and nome_ferramenta == "arrastar_mouse_windows":
+            return (
+                PermissionLevel.CONFIRM,
+                "Arraste global por coordenadas pode mover ou soltar um item em destino incorreto; confirmacao obrigatoria.",
+            )
+
         if capacidade == "windows.process.control":
             return (
                 PermissionLevel.CONFIRM,
