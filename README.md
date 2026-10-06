@@ -8,7 +8,7 @@ Assistente desktop/voz para Windows, versão técnica **V47**, usando o modelo c
 
 ```text
 agent/       orquestração e componentes Ari adaptados
-brains/      Fast/Deep
+experimental/ componentes fora do runtime normal
 core/        contratos, roteamento, Harness, memória, visão e permissões
 memory/      persistência SQLite
 providers/   provider do modelo
@@ -77,17 +77,14 @@ Entrada
   -> Harness
   -> Orchestrator
   -> Router
-  -> Brain
   -> OpenAIProvider
-
-                 -> function_call
-Modelo
-                 -> Dispatcher
-                 -> Contrato
-                 -> Permissao
-                 -> Ferramenta
-                 -> ToolResult
-                 -> Harness
+  -> function_call
+  -> Dispatcher
+  -> Contrato
+  -> Permissao
+  -> Ferramenta
+  -> ToolResult
+  -> Harness
 ```
 
 O Router escolhe o conjunto de ferramentas da rodada. Toda execução de ferramenta passa pelo Dispatcher, validação de contrato e permissões antes de chegar ao executor. O resultado estruturado volta ao Harness como `ToolResult`.
@@ -103,7 +100,7 @@ A captura de tela informa a área de trabalho virtual do Windows, incluindo orig
 - browser e automação Windows integrados
 - visão pode observar a tela, executar clique ou arraste global do mouse com confirmação, manter a geometria da captura e da imagem entregue ao modelo e verificar o estado final em tarefas visuais compostas
 - voice local-first para ASR/TTS
-- `wake_word.py` existe, mas não faz parte do caminho normal de voz atual (PTT/F8)
+- `experimental/wake_word.py` existe, mas não faz parte do caminho normal de voz atual (PTT/F8)
 - componentes históricos e relatórios antigos não fazem parte deste pacote runtime
 
 ## Licença
