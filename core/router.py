@@ -78,6 +78,7 @@ TOOL_GROUPS = {
         "pressionar_tecla_windows",
         "mover_mouse_windows",
         "clicar_mouse_windows",
+        "arrastar_mouse_windows",
     },
     "process": {
         "listar_processos_windows",
@@ -184,6 +185,8 @@ DOMAIN_PATTERNS: dict[str, tuple[str, ...]] = {
     ),
     "input": (
         r"\bmouse\b",
+        r"\barrast\w*\b",
+        r"\bsolt\w*\b.*\b(?:mouse|arquivo|item|pasta|janela)\b",
         r"\bteclado\b",
         r"\btecla\b",
         r"\bclicar\b.*\b(x|y)\s*=",
@@ -342,8 +345,20 @@ class Router:
 
         return encontrados
 
+    @staticmethod
+    def _acao_visual_pedida(texto: str) -> bool:
+        """Detecta manipulacao explicita que pode depender da imagem da tela."""
+        patterns = (
+            r"\b(?:clique|clica|clicar|selecione|seleciona|selecionar|pressione|pressionar)\b",
+            r"\b(?:digite|digitar|escreva|escrever)\b",
+            r"\b(?:arraste|arrastar)\b",
+            r"\b(?:mova|mover)\b.*\b(?:mouse|cursor|isso|esse|essa)\b",
+        )
+        return any(re.search(pattern, texto, flags=re.IGNORECASE) for pattern in patterns)
+
     def select_tool_names(self, mensagem: Any, available_tools: list[dict[str, Any]]) -> list[str]:
         all_names = [item["name"] for item in available_tools]
+        texto = self._extract_text(mensagem).strip().lower()
         domains = self._detectar_dominios(mensagem)
 
         # Sem sinal suficientemente claro: preserva 100% da compatibilidade.
@@ -370,6 +385,14 @@ class Router:
             selected.update(TOOL_GROUPS["spotify_desktop"])
             # Evita carregar ferramentas de browser só porque a palavra Spotify apareceu.
             domains = [d for d in domains if d != "browser"]
+
+        # Quando a rodada realmente depende de enxergar a tela para manipular
+        # algo, o modelo precisa receber visão + ações no mesmo subconjunto.
+        # Mantemos isso condicionado à presença de uma ação explícita para não
+        # expor mouse/UIA em análises puramente visuais.
+        if "vision" in domains and self._acao_visual_pedida(texto):
+            selected.update(TOOL_GROUPS["input"])
+            selected.update(TOOL_GROUPS["uia"])
 
         ordered = [name for name in all_names if name in selected]
 

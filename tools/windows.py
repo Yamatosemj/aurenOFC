@@ -1997,6 +1997,15 @@ def pressionar_tecla_windows(tecla):
     except Exception as erro:
         return f"Nao consegui pressionar a tecla global: {erro}"
 
+def _limites_tela_virtual_windows(user32):
+    """Retorna os limites da área de trabalho virtual em coordenadas de tela."""
+    origem_x = int(user32.GetSystemMetrics(76))  # SM_XVIRTUALSCREEN
+    origem_y = int(user32.GetSystemMetrics(77))  # SM_YVIRTUALSCREEN
+    largura = int(user32.GetSystemMetrics(78))   # SM_CXVIRTUALSCREEN
+    altura = int(user32.GetSystemMetrics(79))    # SM_CYVIRTUALSCREEN
+    return origem_x, origem_y, largura, altura
+
+
 def mover_mouse_windows(x, y):
     if os.name != "nt":
         return "Controle do mouse global so esta disponivel no Windows."
@@ -2005,10 +2014,15 @@ def mover_mouse_windows(x, y):
         x = int(x)
         y = int(y)
         user32 = _user32()
-        largura = int(user32.GetSystemMetrics(0))
-        altura = int(user32.GetSystemMetrics(1))
-        if x < 0 or y < 0 or x >= largura or y >= altura:
-            return f"Coordenadas fora da tela: ({x}, {y}). Resolucao detectada: {largura}x{altura}."
+        origem_x, origem_y, largura, altura = _limites_tela_virtual_windows(user32)
+        limite_x = origem_x + largura
+        limite_y = origem_y + altura
+        if x < origem_x or y < origem_y or x >= limite_x or y >= limite_y:
+            return (
+                f"Coordenadas fora da area de trabalho virtual: ({x}, {y}). "
+                f"Limites detectados: x={origem_x}..{limite_x - 1}, "
+                f"y={origem_y}..{limite_y - 1}."
+            )
         if not user32.SetCursorPos(x, y):
             return "Nao consegui mover o mouse."
         return f"Mouse movido para ({x}, {y})."
@@ -2023,10 +2037,15 @@ def clicar_mouse_windows(x, y, botao="esquerdo", descricao=""):
         x = int(x)
         y = int(y)
         user32 = _user32()
-        largura = int(user32.GetSystemMetrics(0))
-        altura = int(user32.GetSystemMetrics(1))
-        if x < 0 or y < 0 or x >= largura or y >= altura:
-            return f"Coordenadas fora da tela: ({x}, {y}). Resolucao detectada: {largura}x{altura}."
+        origem_x, origem_y, largura, altura = _limites_tela_virtual_windows(user32)
+        limite_x = origem_x + largura
+        limite_y = origem_y + altura
+        if x < origem_x or y < origem_y or x >= limite_x or y >= limite_y:
+            return (
+                f"Coordenadas fora da area de trabalho virtual: ({x}, {y}). "
+                f"Limites detectados: x={origem_x}..{limite_x - 1}, "
+                f"y={origem_y}..{limite_y - 1}."
+            )
         if not user32.SetCursorPos(x, y):
             return "Nao consegui posicionar o mouse."
 
@@ -2053,6 +2072,115 @@ def clicar_mouse_windows(x, y, botao="esquerdo", descricao=""):
         return f"Clique global executado em ({x}, {y}), botao {button}{detalhe}."
     except Exception as erro:
         return f"Nao consegui clicar com o mouse: {erro}"
+
+
+def arrastar_mouse_windows(
+    x_inicial,
+    y_inicial,
+    x_final,
+    y_final,
+    botao="esquerdo",
+    duracao_ms=300,
+    descricao="",
+):
+    """Arrasta o mouse entre duas coordenadas globais da area de trabalho."""
+    if os.name != "nt":
+        return "Controle do mouse global so esta disponivel no Windows."
+
+    try:
+        x_inicial = int(x_inicial)
+        y_inicial = int(y_inicial)
+        x_final = int(x_final)
+        y_final = int(y_final)
+        duracao_ms = int(duracao_ms)
+    except (TypeError, ValueError):
+        return ToolResult.failure(
+            "Coordenadas e duracao do arraste devem ser inteiros.",
+            error_code="drag_arguments_invalid",
+        )
+
+    if duracao_ms < 50 or duracao_ms > 3000:
+        return ToolResult.failure(
+            "A duracao do arraste deve ficar entre 50 e 3000 ms.",
+            error_code="drag_duration_invalid",
+        )
+
+    try:
+        user32 = _user32()
+        origem_x, origem_y, largura, altura = _limites_tela_virtual_windows(user32)
+        limite_x = origem_x + largura
+        limite_y = origem_y + altura
+
+        def dentro_da_area(x, y):
+            return origem_x <= x < limite_x and origem_y <= y < limite_y
+
+        for nome_ponto, x, y in (
+            ("origem", x_inicial, y_inicial),
+            ("destino", x_final, y_final),
+        ):
+            if not dentro_da_area(x, y):
+                return ToolResult.failure(
+                    (
+                        f"Coordenadas de {nome_ponto} fora da area de trabalho virtual: "
+                        f"({x}, {y}). Limites detectados: "
+                        f"x={origem_x}..{limite_x - 1}, "
+                        f"y={origem_y}..{limite_y - 1}."
+                    ),
+                    error_code="drag_coordinates_out_of_bounds",
+                )
+
+        button = str(botao).strip().lower()
+        events = {
+            "esquerdo": (0x0002, 0x0004),
+            "left": (0x0002, 0x0004),
+            "direito": (0x0008, 0x0010),
+            "right": (0x0008, 0x0010),
+            "meio": (0x0020, 0x0040),
+            "middle": (0x0020, 0x0040),
+        }
+        down_up = events.get(button)
+        if down_up is None:
+            return ToolResult.failure(
+                "Botao invalido. Use esquerdo, direito ou meio.",
+                error_code="mouse_button_invalid",
+            )
+
+        if not user32.SetCursorPos(x_inicial, y_inicial):
+            return ToolResult.failure(
+                "Nao consegui posicionar o mouse no inicio do arraste.",
+                error_code="drag_start_position_failed",
+            )
+
+        mouse_event = getattr(user32, "mouse_event")
+        mouse_event(down_up[0], 0, 0, 0, 0)
+
+        try:
+            distancia = max(abs(x_final - x_inicial), abs(y_final - y_inicial))
+            passos = max(1, min(120, int(distancia / 8) or 1))
+            intervalo = duracao_ms / 1000 / passos
+
+            for passo in range(1, passos + 1):
+                fracao = passo / passos
+                x = round(x_inicial + (x_final - x_inicial) * fracao)
+                y = round(y_inicial + (y_final - y_inicial) * fracao)
+                if not user32.SetCursorPos(x, y):
+                    return ToolResult.failure(
+                        f"Nao consegui mover o mouse durante o arraste para ({x}, {y}).",
+                        error_code="drag_move_failed",
+                    )
+                if intervalo > 0:
+                    time.sleep(intervalo)
+        finally:
+            mouse_event(down_up[1], 0, 0, 0, 0)
+
+        detalhe = f" ({descricao})" if descricao else ""
+        return (
+            f"Arraste global executado de ({x_inicial}, {y_inicial}) "
+            f"para ({x_final}, {y_final}), botao {button}, "
+            f"duracao {duracao_ms} ms{detalhe}."
+        )
+    except Exception as erro:
+        return f"Nao consegui arrastar com o mouse: {erro}"
 
 def _configurar_api_clipboard_windows():
     """Configura assinaturas ctypes para handles/pointers Win64 corretamente."""
@@ -2286,9 +2414,21 @@ def capturar_tela_windows() -> ToolResult:
     try:
         imagem = ImageGrab.grab(all_screens=True)
         imagem.save(destino, format="PNG", optimize=True)
+        user32 = _user32()
+        origem_x, origem_y, largura_virtual, altura_virtual = _limites_tela_virtual_windows(user32)
+        largura_imagem, altura_imagem = imagem.size
         return ToolResult.success(
             f"Tela capturada: {destino.name}",
-            data={"image_path": str(destino), "mime_type": "image/png"},
+            data={
+                "image_path": str(destino),
+                "mime_type": "image/png",
+                "image_width": largura_imagem,
+                "image_height": altura_imagem,
+                "virtual_screen_x": origem_x,
+                "virtual_screen_y": origem_y,
+                "virtual_screen_width": largura_virtual,
+                "virtual_screen_height": altura_virtual,
+            },
         )
     except Exception as exc:
         return ToolResult.failure(

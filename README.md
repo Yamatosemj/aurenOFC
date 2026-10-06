@@ -92,9 +92,10 @@ O Router escolhe o conjunto de ferramentas da rodada. Toda execução de ferrame
 
 ## Estado importante
 
-- **47 tools** no registry/contratos atuais
+- **48 tools** no registry/contratos atuais
 - memória persistente em SQLite
 - browser e automação Windows integrados
+- visão pode observar a tela e executar clique ou arraste global do mouse com confirmação e verificação do estado final
 - voice local-first para ASR/TTS
 - `wake_word.py` existe, mas não faz parte do caminho normal de voz atual (PTT/F8)
 - componentes históricos e relatórios antigos não fazem parte deste pacote runtime
