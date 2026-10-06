@@ -65,12 +65,21 @@ logs/testes/RESULTADO_TESTE_AUREN.txt
 Entrada
   -> Harness
   -> Orchestrator
-  -> LLMRouter / Router
+  -> Router
   -> Brain
   -> OpenAIProvider
+
+                 -> function_call
+Modelo
+                 -> Dispatcher
+                 -> Contrato
+                 -> Permissao
+                 -> Ferramenta
+                 -> ToolResult
+                 -> Harness
 ```
 
-As ferramentas passam pelo Dispatcher, contratos e permissões antes da execução.
+O Router escolhe o conjunto de ferramentas da rodada. Toda execução de ferramenta passa pelo Dispatcher, validação de contrato e permissões antes de chegar ao executor. O resultado estruturado volta ao Harness como `ToolResult`.
 
 ## Estado importante
 
