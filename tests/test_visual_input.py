@@ -180,7 +180,7 @@ def test_clique_recebe_coordenada_convertida_da_imagem(monkeypatch):
         virtual_screen_height=1080,
     )
     # O ponto central da imagem 1920x540 cai no centro físico da área virtual.
-    assert (x, y) == (0, 1080)
+    assert (x, y) == (0, 540)
 
     result = windows.clicar_mouse_windows(
         x,
