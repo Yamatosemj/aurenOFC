@@ -62,6 +62,10 @@ from core.harness_heuristics import (
     _parece_tarefa_multietapa_browser,
     _parece_tarefa_de_acao,
 )
+from core.harness_multitab import (
+    _extrair_destinos_abas,
+    _multitab_concluida,
+)
 
 
 @dataclass(frozen=True)
