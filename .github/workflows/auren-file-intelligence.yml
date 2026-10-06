@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - feat/file-intelligence-v46
+  pull_request:
+    branches:
+      - main
 
 jobs:
   pytest:
