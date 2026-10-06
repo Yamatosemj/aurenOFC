@@ -271,29 +271,51 @@ def build_vision_geometry(
         virtual_y = int(capture_data["virtual_screen_y"])
         virtual_width = int(capture_data["virtual_screen_width"])
         virtual_height = int(capture_data["virtual_screen_height"])
+        capture_width = int(capture_data["image_width"])
+        capture_height = int(capture_data["image_height"])
         sent_width = int(prepared.sent_width)
         sent_height = int(prepared.sent_height)
     except (KeyError, TypeError, ValueError):
         return None
 
-    if min(virtual_width, virtual_height, sent_width, sent_height) <= 0:
+    if min(
+        virtual_width,
+        virtual_height,
+        capture_width,
+        capture_height,
+        sent_width,
+        sent_height,
+    ) <= 0:
         return None
+
+    captura_consistente = (
+        prepared.source_width is None
+        or (
+            prepared.source_width == capture_width
+            and prepared.source_height == capture_height
+        )
+    )
 
     escala_x = virtual_width / float(sent_width)
     escala_y = virtual_height / float(sent_height)
     diferenca_relativa = abs(escala_x - escala_y) / max(escala_x, escala_y)
 
+    proporcao_compativel = diferenca_relativa <= 0.01
+    transformacao_segura = captura_consistente and proporcao_compativel
+
     return {
         "tipo": "vision_geometry",
-        "coordenadas_acao": "windows_virtual_screen",
+        "coordenadas_acao": "windows_virtual_screen_physical_pixels",
+        "transformacao_segura": transformacao_segura,
         "imagem_enviada_ao_modelo": {
             "width": sent_width,
             "height": sent_height,
         },
         "captura_original": {
-            "width": prepared.source_width,
-            "height": prepared.source_height,
+            "width": capture_width,
+            "height": capture_height,
         },
+        "captura_vs_arquivo_consistente": captura_consistente,
         "area_de_trabalho_virtual_windows": {
             "x": virtual_x,
             "y": virtual_y,
@@ -304,12 +326,11 @@ def build_vision_geometry(
             "x": escala_x,
             "y": escala_y,
         },
-        "aspect_ratio_compativel": diferenca_relativa <= 0.01,
+        "aspect_ratio_compativel": proporcao_compativel,
         "imagem_redimensionada": prepared.resized,
         "imagem_comprimida": prepared.compressed,
         "mime_type_enviado": prepared.mime_type,
     }
-
 
 def image_input_item(
     path: str | Path,
