@@ -7,6 +7,7 @@ import re
 import unicodedata
 from typing import Any
 
+from core.confirmation import ConfirmationChannel, ConfirmationRequest, TextConfirmationChannel
 from core.tool_contracts import capability_for_tool
 
 
@@ -295,6 +296,7 @@ class PermissionManager:
         max_consecutive_failures: int = DEFAULT_MAX_CONSECUTIVE_FAILURES,
         max_same_failed_actions: int = DEFAULT_MAX_SAME_FAILED_ACTIONS,
         max_no_progress_repeats: int = DEFAULT_MAX_NO_PROGRESS_REPEATS,
+        confirmation_channel: ConfirmationChannel | None = None,
     ) -> None:
         if max_actions < 1:
             raise ValueError("max_actions deve ser maior que zero.")
@@ -309,6 +311,7 @@ class PermissionManager:
         self.max_consecutive_failures = max_consecutive_failures
         self.max_same_failed_actions = max_same_failed_actions
         self.max_no_progress_repeats = max_no_progress_repeats
+        self.confirmation_channel = confirmation_channel or TextConfirmationChannel()
 
         self.actions_attempted = 0
         self.actions_executed = 0
@@ -694,25 +697,15 @@ class PermissionManager:
         argumentos: dict[str, Any],
         motivo: str,
     ) -> bool:
-        print("\n[PERMISSAO] Auren quer executar uma acao que exige confirmacao.")
-        print(f"Acao: {self._descrever_acao(nome_ferramenta, argumentos)}")
-        print(f"Motivo: {motivo}")
-        print(f"Ferramenta: {nome_ferramenta}")
-        print(
-            f"Acoes nesta tarefa: {self.actions_attempted}/{self.max_actions} "
-            f"| restantes apos esta tentativa: {self.acoes_restantes}"
+        request = ConfirmationRequest(
+            tool_name=nome_ferramenta,
+            action=self._descrever_acao(nome_ferramenta, argumentos),
+            reason=motivo,
+            actions_attempted=self.actions_attempted,
+            max_actions=self.max_actions,
+            actions_remaining=self.acoes_restantes,
         )
-
-        while True:
-            resposta = input("Autorizar? [s/n]: ").strip().lower()
-
-            if resposta in {"s", "sim", "y", "yes"}:
-                return True
-
-            if resposta in {"n", "nao", "não", "no"}:
-                return False
-
-            print("Responda com 's' ou 'n'.")
+        return bool(self.confirmation_channel.confirmar(request))
 
     def _descrever_acao(
         self,
