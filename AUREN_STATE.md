@@ -4,14 +4,14 @@
 > Antes de iniciar uma nova tarefa, consulte este arquivo e compare com a branch/PR e o CI do GitHub.
 > Não trate roadmap antigo, memória da conversa ou documentos arquivados como estado atual.
 
-Atualizado em: 2026-10-06 (estabilização pós-V47 em andamento)
+Atualizado em: 2026-10-06 (trace por tarefa incorporado à main)
 
 ## Estado agora
 
 - **Base estável (main):** V47
 - **Trabalho ativo:** Estabilização e limpeza pós-V47
 - **Branch/PR ativa:** nenhuma — PR #6 encerrada por merge
-- **Head da main:** c0994db89aff396e0dfe43900841e0a766150b73
+- **Head da main:** 4dd7c6e7008550bef2e79efb5f1bbe30b65946a7
 - **Status da PR #6:** merged
 - **Validação da PR:** 280 passed, 6 skipped
 - **Focused visual CI:** Linux passou; Windows passou
@@ -28,7 +28,7 @@ A V47 de geometria/coordenadas foi incorporada à main pelo merge commit c0994db
 3. separar documentação histórica da documentação normativa
 4. corrigir inconsistências encontradas sem iniciar uma nova capacidade grande
 
-Situação desta rodada: versão/config/facade alinhados; a árvore atual contém apenas documentação normativa/operacional no pacote principal; a suíte completa pós-merge já passou; o workflow agora também é acionado por push da main.
+Situação desta rodada: versão/config/facade alinhados; a árvore atual contém apenas documentação normativa/operacional no pacote principal; a suíte completa pós-merge anterior passou; o workflow agora também é acionado por push da main; o trace persistente por tarefa foi implementado e incorporado à main.
 
 ## O que a PR #6 entrega
 
@@ -59,7 +59,7 @@ Situação desta rodada: versão/config/facade alinhados; a árvore atual conté
 
 **Estabilização e limpeza pós-V47**
 
-Objetivo: alinhar versão, documentação, testes e estado do projeto depois do merge da V47.
+Objetivo: alinhar versão, documentação, testes, observabilidade e estado do projeto depois do merge da V47.
 
 Critérios de saída:
 
@@ -68,7 +68,8 @@ Critérios de saída:
 - [x] estado oficial atualizado
 - [x] documentação antiga claramente separada de documentação normativa
 - [x] suíte completa validada na main
-- [ ] validação visual Windows pós-merge concluída
+- [x] trace persistente por tarefa implementado e validado na PR #8
+- [ ] validação visual Windows do merge mais recente concluída
 - [ ] nenhuma regressão conhecida pendente
 
 ## Depois da estabilização
