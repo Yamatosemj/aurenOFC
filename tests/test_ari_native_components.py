@@ -36,8 +36,6 @@ def test_task_queue_priority_and_result():
         done.set()
         return "high"
 
-    # O worker inicia imediatamente; filas concorrentes com um worker podem
-    # começar o primeiro item antes do segundo entrar. Ainda validamos resultado.
     low_id = queue.submit("low", low, priority=100)
     high_id = queue.submit("high", high, priority=1)
     assert done.wait(2.0)
@@ -88,7 +86,7 @@ def test_orchestrator_does_not_cache_dynamic_state_queries():
 
 
 def test_wake_word_matcher_tolerates_small_error():
-    from agent.ari_native.wake_word import wake_word_matches, extract_command
+    from experimental.wake_word import wake_word_matches, extract_command
     assert wake_word_matches("auren", "auren")
     assert wake_word_matches("aurenn", "auren")
     assert extract_command("auren abrir o chrome", "auren") == "abrir o chrome"

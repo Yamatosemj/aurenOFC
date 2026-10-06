@@ -1,9 +1,5 @@
-"""Detecção textual/energética de wake-word inspirada no Ari.
+"""Algoritmo de wake-word mantido como experimento fora do runtime normal do Auren."""
 
-Esta camada não inicializa microfone nem STT sozinha. Ela fornece o algoritmo
-de decisão que pode ser conectado ao pipeline de voz do Auren sem criar um
-segundo cérebro.
-"""
 from __future__ import annotations
 
 import math
@@ -83,7 +79,7 @@ def extract_command(text: str, wake_word: str) -> str | None:
 
 
 def should_transcribe_wake_audio(audio_data, energy_threshold: float) -> bool:
-    """Aplica gate de duração/energia semelhante ao Ari antes do STT."""
+    """Aplica gate de duração/energia antes do STT."""
     sample_rate = int(getattr(audio_data, "sample_rate", 0) or 0)
     if sample_rate <= 0:
         return False
