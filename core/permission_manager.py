@@ -735,6 +735,11 @@ class PermissionManager:
             prefixo = "preencher controle protegido " if protegido else "preencher "
             return f"{prefixo}{alvo!r} com {texto!r}"
 
+        if nome_ferramenta == "arrastar_mouse_windows":
+            origem = (argumentos.get("x_inicial"), argumentos.get("y_inicial"))
+            destino = (argumentos.get("x_final"), argumentos.get("y_final"))
+            return f"arrastar de {origem} para {destino} ({argumentos.get('descricao', '')})"
+
         if nome_ferramenta == "pressionar_tecla":
             return f"pressionar a tecla {argumentos.get('tecla', '')!r}"
 
