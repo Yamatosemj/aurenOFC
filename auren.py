@@ -16,15 +16,16 @@ CACHE_KEY = f"auren-v{AUREN_VERSION}"
 ARCHITECTURE_NAME = "V46 ARI NATIVE SURGERY"
 if (AUREN_VERSION, MODEL, CACHE_KEY, ARCHITECTURE_NAME) != (_CONFIG_AUREN_VERSION, _CONFIG_MODEL, _CONFIG_CACHE_KEY, _CONFIG_ARCHITECTURE_NAME):
     raise RuntimeError("config.py e auren.py estao com versao/modelo incoerentes.")
+
+
 from core import usage
+from core.capability_audio_runtime import try_execute as _try_experimental_audio
 from core.harness import AurenHarness
 from core.permission_manager import PermissionManager
 from core.prompt import instrucoes
 from core.response import criar_resposta, get_client, obter_metricas_roteamento
 from core.session import SessionContextManager
 from core.tools_registry import tools
-from core.capability_audio_runtime import try_execute as _try_experimental_audio
-from memory.store import PersistentMemoryStore
 from skills.loader import SkillLibrary
 from tools import applications, browser, files, windows
 from tools.dispatcher import (
@@ -38,6 +39,7 @@ from tools.memory import (
     consultar_memoria_persistente as _consultar_memoria,
     esquecer_memoria_persistente as _esquecer_memoria,
 )
+
 # API publica de compatibilidade: auren.py continua expondo as ferramentas e
 # utilitarios historicamente disponiveis, enquanto a implementacao mora em core/tools.
 from core.facade import (
