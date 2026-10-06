@@ -594,6 +594,18 @@ class AurenHarness:
         resultados_rodada: list[dict[str, Any]],
     ) -> bool:
         """Decide se podemos evitar uma rodada adicional do modelo."""
+        # Tarefas visuais compostas precisam observar o estado novo antes de
+        # encerrar. Sem este guard, um clique DOM presente no fim da primeira
+        # rodada poderia ser interpretado como a ultima acao e encerrar a tarefa
+        # antes da verificacao visual pedida pelo usuario.
+        if cls._parece_tarefa_visual_composta(objetivo):
+            if any(
+                str(item.get("ferramenta", "")) in cls.VISUAL_MUTATING_TOOLS
+                and item.get("sucesso")
+                for item in resultados_rodada
+            ):
+                return False
+
         if cls._parece_tarefa_multietapa_browser(objetivo) and resultados_rodada:
             ultima_listagem = resultados_rodada[-1]
             if (
@@ -640,6 +652,48 @@ class AurenHarness:
         if somente_leitura and cls._parece_tarefa_de_acao(objetivo):
             return False
         return True
+
+    VISUAL_MUTATING_TOOLS = {
+        # Acoes que podem alterar a imagem da tela ou a posicao dos elementos.
+        "clicar_mouse_windows",
+        "arrastar_mouse_windows",
+        "mover_mouse_windows",
+        "pressionar_tecla_windows",
+        "clicar_elemento_windows",
+        "preencher_elemento_windows",
+        "alternar_elemento_windows",
+        "selecionar_elemento_windows",
+    }
+
+    @staticmethod
+    def _parece_tarefa_visual_composta(objetivo: str) -> bool:
+        """Detecta tarefas visuais que exigem mais de uma observacao/acao."""
+        texto = str(objetivo or "").strip().lower()
+        if not texto:
+            return False
+
+        tem_visao = bool(
+            re.search(
+                r"\b(?:analise|analisar|veja|ver|observe|observar|localize|localizar)\b.*\b(?:tela|screenshot|captura)\b",
+                texto,
+                flags=re.IGNORECASE,
+            )
+        )
+        tem_acao_visual = bool(
+            re.search(
+                r"\b(?:clique|clica|clicar|arraste|arrastar|mova|mover|digite|digitar|pressione|pressionar|selecione|selecionar)\b",
+                texto,
+                flags=re.IGNORECASE,
+            )
+        )
+        tem_continuacao = bool(
+            re.search(
+                r"\b(?:depois|em seguida|ent[aã]o|ap[oó]s|posteriormente)\b|\be\s+(?:confirme|verifique|analise|observe)",
+                texto,
+                flags=re.IGNORECASE,
+            )
+        )
+        return tem_visao and tem_acao_visual and tem_continuacao
 
     @staticmethod
     def _mensagem_conclusao_local(
@@ -763,6 +817,8 @@ class AurenHarness:
         linhas.extend([
             "",
             "Nao repita uma ferramenta que acabou de executar com sucesso.",
+            "EXCECAO VISUAL: em tarefas que exigem verificacao, capturar_tela_windows pode e deve ser chamada novamente depois de uma acao que alterou a tela.",
+            "Nunca reutilize coordenadas de uma captura antiga depois de uma acao que possa mover janelas, itens ou o cursor.",
             "Use o ultimo estado conhecido e faca apenas o proximo passo necessario.",
         ])
 
