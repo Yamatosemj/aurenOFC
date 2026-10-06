@@ -4,7 +4,7 @@
 > Antes de iniciar uma nova tarefa, consulte este arquivo e compare com a branch/PR e o CI do GitHub.
 > Não trate roadmap antigo, memória da conversa ou documentos arquivados como estado atual.
 
-Atualizado em: 2026-10-06
+Atualizado em: 2026-10-06 (auditoria final V47)
 
 ## Estado agora
 
@@ -15,6 +15,7 @@ Atualizado em: 2026-10-06
 - **Status da PR:** aberta e mergeável
 - **Validação da PR:** 280 passed, 6 skipped
 - **Focused visual CI:** Linux passou; Windows passou
+- **Auditoria final V47:** concluída; nenhum bloqueador funcional ou review pendente identificado. PR #6 está pronta para merge, mas permanece aberta conforme o controle de escopo.
 
 A main já contém as melhorias anteriores de visão/ação e tarefas visuais compostas. A V47 de geometria/coordenadas ainda não deve ser tratada como estável até a PR #6 ser incorporada.
 
