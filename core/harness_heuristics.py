@@ -110,3 +110,47 @@ def _parece_tarefa_de_acao(objetivo: str) -> bool:
 
     return primeira_palavra in verbos_de_acao
 
+
+def _ultima_acao_solicitada(objetivo: str) -> str | None:
+    """Retorna apenas a ultima acao terminal explicitamente pedida.
+
+    A heuristica e conservadora: so considera verbos inteiros que
+    correspondem a ferramentas que podem ser o ultimo passo de uma
+    tarefa. Verbos intermediarios como "abrir" ou "pesquisar" nao
+    encerram a tarefa por conta propria.
+    """
+    import re
+
+    texto = str(objetivo or "").strip().lower()
+    if not texto:
+        return None
+
+    padroes = {
+        "clicar_elemento": ("clica", "clicar", "clique"),
+        "preencher_elemento": (
+            "preenche", "preencher", "preencha",
+            "digita", "digitar", "digite",
+        ),
+        "pressionar_tecla": (
+            "pressiona", "pressionar", "pressione",
+            "aperta", "apertar", "aperte",
+        ),
+        "voltar_pagina": ("volta", "voltar", "volte"),
+        "avancar_pagina": ("avanca", "avançar", "avancar", "avance"),
+        "recarregar_pagina": ("recarrega", "recarregar", "recarregue"),
+        "rolar_pagina": ("rola", "rolar", "role"),
+    }
+
+    palavras = re.findall(r"[\wÀ-ÿ]+", texto, flags=re.UNICODE)
+    encontrados: list[tuple[int, str]] = []
+    for indice, palavra in enumerate(palavras):
+        for ferramenta, verbos in padroes.items():
+            if palavra in verbos:
+                encontrados.append((indice, ferramenta))
+
+    if not encontrados:
+        return None
+
+    return max(encontrados, key=lambda item: item[0])[1]
+
+
