@@ -113,3 +113,59 @@ def test_direct_drag_request_loads_mouse_tools_without_visual_phrase():
     names = names_for("arraste o arquivo Relatorio.txt para a pasta Documentos")
     assert "arrastar_mouse_windows" in names
     assert "mover_mouse_windows" in names
+
+
+def test_visual_compound_router_keeps_every_step_dependency():
+    names = names_for(
+        "Auren, analise minha tela, clique no botao +, "
+        "depois analise a tela novamente e confirme a nova aba."
+    )
+    required = {
+        "capturar_tela_windows",
+        "clicar_mouse_windows",
+        "mover_mouse_windows",
+        "pressionar_tecla_windows",
+        "inspecionar_interface_windows",
+        "clicar_elemento_windows",
+        "preencher_elemento_windows",
+        "alternar_elemento_windows",
+        "selecionar_elemento_windows",
+        "abrir_nova_aba",
+        "listar_abas",
+    }
+    assert required <= set(names)
+    assert len(names) < len(tools)
+
+
+def test_visual_compound_file_move_keeps_file_and_drag_tools():
+    names = names_for(
+        "Auren, analise minha tela e arraste o arquivo teste.txt para a pasta DESTINO. "
+        "Depois analise a tela novamente e confirme que foi movido."
+    )
+    assert "capturar_tela_windows" in names
+    assert "arrastar_mouse_windows" in names
+    assert "buscar_arquivo" in names
+    assert "inspecionar_arquivo" in names
+    assert len(names) < len(tools)
+
+
+def test_visual_compound_prompt_rules_are_present_in_harness():
+    from core.harness import AurenHarness
+
+    objetivo = (
+        "Auren, analise minha tela e arraste X para Y. "
+        "Depois analise a tela novamente e confirme."
+    )
+    assert AurenHarness._parece_tarefa_visual_composta(objetivo) is True
+
+    rodada = [
+        {"ferramenta": "capturar_tela_windows", "sucesso": True},
+        {"ferramenta": "arrastar_mouse_windows", "sucesso": True},
+    ]
+    assert AurenHarness._pode_encerrar_localmente(objetivo, rodada) is False
+
+    harness = AurenHarness.__new__(AurenHarness)
+    harness._contexto_tarefa = ""
+    estado = harness._montar_estado(objetivo, [])
+    assert "capturar_tela_windows pode e deve ser chamada novamente" in estado
+    assert "Nunca reutilize coordenadas" in estado

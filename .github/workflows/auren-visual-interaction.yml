@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feat/visual-drag-v46
+      - feat/visual-composed-tasks-v47
   pull_request:
     branches:
       - feat/vision-action-v46
