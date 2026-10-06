@@ -241,6 +241,29 @@ def test_erro_do_provider_em_qualquer_rodada_falha_a_tarefa():
     assert task.state is TaskState.FAILED and task.error == "provider_error: down3"
 
 
+def test_retry_de_resposta_vazia_registra_request_e_response_para_medicao(monkeypatch):
+    eventos: list[tuple[str, dict]] = []
+    monkeypatch.setattr(harness_module, "_write_log", lambda evento, **d: eventos.append((evento, d)))
+
+    bench = _Bench(lambda n, b: _resp(text=""))
+    _, _, task = bench.run("oi")
+
+    assert task.state is TaskState.FAILED
+    pedidos = [d for e, d in eventos if e == "MODEL_ROUND_REQUEST"]
+    respostas = [d for e, d in eventos if e == "MODEL_ROUND_RESPONSE"]
+
+    assert [d["rodada"] for d in pedidos] == [1, 2]
+    assert [d["rodada"] for d in respostas] == [1, 2]
+    assert pedidos[1]["motivo"] == "empty_response_retry"
+    assert respostas[1]["motivo"] == "empty_response_retry"
+    assert respostas[1]["uso"] == {
+        "input_tokens": 10,
+        "output_tokens": 5,
+        "cached_tokens": 2,
+        "cache_write_tokens": 0,
+    }
+
+
 def test_acao_sem_ferramenta_e_resposta_vazia_tem_um_retry_e_depois_falham():
     bench = _Bench(lambda n, b: _resp(text="nao posso"))
     _, resposta, task = bench.run("abra o notepad")

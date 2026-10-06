@@ -1,0 +1,27 @@
+# Ambiente Python
+.venv/
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Testes e ferramentas locais
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Segredos e configuracao local
+.env
+.env.*
+!.env.example
+
+# Runtime do Auren
+logs/
+data/memory/
+*.sqlite3
+*.db
+
+# Arquivos empacotados/artefatos locais
+*.zip

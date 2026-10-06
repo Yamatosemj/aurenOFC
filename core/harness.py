@@ -13,7 +13,7 @@ from typing import Any, Callable
 from core.task_manager import TaskManager, TaskState
 from core.capabilities import KNOWN_SERVICES
 from core.utils import normalizar_nome
-from core.tool_result import ToolResult
+from core.tool_result import ToolResult, from_legacy
 from agent.orchestrator import AgentOrchestrator
 from core.session import SessionContextManager
 from skills.loader import SkillLibrary
@@ -1220,11 +1220,28 @@ class AurenHarness:
                         )
                         if self.task_manager.should_cancel(self._task_id):
                             return self._encerrar_cancelado("cancelado antes do retry de resposta vazia", rodada)
+                        tool_choice_retry = "required" if exigir_ferramenta else None
                         self.task_manager.wait_for_model(self._task_id)
-                        chamada = self._pedir_modelo(estado_retry, "required" if exigir_ferramenta else None)
+                        _write_log(
+                            "MODEL_ROUND_REQUEST",
+                            task_id=self._task_id,
+                            rodada=rodada + 1,
+                            input_items=1,
+                            estado_chars=len(estado_retry),
+                            tool_choice=tool_choice_retry,
+                            motivo="empty_response_retry",
+                        )
+                        chamada = self._pedir_modelo(estado_retry, tool_choice_retry)
                         if chamada is None:
                             return False, _RespostaWrapper(self.MSG_ERRO_PROVIDER)
                         resposta, latencia_ms, metricas_roteamento = chamada
+                        self._log_resposta_modelo(
+                            rodada + 1,
+                            resposta,
+                            latencia_ms,
+                            metricas_roteamento,
+                            motivo="empty_response_retry",
+                        )
                         self.task_manager.resume(self._task_id)
                         continue
                     return self._encerrar_falha(
@@ -1296,25 +1313,18 @@ class AurenHarness:
                         tool_name=nome,
                     )
 
+                # O Dispatcher entrega ToolResult; retornos antigos passam apenas pelo
+                # adaptador de compatibilidade. O ciclo nunca decide sucesso olhando
+                # para o texto bruto da ferramenta.
+                resultado_estruturado = from_legacy(
+                    resultado_bruto,
+                    tool_name=nome,
+                )
+                ferramenta_sucesso = resultado_estruturado.ok
+                resultado = resultado_estruturado.for_model()
                 imagem_path = None
-                if isinstance(resultado_bruto, ToolResult):
-                    ferramenta_sucesso = resultado_bruto.ok
-                    resultado = resultado_bruto.for_model()
-                    if isinstance(resultado_bruto.data, dict):
-                        imagem_path = resultado_bruto.data.get("image_path")
-                else:
-                    resultado = str(resultado_bruto or "")
-                    resultado_falha = resultado.strip().lower()
-                    ferramenta_sucesso = not any(
-                        marcador in resultado_falha
-                        for marcador in (
-                            "falha inesperada",
-                            "nao consegui",
-                            "não consegui",
-                            "acao nao executada",
-                            "ação não executada",
-                        )
-                    )
+                if isinstance(resultado_estruturado.data, dict):
+                    imagem_path = resultado_estruturado.data.get("image_path")
 
                 _write_log(
                     "TOOL_RESULT",
