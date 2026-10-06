@@ -107,7 +107,7 @@ def test_visao_integrada_imagem_ate_clique_no_windows(monkeypatch, tmp_path):
     }
 
 
-def test_visao_integrada_resize_origem_negativa_e_arraste(monkeypatch, tmp_path):
+def test_visao_integrada_origem_negativa_e_arraste(monkeypatch, tmp_path):
     geometry = _set_geometry(
         tmp_path,
         source_size=(1920, 1080),
@@ -142,10 +142,10 @@ def test_visao_integrada_resize_origem_negativa_e_arraste(monkeypatch, tmp_path)
     )
 
     assert result.ok is True
-    assert chamadas[0]["x_inicial"] == -960
-    assert chamadas[0]["y_inicial"] == 240
-    assert chamadas[0]["x_final"] == 0
-    assert chamadas[0]["y_final"] == 780
+    assert chamadas[0]["x_inicial"] == -1440
+    assert chamadas[0]["y_inicial"] == -30
+    assert chamadas[0]["x_final"] == -960
+    assert chamadas[0]["y_final"] == 240
     assert result.data["vision_coordinate_transform"]["snapshot_id"] == geometry["vision_snapshot_id"]
 
 

@@ -850,7 +850,7 @@ class AurenHarness:
             "Use o ultimo estado conhecido e faca apenas o proximo passo necessario.",
         ])
 
-        if self._vision_reobserve_pending:
+        if getattr(self, "_vision_reobserve_pending", False):
             linhas.extend([
                 "",
                 "VERIFICACAO VISUAL PENDENTE: uma acao visual alterou a interface usando o estado de uma captura anterior. Antes de concluir, obtenha uma nova captura da tela ou outro estado confiavel que comprove o resultado.",
