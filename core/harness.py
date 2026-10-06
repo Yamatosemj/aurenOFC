@@ -59,6 +59,7 @@ from core.harness_completion import _mensagem_conclusao_local
 from core.harness_state import _montar_estado
 from core.harness_round_input import _montar_input_da_rodada
 from core.harness_strategy import _salvar_estrategia_em_background as _salvar_estrategia_em_background_impl
+from core.harness_turn import _registrar_turno as _registrar_turno_impl
 from core.harness_heuristics import (
     _parece_tarefa_visual_composta,
     _parece_tarefa_multietapa_browser,
@@ -557,13 +558,14 @@ class AurenHarness:
         )
 
     def _registrar_turno(self, papel: str, texto: str) -> None:
-        """Grava um turno no Session/Context do chat atual (falha nunca derruba a tarefa)."""
-        if not self.context.persiste or not str(texto or "").strip():
-            return
-        try:
-            self.context.record_turn(self._session.chat_id if self._session else "", papel, str(texto))
-        except Exception as exc:
-            _write_log("MEMORY_ERROR", task_id=self._task_id, erro=f"historico_{papel}: {exc}")
+        _registrar_turno_impl(
+            papel,
+            texto,
+            context=self.context,
+            chat_id=self._session.chat_id if self._session else "",
+            task_id=self._task_id,
+            write_log=_write_log,
+        )
 
     def _garantir_sessao_chat(self) -> str:
         if self._session is None:
