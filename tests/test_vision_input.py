@@ -190,8 +190,8 @@ def test_transformacao_respeita_origem_y_negativa():
         virtual_screen_x=0,
         virtual_screen_y=-900,
         virtual_screen_width=1920,
-        virtual_screen_height=1800,
-    ) == (960, 0)
+        virtual_screen_height=1080,
+    ) == (960, -450)
 
 
 def test_transformacao_respeita_origem_x_e_y_diferentes_de_zero():
@@ -254,7 +254,7 @@ def test_geometry_metadata_explica_mapeamento_para_o_modelo():
             "virtual_screen_x": -1920,
             "virtual_screen_y": 0,
             "virtual_screen_width": 3840,
-            "virtual_screen_height": 1080,
+            "virtual_screen_height": 2160,
         },
         preparada,
     )
