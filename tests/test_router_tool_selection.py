@@ -76,3 +76,26 @@ def test_spotify_play_request_uses_desktop_toolset():
     assert "controle_midia_windows" in names
     assert "navegar_navegador" not in names
     assert len(names) < len(tools)
+
+def test_visual_action_route_combines_vision_and_desktop_actions():
+    names = names_for("analise minha tela e clique no botao que aparece nela")
+    required = {
+        "capturar_tela_windows",
+        "clicar_mouse_windows",
+        "mover_mouse_windows",
+        "pressionar_tecla_windows",
+        "inspecionar_interface_windows",
+        "clicar_elemento_windows",
+        "preencher_elemento_windows",
+        "alternar_elemento_windows",
+        "selecionar_elemento_windows",
+    }
+    assert required <= set(names)
+    assert len(names) < len(tools)
+
+
+def test_visual_analysis_does_not_expose_action_tools():
+    names = names_for("analise minha tela e me diga o que esta acontecendo")
+    assert "capturar_tela_windows" in names
+    assert "clicar_mouse_windows" not in names
+    assert "clicar_elemento_windows" not in names
