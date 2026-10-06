@@ -4,19 +4,21 @@
 > Antes de iniciar uma nova tarefa, consulte este arquivo e compare com a branch/PR e o CI do GitHub.
 > Não trate roadmap antigo, memória da conversa ou documentos arquivados como estado atual.
 
-Atualizado em: 2026-10-06 (itens 1, 2, 3 e 4 da revisão geral concluídos)
+Atualizado em: 2026-10-06 (item 5 em execução)
 
 ## Estado agora
 
 - **Base estável (main):** V47
 - **Trabalho ativo:** Estabilização e limpeza pós-V47
-- **Branch/PR ativa:** nenhuma — PR #6, #7, #8 e #9 encerradas por merge
-- **Head da main:** c8f58c3689e63d2cfafefa0260dcb0f0bc74886e
+- **Branch/PR ativa:** nenhuma — PR #6, #7, #8, #9, #11, #12 e #13 encerradas por merge
+- **Head da main:** 711683f6b10437c452e86183452f19d50acf13e7
 - **Status da PR #6:** merged
 - **Status da PR #9:** merged — item 1 da revisão geral
 - **Status da PR #11:** merged — item 3 da revisão geral
 - **Status da PR #12:** merged — item 4 da revisão geral
 - **Validação da PR #12:** 283 passed, 6 skipped
+- **Status da PR #13:** merged — item 5, primeira extração segura do Harness
+- **Validação da PR #13:** 283 passed, 6 skipped; focused visual Linux/Windows passaram
 - **Focused visual CI:** Linux passou; Windows passou
 - **Auditoria final V47:** concluída antes do merge; nenhum bloqueador funcional ou review pendente identificado.
 
@@ -39,7 +41,7 @@ A V47 de geometria/coordenadas foi incorporada à main pelo merge commit c0994db
 - [x] item 4 — remover ou mover somente código confirmado como morto
 - [ ] item 5 — extrair arquivos gigantes em PRs pequenos
 
-Situação desta rodada: versão/config/facade alinhados; a árvore atual contém apenas documentação normativa/operacional no pacote principal; o workflow agora também é acionado por push da main; o trace persistente por tarefa foi implementado e incorporado à main; no item 3, os caminhos sem efeito operacional foram removidos e o PlanBuilder foi preservado por uso real no Harness; no item 4, código sem consumidor foi removido, o wake-word foi movido para `experimental/`, e o verificador manual V46 obsoleto foi removido. `CapabilityResolver`/`IntentResolver`/`TaskSpec` e o caminho de áudio experimental permaneceram por terem chamadas reais, ainda que protegidas por flag.
+Situação desta rodada: versão/config/facade alinhados; a árvore atual contém apenas documentação normativa/operacional no pacote principal; o workflow agora também é acionado por push da main; o trace persistente por tarefa foi implementado e incorporado à main; no item 3, os caminhos sem efeito operacional foram removidos e o PlanBuilder foi preservado por uso real no Harness; no item 4, código sem consumidor foi removido, o wake-word foi movido para `experimental/`, e o verificador manual V46 obsoleto foi removido. `CapabilityResolver`/`IntentResolver`/`TaskSpec` e o caminho de áudio experimental permaneceram por terem chamadas reais, ainda que protegidas por flag. No item 5, a PR #13 extraiu a redação/serialização dos logs para `core/harness_logging.py`, preservando a API e os paths de sessão no Harness; o item 5 continua em execução para as próximas extrações.
 
 ## O que a PR #6 entrega
 
@@ -80,7 +82,7 @@ Critérios de saída:
 - [x] documentação antiga claramente separada de documentação normativa
 - [x] suíte completa validada na main
 - [x] trace persistente por tarefa implementado e validado na PR #8
-- [ ] validação visual Windows do merge mais recente concluída
+- [x] validação visual Windows do merge mais recente concluída
 - [ ] nenhuma regressão conhecida pendente
 
 ## Depois da estabilização
