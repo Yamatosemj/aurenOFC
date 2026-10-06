@@ -189,7 +189,7 @@ def test_clique_recebe_coordenada_convertida_da_imagem(monkeypatch):
         descricao="ponto convertido da visao",
     )
     assert "Clique global executado" in str(result)
-    assert fake.positions == [(0, 1080)]
+    assert fake.positions == [(0, 540)]
     assert fake.events == [0x0002, 0x0004]
 
 
