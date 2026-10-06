@@ -4,15 +4,16 @@
 > Antes de iniciar uma nova tarefa, consulte este arquivo e compare com a branch/PR e o CI do GitHub.
 > Não trate roadmap antigo, memória da conversa ou documentos arquivados como estado atual.
 
-Atualizado em: 2026-10-06 (trace por tarefa incorporado à main)
+Atualizado em: 2026-10-06 (item 1 da revisão geral concluído)
 
 ## Estado agora
 
 - **Base estável (main):** V47
 - **Trabalho ativo:** Estabilização e limpeza pós-V47
-- **Branch/PR ativa:** nenhuma — PR #6 encerrada por merge
-- **Head da main:** 4dd7c6e7008550bef2e79efb5f1bbe30b65946a7
+- **Branch/PR ativa:** nenhuma — PR #6, #7, #8 e #9 encerradas por merge
+- **Head da main:** 5f43798ea7be6bf75d1a5934a2a0d0337d377f57
 - **Status da PR #6:** merged
+- **Status da PR #9:** merged — item 1 da revisão geral
 - **Validação da PR:** 280 passed, 6 skipped
 - **Focused visual CI:** Linux passou; Windows passou
 - **Auditoria final V47:** concluída antes do merge; nenhum bloqueador funcional ou review pendente identificado.
@@ -27,6 +28,14 @@ A V47 de geometria/coordenadas foi incorporada à main pelo merge commit c0994db
 2. confirmar a suíte completa na main pós-merge
 3. separar documentação histórica da documentação normativa
 4. corrigir inconsistências encontradas sem iniciar uma nova capacidade grande
+
+### Revisão geral em execução
+
+- [x] item 1 — adicionar `runtime/` ao `.gitignore`
+- [ ] item 2 — separar decisão de permissão do canal de confirmação
+- [ ] item 3 — decidir por estrutura entre remover ou ligar de verdade
+- [ ] item 4 — remover ou mover somente código confirmado como morto
+- [ ] item 5 — extrair arquivos gigantes em PRs pequenos
 
 Situação desta rodada: versão/config/facade alinhados; a árvore atual contém apenas documentação normativa/operacional no pacote principal; a suíte completa pós-merge anterior passou; o workflow agora também é acionado por push da main; o trace persistente por tarefa foi implementado e incorporado à main.
 
