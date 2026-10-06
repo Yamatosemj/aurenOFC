@@ -76,7 +76,7 @@ _CURRENT_SESSION: contextvars.ContextVar[SessionContext | None] = contextvars.Co
 _LOG_LOCK = threading.RLock()
 
 
-def _chat_id -> str:
+def _chat_id() -> str:
     return "chat-" + datetime.now().strftime("%Y%m%d-%H%M%S-%f")
 
 
