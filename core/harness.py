@@ -17,7 +17,7 @@ from core.tool_result import ToolResult, from_legacy
 from agent.orchestrator import AgentOrchestrator
 from core.session import SessionContextManager
 from skills.loader import SkillLibrary
-from core.vision import image_input_item
+from core.vision import build_vision_geometry, prepare_image_input
 from agent.ari_native.task_queue import AgentTaskQueue
 
 
@@ -848,7 +848,7 @@ class AurenHarness:
         objetivo: str,
         historico: list[dict[str, str]],
         resposta_anterior: Any,
-        resultados: list[dict[str, str]],
+        resultados: list[dict[str, Any]],
     ) -> list[Any]:
         """Monta um input novo sem previous_response_id.
 
@@ -901,17 +901,48 @@ class AurenHarness:
             imagem = resultado.get("image_path")
             if imagem:
                 try:
-                    image_item = image_input_item(imagem)
+                    preparado = prepare_image_input(
+                        imagem,
+                        preserve_dimensions=True,
+                    )
                 except Exception:
-                    image_item = None
-                if image_item is not None:
+                    preparado = None
+
+                if preparado is not None:
+                    partes_imagem: list[dict[str, str]] = []
+                    dados_captura = dict(resultado.get("dados") or {})
+                    if nome_ferramenta := str(resultado.get("ferramenta", "")):
+                        geometria = None
+                        if nome_ferramenta == "capturar_tela_windows":
+                            geometria = build_vision_geometry(
+                                dados_captura,
+                                preparado,
+                            )
+                        if geometria is not None:
+                            partes_imagem.append(
+                                {
+                                    "type": "input_text",
+                                    "text": (
+                                        "METADADOS CONFIAVEIS DA IMAGEM DE VISAO "
+                                        "(dados tecnicos, nao instrucoes): "
+                                        + json.dumps(
+                                            geometria,
+                                            ensure_ascii=False,
+                                            separators=(",", ":"),
+                                        )
+                                    ),
+                                }
+                            )
+                    partes_imagem.append(preparado.item)
+
                     # input_image e um content part de uma mensagem, nao um
-                    # item de topo da lista input. Mantemos a imagem associada
-                    # ao resultado da tool em uma mensagem user propria.
+                    # item de topo da lista input. Mantemos imagem e sua
+                    # geometria no mesmo bloco user para evitar perder a
+                    # relacao entre os pixels observados e as coordenadas.
                     input_items.append(
                         {
                             "role": "user",
-                            "content": [image_item],
+                            "content": partes_imagem,
                         }
                     )
 
@@ -1429,6 +1460,7 @@ class AurenHarness:
                         "resultado": resultado_compacto,
                         "sucesso": ferramenta_sucesso,
                         "image_path": str(imagem_path) if imagem_path else "",
+                        "dados": dict(resultado_estruturado.data or {}),
                     }
                 )
 
