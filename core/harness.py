@@ -60,7 +60,10 @@ from core.harness_state import _montar_estado
 from core.harness_round_input import _montar_input_da_rodada
 from core.harness_strategy import _salvar_estrategia_em_background as _salvar_estrategia_em_background_impl
 from core.harness_turn import _registrar_turno as _registrar_turno_impl
-from core.harness_session import _garantir_sessao_chat as _garantir_sessao_chat_impl
+from core.harness_session import (
+    _encerrar_sessao_chat as _encerrar_sessao_chat_impl,
+    _garantir_sessao_chat as _garantir_sessao_chat_impl,
+)
 from core.harness_heuristics import (
     _parece_tarefa_visual_composta,
     _parece_tarefa_multietapa_browser,
@@ -581,17 +584,19 @@ class AurenHarness:
         return chat_id
 
     def _encerrar_sessao_chat(self, status: str = "closed") -> None:
-        session = self._session
-        if session is None:
-            return
-        try:
-            _write_log("CHAT_END", chat_id=session.chat_id, status=status)
-        finally:
-            if _CURRENT_SESSION.get() is session:
-                _CURRENT_SESSION.set(None)
-            self._session = None
-            self._chat_started_here = False
-            _runtime_redaction_values().clear()
+        _encerrar_sessao_chat_impl(
+            self._session,
+            status,
+            obter_sessao_atual=_CURRENT_SESSION.get,
+            limpar_sessao_atual=lambda: _CURRENT_SESSION.set(None),
+            limpar_estado_harness=self._limpar_estado_sessao,
+            limpar_redaction=_runtime_redaction_values().clear,
+            write_log=_write_log,
+        )
+
+    def _limpar_estado_sessao(self) -> None:
+        self._session = None
+        self._chat_started_here = False
 
 
     def _processar_mensagem_impl(self, mensagem: str) -> tuple[bool, Any]:
