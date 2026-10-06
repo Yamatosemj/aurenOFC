@@ -438,6 +438,27 @@ tools = [
 
     {
         "type": "function",
+        "name": "arrastar_mouse_windows",
+        "description": "Executa um arrastar-e-soltar global do mouse entre duas coordenadas da tela do Windows.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "x_inicial": {"type": "integer", "description": "Coordenada X inicial em pixels."},
+                "y_inicial": {"type": "integer", "description": "Coordenada Y inicial em pixels."},
+                "x_final": {"type": "integer", "description": "Coordenada X final em pixels."},
+                "y_final": {"type": "integer", "description": "Coordenada Y final em pixels."},
+                "botao": {"type": "string", "enum": ["esquerdo", "direito", "meio"]},
+                "duracao_ms": {"type": "integer", "minimum": 50, "maximum": 3000, "description": "Duracao do arraste em milissegundos. Padrao 300."},
+                "descricao": {"type": "string", "description": "Descricao curta do alvo arrastado e do destino."}
+            },
+            "required": ["x_inicial", "y_inicial", "x_final", "y_final", "botao", "duracao_ms", "descricao"],
+            "additionalProperties": False
+        },
+        "strict": True
+    },
+
+    {
+        "type": "function",
         "name": "obter_audio_windows",
         "description": "Consulta o volume master e o estado de mudo do dispositivo de saida padrao do Windows.",
         "parameters": {
