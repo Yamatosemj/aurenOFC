@@ -144,6 +144,7 @@ TOOL_HANDLERS = {
     "pressionar_tecla_windows": _sem_memoria(windows.pressionar_tecla_windows, "tecla"),
     "mover_mouse_windows": _sem_memoria(windows.mover_mouse_windows, "x", "y"),
     "clicar_mouse_windows": _sem_memoria(windows.clicar_mouse_windows, "x", "y", "botao", "descricao", defaults={"botao": "esquerdo", "descricao": ""}),
+    "arrastar_mouse_windows": _sem_memoria(windows.arrastar_mouse_windows, "x_inicial", "y_inicial", "x_final", "y_final", "botao", "duracao_ms", "descricao", defaults={"botao": "esquerdo", "duracao_ms": 300, "descricao": ""}),
     "obter_audio_windows": _sem_memoria(windows.obter_audio_windows),
     "definir_volume_windows": _sem_memoria(windows.definir_volume_windows, "percentual"),
     "definir_mudo_windows": _sem_memoria(windows.definir_mudo_windows, "ativado"),
