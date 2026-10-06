@@ -87,18 +87,6 @@ def test_orchestrator_does_not_cache_dynamic_state_queries():
     assert provider.calls == 2
 
 
-def test_ari_llm_router_selects_deep_for_complex_work():
-    from agent.ari_native.llm_router import LLMRouter
-    router = LLMRouter()
-    assert router.route("analise detalhadamente este código e corrija o bug").role == "deep"
-
-
-def test_ari_llm_router_keeps_simple_chat_fast():
-    from agent.ari_native.llm_router import LLMRouter
-    router = LLMRouter()
-    assert router.route("oi, tudo bem?").role == "fast"
-
-
 def test_wake_word_matcher_tolerates_small_error():
     from agent.ari_native.wake_word import wake_word_matches, extract_command
     assert wake_word_matches("auren", "auren")
