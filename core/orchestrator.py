@@ -27,7 +27,7 @@ class AurenOrchestrator:
     """Coordena Router -> Brain -> Model Provider.
 
     O Router tambem seleciona o conjunto de ferramentas da rodada. Em tarefas
-    ambiguas ele conserva as 44 ferramentas da V43; em tarefas claramente
+    ambiguas ele conserva todas as ferramentas disponiveis; em tarefas claramente
     classificadas envia apenas o subconjunto pertinente.
     """
 
@@ -84,7 +84,7 @@ class AurenOrchestrator:
             system_prompt=instrucoes,
             personality=ARCHITECTURE_NAME,
             scenario=requested_brain or "auto",
-            history_instruction="Auren V44 Ari Fusion safe response cache",
+            history_instruction="Auren V46 safe response cache",
             include_context=True,
         )
 
