@@ -4,6 +4,7 @@ import json
 
 from core.utils import normalizar_nome
 from core.tool_contracts import validate_tool_arguments
+from core.vision import transform_visual_tool_arguments
 from tools import applications, browser, file_intelligence, files
 from tools import windows
 from tools.memory import salvar_memoria_persistente, consultar_memoria_persistente, esquecer_memoria_persistente
@@ -221,6 +222,21 @@ def executar_ferramenta(item, permission_manager, memory_store) -> ToolResult:
 
     contexto = {}
     argumentos_execucao = dict(argumentos)
+    vision_transform = None
+
+    if nome in {"clicar_mouse_windows", "arrastar_mouse_windows"}:
+        argumentos_execucao, vision_transform, vision_error = transform_visual_tool_arguments(
+            nome,
+            argumentos_execucao,
+        )
+        if vision_error:
+            permission_manager.registrar_resultado(False, nome, argumentos)
+            return ToolResult.failure(
+                f"COORDENADA VISUAL NAO EXECUTADA: {vision_error}",
+                error_code="vision_coordinate_rejected",
+                tool_name=nome,
+            )
+
     if nome == "preencher_elemento_windows":
         preflight = _resolver_ui_automation_para_permissao(argumentos)
         if not preflight.get("ok"):
@@ -253,7 +269,7 @@ def executar_ferramenta(item, permission_manager, memory_store) -> ToolResult:
         )
 
     try:
-        resultado = TOOL_HANDLERS[nome](argumentos, memory_store, contexto)
+        resultado = TOOL_HANDLERS[nome](argumentos_execucao, memory_store, contexto)
     except Exception as erro:
         permission_manager.registrar_resultado(False, nome, argumentos)
         return ToolResult.failure(
@@ -263,5 +279,15 @@ def executar_ferramenta(item, permission_manager, memory_store) -> ToolResult:
         )
 
     resultado_estruturado = from_legacy(resultado, tool_name=nome)
-    permission_manager.registrar_resultado(resultado_estruturado.ok, nome, argumentos)
+    if vision_transform is not None:
+        data = dict(resultado_estruturado.data or {})
+        data["vision_coordinate_transform"] = vision_transform
+        resultado_estruturado = ToolResult(
+            ok=resultado_estruturado.ok,
+            message=resultado_estruturado.message,
+            data=data,
+            error_code=resultado_estruturado.error_code,
+            tool_name=resultado_estruturado.tool_name,
+        )
+    permission_manager.registrar_resultado(resultado_estruturado.ok, nome, argumentos_execucao)
     return resultado_estruturado

@@ -1,12 +1,49 @@
 from __future__ import annotations
 
 import base64
+import contextvars
 import io
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
 
 @dataclass(frozen=True)
+
+
+_ACTIVE_VISION_GEOMETRY: contextvars.ContextVar[dict | None] = contextvars.ContextVar(
+    "auren_active_vision_geometry",
+    default=None,
+)
+
+
+def set_active_vision_geometry(geometry: dict | None) -> None:
+    """Vincula o snapshot visual atual ao contexto de execucao do Auren."""
+    _ACTIVE_VISION_GEOMETRY.set(dict(geometry) if geometry is not None else None)
+
+
+def clear_active_vision_geometry() -> None:
+    """Remove qualquer snapshot visual herdado por uma tarefa anterior."""
+    _ACTIVE_VISION_GEOMETRY.set(None)
+
+
+def get_active_vision_geometry() -> dict | None:
+    """Retorna uma copia do snapshot visual atualmente vinculado."""
+    geometry = _ACTIVE_VISION_GEOMETRY.get()
+    return dict(geometry) if geometry is not None else None
+
+
+def _vision_snapshot_id(capture_data: dict) -> str:
+    explicit = str(capture_data.get("vision_snapshot_id") or "").strip()
+    if explicit:
+        return explicit
+
+    image_path = str(capture_data.get("image_path") or "").strip()
+    if image_path:
+        return Path(image_path).stem
+
+    return ""
+
+
 class PreparedImageInput:
     """Imagem realmente entregue ao modelo e sua geometria de referência."""
 
@@ -288,6 +325,7 @@ def build_vision_geometry(
     ) <= 0:
         return None
 
+    snapshot_id = _vision_snapshot_id(capture_data)
     captura_consistente = (
         prepared.source_width is None
         or (
@@ -301,36 +339,139 @@ def build_vision_geometry(
     diferenca_relativa = abs(escala_x - escala_y) / max(escala_x, escala_y)
 
     proporcao_compativel = diferenca_relativa <= 0.01
-    transformacao_segura = captura_consistente and proporcao_compativel
+    dpi_contexto_verificado = capture_data.get("dpi_per_monitor_aware") is True
+
+    transformacao_segura = bool(
+        snapshot_id
+        and captura_consistente
+        and proporcao_compativel
+        and dpi_contexto_verificado
+    )
 
     return {
         "tipo": "vision_geometry",
+        "vision_snapshot_id": snapshot_id,
         "coordenadas_acao": "windows_virtual_screen_physical_pixels",
         "transformacao_segura": transformacao_segura,
-        "imagem_enviada_ao_modelo": {
-            "width": sent_width,
-            "height": sent_height,
-        },
-        "captura_original": {
-            "width": capture_width,
-            "height": capture_height,
-        },
+        "dpi_contexto_verificado": dpi_contexto_verificado,
+        "imagem_enviada_ao_modelo": {"width": sent_width, "height": sent_height},
+        "captura_original": {"width": capture_width, "height": capture_height},
         "captura_vs_arquivo_consistente": captura_consistente,
         "area_de_trabalho_virtual_windows": {
-            "x": virtual_x,
-            "y": virtual_y,
-            "width": virtual_width,
-            "height": virtual_height,
+            "x": virtual_x, "y": virtual_y,
+            "width": virtual_width, "height": virtual_height,
         },
-        "escala_imagem_para_windows": {
-            "x": escala_x,
-            "y": escala_y,
-        },
+        "escala_imagem_para_windows": {"x": escala_x, "y": escala_y},
         "aspect_ratio_compativel": proporcao_compativel,
         "imagem_redimensionada": prepared.resized,
         "imagem_comprimida": prepared.compressed,
         "mime_type_enviado": prepared.mime_type,
     }
+
+
+def transform_visual_tool_arguments(
+    tool_name: str,
+    arguments: dict,
+) -> tuple[dict, dict | None, str | None]:
+    """Converte pixels da visao em coordenadas fisicas antes da execucao."""
+    if tool_name not in {"clicar_mouse_windows", "arrastar_mouse_windows"}:
+        return dict(arguments), None, None
+
+    coordinate_space = str(arguments.get("coordinate_space") or "windows").strip().lower()
+    snapshot_id = str(arguments.get("vision_snapshot_id") or "").strip()
+    usa_snapshot_visual = coordinate_space == "vision_image" or bool(snapshot_id)
+
+    if not usa_snapshot_visual:
+        return dict(arguments), None, None
+
+    if coordinate_space not in {"vision_image", "windows"}:
+        return dict(arguments), None, "Espaco de coordenadas invalido. Use 'windows' ou 'vision_image'."
+
+    geometry = get_active_vision_geometry()
+    if geometry is None:
+        return dict(arguments), None, "Nao existe um snapshot visual ativo para converter esta coordenada."
+
+    esperado = str(geometry.get("vision_snapshot_id") or "").strip()
+    if not snapshot_id or snapshot_id != esperado:
+        return (
+            dict(arguments),
+            None,
+            "O snapshot visual informado nao corresponde a captura mais recente. "
+            "Capture a tela novamente antes de usar coordenadas da imagem.",
+        )
+
+    if geometry.get("transformacao_segura") is not True:
+        return (
+            dict(arguments),
+            None,
+            "A geometria da visao nao foi validada para conversao segura. "
+            "Capture a tela novamente ou use um controle exposto por UI Automation.",
+        )
+
+    try:
+        image_width = int(geometry["imagem_enviada_ao_modelo"]["width"])
+        image_height = int(geometry["imagem_enviada_ao_modelo"]["height"])
+        virtual_x = int(geometry["area_de_trabalho_virtual_windows"]["x"])
+        virtual_y = int(geometry["area_de_trabalho_virtual_windows"]["y"])
+        virtual_width = int(geometry["area_de_trabalho_virtual_windows"]["width"])
+        virtual_height = int(geometry["area_de_trabalho_virtual_windows"]["height"])
+    except (KeyError, TypeError, ValueError):
+        return dict(arguments), None, "O snapshot visual ativo nao possui geometria suficiente para conversao."
+
+    execution = dict(arguments)
+    try:
+        if tool_name == "clicar_mouse_windows":
+            x_windows, y_windows = image_point_to_virtual_screen(
+                arguments["x"], arguments["y"],
+                image_width=image_width, image_height=image_height,
+                virtual_screen_x=virtual_x, virtual_screen_y=virtual_y,
+                virtual_screen_width=virtual_width, virtual_screen_height=virtual_height,
+            )
+            execution.update({"x": x_windows, "y": y_windows})
+            pontos = {
+                "origem_imagem": {"x": arguments["x"], "y": arguments["y"]},
+                "destino_windows": {"x": x_windows, "y": y_windows},
+            }
+        else:
+            origem_x, origem_y = image_point_to_virtual_screen(
+                arguments["x_inicial"], arguments["y_inicial"],
+                image_width=image_width, image_height=image_height,
+                virtual_screen_x=virtual_x, virtual_screen_y=virtual_y,
+                virtual_screen_width=virtual_width, virtual_screen_height=virtual_height,
+            )
+            destino_x, destino_y = image_point_to_virtual_screen(
+                arguments["x_final"], arguments["y_final"],
+                image_width=image_width, image_height=image_height,
+                virtual_screen_x=virtual_x, virtual_screen_y=virtual_y,
+                virtual_screen_width=virtual_width, virtual_screen_height=virtual_height,
+            )
+            execution.update({
+                "x_inicial": origem_x, "y_inicial": origem_y,
+                "x_final": destino_x, "y_final": destino_y,
+            })
+            pontos = {
+                "origem_imagem": {"x": arguments["x_inicial"], "y": arguments["y_inicial"]},
+                "destino_imagem": {"x": arguments["x_final"], "y": arguments["y_final"]},
+                "origem_windows": {"x": origem_x, "y": origem_y},
+                "destino_windows": {"x": destino_x, "y": destino_y},
+            }
+    except (KeyError, TypeError, ValueError, OverflowError) as exc:
+        return dict(arguments), None, f"Coordenada visual rejeitada: {exc}"
+
+    execution["coordinate_space"] = "windows"
+    execution.pop("vision_snapshot_id", None)
+    metadata = {
+        "snapshot_id": esperado,
+        "imagem": {"width": image_width, "height": image_height},
+        "virtual_screen": {
+            "x": virtual_x, "y": virtual_y,
+            "width": virtual_width, "height": virtual_height,
+        },
+        "escala_imagem_para_windows": dict(geometry.get("escala_imagem_para_windows") or {}),
+        "pontos": pontos,
+    }
+    return execution, metadata, None
+
 
 def image_input_item(
     path: str | Path,
