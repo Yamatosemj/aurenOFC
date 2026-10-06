@@ -107,3 +107,9 @@ def test_visual_drag_route_includes_drag_tool():
     assert "arrastar_mouse_windows" in names
     assert "clicar_mouse_windows" in names
     assert len(names) < len(tools)
+
+ 
+def test_direct_drag_request_loads_mouse_tools_without_visual_phrase():
+    names = names_for("arraste o arquivo Relatorio.txt para a pasta Documentos")
+    assert "arrastar_mouse_windows" in names
+    assert "mover_mouse_windows" in names
