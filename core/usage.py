@@ -7,6 +7,7 @@ session_cache_write_tokens = 0
 session_cost = 0.0
 
 
+
 def extrair_metricas_uso(resposta) -> dict[str, int]:
     uso = getattr(resposta, "usage", None)
     if uso is None:
@@ -17,7 +18,6 @@ def extrair_metricas_uso(resposta) -> dict[str, int]:
     detalhes = getattr(uso, "input_tokens_details", None)
     cache = int(getattr(detalhes, "cached_tokens", 0) or 0) if detalhes else 0
     cache_write = int(getattr(detalhes, "cache_write_tokens", 0) or 0) if detalhes else 0
-
     return {
         "input_tokens": max(0, entrada),
         "output_tokens": max(0, saida),
@@ -32,15 +32,12 @@ def calcular_custo_estimado(metricas: dict[str, int] | None) -> float:
     saida = max(0, int(valores.get("output_tokens") or 0))
     cache = max(0, int(valores.get("cached_tokens") or 0))
     cache_write = max(0, int(valores.get("cache_write_tokens") or 0))
-
     entrada_sem_cache = max(0, entrada - cache - cache_write)
     custo = entrada_sem_cache * 0.20 / 1_000_000
     custo += cache * 0.02 / 1_000_000
     custo += cache_write * 0.25 / 1_000_000
     custo += saida * 1.20 / 1_000_000
     return float(custo)
-
-
 def registrar_uso(resposta):
     global session_input_tokens
     global session_output_tokens
@@ -49,17 +46,21 @@ def registrar_uso(resposta):
     global session_cost
 
     metricas = extrair_metricas_uso(resposta)
+
     if not metricas:
-        return {}
+        return
 
-    session_input_tokens += metricas["input_tokens"]
-    session_output_tokens += metricas["output_tokens"]
-    session_cached_tokens += metricas["cached_tokens"]
-    session_cache_write_tokens += metricas["cache_write_tokens"]
-
+    entrada = metricas["input_tokens"]
+    saida = metricas["output_tokens"]
+    cache = metricas["cached_tokens"]
+    cache_write = metricas["cache_write_tokens"]
     custo = calcular_custo_estimado(metricas)
+
+    session_input_tokens += entrada
+    session_output_tokens += saida
+    session_cached_tokens += cache
+    session_cache_write_tokens += cache_write
     session_cost += custo
-    return {**metricas, "cost_usd": custo}
 
 def mostrar_uso():
     print(
