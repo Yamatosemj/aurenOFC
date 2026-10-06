@@ -1,6 +1,7 @@
 """Testes da geometria multimodal usada pelo Harness e pela visao."""
 from __future__ import annotations
 
+import json
 from types import SimpleNamespace
 
 import pytest
@@ -177,8 +178,8 @@ def test_transformacao_respeita_origem_x_negativa():
         virtual_screen_x=-1920,
         virtual_screen_y=0,
         virtual_screen_width=3840,
-        virtual_screen_height=1080,
-    ) == (0, 540)
+        virtual_screen_height=2160,
+    ) == (0, 1080)
 
 
 def test_transformacao_respeita_origem_y_negativa():
@@ -191,7 +192,7 @@ def test_transformacao_respeita_origem_y_negativa():
         virtual_screen_y=-900,
         virtual_screen_width=1920,
         virtual_screen_height=1080,
-    ) == (960, -450)
+    ) == (960, -360)
 
 
 def test_transformacao_respeita_origem_x_e_y_diferentes_de_zero():
@@ -263,7 +264,7 @@ def test_geometry_metadata_explica_mapeamento_para_o_modelo():
     assert geometria["coordenadas_acao"] == "windows_virtual_screen"
     assert geometria["imagem_enviada_ao_modelo"] == {"width": 1920, "height": 1080}
     assert geometria["escala_imagem_para_windows"]["x"] == pytest.approx(2.0)
-    assert geometria["escala_imagem_para_windows"]["y"] == pytest.approx(1.0)
+    assert geometria["escala_imagem_para_windows"]["y"] == pytest.approx(2.0)
     assert geometria["area_de_trabalho_virtual_windows"]["x"] == -1920
 
 
@@ -319,9 +320,10 @@ def test_harness_transporta_geometria_da_imagem_enviada(tmp_path):
     ]
     assert len(mensagens) == 1
     texto = str(mensagens[0]["content"][0]["text"])
-    assert '"width":960' in texto
-    assert '"height":540' in texto
-    assert '"x":1920' in texto
+    payload = json.loads(texto.split(": ", 1)[1])
+    assert payload["imagem_enviada_ao_modelo"] == {"width": 960, "height": 540}
+    assert payload["area_de_trabalho_virtual_windows"]["width"] == 1920
+    assert payload["area_de_trabalho_virtual_windows"]["height"] == 1080
 
 
 def test_harness_nao_muda_o_contrato_de_imagem_sem_geometria(tmp_path):
