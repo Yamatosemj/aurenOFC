@@ -3,12 +3,9 @@ name: Auren V47 visual interaction tests
 on:
   push:
     branches:
-      - feat/visual-drag-v46
-      - feat/visual-composed-tasks-v47
-      - feat/robust-vision-coordinates-v47
+      - main
   pull_request:
     branches:
-      - feat/vision-action-v46
       - main
 
 jobs:
