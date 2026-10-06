@@ -185,6 +185,8 @@ DOMAIN_PATTERNS: dict[str, tuple[str, ...]] = {
     ),
     "input": (
         r"\bmouse\b",
+        r"\barrast\w*\b",
+        r"\bsolt\w*\b.*\b(?:mouse|arquivo|item|pasta|janela)\b",
         r"\bteclado\b",
         r"\btecla\b",
         r"\bclicar\b.*\b(x|y)\s*=",
