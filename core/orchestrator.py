@@ -75,7 +75,7 @@ class AurenOrchestrator:
             model=MODEL,
             system_prompt=instrucoes,
             personality=ARCHITECTURE_NAME,
-            scenario=requested_brain or "provider",
+            scenario=requested_brain or "auto",
             history_instruction="Auren V46 safe response cache",
             include_context=True,
         )

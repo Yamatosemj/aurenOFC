@@ -30,6 +30,15 @@ def test_memory_conversation_and_strategy(tmp_path: Path):
     assert strategies["total"] == 1
 
 
+def test_skill_library_is_empty_or_loads_valid_skill(tmp_path: Path):
+    skill_dir = tmp_path / "teste"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("---\nname: teste\ndescription: faz um teste\n---\nUse esta skill.", encoding="utf-8")
+    skills = SkillLibrary(tmp_path).discover()
+    assert len(skills) == 1
+    assert skills[0].name == "teste"
+
+
 def test_agent_plans_without_second_brain():
     from agent.orchestrator import AgentOrchestrator
 
@@ -57,11 +66,7 @@ def test_skill_matching_and_prompt_context(tmp_path: Path):
     source = tmp_path / "source_skill"
     source.mkdir()
     (source / "SKILL.md").write_text(
-        "---
-name: navegador
-description: ajuda com navegador e pesquisa
----
-Use como referencia para tarefas de navegador.",
+        "---\nname: navegador\ndescription: ajuda com navegador e pesquisa\n---\nUse como referencia para tarefas de navegador.",
         encoding="utf-8",
     )
     library = SkillLibrary(root)
