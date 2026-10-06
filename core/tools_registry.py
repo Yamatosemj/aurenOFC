@@ -44,6 +44,40 @@ tools = [
 
     {
         "type": "function",
+        "name": "inspecionar_arquivo",
+        "description": "Inspeciona um arquivo sem modifica-lo: identidade, estado, metadados, tipo detectado, SHA-256 e evidencias locais de origem; pode procurar copias confirmadas por hash.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "caminho": {"type": "string", "description": "Caminho do arquivo a inspecionar."},
+                "procurar_copias": {"type": "boolean", "description": "Procura copias locais com o mesmo SHA-256."},
+                "limite_copias": {"type": "integer", "minimum": 1, "maximum": 20, "description": "Quantidade maxima de copias confirmadas a retornar."}
+            },
+            "required": ["caminho", "procurar_copias", "limite_copias"],
+            "additionalProperties": False
+        },
+        "strict": True
+    },
+
+    {
+        "type": "function",
+        "name": "ler_arquivo",
+        "description": "Le de forma controlada TXT, Markdown, JSON ou CSV. Para arquivos grandes, use inicio e limite_caracteres para continuar por trechos.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "caminho": {"type": "string", "description": "Caminho do arquivo a ler."},
+                "inicio": {"type": "integer", "minimum": 0, "maximum": 1000000, "description": "Posicao inicial em caracteres."},
+                "limite_caracteres": {"type": "integer", "minimum": 1, "maximum": 20000, "description": "Numero maximo de caracteres a retornar."}
+            },
+            "required": ["caminho", "inicio", "limite_caracteres"],
+            "additionalProperties": False
+        },
+        "strict": True
+    },
+
+    {
+        "type": "function",
         "name": "salvar_memoria_persistente",
         "description": "Salva ou atualiza uma informacao explicitamente fornecida pelo usuario na memoria persistente local. Nao use para senhas, tokens ou credenciais.",
         "parameters": {
