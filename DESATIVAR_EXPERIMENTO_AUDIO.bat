@@ -1,0 +1,3 @@
+@echo off
+set AUREN_EXPERIMENT_CAPABILITY_AUDIO=0
+py main.py

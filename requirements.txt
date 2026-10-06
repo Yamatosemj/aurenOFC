@@ -1,0 +1,4 @@
+openai
+playwright
+jsonschema
+Pillow>=11.0,<13

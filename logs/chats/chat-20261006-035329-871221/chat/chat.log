@@ -1,0 +1,14 @@
+[2026-10-06T03:53:29+00:00] CHAT_START
+  chat_id: "chat-20261006-035329-871221"
+[2026-10-06T03:53:29+00:00] TASK_START
+  task_id: "20261006-035329-871713-586c8f"
+  objetivo: "oi"
+[2026-10-06T03:53:29+00:00] MODEL_ROUND_REQUEST
+  task_id: "20261006-035329-871713-586c8f"
+  rodada: 1
+  input_items: 1
+  estado_chars: 225
+  tool_choice: "auto"
+[2026-10-06T03:53:29+00:00] PROVIDER_ERROR
+  task_id: "20261006-035329-871713-586c8f"
+  erro: "provider timeout"

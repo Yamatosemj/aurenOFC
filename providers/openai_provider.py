@@ -1,0 +1,62 @@
+from __future__ import annotations
+
+from typing import Any
+
+from config import CACHE_KEY, MODEL
+from core.prompt import instrucoes
+from core import usage
+
+
+class OpenAIProvider:
+    """Adaptador do provedor atual.
+
+    Esta classe concentra todo o conhecimento sobre o SDK da OpenAI.
+    Trocar de provedor depois nao exige mexer no Core, no Router ou nas Tools.
+    """
+
+    name = "openai"
+
+    def __init__(self) -> None:
+        self._client = None
+
+    def get_client(self):
+        if self._client is None:
+            from openai import OpenAI
+            self._client = OpenAI()
+        return self._client
+
+    @staticmethod
+    def _normalizar_tools(toolset):
+        # None significa manter o registry completo da V43 por compatibilidade.
+        if toolset is None:
+            from core.tools_registry import tools as default_tools
+            return default_tools
+        return toolset
+
+    def create_response(
+        self,
+        entrada: Any,
+        *,
+        response_id: str | None = None,
+        reasoning_effort: str = "none",
+        tool_choice: str | dict | None = None,
+        tools=None,
+    ) -> Any:
+        parametros = {
+            "model": MODEL,
+            "instructions": instrucoes,
+            "tools": self._normalizar_tools(tools),
+            "input": entrada,
+            "parallel_tool_calls": False,
+            "reasoning": {"effort": reasoning_effort},
+            "prompt_cache_key": CACHE_KEY,
+            "prompt_cache_options": {"ttl": "30m"},
+        }
+        if tool_choice is not None:
+            parametros["tool_choice"] = tool_choice
+        if response_id:
+            parametros["previous_response_id"] = response_id
+
+        resposta = self.get_client().responses.create(**parametros)
+        usage.registrar_uso(resposta)
+        return resposta

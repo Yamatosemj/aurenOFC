@@ -1,0 +1,20 @@
+[2026-10-06T03:53:29+00:00] TASK_START
+  task_id: "20261006-035329-873866-1efc04"
+  objetivo: "segunda"
+[2026-10-06T03:53:29+00:00] MODEL_ROUND_REQUEST
+  task_id: "20261006-035329-873866-1efc04"
+  rodada: 1
+  input_items: 1
+  estado_chars: 335
+  tool_choice: "auto"
+[2026-10-06T03:53:29+00:00] MODEL_ROUND_RESPONSE
+  task_id: "20261006-035329-873866-1efc04"
+  rodada: 1
+  output_items: 0
+  output_text: "segunda ok"
+  uso: {}
+  latencia_ms: 0.003
+  router: {}
+[2026-10-06T03:53:29+00:00] TASK_STATE
+  task_id: "20261006-035329-873866-1efc04"
+  estado: "completed"

@@ -1,0 +1,26 @@
+[2026-10-06T03:52:40+00:00] CHAT_START
+  chat_id: "chat-20261006-035240-002740"
+[2026-10-06T03:52:40+00:00] TASK_START
+  task_id: "20261006-035240-007331-b8a230"
+  objetivo: "abra o Notepad"
+[2026-10-06T03:52:40+00:00] MODEL_ROUND_REQUEST
+  task_id: "20261006-035240-007331-b8a230"
+  rodada: 1
+  input_items: 1
+  estado_chars: 237
+  tool_choice: "required"
+[2026-10-06T03:52:40+00:00] TASK_CANCEL_REQUESTED
+  task_id: "20261006-035240-007331-b8a230"
+  motivo: "teste cancelamento"
+[2026-10-06T03:52:40+00:00] MODEL_ROUND_RESPONSE
+  task_id: "20261006-035240-007331-b8a230"
+  rodada: 1
+  output_items: 0
+  output_text: "ignorado"
+  uso: {}
+  latencia_ms: 0.222
+  router: {}
+[2026-10-06T03:52:40+00:00] TASK_END
+  task_id: "20261006-035240-007331-b8a230"
+  status: "cancelled"
+  rodada: 1

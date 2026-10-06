@@ -1,0 +1,23 @@
+[2026-10-06T03:52:39+00:00] CHAT_START
+  chat_id: "chat-20261006-035239-128620"
+[2026-10-06T03:52:39+00:00] TASK_START
+  task_id: "20261006-035239-129125-0928dc"
+  objetivo: "oi"
+[2026-10-06T03:52:39+00:00] MODEL_ROUND_REQUEST
+  task_id: "20261006-035239-129125-0928dc"
+  rodada: 1
+  input_items: 1
+  estado_chars: 225
+  tool_choice: "auto"
+[2026-10-06T03:52:39+00:00] MODEL_ROUND_RESPONSE
+  task_id: "20261006-035239-129125-0928dc"
+  rodada: 1
+  output_items: 0
+  output_text: ""
+  uso: {"input_tokens":10,"output_tokens":5,"cached_tokens":2,"cache_write_tokens":0}
+  latencia_ms: 0.004
+  router: {}
+[2026-10-06T03:52:39+00:00] TASK_END
+  task_id: "20261006-035239-129125-0928dc"
+  status: "failed"
+  motivo: "empty_response"

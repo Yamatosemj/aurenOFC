@@ -1,0 +1,12 @@
+[2026-10-06T03:52:35+00:00] TASK_START
+  task_id: "20261006-035235-206650-525d74"
+  objetivo: "teste falha"
+[2026-10-06T03:52:35+00:00] MODEL_ROUND_REQUEST
+  task_id: "20261006-035235-206650-525d74"
+  rodada: 1
+  input_items: 1
+  estado_chars: 234
+  tool_choice: "auto"
+[2026-10-06T03:52:35+00:00] PROVIDER_ERROR
+  task_id: "20261006-035235-206650-525d74"
+  erro: "falha simulada do provider"
