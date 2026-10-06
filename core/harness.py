@@ -55,6 +55,10 @@ from core.harness_logging import (
     _register_sensitive_values_from_json_text,
     _register_redaction_values_from_objective,
 )
+from core.harness_serialization import (
+    _argumentos_da_chamada,
+    _texto_seguro,
+)
 from core.harness_heuristics import (
     _parece_tarefa_visual_composta,
     _parece_tarefa_multietapa_browser,
@@ -297,32 +301,11 @@ class AurenHarness:
 
     @staticmethod
     def _texto_seguro(valor: Any, limite: int) -> str:
-        texto = str(valor if valor is not None else "")
-        texto = texto.replace("\x00", " ")
-        texto = texto.strip()
-
-        if len(texto) <= limite:
-            return texto
-
-        return texto[:limite] + "\n[resultado truncado pelo harness]"
+        return _texto_seguro(valor, limite)
 
     @staticmethod
     def _argumentos_da_chamada(item: Any) -> str:
-        argumentos = getattr(item, "arguments", "")
-
-        try:
-            dados = json.loads(argumentos)
-        except (TypeError, json.JSONDecodeError):
-            return str(argumentos)
-
-        try:
-            return json.dumps(
-                _redact_value(dados),
-                ensure_ascii=False,
-                separators=(",", ":"),
-            )
-        except (TypeError, ValueError):
-            return str(_redact_value(dados))
+        return _argumentos_da_chamada(item)
 
     @staticmethod
     def _ultima_acao_solicitada(objetivo: str) -> str | None:
