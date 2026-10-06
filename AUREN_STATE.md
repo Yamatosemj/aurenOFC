@@ -4,29 +4,29 @@
 > Antes de iniciar uma nova tarefa, consulte este arquivo e compare com a branch/PR e o CI do GitHub.
 > Não trate roadmap antigo, memória da conversa ou documentos arquivados como estado atual.
 
-Atualizado em: 2026-10-06 (auditoria final V47)
+Atualizado em: 2026-10-06 (V47 incorporada à main)
 
 ## Estado agora
 
-- **Base estável (main):** versão declarada V46
-- **Trabalho ativo:** PR #6 — feat: robustecer coordenadas da visão no Windows
-- **Branch ativa:** feat/robust-vision-coordinates-v47
-- **Head da PR:** 19a89a1759a04e0f44ce825ecc2b92ea8280e988
-- **Status da PR:** aberta e mergeável
+- **Base estável (main):** V47
+- **Trabalho ativo:** Estabilização e limpeza pós-V47
+- **Branch/PR ativa:** nenhuma — PR #6 encerrada por merge
+- **Head da main:** c0994db89aff396e0dfe43900841e0a766150b73
+- **Status da PR #6:** merged
 - **Validação da PR:** 280 passed, 6 skipped
 - **Focused visual CI:** Linux passou; Windows passou
-- **Auditoria final V47:** concluída; nenhum bloqueador funcional ou review pendente identificado. PR #6 está pronta para merge, mas permanece aberta conforme o controle de escopo.
+- **Auditoria final V47:** concluída antes do merge; nenhum bloqueador funcional ou review pendente identificado.
 
-A main já contém as melhorias anteriores de visão/ação e tarefas visuais compostas. A V47 de geometria/coordenadas ainda não deve ser tratada como estável até a PR #6 ser incorporada.
+A V47 de geometria/coordenadas foi incorporada à main pelo merge commit c0994db89aff396e0dfe43900841e0a766150b73. A main passa a ser a base estável da V47.
 
 ## Tarefa atual
 
-**Finalizar a transição para V47:**
+**Executar estabilização e limpeza pós-V47:**
 
-1. manter a PR #6 como único trabalho ativo
-2. não iniciar uma nova feature grande antes de a PR #6 entrar na main
-3. após o merge, atualizar este arquivo para registrar V47 como estável
-4. só então iniciar a próxima fase
+1. alinhar documentação e versão com a main V47
+2. confirmar a suíte completa na main pós-merge
+3. separar documentação histórica da documentação normativa
+4. corrigir inconsistências encontradas sem iniciar uma nova capacidade grande
 
 ## O que a PR #6 entrega
 
@@ -61,9 +61,9 @@ Objetivo: alinhar versão, documentação, testes e estado do projeto depois do 
 
 Critérios de saída:
 
-- [ ] README.md representa a versão real
-- [ ] versão/config/facade estão sincronizados
-- [ ] estado oficial atualizado
+- [x] README.md representa a versão real
+- [x] versão/config/facade estão sincronizados
+- [x] estado oficial atualizado
 - [ ] documentação antiga claramente separada de documentação normativa
 - [ ] suíte completa validada na main
 - [ ] nenhuma regressão conhecida pendente
