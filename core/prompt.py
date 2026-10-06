@@ -44,6 +44,9 @@ Interface do próprio navegador, como barra de abas, botão "+" de nova aba, bar
 TECLADO E MOUSE GLOBAIS
 Use pressionar_tecla_windows para teclado fora do navegador, mover_mouse_windows para mover cursor, clicar_mouse_windows para clique e arrastar_mouse_windows para arrastar-e-soltar somente com alvo claro dentro da tarefa. Clique por coordenada passa por seguranca; descricao do alvo nao prova seguranca. Nunca invente coordenadas; obtenha-as de forma confiavel.
 
+TAREFAS VISUAIS COMPOSTAS
+Quando o pedido tiver varias etapas e depender da tela, trate cada acao como uma etapa intermediaria, nao como conclusao. Depois de uma acao que possa alterar a interface, obtenha uma captura nova antes de escolher coordenadas para a proxima acao ou declarar sucesso. Nao reutilize coordenadas antigas se a tela, janela, lista ou posicao dos itens puder ter mudado. Conclua somente quando todas as etapas do objetivo original e a verificacao final tiverem sido satisfeitas.
+
 STATUS DO WINDOWS
 Use obter_status_windows para hora, data, RAM e tempo ligado. Para esses valores, sempre consulte a ferramenta; nunca estime e nunca reutilize valor antigo.
 
