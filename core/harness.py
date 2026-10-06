@@ -12,6 +12,8 @@ from typing import Any, Callable
 
 from core.task_manager import TaskManager, TaskState
 from core.capabilities import KNOWN_SERVICES
+from core import usage
+from core.task_trace import TaskTrace, TaskTraceStore
 from core.utils import normalizar_nome
 from core.tool_result import ToolResult, from_legacy
 from agent.orchestrator import AgentOrchestrator
@@ -367,6 +369,7 @@ class AurenHarness:
         registrar_conversa: Callable[[str, str, str], Any] | None = None,
         salvar_estrategia: Callable[[str, list[str], str, bool], Any] | None = None,
         context: SessionContextManager | None = None,
+        trace_store: TaskTraceStore | None = None,
     ) -> None:
         if max_model_rounds < 1:
             raise ValueError("max_model_rounds deve ser maior que zero.")
@@ -406,6 +409,9 @@ class AurenHarness:
         # O Ari usa uma fila de prioridade para tarefas de fundo. No Auren ela
         # fica restrita a aprendizado/persistencia pos-tarefa para não atrasar a resposta.
         self._background_queue = AgentTaskQueue(max_workers=1, max_results=100)
+        self.trace_store = trace_store or TaskTraceStore()
+        self._trace: TaskTrace | None = None
+        self._trace_started_perf: float | None = None
 
     @staticmethod
     def _texto_seguro(valor: Any, limite: int) -> str:
@@ -990,17 +996,7 @@ class AurenHarness:
 
     @staticmethod
     def _uso_resposta(resposta: Any) -> dict[str, int]:
-        uso = getattr(resposta, "usage", None)
-        if uso is None:
-            return {}
-
-        detalhes = getattr(uso, "input_tokens_details", None)
-        return {
-            "input_tokens": int(getattr(uso, "input_tokens", 0) or 0),
-            "output_tokens": int(getattr(uso, "output_tokens", 0) or 0),
-            "cached_tokens": int(getattr(detalhes, "cached_tokens", 0) or 0) if detalhes else 0,
-            "cache_write_tokens": int(getattr(detalhes, "cache_write_tokens", 0) or 0) if detalhes else 0,
-        }
+        return usage.extrair_metricas_uso(resposta)
 
     @staticmethod
     def _limite_adaptativo(objetivo: str) -> int:
@@ -1116,6 +1112,8 @@ class AurenHarness:
     def _processar_mensagem_impl(self, mensagem: str) -> tuple[bool, Any]:
         """Retorna (tratado_rapido, resposta)."""
         self._garantir_sessao_chat()
+        self._trace_started_perf = time.perf_counter()
+        context_started_perf = self._trace_started_perf
         self.iniciar_tarefa()
         clear_active_vision_geometry()
         self._multitab_guard_attempts = 0
@@ -1137,6 +1135,7 @@ class AurenHarness:
             _write_log("AGENT_INIT_ERROR", objetivo=objetivo_log, erro=str(exc))
             plan = None
             self._contexto_tarefa = ""
+        context_ms = (time.perf_counter() - context_started_perf) * 1000.0
         if self._contexto_tarefa:
             self._contexto_tarefa = self._texto_seguro(self._contexto_tarefa, self.context.max_chars)
         task_snapshot = self.task_manager.create(
@@ -1145,6 +1144,23 @@ class AurenHarness:
         )
         self._task_id = task_snapshot.task_id
         self.task_manager.start(self._task_id)
+        try:
+            self._trace = self.trace_store.start_task(
+                task_id=self._task_id,
+                chat_id=self._session.chat_id if self._session else None,
+                objective=objetivo_log,
+                started_at=task_snapshot.created_at,
+                started_perf=self._trace_started_perf,
+            )
+            self._trace.record_stage(
+                "contexto",
+                context_ms,
+                category="context",
+                metadata={"objective_chars": len(objetivo_log)},
+            )
+        except Exception as exc:
+            self._trace = None
+            _write_log("TRACE_ERROR", task_id=self._task_id, etapa="start", erro=str(exc))
         _register_redaction_values_from_objective(objetivo_log)
         _write_log(
             "TASK_START",
@@ -1153,7 +1169,19 @@ class AurenHarness:
         )
         self._registrar_turno("user", objetivo_log)
 
+        fast_started_perf = time.perf_counter()
         tratado, resposta_rapida = self.comando_rapido(mensagem)
+        fast_path_ms = (time.perf_counter() - fast_started_perf) * 1000.0
+        if self._trace is not None:
+            try:
+                self._trace.record_stage(
+                    "fast_path",
+                    fast_path_ms,
+                    category="fast_path",
+                    success=bool(tratado),
+                )
+            except Exception as exc:
+                _write_log("TRACE_ERROR", task_id=self._task_id, etapa="fast_path", erro=str(exc))
         if tratado:
             resposta_texto = str(resposta_rapida or "").strip()
             sucesso_fast = resposta_texto and not any(
@@ -1483,6 +1511,7 @@ class AurenHarness:
                     argumentos=argumentos,
                 )
 
+                tool_started_perf = time.perf_counter()
                 try:
                     resultado_bruto = self.executar_ferramenta(item)
                 except Exception as erro:
@@ -1500,6 +1529,15 @@ class AurenHarness:
                     tool_name=nome,
                 )
                 ferramenta_sucesso = resultado_estruturado.ok
+                if self._trace is not None:
+                    try:
+                        self._trace.record_tool(
+                            nome,
+                            (time.perf_counter() - tool_started_perf) * 1000.0,
+                            success=ferramenta_sucesso,
+                        )
+                    except Exception as exc:
+                        _write_log("TRACE_ERROR", task_id=self._task_id, etapa="tool", erro=str(exc))
 
                 if (
                     ferramenta_sucesso
@@ -1709,6 +1747,15 @@ class AurenHarness:
         metricas_roteamento: dict[str, Any],
         **extra: Any,
     ) -> None:
+        if self._trace is not None:
+            try:
+                self._trace.record_model(
+                    rodada,
+                    latencia_ms,
+                    self._uso_resposta(resposta),
+                )
+            except Exception as exc:
+                _write_log("TRACE_ERROR", task_id=self._task_id, etapa="model", erro=str(exc))
         _write_log(
             "MODEL_ROUND_RESPONSE",
             task_id=self._task_id,
@@ -1762,7 +1809,33 @@ class AurenHarness:
                 pass
             raise
         finally:
-            _CURRENT_SESSION.reset(token)
+            try:
+                trace = self._trace
+                if trace is not None:
+                    snapshot = self.task_manager.current_snapshot()
+                    status = snapshot.state.value if snapshot is not None else "failed"
+                    error = snapshot.error if snapshot is not None else ""
+                    total_ms = (
+                        (time.perf_counter() - self._trace_started_perf) * 1000.0
+                        if self._trace_started_perf is not None
+                        else None
+                    )
+                    trace.finish(
+                        status=status,
+                        error=error,
+                        total_ms=total_ms,
+                    )
+            except Exception as trace_error:
+                _write_log(
+                    "TRACE_ERROR",
+                    task_id=self._task_id,
+                    etapa="finish",
+                    erro=str(trace_error),
+                )
+            finally:
+                self._trace = None
+                self._trace_started_perf = None
+                _CURRENT_SESSION.reset(token)
 
     def current_task(self):
         """Retorna um snapshot imutavel da tarefa atual, se existir."""
