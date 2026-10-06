@@ -60,7 +60,7 @@ def _extrair_destinos_abas(objetivo: str) -> dict[int, str]:
     return destinos
 
 
-def _multitab_concluida(cls, objetivo: str, historico: list[dict[str, str]]) -> bool:
+def _multitab_concluida(objetivo: str, historico: list[dict[str, str]]) -> bool:
     """Confirma destinos de abas numeradas usando o ultimo estado real conhecido."""
     esperados = _extrair_destinos_abas(objetivo)
     if not esperados:
