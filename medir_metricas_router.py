@@ -162,8 +162,8 @@ def main() -> int:
     text = path.read_text(encoding="utf-8", errors="replace")
     result = aggregate(text)
 
-    out_dir = Path("RELATORIOS")
-    out_dir.mkdir(exist_ok=True)
+    out_dir = Path("logs/testes")
+    out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "METRICAS_ROUTER_V43_OURO_LIMPO.json").write_text(
         json.dumps(result, ensure_ascii=False, indent=2),
         encoding="utf-8",
