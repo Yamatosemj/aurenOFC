@@ -25,22 +25,6 @@ TEXT_SENSITIVE_KEYS = {
     "texto", "text", "conteudo", "content", "valor",
 }
 
-@dataclass(frozen=True)
-class SessionContext:
-    chat_id: str
-    log_file: Path
-
-    @property
-    def log_root(self) -> Path:
-        return self.log_file.parent.parent
-
-
-_CURRENT_SESSION: contextvars.ContextVar[SessionContext | None] = contextvars.ContextVar(
-    "auren_current_session", default=None
-)
-_LOG_LOCK = threading.RLock()
-
-
 def _runtime_redaction_values() -> set[str]:
     values = getattr(_redact_free_text, "_values", None)
     if values is None:
