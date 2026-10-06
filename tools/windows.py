@@ -1997,6 +1997,15 @@ def pressionar_tecla_windows(tecla):
     except Exception as erro:
         return f"Nao consegui pressionar a tecla global: {erro}"
 
+def _limites_tela_virtual_windows(user32):
+    """Retorna os limites da área de trabalho virtual em coordenadas de tela."""
+    origem_x = int(user32.GetSystemMetrics(76))  # SM_XVIRTUALSCREEN
+    origem_y = int(user32.GetSystemMetrics(77))  # SM_YVIRTUALSCREEN
+    largura = int(user32.GetSystemMetrics(78))   # SM_CXVIRTUALSCREEN
+    altura = int(user32.GetSystemMetrics(79))    # SM_CYVIRTUALSCREEN
+    return origem_x, origem_y, largura, altura
+
+
 def mover_mouse_windows(x, y):
     if os.name != "nt":
         return "Controle do mouse global so esta disponivel no Windows."
@@ -2005,10 +2014,15 @@ def mover_mouse_windows(x, y):
         x = int(x)
         y = int(y)
         user32 = _user32()
-        largura = int(user32.GetSystemMetrics(0))
-        altura = int(user32.GetSystemMetrics(1))
-        if x < 0 or y < 0 or x >= largura or y >= altura:
-            return f"Coordenadas fora da tela: ({x}, {y}). Resolucao detectada: {largura}x{altura}."
+        origem_x, origem_y, largura, altura = _limites_tela_virtual_windows(user32)
+        limite_x = origem_x + largura
+        limite_y = origem_y + altura
+        if x < origem_x or y < origem_y or x >= limite_x or y >= limite_y:
+            return (
+                f"Coordenadas fora da area de trabalho virtual: ({x}, {y}). "
+                f"Limites detectados: x={origem_x}..{limite_x - 1}, "
+                f"y={origem_y}..{limite_y - 1}."
+            )
         if not user32.SetCursorPos(x, y):
             return "Nao consegui mover o mouse."
         return f"Mouse movido para ({x}, {y})."
@@ -2023,10 +2037,15 @@ def clicar_mouse_windows(x, y, botao="esquerdo", descricao=""):
         x = int(x)
         y = int(y)
         user32 = _user32()
-        largura = int(user32.GetSystemMetrics(0))
-        altura = int(user32.GetSystemMetrics(1))
-        if x < 0 or y < 0 or x >= largura or y >= altura:
-            return f"Coordenadas fora da tela: ({x}, {y}). Resolucao detectada: {largura}x{altura}."
+        origem_x, origem_y, largura, altura = _limites_tela_virtual_windows(user32)
+        limite_x = origem_x + largura
+        limite_y = origem_y + altura
+        if x < origem_x or y < origem_y or x >= limite_x or y >= limite_y:
+            return (
+                f"Coordenadas fora da area de trabalho virtual: ({x}, {y}). "
+                f"Limites detectados: x={origem_x}..{limite_x - 1}, "
+                f"y={origem_y}..{limite_y - 1}."
+            )
         if not user32.SetCursorPos(x, y):
             return "Nao consegui posicionar o mouse."
 
@@ -2286,9 +2305,21 @@ def capturar_tela_windows() -> ToolResult:
     try:
         imagem = ImageGrab.grab(all_screens=True)
         imagem.save(destino, format="PNG", optimize=True)
+        user32 = _user32()
+        origem_x, origem_y, largura_virtual, altura_virtual = _limites_tela_virtual_windows(user32)
+        largura_imagem, altura_imagem = imagem.size
         return ToolResult.success(
             f"Tela capturada: {destino.name}",
-            data={"image_path": str(destino), "mime_type": "image/png"},
+            data={
+                "image_path": str(destino),
+                "mime_type": "image/png",
+                "image_width": largura_imagem,
+                "image_height": altura_imagem,
+                "virtual_screen_x": origem_x,
+                "virtual_screen_y": origem_y,
+                "virtual_screen_width": largura_virtual,
+                "virtual_screen_height": altura_virtual,
+            },
         )
     except Exception as exc:
         return ToolResult.failure(
