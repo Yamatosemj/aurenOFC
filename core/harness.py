@@ -57,6 +57,7 @@ from core.harness_serialization import (
 )
 from core.harness_completion import _mensagem_conclusao_local
 from core.harness_state import _montar_estado
+from core.harness_round_input import _montar_input_da_rodada
 from core.harness_heuristics import (
     _parece_tarefa_visual_composta,
     _parece_tarefa_multietapa_browser,
@@ -491,74 +492,19 @@ class AurenHarness:
         resposta_anterior: Any,
         resultados: list[dict[str, Any]],
     ) -> list[Any]:
-        """Monta um input novo sem previous_response_id.
-
-        Mantemos apenas a resposta da rodada anterior e seus outputs,
-        incluindo reasoning quando o modelo precisar dele. Nunca reenviamos
-        a cadeia inteira da tarefa nem usamos previous_response_id.
-        """
-        # A rodada atual já será enviada como function_call_output.
-        # Não repetimos o mesmo resultado no texto do estado.
-        historico_anterior = historico
-        if resultados:
-            quantidade_atual = len(resultados)
-            if quantidade_atual <= len(historico_anterior):
-                historico_anterior = historico_anterior[:-quantidade_atual]
-
-        estado = self._montar_estado(
+        return _montar_input_da_rodada(
             objetivo,
-            historico_anterior,
-            incluir_contexto=False,
+            historico,
+            resposta_anterior,
+            resultados,
+            montar_estado=self._montar_estado,
+            preparar_resultado_visual=prepare_vision_result_content,
+            ao_atualizar_geometria=self._marcar_geometria_visual_atualizada,
         )
 
-        input_items: list[Any] = [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "input_text",
-                        "text": estado,
-                    }
-                ],
-            }
-        ]
-
-        # Modelos de raciocínio exigem que os itens de reasoning da resposta
-        # anterior acompanhem os function calls e os respectivos outputs.
-        # Enviamos somente a resposta da rodada imediatamente anterior,
-        # nunca toda a cadeia da tarefa.
-        for item in getattr(resposta_anterior, "output", []):
-            if getattr(item, "type", "") == "function_call":
-                input_items.append(item)
-
-        for resultado in resultados:
-            input_items.append(
-                {
-                    "type": "function_call_output",
-                    "call_id": resultado["call_id"],
-                    "output": resultado["resultado"],
-                }
-            )
-            partes_visao = prepare_vision_result_content(resultado)
-            if partes_visao is not None:
-                partes_imagem, geometria_atualizada = partes_visao
-                if geometria_atualizada:
-                    self._vision_reobserve_pending = False
-                    self._vision_guard_attempts = 0
-
-                # input_image e um content part de uma mensagem, nao um
-                # item de topo da lista input. Mantemos imagem e sua
-                # geometria no mesmo bloco user para evitar perder a
-                # relacao entre os pixels observados e as coordenadas.
-                input_items.append(
-                    {
-                        "role": "user",
-                        "content": partes_imagem,
-                    }
-                )
-
-        return input_items
-
+    def _marcar_geometria_visual_atualizada(self) -> None:
+        self._vision_reobserve_pending = False
+        self._vision_guard_attempts = 0
 
     @staticmethod
     def _uso_resposta(resposta: Any) -> dict[str, int]:
