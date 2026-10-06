@@ -106,7 +106,7 @@ def test_closing_session_does_not_clear_a_different_current_context():
         limpar_sessao_atual=lambda: events.append("clear-current"),
         limpar_estado_harness=lambda: events.append("clear-harness"),
         limpar_redaction=lambda: events.append("clear-redaction"),
-        write_log=lambda **_: events.append("write-log"),
+        write_log=lambda *args, **_: events.append("write-log"),
     )
 
     assert result is True
