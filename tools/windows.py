@@ -2019,8 +2019,9 @@ def _contexto_dpi_per_monitor_windows(user32):
         yield False
         return
 
+    aplicado = bool(anterior)
     try:
-        yield True
+        yield aplicado
     finally:
         if anterior:
             try:
