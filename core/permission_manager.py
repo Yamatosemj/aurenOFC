@@ -41,6 +41,8 @@ class PermissionManager:
         "memory.read": PermissionLevel.AUTO,
         "application.open": PermissionLevel.AUTO,
         "file.search": PermissionLevel.AUTO,
+        "file.inspect": PermissionLevel.AUTO,
+        "file.read": PermissionLevel.AUTO,
         "windows.process.read": PermissionLevel.AUTO,
         "windows.process.control": PermissionLevel.CONFIRM,
         "windows.window.read": PermissionLevel.AUTO,
