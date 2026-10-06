@@ -60,7 +60,23 @@ from core.harness_logging import (
 
 
 
-def _chat_id() -> str:
+@dataclass(frozen=True)
+class SessionContext:
+    chat_id: str
+    log_file: Path
+
+    @property
+    def log_root(self) -> Path:
+        return self.log_file.parent.parent
+
+
+_CURRENT_SESSION: contextvars.ContextVar[SessionContext | None] = contextvars.ContextVar(
+    "auren_current_session", default=None
+)
+_LOG_LOCK = threading.RLock()
+
+
+def _chat_id -> str:
     return "chat-" + datetime.now().strftime("%Y%m%d-%H%M%S-%f")
 
 
