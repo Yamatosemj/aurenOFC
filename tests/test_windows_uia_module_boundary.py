@@ -46,8 +46,8 @@ def test_windows_uia_reuses_persistent_worker_over_stdin_stdout(monkeypatch):
     class _Stdout:
         def __iter__(self):
             return iter([
-                '{"ok":true,"operacao":"resolver"}\\n',
-                '{"ok":true,"operacao":"inspecionar"}\\n',
+                '{"ok":true,"operacao":"resolver"}\n',
+                '{"ok":true,"operacao":"inspecionar"}\n',
             ])
 
     class _Process:
