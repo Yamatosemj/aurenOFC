@@ -44,7 +44,7 @@ A matriz abaixo descreve todas as 28 capabilities presentes na linha V49, inclui
 | windows.status.read | Leitura | AUTO | Só consulta estado do Windows. |
 | windows.screen.read | Leitura | AUTO | Captura/observação sem mutação. |
 | windows.clipboard.read | Leitura | AUTO | Só leitura do clipboard. |
-| windows.clipboard.write | **Irreversível** | AUTO | Hoje sobrescreve o clipboard sem capturar/restaurar o valor anterior. **Mudança proposta: AUTO → CONFIRM.** |
+| windows.clipboard.write | **Irreversível — exceção explícita** | AUTO | Hoje sobrescreve o clipboard sem capturar/restaurar o valor anterior. **Decisão do usuário: permanece AUTO**, apesar de não haver restauração exata. |
 | windows.input | Irreversível (mista) | AUTO | Movimento do mouse e teclas seguras podem ser automáticos; clique, arraste e teclas/atalhos de risco exigem CONFIRM. |
 | windows.audio.read | Leitura | AUTO | Só consulta volume/mudo. |
 | windows.audio.control | Reversível (mista) | AUTO | Volume e mudo capturam o estado anterior e têm undo quando a leitura anterior foi confirmada; comandos de mídia são ações momentâneas e não são registrados como undo. |
@@ -62,9 +62,9 @@ A matriz abaixo descreve todas as 28 capabilities presentes na linha V49, inclui
 
 Nenhuma reclassificação foi aplicada nesta etapa sem aprovação explícita.
 
-### 1. windows.clipboard.write: permanece AUTO
+### 1. windows.clipboard.write: permanece AUTO por exceção explícita
 
-Decisão explícita do usuário: manter a escrita no clipboard como AUTO. A implementação atual substitui o conteúdo anterior e não registra undo do valor anterior, portanto esta é uma limitação consciente da política atual, e não uma alegação de restauração exata.
+Decisão explícita do usuário: manter a escrita no clipboard como AUTO. Como a implementação atual substitui o conteúdo anterior e não registra undo do valor anterior, esta capability é uma exceção deliberada ao princípio geral de que irreversível confirma. A documentação não trata a ação como reversível nem promete restauração exata.
 
 ### 2. memory.write: nenhuma promoção para AUTO
 
@@ -97,6 +97,6 @@ A infraestrutura de timeout, expiração e token já está implementada nesta tr
 
 A única reclassificação material proposta nesta tarefa foi analisada e **rejeitada**:
 
-windows.clipboard.write: AUTO → CONFIRM — rejeitada; permanece AUTO por decisão explícita do usuário.
+windows.clipboard.write: AUTO → CONFIRM — rejeitada; permanece AUTO por decisão explícita do usuário como exceção documentada.
 
 A política de risco fica consolidada sem alteração de nível para essa capability.
