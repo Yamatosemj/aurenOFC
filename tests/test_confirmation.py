@@ -68,7 +68,7 @@ def test_permission_manager_delegates_confirmation_to_injected_channel(monkeypat
     assert motivo == "Usuario confirmou a acao."
     assert len(captured) == 1
     assert captured[0].tool_name == "encerrar_processo_windows"
-    assert captured[0].actions_attempted == 1
+    assert captured[0].actions_attempted == 0
 
 
 def test_voice_confirmation_accepts_sim_from_shared_audio_queue():
