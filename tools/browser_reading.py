@@ -567,6 +567,24 @@ def ler_pagina(foco):
                 const detalhes = Array.from(document.querySelectorAll('details[open]'))
                     .filter(visivel);
 
+                const detalhesAbertos = detalhes.map((detail, indice) => {
+                    const summary = detail.querySelector('summary');
+                    if (!summary || !visivel(summary)) return null;
+                    const id = summary.getAttribute('id') || '';
+                    const name = summary.getAttribute('name') || '';
+                    const aria = summary.getAttribute('aria-label') || '';
+                    const texto = limpar(summary.innerText || summary.textContent || '', 100);
+                    const chave = id ? 'id:' + id : name ? 'name:' + name : aria ? 'aria:' + aria : texto ? 'texto:' + texto : 'details:' + indice;
+                    return {
+                        chave,
+                        id,
+                        nameAttr: name,
+                        nome: texto || aria,
+                        tag: 'summary',
+                        role: summary.getAttribute('role') || '',
+                        detailsOpen: true,
+                    };
+                }).filter(Boolean);
                 const elementosFlutuantes = {
                     dialogos: Array.from(document.querySelectorAll('dialog, [role="dialog"], [role="alertdialog"]'))
                         .filter(visivel).length,
@@ -582,7 +600,8 @@ def ler_pagina(foco):
                             return 0;
                         }
                     })(),
-                    details_abertos: detalhes.length
+                    details_abertos: detalhes.length,
+                    detalhes_abertos: detalhesAbertos
                 };
 
                 return {
@@ -734,6 +753,18 @@ def ler_pagina(foco):
             f"details_abertos={flutuantes.get('details_abertos', 0)}"
         )
         linhas.extend(["", "Campos e controles visiveis:"])
+        detalhes_abertos = flutuantes.get("detalhes_abertos", [])
+        if isinstance(detalhes_abertos, list):
+            for detalhe in detalhes_abertos:
+                if not isinstance(detalhe, dict):
+                    continue
+                nome_detalhe = str(detalhe.get("nome") or "")
+                chave_detalhe = str(detalhe.get("chave") or "")
+                linhas.append(
+                    "- tag=summary | nome=" + nome_detalhe
+                    + " | chave=" + chave_detalhe
+                    + " | estado=details-open=true"
+                )
 
         def _estado_controle_texto(estados):
             partes = []
