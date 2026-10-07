@@ -130,11 +130,12 @@ def ler_pagina(foco):
 
                 const controles = [];
                 for (const el of document.querySelectorAll(
-                    "input, textarea, select, button, summary, [role='button'], [role='textbox'], [role='searchbox'], [role='combobox'], [role='tab'], [role='menuitem'], [role='checkbox'], [role='radio']"
+                    "input, textarea, select, button, summary, details > summary, [role='button'], [role='textbox'], [role='searchbox'], [role='combobox'], [role='tab'], [role='menuitem'], [role='checkbox'], [role='radio']"
                 )) {
                     if (!visivel(el)) continue;
-                    const nome = nomeDoElemento(el);
-                    const placeholder = el.getAttribute('placeholder') || '';
+                    const nome = el.tagName === 'SUMMARY' && el.closest('details')
+                        ? (nomeDoElemento(el) || el.closest('details').getAttribute('aria-label') || '')
+                        : nomeDoElemento(el);                    const placeholder = el.getAttribute('placeholder') || '';
                     const nameAttr = el.getAttribute('name') || '';
                     const idAttr = el.getAttribute('id') || '';
                     const tipo = (el.getAttribute('type') || '').toLowerCase();
@@ -563,6 +564,9 @@ def ler_pagina(foco):
                     );
                 }
 
+                const detalhes = Array.from(document.querySelectorAll('details[open]'))
+                    .filter(visivel);
+
                 const elementosFlutuantes = {
                     dialogos: Array.from(document.querySelectorAll('dialog, [role="dialog"], [role="alertdialog"]'))
                         .filter(visivel).length,
@@ -578,8 +582,7 @@ def ler_pagina(foco):
                             return 0;
                         }
                     })(),
-                    details_abertos: Array.from(document.querySelectorAll('details[open]'))
-                        .filter(visivel).length
+                    details_abertos: detalhes.length
                 };
 
                 return {
