@@ -19,6 +19,7 @@ READ_MAX_CHARS = 20_000
 MAX_READ_OFFSET = 1_000_000
 MAX_COPY_SCAN_FILES = 20_000
 COPY_SEARCH_ROOT_NAMES = ("Downloads", "Desktop", "Documents")
+ONEDRIVE_ALLOWED_SUBROOT_NAMES = ("Downloads", "Desktop", "Documents", "Área de Trabalho", "Documentos")
 
 
 @dataclass(frozen=True)
@@ -461,11 +462,13 @@ def _read_allowed_roots() -> list[Path]:
     ]
     for value in onedrive_values:
         if value:
-            roots.append(Path(value).expanduser())
+            raiz = Path(value).expanduser()
+            roots.extend(raiz / nome for nome in ONEDRIVE_ALLOWED_SUBROOT_NAMES)
 
     # Em instalações comuns do Windows, o OneDrive pode existir mesmo quando
     # a variável de ambiente não foi propagada ao processo.
-    roots.append(profile / "OneDrive")
+    raiz_padrao = profile / "OneDrive"
+    roots.extend(raiz_padrao / nome for nome in ONEDRIVE_ALLOWED_SUBROOT_NAMES)
 
     unique: list[Path] = []
     seen: set[str] = set()
