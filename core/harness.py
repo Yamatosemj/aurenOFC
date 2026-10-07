@@ -232,6 +232,7 @@ class AurenHarness:
         "listar_abas",
         "obter_contexto_navegador",
         "consultar_memoria_persistente",
+        "listar_memoria",
         # Alteracoes simples cujo retorno ja confirma a acao.
         "definir_volume_windows",
         "definir_mudo_windows",
@@ -459,8 +460,24 @@ class AurenHarness:
         return chat_id
 
     def _encerrar_sessao_chat(self, status: str = "closed") -> None:
+        session = self._session
+        if session is not None:
+            try:
+                resultado = self.context.salvar_resumo_sessao(session.chat_id)
+                if not resultado.get("ok", False):
+                    _write_log(
+                        "MEMORY_ERROR",
+                        task_id=self._task_id,
+                        erro=f"resumo_sessao: {resultado.get('erro', 'erro desconhecido')}",
+                    )
+            except Exception as exc:
+                _write_log(
+                    "MEMORY_ERROR",
+                    task_id=self._task_id,
+                    erro=f"resumo_sessao: {exc}",
+                )
         _encerrar_sessao_chat_impl(
-            self._session,
+            session,
             status,
             obter_sessao_atual=_CURRENT_SESSION.get,
             limpar_sessao_atual=lambda: _CURRENT_SESSION.set(None),
