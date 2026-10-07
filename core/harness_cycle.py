@@ -158,9 +158,11 @@ def executar_ciclo(
             return False, resposta
 
         browser_verification_enabled = harness._parece_tarefa_browser_verificavel(objetivo)
-        browser_verification_state = {
-            "pending": harness._browser_verification_pending if browser_verification_enabled else False
-        }
+        if browser_verification_enabled:
+            browser_verification_state = harness._browser_verification_state
+            browser_verification_state["pending"] = harness._browser_verification_pending
+        else:
+            browser_verification_state = {"pending": False}
         browser_state_mutating_tools = (
             harness.BROWSER_STATE_MUTATING_TOOLS
             if browser_verification_enabled
@@ -193,6 +195,9 @@ def executar_ciclo(
             write_log=write_log,
         )
         harness._browser_verification_pending = bool(browser_verification_state.get("pending", False))
+        if not harness._browser_verification_pending:
+            harness._browser_verification_state.clear()
+            harness._browser_verification_state["pending"] = False
         if any(
             item.get("ferramenta") == harness.BROWSER_VERIFICATION_TOOL
             and item.get("sucesso")
