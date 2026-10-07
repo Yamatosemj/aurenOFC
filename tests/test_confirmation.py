@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from queue import Queue
 
+import pytest
+
 from core.confirmation import ConfirmationRequest, TextConfirmationChannel
 from core.permission_manager import PermissionManager
 from voice.confirmation import VoiceConfirmationChannel
@@ -111,6 +113,49 @@ def test_voice_confirmation_rejects_legacy_raw_queue_item():
 
     audio_queue = Queue()
     audio_queue.put("audio-confirmacao")
+    channel = VoiceConfirmationChannel(
+        tts=FakeTTS(),
+        stt=FakeSTT(),
+        audio_queue=audio_queue,
+        timeout=0.1,
+    )
+
+    assert channel.confirmar(_request()) is False
+
+
+@pytest.mark.parametrize("resposta", ["sim", "Sim.", "sim!", "sim, pode"])
+def test_voice_confirmation_accepts_common_affirmative_phrases(resposta):
+    class FakeTTS:
+        def falar(self, _texto):
+            pass
+
+    class FakeSTT:
+        def transcrever(self, _audio):
+            return resposta
+
+    audio_queue = Queue()
+    audio_queue.put(("audio", "audio-confirmacao"))
+    channel = VoiceConfirmationChannel(
+        tts=FakeTTS(),
+        stt=FakeSTT(),
+        audio_queue=audio_queue,
+        timeout=0.1,
+    )
+
+    assert channel.confirmar(_request()) is True
+
+
+def test_voice_confirmation_rejects_ambiguous_phrase():
+    class FakeTTS:
+        def falar(self, _texto):
+            pass
+
+    class FakeSTT:
+        def transcrever(self, _audio):
+            return "talvez, depois eu vejo"
+
+    audio_queue = Queue()
+    audio_queue.put(("audio", "audio-confirmacao"))
     channel = VoiceConfirmationChannel(
         tts=FakeTTS(),
         stt=FakeSTT(),
