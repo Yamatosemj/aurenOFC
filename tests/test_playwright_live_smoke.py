@@ -10,6 +10,8 @@ def test_real_playwright_browser_wrapper_smoke():
     script = r'''
 from playwright.sync_api import sync_playwright
 from tools import browser
+from tools import browser_context as browser_context_tool
+from core.browser_verification import verificar_resultado_navegador
 
 with sync_playwright() as playwright:
     real_browser = playwright.chromium.launch(headless=True)
@@ -37,6 +39,27 @@ with sync_playwright() as playwright:
 
     contexto = browser.ler_pagina("Menu")
     assert "aria-expanded=true" in contexto.message
+
+    contexto_real = browser_context_tool.obter_contexto_navegador("")
+    assert contexto_real.ok is True
+    verificado = verificar_resultado_navegador(
+        "clicar_elemento",
+        '{"alvo":"Menu","indice":1}',
+        contexto_real.data,
+        click.data,
+    )
+    assert verificado is True
+
+    page.locator("#menu").click()
+    contexto_invalido = browser_context_tool.obter_contexto_navegador("")
+    assert contexto_invalido.ok is True
+    falha_detectada = verificar_resultado_navegador(
+        "clicar_elemento",
+        '{"alvo":"Menu","indice":1}',
+        contexto_invalido.data,
+        click.data,
+    )
+    assert falha_detectada is False
 
     preenchimento = browser.preencher_elemento("Nome", "Victor", 1)
     assert preenchimento.ok is True
