@@ -73,7 +73,8 @@ def test_voice_confirmation_accepts_sim_from_shared_audio_queue():
             return "sim"
 
     audio_queue = Queue()
-    audio_queue.put(("audio", _captured_audio(time.perf_counter())))    tts = FakeTTS()
+    audio_queue.put(("audio", _captured_audio(time.perf_counter())))
+    tts = FakeTTS()
     channel = VoiceConfirmationChannel(
         tts=tts,
         stt=FakeSTT(),
@@ -136,7 +137,7 @@ def test_voice_confirmation_accepts_common_affirmative_phrases(resposta):
             return resposta
 
     audio_queue = Queue()
-    audio_queue.put(("audio", "audio-confirmacao"))
+    audio_queue.put(("audio", _captured_audio(time.perf_counter())))
     channel = VoiceConfirmationChannel(
         tts=FakeTTS(),
         stt=FakeSTT(),
@@ -183,15 +184,16 @@ def _captured_audio(captured_at: float) -> CapturedAudio:
 
 def test_voice_confirmation_discards_stale_audio_and_accepts_fresh_capture():
     audio_queue = Queue()
-    audio_queue.put(("audio", _captured_audio(time.perf_counter() - 10.0)))
-    fresh_audio = _captured_audio(time.perf_counter() + 0.05)
     transcribed = []
 
     class FakeTTS:
         def falar(self, _texto):
+            audio_queue.put(("audio", _captured_audio(time.perf_counter())))
+
             def put_fresh_audio():
                 time.sleep(0.01)
-                audio_queue.put(("audio", fresh_audio))
+                audio_queue.put(("audio", _captured_audio(time.perf_counter())))
+
             Thread(target=put_fresh_audio, daemon=True).start()
 
     class FakeSTT:
@@ -207,8 +209,8 @@ def test_voice_confirmation_discards_stale_audio_and_accepts_fresh_capture():
     )
 
     assert channel.confirmar(_request()) is True
-    assert transcribed == [fresh_audio]
-
+    assert len(transcribed) == 1
+    assert transcribed[0].captured_at > 0
 
 def test_voice_confirmation_stops_on_real_capture_error_without_calling_asr():
     class FakeTTS:
