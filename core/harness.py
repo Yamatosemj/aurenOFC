@@ -281,6 +281,21 @@ class AurenHarness:
         "rolar_pagina",
     }
 
+    BROWSER_VERIFICATION_TOOLS = {
+        # Acoes browser cujo resultado observavel pode ser confirmado pelo contexto
+        # atual de abas e pagina.
+        "navegar_navegador",
+        "abrir_nova_aba",
+        "trocar_aba",
+        "fechar_aba",
+        "clicar_elemento",
+        "preencher_elemento",
+        "pressionar_tecla",
+        "voltar_pagina",
+        "avancar_pagina",
+        "recarregar_pagina",
+    }
+
     VISUAL_MUTATING_TOOLS = {
         # Acoes que podem alterar a imagem da tela ou a posicao dos elementos.
         "clicar_mouse_windows",
