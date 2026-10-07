@@ -84,7 +84,7 @@ def test_permissions_are_keyed_by_capability_not_tool_name() -> None:
 
 
 def test_fechar_aba_schema_keeps_indice_optional():
-    from core.tools_registry import TOOL_REGISTRY
+    from core.tools_registry import tools
 
-    schema = next(item for item in TOOL_REGISTRY if item["name"] == "fechar_aba")
+    schema = next(item for item in tools if item["name"] == "fechar_aba")
     assert schema["parameters"]["required"] == []
