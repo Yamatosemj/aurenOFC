@@ -263,7 +263,10 @@ def test_open_new_tab_verification_requires_count_and_destination():
             "quantidade_depois": 2,
             "aba_ativa_depois": 2,
             "url_ativa_depois": "https://youtube.com/",
-            "depois": [],
+            "depois": [
+                {"indice": 1, "titulo": "Inicio", "url": "https://example.com", "ativa": False},
+                {"indice": 2, "titulo": "YouTube", "url": "https://youtube.com/", "ativa": True},
+            ],
         }
     }
 
@@ -297,7 +300,16 @@ def test_switch_tab_verification_requires_active_index_and_observed_url():
             "quantidade_depois": 3,
             "aba_ativa_depois": 2,
             "url_ativa_depois": "https://example.com/editor",
-            "depois": [],
+            "antes": [
+                {"indice": 1, "titulo": "Inicio", "url": "https://example.com", "ativa": True},
+                {"indice": 2, "titulo": "Editor", "url": "https://example.com/editor", "ativa": False},
+                {"indice": 3, "titulo": "Ajuda", "url": "https://example.com/help", "ativa": False},
+            ],
+            "depois": [
+                {"indice": 1, "titulo": "Inicio", "url": "https://example.com", "ativa": False},
+                {"indice": 2, "titulo": "Editor", "url": "https://example.com/editor", "ativa": True},
+                {"indice": 3, "titulo": "Ajuda", "url": "https://example.com/help", "ativa": False},
+            ],
         }
     }
 
@@ -330,7 +342,15 @@ def test_close_tab_verification_requires_decrement_and_new_active_tab():
             "aba_fechada": 2,
             "aba_ativa_depois": 1,
             "url_ativa_depois": "https://example.com",
-            "depois": [],
+            "antes": [
+                {"indice": 1, "titulo": "Inicio", "url": "https://example.com", "ativa": False},
+                {"indice": 2, "titulo": "Ajuda", "url": "https://example.com/help", "ativa": True},
+                {"indice": 3, "titulo": "Outro", "url": "https://example.com/outro", "ativa": False},
+            ],
+            "depois": [
+                {"indice": 1, "titulo": "Inicio", "url": "https://example.com", "ativa": True},
+                {"indice": 2, "titulo": "Outro", "url": "https://example.com/outro", "ativa": False},
+            ],
         }
     }
 
@@ -358,3 +378,56 @@ def test_close_tab_verification_requires_decrement_and_new_active_tab():
         acao,
     ) is False
 
+
+
+def test_tab_verification_rejects_inconsistent_observed_count():
+    dados = _contexto(
+        "Abas abertas: 3\n"
+        "Aba ativa: 2\n"
+        "Aba 1: Inicio | https://example.com\n"
+        "Aba 2: Editor | https://example.com/editor [ATIVA]\n"
+    )
+    acao = {
+        "abas": {
+            "quantidade_antes": 3,
+            "quantidade_depois": 3,
+            "aba_ativa_depois": 2,
+            "url_ativa_depois": "https://example.com/editor",
+            "depois": [
+                {"indice": 1, "titulo": "Inicio", "url": "https://example.com", "ativa": False},
+                {"indice": 2, "titulo": "Editor", "url": "https://example.com/editor", "ativa": True},
+                {"indice": 3, "titulo": "Ajuda", "url": "https://example.com/help", "ativa": False},
+            ],
+        }
+    }
+
+    assert verificar_resultado_navegador(
+        "trocar_aba",
+        '{"indice":2}',
+        dados,
+        acao,
+    ) is False
+
+
+def test_close_last_tab_requires_observed_zero_tabs():
+    dados = _contexto("Nenhuma aba aberta no navegador.")
+    acao = {
+        "abas": {
+            "quantidade_antes": 1,
+            "quantidade_depois": 0,
+            "aba_fechada": 1,
+            "aba_ativa_depois": None,
+            "url_ativa_depois": None,
+            "antes": [
+                {"indice": 1, "titulo": "Inicio", "url": "https://example.com", "ativa": True},
+            ],
+            "depois": [],
+        }
+    }
+
+    assert verificar_resultado_navegador(
+        "fechar_aba",
+        '{"indice":1}',
+        dados,
+        acao,
+    ) is True
