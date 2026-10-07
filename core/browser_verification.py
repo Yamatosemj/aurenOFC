@@ -60,7 +60,22 @@ def _normalize_url(value: str) -> str:
     return f"{scheme}://{netloc}{path}" + (f"?{parsed.query}" if parsed.query else "")
 
 
-def _active_tab(abas: str) -> tuple[int, str, str] | None:
+def _active_tab(abas: Any) -> tuple[int, str, str] | None:
+    # Preferencia para o snapshot estruturado: ele preserva a URL completa
+    # sem depender da representacao textual truncada mostrada ao modelo.
+    if isinstance(abas, list):
+        ativos = [item for item in abas if isinstance(item, dict) and item.get("ativa") is True]
+        if len(ativos) != 1:
+            return None
+        item = ativos[0]
+        try:
+            indice = int(item.get("indice"))
+        except (TypeError, ValueError):
+            return None
+        titulo = str(item.get("titulo") or "").strip()
+        url = str(item.get("url") or "").strip()
+        return indice, titulo, url
+
     texto = str(abas or "")
     active = re.search(r"(?m)^Aba ativa:\s*(\d+)", texto)
     if not active:
@@ -85,7 +100,8 @@ def verificar_resultado_navegador(
 ) -> bool | None:
     """Retorna True/False quando sabe verificar a acao; None para casos genericos."""
     dados = dados_contexto if isinstance(dados_contexto, dict) else {}
-    abas = str(dados.get("abas") or "")
+    snapshot = dados.get("abas_snapshot")
+    abas = snapshot if isinstance(snapshot, list) else str(dados.get("abas") or "")
     args = _parse_args(argumentos)
 
     if args is None:
@@ -274,11 +290,30 @@ def _verificar_tecla(abas: str, dados_acao: Any) -> bool | None:
 
     return None
 
-def _extrair_abas_observadas(abas: str) -> tuple[int | None, list[tuple[int, str, str]]]:
+def _extrair_abas_observadas(abas: Any) -> tuple[int | None, list[tuple[int, str, str]]]:
+    if isinstance(abas, list):
+        encontradas: list[tuple[int, str, str]] = []
+        for item in abas:
+            if not isinstance(item, dict):
+                continue
+            try:
+                indice = int(item.get("indice"))
+            except (TypeError, ValueError):
+                return None, []
+            encontradas.append((
+                indice,
+                str(item.get("titulo") or "").strip(),
+                str(item.get("url") or "").strip(),
+            ))
+        indices = [item[0] for item in encontradas]
+        if indices and sorted(indices) != list(range(1, len(indices) + 1)):
+            return None, []
+        return len(encontradas), encontradas
+
     texto = str(abas or "")
     match = re.search(r"(?m)^Abas abertas:\s*(\d+)", texto)
     quantidade = int(match.group(1)) if match else None
-    encontradas: list[tuple[int, str, str]] = []
+    encontradas = []
     for linha in texto.splitlines():
         match = re.match(
             r"^Aba\s+(\d+):\s*(.*?)\s*\|\s*(.+?)(?:\s*\[ATIVA\])?$",
