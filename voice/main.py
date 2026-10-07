@@ -78,7 +78,7 @@ def _falar_interrompivel(
     recorder: PushToTalkRecorder,
     texto: str,
     texto_recebido_em: float | None = None,
-) -> tuple[bool, bool, float | None]:
+) -> tuple[bool, bool, float | None, float]:
     """Fala em segundo plano para permitir ESC ou F8 interromper a fala.
 
     Retorna (foi_interrompido_por_f8, pediu_saida_por_esc, latencia_texto_voz).
@@ -97,6 +97,7 @@ def _falar_interrompivel(
         except BaseException as exc:  # propaga o erro no thread principal
             erro.append(exc)
 
+    inicio_tts = time.perf_counter()
     thread = Thread(target=_worker, name="auren-tts", daemon=True)
     thread.start()
 
@@ -114,6 +115,7 @@ def _falar_interrompivel(
         time.sleep(0.02)
 
     thread.join()
+    tts_ms = max(0.0, (time.perf_counter() - inicio_tts) * 1000.0)
 
     if erro:
         exc = erro[0]
@@ -124,7 +126,7 @@ def _falar_interrompivel(
     latencia = None
     if texto_recebido_em is not None and inicio_voz[0] is not None:
         latencia = max(0.0, inicio_voz[0] - texto_recebido_em)
-    return interrompido, sair, latencia
+    return interrompido, sair, latencia, tts_ms
 
 
 def _novo_harness(confirmation_channel: VoiceConfirmationChannel | None = None) -> AurenHarness:
@@ -167,7 +169,7 @@ def _processar_e_falar(
 
     print(f"Auren: {fala}")
     try:
-        interrompido, sair, latencia = _falar_interrompivel(
+        interrompido, sair, latencia, tts_ms = _falar_interrompivel(
             tts,
             recorder,
             fala,
@@ -177,6 +179,7 @@ def _processar_e_falar(
         print(f"Auren voz: TTS indisponível: {exc}")
         interrompido, sair, latencia = False, False, None
 
+    harness.registrar_etapa_voz("tts", tts_ms)
     if latencia is not None:
         print(f"Latência texto → voz: {latencia:.3f}s")
 
@@ -278,12 +281,16 @@ def main() -> int:
             if audio is None:
                 continue
 
+            texto_recebido_em = time.perf_counter()
+            inicio_asr = texto_recebido_em
             try:
                 mensagem = stt.transcrever(audio)
-                texto_recebido_em = time.perf_counter()
             except RuntimeError as exc:
+                harness.registrar_etapa_voz("asr", (time.perf_counter() - inicio_asr) * 1000.0)
                 print(f"Auren voz: {exc}")
                 return 3
+            else:
+                harness.registrar_etapa_voz("asr", (time.perf_counter() - inicio_asr) * 1000.0)
 
             mensagem = mensagem.strip()
             if not mensagem:
