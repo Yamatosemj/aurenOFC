@@ -649,7 +649,7 @@ def _verificar_clique(
         relacao = sinal.get("relacao") if isinstance(sinal.get("relacao"), dict) else {}
         valor_relacao = str(relacao.get("valor") or "").strip()
         novos = sinal.get("novos")
-        if causalidade not in {"aria-controls", "aria-haspopup"}:
+        if causalidade not in {"aria-controls", "aria-haspopup", "popover-target"}:
             return None
         if not valor_relacao or not isinstance(novos, list) or not novos:
             return None
