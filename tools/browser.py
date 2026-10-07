@@ -64,27 +64,43 @@ def _descricao_aba(p, indice=None):
 
     return f"{numero}: {titulo or '[sem titulo]'} | {url}"
 
+def _pagina_com_foco_real():
+    """Retorna a unica pagina que o DOM identifica como focada.
+
+    Com varias abas, se o navegador nao nos der uma resposta inequivoca,
+    devolvemos None em vez de fingir que a referencia interna e a aba visual.
+    """
+    abas = _paginas_abertas()
+    if len(abas) == 1:
+        return abas[0]
+    if len(abas) < 2:
+        return None
+
+    focadas = []
+    for aba in abas:
+        try:
+            if bool(aba.evaluate("() => document.hasFocus()")):
+                focadas.append(aba)
+        except Exception:
+            continue
+
+    return focadas[0] if len(focadas) == 1 else None
 def _estado_abas():
     abas = _paginas_abertas()
     if not abas:
         return "Nenhuma aba aberta."
 
-    try:
-        indice_atual = abas.index(pagina) + 1
-    except ValueError:
-        indice_atual = None
-
+    pagina_focada = _pagina_com_foco_real()
     linhas = [
         f"Abas abertas: {len(abas)}",
-        f"Aba ativa: {indice_atual or '?'}",
+        f"Aba ativa: {abas.index(pagina_focada) + 1 if pagina_focada in abas else '?'}",
     ]
 
     for indice, aba in enumerate(abas, start=1):
-        marcador = " [ATIVA]" if aba is pagina else ""
+        marcador = " [ATIVA]" if aba is pagina_focada else ""
         linhas.append(_descricao_aba(aba, indice) + marcador)
 
     return "\n".join(linhas)
-
 def _abrir_contexto(modo):
     global playwright, browser, browser_context, pagina, modo_navegador
 
