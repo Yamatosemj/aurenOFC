@@ -5,6 +5,15 @@ from core.tool_result import ToolResult
 from tools import browser, browser_context
 
 
+class _FakePage:
+    def evaluate(self, _script):
+        return {
+            "scroll_y": 900,
+            "scroll_height": 3000,
+            "viewport_height": 900,
+        }
+
+
 def test_browser_context_combines_tabs_and_active_page(monkeypatch):
     monkeypatch.setattr(
         browser,
@@ -25,6 +34,11 @@ def test_browser_context_combines_tabs_and_active_page(monkeypatch):
     assert "Abas abertas: 2" in result.message
     assert "Titulo: YouTube" in result.message
     assert result.data["foco"] == "video de teste"
+    assert result.data["scroll"] == {
+        "scroll_y": 900,
+        "scroll_height": 3000,
+        "viewport_height": 900,
+    }
 
 
 def test_browser_context_is_read_only_and_untrusted():
