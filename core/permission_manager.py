@@ -621,9 +621,7 @@ class PermissionManager:
         self,
         argumentos: dict[str, Any],
     ) -> tuple[PermissionLevel, str]:
-        alvo = self._normalizar_texto(
-            argumentos.get("alvo", "")
-        )
+        alvo = self._normalizar_texto(argumentos.get("alvo", ""))
 
         if not alvo:
             return (
@@ -631,15 +629,56 @@ class PermissionManager:
                 "Clique sem um alvo textual claro: confirmacao obrigatoria.",
             )
 
-        if alvo in self.SAFE_CLICK_TARGETS:
+        if alvo not in {self._normalizar_texto(item) for item in self.SAFE_CLICK_TARGETS}:
             return (
-                PermissionLevel.AUTO,
-                "Clique corresponde a um alvo explicitamente autorizado para consulta/navegacao.",
+                PermissionLevel.CONFIRM,
+                "Alvo de clique fora da allowlist segura; confirmacao obrigatoria.",
             )
 
+        if argumentos.get("_browser_click_preflight_ok") is not True:
+            return (
+                PermissionLevel.CONFIRM,
+                "A estrutura real do elemento clicado nao foi confirmada; confirmacao obrigatoria.",
+            )
+
+        evidencia = argumentos.get("_browser_click_preflight")
+        if not isinstance(evidencia, dict):
+            return PermissionLevel.CONFIRM, "Evidencia estrutural ausente; confirmacao obrigatoria."
+
+        tag = self._normalizar_texto(evidencia.get("tag", ""))
+        tipo = self._normalizar_texto(evidencia.get("type", ""))
+        href = str(evidencia.get("href", "") or "").strip().casefold()
+        target = self._normalizar_texto(evidencia.get("target", ""))
+        form = evidencia.get("form") if isinstance(evidencia.get("form"), dict) else None
+        metodo_form = self._normalizar_texto(form.get("method", "get")) if form else ""
+
+        if bool(evidencia.get("disabled")):
+            return PermissionLevel.AUTO, "Elemento desabilitado: o clique nao deve produzir efeito."
+
+        if bool(evidencia.get("download")):
+            return PermissionLevel.CONFIRM, "O elemento declara download; confirmacao obrigatoria."
+
+        if evidencia.get("onclick"):
+            return PermissionLevel.CONFIRM, "O elemento possui handler onclick; efeito real nao e determinado pela etiqueta."
+
+        if tipo in {"submit", "reset"}:
+            return PermissionLevel.CONFIRM, "Botao de formulario pode submeter ou alterar estado; confirmacao obrigatoria."
+
+        if metodo_form in {"post", "put", "patch", "delete"}:
+            return PermissionLevel.CONFIRM, "Clique dentro de formulario nao-GET; confirmacao obrigatoria."
+
+        if href.startswith(("javascript:", "data:", "vbscript:")):
+            return PermissionLevel.CONFIRM, "Destino executavel do link; confirmacao obrigatoria."
+
+        if target == "_blank":
+            return PermissionLevel.CONFIRM, "O link abre nova aba; confirmacao obrigatoria para efeito externo ambíguo."
+
+        if tag not in {"a", "button", "summary", "input", "select", "option", "div", "span"} and not evidencia.get("role"):
+            return PermissionLevel.CONFIRM, "Tipo de elemento desconhecido; confirmacao obrigatoria."
+
         return (
-            PermissionLevel.CONFIRM,
-            "Alvo de clique fora da allowlist segura; confirmacao obrigatoria.",
+            PermissionLevel.AUTO,
+            "Alvo seguro confirmado por texto e pela estrutura real do elemento.",
         )
 
     def _classificar_preenchimento(
