@@ -296,3 +296,34 @@ def test_navegar_navegador_restarts_only_after_confirmed_page_closure(monkeypatc
     assert calls == ["restart"]
     assert resultado.ok is True
     assert resultado.data["navegacao"]["url_depois"] == "https://example.com/novo"
+
+
+def test_listar_abas_returns_structured_snapshot(monkeypatch):
+    page = _FakePage("https://example.com", "Inicio")
+    monkeypatch.setattr(browser, "_paginas_abertas", lambda: [page])
+    monkeypatch.setattr(browser, "pagina", page)
+
+    result = browser.listar_abas()
+
+    assert result.ok is True
+    assert result.tool_name == "listar_abas"
+    assert result.data["abas"]
+
+
+def test_fechar_aba_empty_browser_is_structured_failure(monkeypatch):
+    monkeypatch.setattr(browser, "_paginas_abertas", lambda: [])
+
+    result = browser.fechar_aba()
+
+    assert result.ok is False
+    assert result.error_code == "no_open_tabs"
+
+
+def test_fechar_aba_rejects_invalid_index_as_structured_failure(monkeypatch):
+    page = _FakePage("https://example.com", "Inicio")
+    monkeypatch.setattr(browser, "_paginas_abertas", lambda: [page])
+
+    result = browser.fechar_aba("abc")
+
+    assert result.ok is False
+    assert result.error_code == "invalid_tab_index"
