@@ -187,5 +187,5 @@ def test_browser_mutation_is_blocked_while_verification_is_pending():
         falha_nao_recuperada=False,
     )
     assert resultados[0]["sucesso"] is False
-    assert resultados[0]["dados"].get("codigo_erro") == "browser_verification_required"
+    assert '"codigo_erro":"browser_verification_required"' in resultados[0]["resultado"]
     assert called == []
