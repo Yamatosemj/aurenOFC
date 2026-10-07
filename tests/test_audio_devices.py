@@ -62,12 +62,9 @@ class FakeSoundDevice:
         stream.device = kwargs.get("device")
         return stream
 
-    def RawOutputStream(self, **kwargs):
-        delay = audio._PROBE_SECONDS["output"] if self.slow_output else 0.0
-        return _Stream(write_delay=delay)
-
     def OutputStream(self, **kwargs):
-        stream = _Stream()
+        delay = audio._PROBE_SECONDS["output"] if self.slow_output else 0.0
+        stream = _Stream(write_delay=delay)
         stream.device = kwargs.get("device")
         self.output_stream_devices.append(stream.device)
         return stream
