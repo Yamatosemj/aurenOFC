@@ -76,6 +76,7 @@ def rolar_pagina(direcao):
 
     try:
         p = _browser.obter_pagina()
+        antes = float(p.evaluate("window.scrollY || 0") or 0)
 
         if direcao == "cima":
             p.mouse.wheel(0, -900)
@@ -97,8 +98,31 @@ def rolar_pagina(direcao):
                 error_code="scroll_direction_invalid",
             )
 
-        return f"Pagina rolada para '{direcao}'."
+        depois = float(p.evaluate("window.scrollY || 0") or 0)
+        altura_documento = float(
+            p.evaluate(
+                "Math.max(document.body?.scrollHeight || 0, "
+                "document.documentElement?.scrollHeight || 0)"
+            ) or 0
+        )
+        altura_viewport = float(p.evaluate("window.innerHeight || 0") or 0)
+
+        return ToolResult.success(
+            f"Pagina rolada para '{direcao}'.",
+            data={
+                "direcao": str(direcao),
+                "scroll_y_antes": antes,
+                "scroll_y_depois": depois,
+                "scroll_height": altura_documento,
+                "viewport_height": altura_viewport,
+            },
+            tool_name="rolar_pagina",
+        )
 
     except Exception as erro:
-        return f"Nao consegui rolar a pagina: {erro}"
+        return ToolResult.failure(
+            f"Nao consegui rolar a pagina: {erro}",
+            error_code="scroll_failed",
+            tool_name="rolar_pagina",
+        )
 
