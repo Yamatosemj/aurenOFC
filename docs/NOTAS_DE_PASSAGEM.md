@@ -97,3 +97,52 @@ Ficou pendente / virou backlog:
 - Memória recuperável sob demanda continua pendente e foi preservada no backlog; ela não foi falsamente declarada concluída
 
 Próxima tarefa: 4 — confirmação humana não-forjável, após a validação final do undo
+---
+
+## 2026-10-07 — Tarefa 3 — Operações de arquivo seguras com undo e Lixeira
+
+Tarefa concluída: implementação da Tarefa 3; portão de saída ainda pendente da execução final do pytest no CI e do runner live no Windows real
+
+Arquivos criados/alterados:
+- tools/file_intelligence.py
+- tools/files.py
+- tools/dispatcher.py
+- core/tools_registry.py
+- core/tool_contracts.py
+- core/capabilities.py
+- core/permission_manager.py
+- tests/test_file_intelligence.py
+- tests/test_permission_policy.py
+- tests/test_capability_registry.py
+- tests/test_router_tool_selection.py
+- tests/test_tool_contracts.py
+- tests/test_dispatcher_contracts.py
+- README.md
+- AUREN_STATE.md
+- docs/NOTAS_DE_PASSAGEM.md
+
+Decisões tomadas (e por quê):
+- Reaproveitar a política de caminhos já usada pela inteligência de arquivos, mas transformar qualquer caminho de mutação fora da allowlist em BLOCKED, sem confirmação que possa abrir uma escrita fora das pastas autorizadas.
+- Bloquear symlink, junction e demais reparse points presentes no caminho antes de resolver o alvo.
+- Destino existente gera `destination_exists`; não usamos sufixo `(1)` porque erro explícito é mais previsível para uma ação comandada por voz.
+- Mover, copiar, renomear e criar pasta registram undo. A reversão usa SHA-256 para evitar reaplicar a operação sobre conteúdo que mudou.
+- Undo de cópia remove somente a cópia criada pelo Auren e só quando o SHA-256 permanece igual; criação de pasta só é desfeita quando a pasta continua vazia.
+- Lixeira usa somente a Shell API nativa `SHFileOperationW` com `FOF_ALLOWUNDO`; nenhuma dependência nova foi adicionada e nenhuma exclusão permanente é exposta como ferramenta.
+- Não registramos undo da Lixeira porque não há uma restauração confiável implementada nesta tarefa.
+- O fluxo permanece Router → Dispatcher → Contrato → Permissão → Ferramenta → ToolResult.
+
+Testes:
+- Baseline imediatamente anterior: Linux 605 passed, 6 skipped, 5 warnings; Windows 611 passed, 5 warnings.
+- Novos testes desta tarefa: 16.
+- Comando exigido: `py -m pytest -q`.
+- Validação automatizada esperada após os 16 testes novos: Linux 621 passed / 6 skipped; Windows 627 passed, antes do resultado real do CI.
+- Execução local completa não disponível neste ambiente; não foi criado um resultado de teste falso.
+- Runner manual `python testes_auren_live.py --rapido`: pendente no Windows real, como exige o portão da tarefa.
+
+Ficou pendente / virou backlog:
+- Fechar o CI final do PR #78.
+- Executar `python testes_auren_live.py --rapido` no Windows real do Auren.
+- Só depois promover V49 de “em validação” para estável.
+- Tarefa 4 — confirmação humana não-forjável continua sendo a próxima frente do roadmap.
+
+Próxima tarefa: 4 — confirmação humana não-forjável, após o portão da Tarefa 3
