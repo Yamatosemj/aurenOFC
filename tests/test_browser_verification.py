@@ -15,6 +15,7 @@ def test_navigation_verification_accepts_equivalent_normalized_url():
     assert verificar_resultado_navegador(
         "navegar_navegador",
         '{"url":"youtube.com"}',
+        "",
         dados,
     ) is True
 
@@ -29,6 +30,7 @@ def test_navigation_verification_rejects_wrong_active_url():
     assert verificar_resultado_navegador(
         "navegar_navegador",
         '{"url":"youtube.com"}',
+        "",
         dados,
     ) is False
 
@@ -45,12 +47,14 @@ def test_tab_switch_verification_checks_active_tab_index():
     assert verificar_resultado_navegador(
         "trocar_aba",
         '{"indice":2}',
+        "",
         dados,
     ) is True
 
     assert verificar_resultado_navegador(
         "trocar_aba",
         '{"indice":3}',
+        "",
         dados,
     ) is False
 
@@ -66,6 +70,7 @@ def test_open_new_tab_without_target_uses_generic_verification():
     assert verificar_resultado_navegador(
         "abrir_nova_aba",
         '{"url":""}',
+        "",
         dados,
     ) is None
 
@@ -80,5 +85,53 @@ def test_unsupported_browser_action_returns_generic_verification():
     assert verificar_resultado_navegador(
         "rolar_pagina",
         '{"direcao":"baixo"}',
+        "",
         dados,
     ) is None
+
+def test_click_with_navigation_is_verified_against_independent_context():
+    dados = _contexto(
+        "Abas abertas: 2\n"
+        "Aba ativa: 2\n"
+        "Aba 1: Inicio | https://example.com\n"
+        "Aba 2: Destino | https://example.com/destino [ATIVA]"
+    )
+
+    resultado = (
+        "Cliquei em 'Abrir'.\n"
+        "Elemento: tag=a | href=/destino\n"
+        "URL anterior: https://example.com\n"
+        "URL atual: https://example.com/destino\n"
+        "Navegacao: sim"
+    )
+
+    assert verificar_resultado_navegador(
+        "clicar_elemento",
+        '{"alvo":"Abrir","indice":1}',
+        resultado,
+        dados,
+    ) is True
+
+
+def test_click_with_navigation_detects_changed_context():
+    dados = _contexto(
+        "Abas abertas: 2\n"
+        "Aba ativa: 2\n"
+        "Aba 1: Inicio | https://example.com\n"
+        "Aba 2: Outro | https://example.com/outro [ATIVA]"
+    )
+
+    resultado = (
+        "Cliquei em 'Abrir'.\n"
+        "Elemento: tag=a | href=/destino\n"
+        "URL anterior: https://example.com\n"
+        "URL atual: https://example.com/destino\n"
+        "Navegacao: sim"
+    )
+
+    assert verificar_resultado_navegador(
+        "clicar_elemento",
+        '{"alvo":"Abrir","indice":1}',
+        resultado,
+        dados,
+    ) is False
