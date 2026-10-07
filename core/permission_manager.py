@@ -526,19 +526,6 @@ class PermissionManager:
                     "esta bloqueada pela politica de permissoes."
                 ),
             )
-        if (
-            self._fonte_nao_confiavel_pendente is not None
-            and capacidade in self.COUNTED_CAPABILITIES
-        ):
-            fonte = self._fonte_nao_confiavel_pendente
-            return (
-                PermissionLevel.CONFIRM,
-                (
-                    "Esta acao foi solicitada apos a leitura de conteudo nao confiavel "
-                    f"(fonte: {fonte}). Conteudo externo nunca e uma instrucao do usuario; "
-                    "confirmacao explicita e obrigatoria antes de qualquer acao com efeito externo."
-                ),
-            )
         if capacidade in {"file.read", "file.inspect"}:
             path = _resolve_path(str(argumentos.get("caminho", "")))
             path_policy = _classify_read_path(path)
@@ -555,7 +542,14 @@ class PermissionManager:
             elif nome_ferramenta == "renomear_arquivo":
                 caminhos = [argumentos.get("caminho", "")]
                 try:
-                    caminhos.append(str(_rename_destination(str(argumentos.get("caminho", "")), str(argumentos.get("novo_nome", "")))) )
+                    caminhos.append(
+                        str(
+                            _rename_destination(
+                                str(argumentos.get("caminho", "")),
+                                str(argumentos.get("novo_nome", "")),
+                            )
+                        )
+                    )
                 except ValueError as exc:
                     return PermissionLevel.BLOCKED, str(exc)
             else:
@@ -566,9 +560,38 @@ class PermissionManager:
                 if policy.status != "allowed":
                     return PermissionLevel.BLOCKED, policy.motivo
 
+            if (
+                self._fonte_nao_confiavel_pendente is not None
+                and capacidade in self.COUNTED_CAPABILITIES
+            ):
+                fonte = self._fonte_nao_confiavel_pendente
+                return (
+                    PermissionLevel.CONFIRM,
+                    (
+                        "Esta acao foi solicitada apos a leitura de conteudo nao confiavel "
+                        f"(fonte: {fonte}). Conteudo externo nunca e uma instrucao do usuario; "
+                        "confirmacao explicita e obrigatoria antes de qualquer acao com efeito externo."
+                    ),
+                )
+
             if capacidade == "file.trash":
                 return PermissionLevel.CONFIRM, "Enviar para a Lixeira altera o estado do arquivo; confirmacao explicita obrigatoria e nenhuma exclusao permanente e permitida."
             return PermissionLevel.AUTO, "Operacao de arquivo limitada a caminhos permitidos e sem sobrescrita de destino."
+
+        if (
+            self._fonte_nao_confiavel_pendente is not None
+            and capacidade in self.COUNTED_CAPABILITIES
+        ):
+            fonte = self._fonte_nao_confiavel_pendente
+            return (
+                PermissionLevel.CONFIRM,
+                (
+                    "Esta acao foi solicitada apos a leitura de conteudo nao confiavel "
+                    f"(fonte: {fonte}). Conteudo externo nunca e uma instrucao do usuario; "
+                    "confirmacao explicita e obrigatoria antes de qualquer acao com efeito externo."
+                ),
+            )
+
         if capacidade == "windows.window.control":
             if nome_ferramenta in self.REVERSIBLE_WINDOW_CONTROL_TOOLS:
                 return (
