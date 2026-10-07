@@ -24,6 +24,10 @@ from core.harness_logging import (
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+LOG_DIR = PROJECT_ROOT / "logs"
+CHAT_LOGS_DIR = LOG_DIR / "chats"
+TASK_LOG_DIR = LOG_DIR / "tarefas"
+LOG_FILE = LOG_DIR / "auren.log"
 
 @dataclass(frozen=True)
 class SessionContext:
