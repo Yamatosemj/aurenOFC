@@ -22,12 +22,15 @@ def _executar_chamadas_rodada(
     max_tool_result_chars: int,
     get_active_vision_geometry: Callable[[], Any],
     clear_active_vision_geometry: Callable[[], Any],
-    write_log: Callable[..., Any],
-) -> tuple[list[dict[str, Any]], int, bool, bool, bool]:
+    browser_verification_tools: set[str] | None = None,
+    browser_verification_pending: bool = False,
+    write_log: Callable[..., Any] = lambda *args, **kwargs: None,
+) -> tuple[list[dict[str, Any]], int, bool, bool, bool, bool]:
     """Executa as chamadas de uma rodada e atualiza historico/estado operacional."""
     resultados_rodada: list[dict[str, Any]] = []
     ferramentas_executadas = 0
     cancelado = False
+    browser_verification_tools = set(browser_verification_tools or ())
 
     for item in chamadas:
         if task_manager.should_cancel(task_id):
@@ -90,6 +93,12 @@ def _executar_chamadas_rodada(
             vision_reobserve_pending = True
             clear_active_vision_geometry()
 
+        if ferramenta_sucesso:
+            if nome == "obter_contexto_navegador":
+                browser_verification_pending = False
+            elif nome in browser_verification_tools:
+                browser_verification_pending = True
+
         resultado = resultado_estruturado.for_model()
         imagem_path = None
         if isinstance(resultado_estruturado.data, dict):
@@ -142,5 +151,6 @@ def _executar_chamadas_rodada(
         ferramentas_executadas,
         falha_nao_recuperada,
         vision_reobserve_pending,
+        browser_verification_pending,
         cancelado,
     )
