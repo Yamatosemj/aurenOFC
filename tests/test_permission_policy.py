@@ -291,3 +291,30 @@ def test_browser_reload_requires_confirmation_even_when_named_safe(nome_ferramen
 
     assert nivel == PermissionLevel.CONFIRM
     assert "repetir" in motivo.lower() or "confirmacao" in motivo.lower()
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://example.com/logout",
+        "https://example.com/checkout",
+        "https://example.com/account/delete",
+        "https://example.com/payment/confirm",
+    ],
+)
+def test_navigation_to_potentially_persistent_action_requires_confirmation(url):
+    manager = PermissionManager()
+    nivel, _ = manager.nivel_da_acao(
+        "navegar_navegador",
+        {"url": url, "modo": "visivel"},
+    )
+    assert nivel == PermissionLevel.CONFIRM
+
+
+def test_navigation_to_normal_readonly_destination_remains_auto():
+    manager = PermissionManager()
+    nivel, _ = manager.nivel_da_acao(
+        "navegar_navegador",
+        {"url": "https://example.com/search?q=auren", "modo": "visivel"},
+    )
+    assert nivel == PermissionLevel.AUTO
