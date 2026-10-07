@@ -45,6 +45,26 @@ def _ler_probe_historico(p):
             pass
 
 
+def _esperar_documento_pronto(p, timeout_ms=5000):
+    try:
+        estado = str(p.evaluate("() => document.readyState") or "")
+    except Exception:
+        return None
+    if estado == "complete":
+        return estado
+    try:
+        p.wait_for_function(
+            "() => document.readyState === 'complete'",
+            timeout=timeout_ms,
+        )
+    except Exception:
+        pass
+    try:
+        return str(p.evaluate("() => document.readyState") or "") or None
+    except Exception:
+        return None
+
+
 def _snapshot_pagina(p):
     try:
         return p.evaluate(
