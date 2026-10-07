@@ -12,6 +12,7 @@ class PersistentMemoryStore:
     """Memoria persistente local em SQLite, com bloqueio de credenciais."""
 
     SCHEMA_VERSION = 2
+    _SCHEMA_LOCK = threading.RLock()
 
     BLOCKED_TERMS = {
         "senha", "password", "passcode", "token", "api key", "api_key",
@@ -47,7 +48,9 @@ class PersistentMemoryStore:
         return any(re.search(padrao, texto, flags=re.IGNORECASE) for padrao in padroes)
 
     def _inicializar(self) -> None:
-        with self._lock, self._conexao() as con:
+        # A inicializacao e migracao precisam ser serializadas entre instancias
+        # do store no mesmo processo; cada instancia possui seu proprio _lock.
+        with self._SCHEMA_LOCK, self._lock, self._conexao() as con:
             con.execute(
                 """CREATE TABLE IF NOT EXISTS memorias (
                     id INTEGER PRIMARY KEY AUTOINCREMENT, chave TEXT NOT NULL UNIQUE,
@@ -71,7 +74,14 @@ class PersistentMemoryStore:
             )
             colunas = {row["name"] for row in con.execute("PRAGMA table_info(estrategias)")}
             if "chat_id" not in colunas:
-                con.execute("ALTER TABLE estrategias ADD COLUMN chat_id TEXT")
+                try:
+                    con.execute("ALTER TABLE estrategias ADD COLUMN chat_id TEXT")
+                except sqlite3.OperationalError as exc:
+                    # Outro processo pode ter concluido a mesma migracao entre
+                    # o PRAGMA e o ALTER. Nesse caso, a schema final continua
+                    # correta e a inicializacao pode prosseguir.
+                    if "duplicate column name" not in str(exc).casefold():
+                        raise
 
             version = int(con.execute("PRAGMA user_version").fetchone()[0])
             if version < 2:
