@@ -19,6 +19,8 @@ def test_windows_uia_public_controls_live_in_dedicated_module():
 def test_windows_uia_execution_helpers_live_in_dedicated_module():
     assert windows._executar_ui_automation is windows_uia._executar_ui_automation
     assert windows._executar_ui_automation.__module__ == "tools.windows_uia"
+    assert windows._ui_automation_janela is windows_uia._ui_automation_janela
+    assert windows._ui_automation_janela.__module__ == "tools.windows_uia"
     assert hasattr(windows_uia, "_UI_AUTOMATION_POWERSHELL")
     assert not hasattr(windows, "_UI_AUTOMATION_POWERSHELL")
 
