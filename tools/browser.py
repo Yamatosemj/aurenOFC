@@ -486,63 +486,106 @@ def navegar_navegador(url, modo="visivel"):
     url = str(url or "").strip()
     modo = str(modo or "visivel").strip().lower()
     if modo not in {"visivel", "oculto"}:
-        modo = "visivel"
+        return ToolResult.failure(
+            "Modo de navegador invalido. Use 'visivel' ou 'oculto'.",
+            error_code="browser_mode_invalid",
+            tool_name="navegar_navegador",
+        )
 
     global modo_navegador, browser_context
-    if modo != modo_navegador or browser_context is None:
-        try:
-            p = reiniciar_navegador(modo)
-        except Exception as erro:
-            return f"Nao consegui preparar o navegador: {erro}"
-    else:
-        p = None
+    if not url:
+        return ToolResult.failure(
+            "URL vazia.",
+            error_code="browser_url_empty",
+            tool_name="navegar_navegador",
+        )
 
     if not re.match(r"^https?://", url, re.IGNORECASE):
         url = "https://" + url
 
-    ultimo_erro = None
-    for tentativa in range(2):
+    if modo != modo_navegador or browser_context is None:
         try:
-            if p is None:
-                p = obter_pagina()
-            p.goto(
-                url,
-                wait_until="domcontentloaded",
-                timeout=30000,
-            )
-            titulo = _esperar_titulo(p)
-            return (
-                f"Naveguei para: {titulo or '[sem titulo]'}\n"
-                f"URL atual: {p.url}\n"
-                f"Modo do navegador: {modo}"
-            )
+            p = reiniciar_navegador(modo)
         except Exception as erro:
-            ultimo_erro = erro
+            return ToolResult.failure(
+                f"Nao consegui preparar o navegador: {erro}",
+                error_code="browser_init_failed",
+                tool_name="navegar_navegador",
+            )
+    else:
+        p = None
 
-            pagina_fechada = False
-            contexto_fechado = False
-            if p is not None:
-                try:
-                    pagina_fechada = bool(p.is_closed())
-                except Exception:
-                    pagina_fechada = False
+    tentativa_restart = False
+    try:
+        if p is None:
+            p = obter_pagina()
+        antes_url = str(getattr(p, "url", "") or "")
+        antes_titulo = _esperar_titulo(p)
+        p.goto(url, wait_until="domcontentloaded", timeout=30000)
+        depois_url = str(getattr(p, "url", "") or url)
+        depois_titulo = _esperar_titulo(p)
+        return ToolResult.success(
+            f"Naveguei para: {depois_titulo or '[sem titulo]'}\nURL atual: {depois_url}\nModo do navegador: {modo}",
+            data={
+                "navegacao": {
+                    "operacao": "navegar",
+                    "url_solicitada": url,
+                    "url_antes": antes_url,
+                    "url_depois": depois_url,
+                    "titulo_antes": antes_titulo,
+                    "titulo_depois": depois_titulo,
+                    "mudou_url": antes_url != depois_url,
+                    "modo": modo,
+                }
+            },
+            tool_name="navegar_navegador",
+            conteudo_nao_confiavel=False,
+        )
+    except Exception as erro:
+        pagina_fechada = False
+        contexto_fechado = False
+        try:
+            pagina_fechada = bool(p.is_closed()) if p is not None else False
+        except Exception:
+            pass
+        try:
+            contexto_fechado = bool(browser_context is not None and browser_context.is_closed())
+        except Exception:
+            pass
+
+        if pagina_fechada or contexto_fechado:
             try:
-                contexto_fechado = bool(
-                    browser_context is not None and browser_context.is_closed()
-                )
-            except Exception:
-                contexto_fechado = False
-
-            if tentativa == 0 and (pagina_fechada or contexto_fechado):
+                p = reiniciar_navegador(modo)
+                tentativa_restart = True
                 try:
-                    p = reiniciar_navegador(modo)
-                    continue
-                except Exception as reinicio_erro:
-                    ultimo_erro = reinicio_erro
+                    p.goto(url, wait_until="domcontentloaded", timeout=30000)
+                    depois_url = str(getattr(p, "url", "") or url)
+                    depois_titulo = _esperar_titulo(p)
+                    return ToolResult.success(
+                        f"Naveguei para: {depois_titulo or '[sem titulo]'}\nURL atual: {depois_url}\nModo do navegador: {modo}",
+                        data={
+                            "navegacao": {
+                                "operacao": "navegar",
+                                "url_solicitada": url,
+                                "url_antes": antes_url if 'antes_url' in locals() else None,
+                                "url_depois": depois_url,
+                                "mudou_url": True,
+                                "modo": modo,
+                                "sessao_recriada": True,
+                            }
+                        },
+                        tool_name="navegar_navegador",
+                    )
+                except Exception as erro_retry:
+                    erro = erro_retry
+            except Exception as erro_restart:
+                erro = erro_restart
 
-            break
-
-    return f"Nao consegui navegar para '{url}': {ultimo_erro}"
+        return ToolResult.failure(
+            f"Nao consegui navegar para '{url}': {erro}",
+            error_code="browser_navigation_failed" if not tentativa_restart else "browser_navigation_retry_failed",
+            tool_name="navegar_navegador",
+        )
 
 from tools.browser_reading import ler_pagina
 
