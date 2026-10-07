@@ -531,6 +531,14 @@ def _verificar_clique(
         if alvo not in {"dialogos", "menus", "listboxes", "popovers", "details_abertos"}:
             return None
 
+        if not _linhas_controle(pagina):
+            return None
+        linhas_controle = [
+            linha for linha in _linhas_controle(pagina)
+            if _controle_corresponde_linha(linha, controle)
+        ]
+        if len(linhas_controle) != 1:
+            return None
         marcador = "Elementos flutuantes visiveis:"
         linha = next(
             (
@@ -553,6 +561,17 @@ def _verificar_clique(
         try:
             observado = int(valor_texto)
         except (TypeError, ValueError):
+            return None
+        pagina_depois = efeito.get("pagina_depois") if isinstance(efeito.get("pagina_depois"), dict) else {}
+        pagina_antes = efeito.get("pagina_antes") if isinstance(efeito.get("pagina_antes"), dict) else {}
+        antes_acao = pagina_antes.get(alvo)
+        depois_acao = pagina_depois.get(alvo)
+        try:
+            antes_acao = int(antes_acao)
+            depois_acao = int(depois_acao)
+        except (TypeError, ValueError):
+            return None
+        if antes_acao != int(sinal.get("antes")) or depois_acao != esperado:
             return None
         return observado == esperado
 
