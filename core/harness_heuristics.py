@@ -1,6 +1,8 @@
 """Heurísticas determinísticas usadas pelo Harness para guards locais."""
 from __future__ import annotations
 
+from typing import Callable
+
 import re
 
 
@@ -60,6 +62,79 @@ def _parece_tarefa_multietapa_browser(objetivo: str) -> bool:
             "coloque", "deixe", "carregue", "abrindo",
         )
     )
+
+
+def _pode_encerrar_localmente(
+    objetivo: str,
+    resultados_rodada: list[dict[str, object]],
+    *,
+    vision_reobserve_pending: bool = False,
+    visual_mutating_tools: set[str],
+    terminal_result_tools: set[str],
+    multitab_concluida: Callable[[str, list[dict[str, str]]], bool],
+) -> bool:
+    """Decide se podemos evitar uma rodada adicional do modelo."""
+    if vision_reobserve_pending:
+        return False
+
+    # Tarefas visuais compostas precisam observar o estado novo antes de
+    # encerrar. Sem este guard, um clique DOM presente no fim da primeira
+    # rodada poderia ser interpretado como a ultima acao e encerrar a tarefa
+    # antes da verificacao visual pedida pelo usuario.
+    if _parece_tarefa_visual_composta(objetivo):
+        if any(
+            str(item.get("ferramenta", "")) in visual_mutating_tools
+            and item.get("sucesso")
+            for item in resultados_rodada
+        ):
+            return False
+
+    if _parece_tarefa_multietapa_browser(objetivo) and resultados_rodada:
+        ultima_listagem = resultados_rodada[-1]
+        if (
+            ultima_listagem.get("ferramenta") == "listar_abas"
+            and ultima_listagem.get("sucesso")
+            and multitab_concluida(objetivo, resultados_rodada)
+        ):
+            return True
+
+    ultima_acao = _ultima_acao_solicitada(objetivo)
+    if ultima_acao and resultados_rodada:
+        ultimo = resultados_rodada[-1]
+        if ultimo["ferramenta"] == ultima_acao:
+            # Fonte unica de verdade: ToolResult.ok, ja registrado em "sucesso".
+            return all(item.get("sucesso") for item in resultados_rodada)
+
+    # Para consultas ou acoes simples, uma unica ferramenta terminal
+    # com ToolResult/retorno de sucesso ja e suficiente. So aceitamos
+    # isso quando houve exatamente uma chamada nesta rodada e, no caso
+    # de leitura, a mensagem original nao parecia uma tarefa de acao.
+    if len(resultados_rodada) != 1:
+        return False
+
+    ultimo = resultados_rodada[0]
+    if not ultimo.get("sucesso"):
+        return False
+
+    ferramenta = str(ultimo.get("ferramenta", ""))
+    if ferramenta not in terminal_result_tools:
+        return False
+
+    somente_leitura = ferramenta in {
+        "obter_audio_windows",
+        "obter_status_windows",
+        "listar_janelas_windows",
+        "listar_processos_windows",
+        "obter_geometria_janela_windows",
+        "ler_area_transferencia_windows",
+        "listar_abas",
+        "consultar_memoria_persistente",
+    }
+    if ferramenta == "listar_abas" and _parece_tarefa_multietapa_browser(objetivo):
+        return False
+    if somente_leitura and _parece_tarefa_de_acao(objetivo):
+        return False
+    return True
 
 
 def _parece_tarefa_de_acao(objetivo: str) -> bool:
