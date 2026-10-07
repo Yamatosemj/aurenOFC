@@ -43,7 +43,7 @@ class VoiceConfirmationChannel:
         except Exception:
             return False
 
-        return self._normalizar(resposta) in {"s", "sim", "y", "yes"}
+        return self._normalizar(resposta) in self._AFFIRMATIVE_RESPONSES
 
     @staticmethod
     def _extrair_audio(item: Any) -> Any | None:
@@ -62,6 +62,8 @@ class VoiceConfirmationChannel:
             return None
 
         return payload
+    _AFFIRMATIVE_RESPONSES = frozenset({"s", "sim", "y", "yes", "sim pode", "pode sim"})
+
     @staticmethod
     def _prompt(request: ConfirmationRequest) -> str:
         return (
@@ -77,4 +79,8 @@ class VoiceConfirmationChannel:
             for caractere in bruto
             if not unicodedata.combining(caractere)
         )
-        return " ".join(sem_acentos.split())
+        sem_pontuacao = "".join(
+            " " if unicodedata.category(caractere).startswith("P") else caractere
+            for caractere in sem_acentos
+        )
+        return " ".join(sem_pontuacao.split())
