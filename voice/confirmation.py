@@ -35,15 +35,16 @@ class VoiceConfirmationChannel:
         self._timeout = max(0.1, float(timeout))
 
     def confirmar(self, request: ConfirmationRequest) -> bool:
-        # Nada que tenha chegado antes deste pedido pode autorizar esta acao.
+        # Descarta tudo que chegou antes do início desta janela de confirmação.
         self._drenar_fila_pendente()
+        janela_inicio = time.perf_counter()
 
         try:
             self._tts.falar(self._prompt(request))
         except Exception:
             return False
 
-        pronto_em = time.perf_counter()
+        pronto_em = janela_inicio
         limite = pronto_em + self._timeout
         while True:
             restante = limite - time.perf_counter()
