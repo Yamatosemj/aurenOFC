@@ -10,7 +10,16 @@ from voice.input import CapturedAudio
 
 
 class VoiceConfirmationChannel:
-    """Coleta a confirmacao por voz usando o mesmo pipeline de captura do modo voz."""
+    """Coleta confirmacao por voz usando o protocolo real da fila de voz."""
+
+    _AFFIRMATIVE_RESPONSES = frozenset({
+        "s",
+        "sim",
+        "y",
+        "yes",
+        "sim pode",
+        "pode sim",
+    })
 
     def __init__(
         self,
@@ -26,6 +35,7 @@ class VoiceConfirmationChannel:
         self._timeout = max(0.1, float(timeout))
 
     def confirmar(self, request: ConfirmationRequest) -> bool:
+        # Nada que tenha chegado antes deste pedido pode autorizar esta acao.
         self._drenar_fila_pendente()
 
         try:
@@ -68,7 +78,18 @@ class VoiceConfirmationChannel:
                 self._audio_queue.get_nowait()
             except Empty:
                 return
-    @staticmethod,    def _extrair_audio(item: Any) -> CapturedAudio | None:,        """Extrai somente audio capturado pelo protocolo real da fila.""",        if not isinstance(item, tuple) or len(item) != 2:,            return None,,        tipo, payload = item,        if tipo != "audio" or not isinstance(payload, CapturedAudio):,            return None,,        return payload,    _AFFIRMATIVE_RESPONSES = frozenset({"s", "sim", "y", "yes", "sim pode", "pode sim"})
+
+    @staticmethod
+    def _extrair_audio(item: Any) -> CapturedAudio | None:
+        """Extrai somente audio capturado pelo produtor oficial da fila."""
+        if not isinstance(item, tuple) or len(item) != 2:
+            return None
+
+        tipo, payload = item
+        if tipo != "audio" or not isinstance(payload, CapturedAudio):
+            return None
+
+        return payload
 
     @staticmethod
     def _prompt(request: ConfirmationRequest) -> str:
