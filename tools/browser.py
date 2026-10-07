@@ -260,6 +260,11 @@ def abrir_nova_aba(url="", modo="visivel"):
             pagina.goto(destino, wait_until="domcontentloaded", timeout=30000)
             _esperar_titulo(pagina)
 
+        try:
+            pagina.bring_to_front()
+        except Exception:
+            pass
+
         abas_atuais = _paginas_abertas()
         numero = abas_atuais.index(pagina) + 1 if pagina in abas_atuais else 1
         snapshot = _abas_snapshot()
@@ -393,6 +398,21 @@ def fechar_aba(indice=None):
     if restantes:
         novo_indice = min(posicao, len(restantes) - 1)
         pagina = restantes[novo_indice]
+        try:
+            pagina.bring_to_front()
+        except Exception as erro:
+            return ToolResult.failure(
+                f"Aba fechada, mas nao consegui tornar a aba {novo_indice + 1} visualmente ativa: {erro}",
+                error_code="tab_focus_failed",
+                tool_name="fechar_aba",
+                data={
+                    "abas": {
+                        "quantidade_antes": quantidade_antes,
+                        "quantidade_depois": len(restantes),
+                        "aba_fechada": indice_fechado,
+                    }
+                },
+            )
         snapshot = _abas_snapshot()
         return ToolResult.success(
             f"Fechei a aba {indice_fechado}.\n"
