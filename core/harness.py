@@ -271,7 +271,6 @@ class AurenHarness:
         "clicar_elemento",
         "preencher_elemento",
         "pressionar_tecla",
-        "listar_abas",
         "abrir_nova_aba",
         "trocar_aba",
         "fechar_aba",
