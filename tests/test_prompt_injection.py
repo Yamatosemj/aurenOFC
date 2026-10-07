@@ -61,8 +61,8 @@ def test_untrusted_read_does_not_block_another_read():
     manager.registrar_fonte_nao_confiavel("ler_arquivo")
 
     nivel, _ = manager.nivel_da_acao(
-        "ler_arquivo",
-        {"caminho": r"C:\Users\Victor\Desktop\nota.txt", "inicio": 0, "limite_caracteres": 100},
+        "ler_pagina",
+        {"foco": "resultado"},
     )
 
     assert nivel == PermissionLevel.AUTO
