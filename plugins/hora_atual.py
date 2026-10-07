@@ -6,18 +6,6 @@ from core.tool_result import ToolResult
 
 DEPENDENCIAS = ("core.tool_result",)
 
-TOOL = {
-    "name": "hora_atual",
-    "description": "Informa a hora local atual do computador.",
-    "parameters": {
-        "type": "object",
-        "properties": {},
-        "required": [],
-        "additionalProperties": False,
-    },
-    "strict": True,
-    "handler": executar,
-}
 
 CAPABILITY = {
     "id": "plugin.hora_atual",
@@ -44,3 +32,17 @@ def executar(argumentos: dict) -> ToolResult:
         data={"hora": agora},
         tool_name=TOOL["name"],
     )
+
+
+TOOL = {
+    "name": "hora_atual",
+    "description": "Informa a hora local atual do computador.",
+    "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": False,
+    },
+    "strict": True,
+    "handler": executar,
+}
