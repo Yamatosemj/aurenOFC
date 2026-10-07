@@ -838,13 +838,13 @@ tools = [
     {
         "type": "function",
         "name": "fechar_aba",
-        "description": "Fecha uma aba existente. Se o indice nao for informado, fecha a aba ativa.",
+        "description": "Fecha uma aba existente. Use o indice da aba; use 0 para fechar a aba ativa.",
         "parameters": {
             "type": "object",
             "properties": {
                 "indice": {
                     "type": "integer",
-                    "description": "Numero da aba, comecando em 1. Omitir fecha a aba ativa; use 0 tambem para a aba ativa."
+                    "description": "Numero da aba, comecando em 1. Use 0 para a aba ativa."
                 }
             },
             "required": ["indice"],
