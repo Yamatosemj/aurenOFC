@@ -65,7 +65,7 @@ from core.harness_state import _montar_estado
 from core.harness_round_input import (
     _montar_input_da_rodada,
     _montar_input_e_estado_da_rodada,
-  )
+)
 from core.harness_strategy import _salvar_estrategia_em_background as _salvar_estrategia_em_background_impl
 from core.harness_turn import _registrar_turno as _registrar_turno_impl
 from core.harness_session import (
