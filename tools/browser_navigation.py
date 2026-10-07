@@ -3,73 +3,219 @@ from __future__ import annotations
 from core.tool_result import ToolResult
 
 
+def _snapshot_pagina(p):
+    try:
+        return p.evaluate(
+            """() => ({
+                url: location.href,
+                titulo: document.title || '',
+                scroll_y: Number(window.scrollY || 0),
+                time_origin: Number(performance.timeOrigin || 0),
+                dialogs: document.querySelectorAll('dialog, [role="dialog"], [role="alertdialog"]').length,
+                menus: document.querySelectorAll('[role="menu"]').length,
+                listboxes: document.querySelectorAll('[role="listbox"]').length,
+                active: (() => {
+                    const el = document.activeElement;
+                    if (!el) return null;
+                    return {
+                        tag: el.tagName || '',
+                        id: el.id || '',
+                        name: el.getAttribute?.('name') || '',
+                        role: el.getAttribute?.('role') || '',
+                        aria_label: el.getAttribute?.('aria-label') || '',
+                    };
+                })(),
+            })"""
+        ) or {}
+    except Exception:
+        return {
+            "url": str(getattr(p, "url", "") or ""),
+            "titulo": "",
+            "scroll_y": None,
+            "time_origin": None,
+            "dialogs": None,
+            "menus": None,
+            "listboxes": None,
+            "active": None,
+        }
+
+
 def pressionar_tecla(tecla):
     from tools import browser as _browser
 
     try:
+        tecla = str(tecla or "").strip()
+        if not tecla:
+            return ToolResult.failure(
+                "Tecla vazia.",
+                error_code="key_invalid",
+                tool_name="pressionar_tecla",
+            )
         p = _browser.obter_pagina()
-        p.keyboard.press(tecla)
+        antes = _snapshot_pagina(p)
 
-        return f"Pressionei a tecla '{tecla}'."
+        p.evaluate(
+            """() => {
+                const antigo = window.__aurenKeyProbeCleanup;
+                if (typeof antigo === 'function') antigo();
+                const estado = { count: 0, key: '' };
+                const handler = (event) => {
+                    estado.count += 1;
+                    estado.key = event.key || '';
+                };
+                window.__aurenKeyProbe = estado;
+                window.__aurenKeyProbeHandler = handler;
+                window.addEventListener('keydown', handler, true);
+                window.__aurenKeyProbeCleanup = () => {
+                    window.removeEventListener('keydown', handler, true);
+                };
+            }"""
+        )
+        p.keyboard.press(tecla)
+        try:
+            p.wait_for_function(
+                "() => Boolean(window.__aurenKeyProbe && window.__aurenKeyProbe.count > 0)",
+                timeout=1000,
+            )
+        except Exception:
+            pass
+        probe = p.evaluate("() => window.__aurenKeyProbe || {count: 0, key: ''}") or {}
+        p.evaluate(
+            """() => {
+                if (typeof window.__aurenKeyProbeCleanup === 'function') {
+                    window.__aurenKeyProbeCleanup();
+                }
+                window.__aurenKeyProbeCleanup = null;
+                window.__aurenKeyProbeHandler = null;
+            }"""
+        )
+        depois = _snapshot_pagina(p)
+        evento_observado = bool(isinstance(probe, dict) and int(probe.get("count") or 0) > 0)
+
+        return ToolResult.success(
+            f"Pressionei a tecla '{tecla}'.",
+            data={
+                "tecla": {
+                    "tecla": tecla,
+                    "evento_observado": evento_observado,
+                    "chave_observada": str(probe.get("key") or "") if isinstance(probe, dict) else "",
+                    "estado_antes": antes,
+                    "estado_depois": depois,
+                }
+            },
+            tool_name="pressionar_tecla",
+            conteudo_nao_confiavel=True,
+        )
 
     except Exception as erro:
-        return (
-            f"Nao consegui pressionar '{tecla}': {erro}"
+        return ToolResult.failure(
+            f"Nao consegui pressionar '{tecla}': {erro}",
+            error_code="key_failed",
+            tool_name="pressionar_tecla",
         )
+
+
+def _executar_navegacao(nome, metodo):
+    from tools import browser as _browser
+
+    try:
+        p = _browser.obter_pagina()
+        antes = _snapshot_pagina(p)
+        metodo(p)
+        depois = _snapshot_pagina(p)
+        dados = {
+            "url_antes": str(antes.get("url") or ""),
+            "url_depois": str(depois.get("url") or ""),
+            "titulo_antes": str(antes.get("titulo") or ""),
+            "titulo_depois": str(depois.get("titulo") or ""),
+            "estado_antes": antes,
+            "estado_depois": depois,
+            "mudou_url": antes.get("url") != depois.get("url"),
+        }
+        return ToolResult.success(
+            nome,
+            data={"navegacao": dados},
+            tool_name=metodo.__name__ if hasattr(metodo, "__name__") else "browser_navigation",
+        )
+    except Exception as erro:
+        return ToolResult.failure(
+            f"Nao consegui {nome.lower()}: {erro}",
+            error_code="browser_navigation_failed",
+            tool_name="browser_navigation",
+        )
+
 
 def voltar_pagina():
     from tools import browser as _browser
-
     try:
         p = _browser.obter_pagina()
-        p.go_back(
-            wait_until="domcontentloaded",
-            timeout=12000
+        antes = _snapshot_pagina(p)
+        p.go_back(wait_until="domcontentloaded", timeout=12000)
+        depois = _snapshot_pagina(p)
+        return ToolResult.success(
+            "Voltei para a pagina anterior.",
+            data={"navegacao": {
+                "operacao": "voltar",
+                "url_antes": str(antes.get("url") or ""),
+                "url_depois": str(depois.get("url") or ""),
+                "mudou_url": antes.get("url") != depois.get("url"),
+                "titulo_antes": str(antes.get("titulo") or ""),
+                "titulo_depois": str(depois.get("titulo") or ""),
+            }},
+            tool_name="voltar_pagina",
         )
-
-        return (
-            "Voltei para a pagina anterior.\n"
-            f"URL atual: {p.url}"
-        )
-
     except Exception as erro:
-        return f"Nao consegui voltar: {erro}"
+        return ToolResult.failure(f"Nao consegui voltar: {erro}", error_code="browser_back_failed", tool_name="voltar_pagina")
+
 
 def avancar_pagina():
     from tools import browser as _browser
-
     try:
         p = _browser.obter_pagina()
-        p.go_forward(
-            wait_until="domcontentloaded",
-            timeout=12000
+        antes = _snapshot_pagina(p)
+        p.go_forward(wait_until="domcontentloaded", timeout=12000)
+        depois = _snapshot_pagina(p)
+        return ToolResult.success(
+            "Avancei para a proxima pagina.",
+            data={"navegacao": {
+                "operacao": "avancar",
+                "url_antes": str(antes.get("url") or ""),
+                "url_depois": str(depois.get("url") or ""),
+                "mudou_url": antes.get("url") != depois.get("url"),
+                "titulo_antes": str(antes.get("titulo") or ""),
+                "titulo_depois": str(depois.get("titulo") or ""),
+            }},
+            tool_name="avancar_pagina",
         )
-
-        return (
-            "Avancei para a proxima pagina.\n"
-            f"URL atual: {p.url}"
-        )
-
     except Exception as erro:
-        return f"Nao consegui avancar: {erro}"
+        return ToolResult.failure(f"Nao consegui avancar: {erro}", error_code="browser_forward_failed", tool_name="avancar_pagina")
+
 
 def recarregar_pagina():
     from tools import browser as _browser
-
     try:
         p = _browser.obter_pagina()
-        p.reload(
-            wait_until="domcontentloaded",
-            timeout=12000
+        antes = _snapshot_pagina(p)
+        p.reload(wait_until="domcontentloaded", timeout=12000)
+        depois = _snapshot_pagina(p)
+        return ToolResult.success(
+            "Pagina recarregada.",
+            data={"navegacao": {
+                "operacao": "recarregar",
+                "url": str(depois.get("url") or ""),
+                "time_origin_antes": antes.get("time_origin"),
+                "time_origin_depois": depois.get("time_origin"),
+                "recarregamento_observado": (
+                    antes.get("time_origin") is not None and
+                    depois.get("time_origin") is not None and
+                    antes.get("time_origin") != depois.get("time_origin")
+                ),
+            }},
+            tool_name="recarregar_pagina",
         )
-
-        return (
-            "Pagina recarregada.\n"
-            f"URL atual: {p.url}"
-        )
-
     except Exception as erro:
-        return f"Nao consegui recarregar: {erro}"
+        return ToolResult.failure(f"Nao consegui recarregar: {erro}", error_code="browser_reload_failed", tool_name="recarregar_pagina")
+
 
 def rolar_pagina(direcao):
     from tools import browser as _browser
@@ -95,18 +241,12 @@ def rolar_pagina(direcao):
             p.evaluate("window.scrollTo(0, 0)")
 
         elif direcao == "fim":
-            p.evaluate(
-                "window.scrollTo(0, document.body.scrollHeight)"
-            )
-
+            p.evaluate("window.scrollTo(0, document.body.scrollHeight)")
 
         depois = float(p.evaluate("window.scrollY || 0") or 0)
-        altura_documento = float(
-            p.evaluate(
-                "Math.max(document.body?.scrollHeight || 0, "
-                "document.documentElement?.scrollHeight || 0)"
-            ) or 0
-        )
+        altura_documento = float(p.evaluate(
+            "Math.max(document.body?.scrollHeight || 0, document.documentElement?.scrollHeight || 0)"
+        ) or 0)
         altura_viewport = float(p.evaluate("window.innerHeight || 0") or 0)
 
         return ToolResult.success(
@@ -127,4 +267,3 @@ def rolar_pagina(direcao):
             error_code="scroll_failed",
             tool_name="rolar_pagina",
         )
-
