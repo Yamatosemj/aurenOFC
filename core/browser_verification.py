@@ -165,6 +165,8 @@ def _verificar_navegacao_historico(ferramenta: str, abas: str, dados_acao: Any) 
         mudou = dados.get("mudou_url")
         if mudou is True:
             return True
+        if mudou is False and dados.get("evento_historico_observado") is True:
+            return True
         if mudou is False:
             return False
         return None
