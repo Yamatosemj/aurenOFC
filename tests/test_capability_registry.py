@@ -54,6 +54,30 @@ def test_registry_contains_real_v44_capabilities_only():
     assert set(CAPABILITY_REGISTRY.ids()) == expected
 
 
+def test_file_operation_task_specs_resolve_to_local_capabilities():
+    mover = Router().route_task_spec(
+        base_spec(
+            "mova o arquivo origem.txt para destino.txt",
+            parametros={"origem": "C:\\temp\\origem.txt", "destino": "C:\\temp\\destino.txt"},
+        )
+    )
+    assert mover.status == "resolved"
+    assert mover.capability_id == "gerenciar_arquivos"
+    assert mover.route == "local"
+    assert mover.params["acao"] == "mover"
+
+    trash = Router().route_task_spec(
+        base_spec(
+            "envie o arquivo para a lixeira",
+            parametros={"caminho": "C:\\temp\\arquivo.txt"},
+        )
+    )
+    assert trash.status == "resolved"
+    assert trash.capability_id == "lixeira_arquivo"
+    assert trash.route == "local"
+    assert trash.params["caminho"] == "C:\\temp\\arquivo.txt"
+
+
 def test_open_youtube_resolves_to_known_service_url_and_local():
     result = Router().route_task_spec(base_spec("Abrir o YouTube", dados_exatos={"destino": "YouTube"}))
     assert result.status == "resolved"
