@@ -203,8 +203,9 @@ def obter_pagina():
 
 def _abas_snapshot() -> list[dict[str, object]]:
     abas = _paginas_abertas()
+    pagina_focada = _pagina_com_foco_real()
     try:
-        ativa = abas.index(pagina) + 1
+        ativa = abas.index(pagina_focada) + 1
     except ValueError:
         ativa = None
 
@@ -322,6 +323,22 @@ def trocar_aba(indice):
         )
 
     pagina = abas[indice - 1]
+    try:
+        pagina.bring_to_front()
+    except Exception as erro:
+        return ToolResult.failure(
+            f"Nao consegui tornar a aba {indice} visualmente ativa: {erro}",
+            error_code="tab_focus_failed",
+            tool_name="trocar_aba",
+            data={
+                "abas": {
+                    "quantidade_antes": quantidade_antes,
+                    "quantidade_depois": quantidade_antes,
+                    "aba_ativa_desejada": indice,
+                    "antes": snapshot_antes,
+                }
+            },
+        )
     snapshot = _abas_snapshot()
     return ToolResult.success(
         f"Troquei para a aba {indice}.\n"
