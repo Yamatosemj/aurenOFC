@@ -140,10 +140,18 @@ def ler_pagina(foco):
                     const ariaExpanded = el.getAttribute('aria-expanded');
                     const ariaPressed = el.getAttribute('aria-pressed');
                     const ariaSelected = el.getAttribute('aria-selected');
+                    const ariaChecked = el.getAttribute('aria-checked');
                     const dataState = el.getAttribute('data-state');
                     const checked = ('checked' in el) ? Boolean(el.checked) : null;
                     const selected = ('selected' in el) ? Boolean(el.selected) : null;
-                    const open = ('open' in el) ? Boolean(el.open) : null;
+                    const open = ('open' in el)
+                        ? Boolean(el.open)
+                        : (el.tagName === 'SUMMARY' && el.closest('details')
+                            ? Boolean(el.closest('details').open)
+                            : null);
+                    const detailsOpen = (el.tagName === 'SUMMARY' && el.closest('details'))
+                        ? Boolean(el.closest('details').open)
+                        : (el.tagName === 'DETAILS' ? Boolean(el.open) : null);
                     if (!nome && !placeholder && !nameAttr && !idAttr) continue;
 
                     let chave = '';
@@ -156,9 +164,11 @@ def ler_pagina(foco):
                     if (ariaExpanded !== null) estados['aria-expanded'] = ariaExpanded;
                     if (ariaPressed !== null) estados['aria-pressed'] = ariaPressed;
                     if (ariaSelected !== null) estados['aria-selected'] = ariaSelected;
+                    if (ariaChecked !== null) estados['aria-checked'] = ariaChecked;
                     if (checked !== null) estados.checked = checked;
                     if (selected !== null) estados.selected = selected;
                     if (open !== null) estados.open = open;
+                    if (detailsOpen !== null) estados['details-open'] = detailsOpen;
                     if (dataState !== null) estados['data-state'] = dataState;
 
                     const textoSensivel = [
@@ -517,11 +527,21 @@ def ler_pagina(foco):
                 }
 
                 const elementosFlutuantes = {
-                    dialogos: Array.from(document.querySelectorAll('dialog, [role="dialog"]'))
+                    dialogos: Array.from(document.querySelectorAll('dialog, [role="dialog"], [role="alertdialog"]'))
                         .filter(visivel).length,
                     menus: Array.from(document.querySelectorAll('[role="menu"]'))
                         .filter(visivel).length,
                     listboxes: Array.from(document.querySelectorAll('[role="listbox"]'))
+                        .filter(visivel).length,
+                    popovers: (() => {
+                        try {
+                            return Array.from(document.querySelectorAll('[popover]'))
+                                .filter(el => el.matches(':popover-open') && visivel(el)).length;
+                        } catch (_) {
+                            return 0;
+                        }
+                    })(),
+                    details_abertos: Array.from(document.querySelectorAll('details[open]'))
                         .filter(visivel).length
                 };
 
