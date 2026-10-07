@@ -112,3 +112,155 @@ def test_erro_de_apos_tarefa_apenas_registra_memoria_e_conclui():
         ),
     ]
     assert manager.completed == [("resposta", "task-3")]
+
+
+from core.harness_completion import _tentar_retry_resposta_vazia
+
+
+class _EmptyResponseTaskManager:
+    def __init__(self):
+        self.events = []
+
+    def wait_for_model(self, task_id):
+        self.events.append(("wait", task_id))
+
+    def resume(self, task_id):
+        self.events.append(("resume", task_id))
+
+
+def _resposta_vazia_test(texto):
+    return SimpleNamespace(output_text=texto, output=[])
+
+
+def test_retry_resposta_vazia_executa_nova_rodada_e_retorna_continuar():
+    events = []
+    manager = _EmptyResponseTaskManager()
+
+    def montar_estado(objetivo, historico, resultado):
+        events.append(("estado", objetivo, historico, resultado))
+        return "estado retry"
+
+    def pedir_modelo(estado, tool_choice):
+        events.append(("modelo", estado, tool_choice))
+        return _resposta_vazia_test("agora existe resposta"), 12.345, {"rota": "teste"}
+
+    def log_resposta(*args, **kwargs):
+        events.append(("log_resposta", args, kwargs))
+
+    result = _tentar_retry_resposta_vazia(
+        "objetivo",
+        [],
+        rodada=2,
+        exigir_ferramenta=True,
+        empty_response_retries=0,
+        task_id="task-1",
+        mensagem_erro_provider="provider erro",
+        task_manager=manager,
+        montar_estado=montar_estado,
+        pedir_modelo=pedir_modelo,
+        log_resposta_modelo=log_resposta,
+        write_log=lambda *args, **kwargs: events.append(("log", args, kwargs)),
+        should_cancel=lambda _: False,
+        encerrar_cancelado=lambda *args: ("cancelado", args),
+        criar_resposta=_resposta_vazia_test,
+    )
+
+    assert result.acao == "continuar"
+    assert result.empty_response_retries == 1
+    assert result.resposta.output_text == "agora existe resposta"
+    assert manager.events == [("wait", "task-1"), ("resume", "task-1")]
+    assert events[0] == (
+        "estado",
+        "objetivo",
+        [],
+        [{
+            "ferramenta": "nenhuma",
+            "argumentos": "{}",
+            "resultado": "A resposta final veio vazia. Responda de forma objetiva ou continue a execucao necessaria.",
+        }],
+    )
+    model_event = next(item for item in events if item[0] == "modelo")
+    log_event = next(item for item in events if item[0] == "log")
+    response_log = next(item for item in events if item[0] == "log_resposta")
+    assert model_event == ("modelo", "estado retry", "required")
+    assert log_event[1][0] == "MODEL_ROUND_REQUEST"
+    assert log_event[2]["rodada"] == 3
+    assert log_event[2]["motivo"] == "empty_response_retry"
+    assert response_log[1][-1]["motivo"] == "empty_response_retry"
+
+
+def test_retry_resposta_vazia_cancela_antes_de_esperar_modelo():
+    manager = _EmptyResponseTaskManager()
+    result = _tentar_retry_resposta_vazia(
+        "objetivo",
+        [],
+        rodada=4,
+        exigir_ferramenta=False,
+        empty_response_retries=0,
+        task_id="task-2",
+        mensagem_erro_provider="provider erro",
+        task_manager=manager,
+        montar_estado=lambda *args: "estado",
+        pedir_modelo=lambda *args: (_resposta_vazia_test("nao deveria"), 1.0, {}),
+        log_resposta_modelo=lambda *args, **kwargs: None,
+        write_log=lambda *args, **kwargs: None,
+        should_cancel=lambda _: True,
+        encerrar_cancelado=lambda *args: ("cancelado", args),
+        criar_resposta=_resposta_vazia_test,
+    )
+    assert result.acao == "retornar"
+    assert result.empty_response_retries == 1
+    assert result.resposta == (
+        "cancelado",
+        ("cancelado antes do retry de resposta vazia", 4),
+    )
+    assert manager.events == []
+
+
+def test_retry_resposta_vazia_provider_failure_retorna_sem_resume():
+    manager = _EmptyResponseTaskManager()
+    result = _tentar_retry_resposta_vazia(
+        "objetivo",
+        [],
+        rodada=3,
+        exigir_ferramenta=False,
+        empty_response_retries=0,
+        task_id="task-3",
+        mensagem_erro_provider="provider erro",
+        task_manager=manager,
+        montar_estado=lambda *args: "estado",
+        pedir_modelo=lambda *args: None,
+        log_resposta_modelo=lambda *args, **kwargs: None,
+        write_log=lambda *args, **kwargs: None,
+        should_cancel=lambda _: False,
+        encerrar_cancelado=lambda *args: ("cancelado", args),
+        criar_resposta=_resposta_vazia_test,
+    )
+    assert result.acao == "retornar"
+    assert result.resposta.output_text == "provider erro"
+    assert result.empty_response_retries == 1
+    assert manager.events == [("wait", "task-3")]
+
+
+def test_retry_resposta_vazia_exaurido_nao_chama_modelo():
+    result = _tentar_retry_resposta_vazia(
+        "objetivo",
+        [],
+        rodada=5,
+        exigir_ferramenta=True,
+        empty_response_retries=1,
+        task_id="task-4",
+        mensagem_erro_provider="provider erro",
+        task_manager=_EmptyResponseTaskManager(),
+        montar_estado=lambda *args: (_ for _ in ()).throw(AssertionError("nao deveria montar retry")),
+        pedir_modelo=lambda *args: (_ for _ in ()).throw(AssertionError("nao deveria chamar provider")),
+        log_resposta_modelo=lambda *args, **kwargs: None,
+        write_log=lambda *args, **kwargs: None,
+        should_cancel=lambda _: False,
+        encerrar_cancelado=lambda *args: ("cancelado", args),
+        criar_resposta=_resposta_vazia_test,
+    )
+    assert result.acao == "falhar"
+    assert result.empty_response_retries == 1
+    assert result.failure_code == "empty_response"
+    assert result.failure_message == "Nao consegui produzir uma resposta final."
