@@ -40,7 +40,7 @@ Testes: (comando, nº de testes antes e depois, resultado)
 - Runner live Windows: não executado, pois nenhuma ferramenta Browser/Windows foi alterada.
 
 Ficou pendente / virou backlog:
-- Atualizar este bloco com a contagem total observada no CI.
+- Nenhuma pendência de teste conhecida.
 - Painel visual da memória fica para a Tarefa 6.
 - Validação live final do Browser Intelligence permanece no backlog.
 
