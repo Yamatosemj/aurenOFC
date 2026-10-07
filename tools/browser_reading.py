@@ -207,6 +207,31 @@ def ler_pagina(foco):
                     (b.score - a.score) || (a.ordem - b.ordem)
                 );
 
+                // O controle procurado pelo foco tem prioridade de contexto.
+                // Isso evita que um ranking global esconda o elemento clicado.
+                const controlesDoFoco = controles.filter(item => {
+                    const texto = [
+                        item.nome, item.nameAttr, item.id,
+                        item.placeholder, item.role, item.tag
+                    ].join(' ').toLowerCase();
+                    return palavras.length > 0 && palavras.some(palavra => texto.includes(palavra));
+                });
+                const controlesPrioritarios = [];
+                const chavesPrioritarias = new Set();
+                for (const item of controlesDoFoco) {
+                    const chave = String(item.chave || (item.tag + ':' + item.ordem));
+                    if (chavesPrioritarias.has(chave)) continue;
+                    chavesPrioritarias.add(chave);
+                    controlesPrioritarios.push(item);
+                    if (controlesPrioritarios.length >= 3) break;
+                }
+                for (const item of controles) {
+                    const chave = String(item.chave || (item.tag + ':' + item.ordem));
+                    if (chavesPrioritarias.has(chave)) continue;
+                    controlesPrioritarios.push(item);
+                    if (controlesPrioritarios.length >= Number(maxControles || 10)) break;
+                }
+
                 const links = [];
                 for (const el of document.querySelectorAll('a')) {
                     if (!visivel(el)) continue;
@@ -546,7 +571,7 @@ def ler_pagina(foco):
                 };
 
                 return {
-                    controles: controles.slice(0, Number(maxControles || 10)),
+                    controles: controlesPrioritarios.slice(0, Number(maxControles || 10)),
                     elementosFlutuantes,
                     links: links.slice(0, Number(maxLinks || 10)),
                     candidatosOrdem,
