@@ -847,7 +847,7 @@ tools = [
                     "description": "Numero da aba, comecando em 1. Omitir fecha a aba ativa; use 0 tambem para a aba ativa."
                 }
             },
-            "required": [],
+            "required": ["indice"],
             "additionalProperties": False
         },
         "strict": True
