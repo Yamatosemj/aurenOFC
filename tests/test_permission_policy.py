@@ -129,3 +129,69 @@ def test_controle_de_abas_trata_fechamento_como_acao_de_risco():
     assert _nivel("abrir_nova_aba", {"url": "", "modo": "visivel"}) == PermissionLevel.AUTO
     assert _nivel("trocar_aba", {"indice": 2}) == PermissionLevel.AUTO
     assert _nivel("fechar_aba", {"indice": 2}) == PermissionLevel.CONFIRM
+
+
+def test_untrusted_source_confirmation_is_consumed_after_approved_counted_action():
+    requests = []
+
+    class FakeChannel:
+        def confirmar(self, request):
+            requests.append(request)
+            return True
+
+    manager = PermissionManager(confirmation_channel=FakeChannel())
+    manager.iniciar_tarefa()
+    manager.registrar_fonte_nao_confiavel("ler_pagina")
+
+    permitido, _ = manager.autorizar(
+        "navegar_navegador",
+        {"url": "https://example.com", "modo": "visivel"},
+    )
+    assert permitido is True
+    assert len(requests) == 1
+    assert "conteudo nao confiavel" in requests[0].reason
+    assert manager.fonte_nao_confiavel_pendente is None
+
+    permitido, _ = manager.autorizar(
+        "navegar_navegador",
+        {"url": "https://example.com/2", "modo": "visivel"},
+    )
+    assert permitido is True
+    assert len(requests) == 1
+
+
+def test_untrusted_source_confirmation_is_consumed_after_denial():
+    requests = []
+
+    class FakeChannel:
+        def confirmar(self, request):
+            requests.append(request)
+            return False
+
+    manager = PermissionManager(confirmation_channel=FakeChannel())
+    manager.iniciar_tarefa()
+    manager.registrar_fonte_nao_confiavel("ler_pagina")
+
+    permitido, motivo = manager.autorizar(
+        "fechar_aba",
+        {"indice": 2},
+    )
+    assert permitido is False
+    assert motivo == "Usuario negou a acao."
+    assert len(requests) == 1
+    assert manager.fonte_nao_confiavel_pendente is None
+
+
+def test_untrusted_source_never_overrides_blocked_policy():
+    manager = PermissionManager()
+    manager.policy["memory.write"] = PermissionLevel.BLOCKED
+    manager.registrar_fonte_nao_confiavel("ler_pagina")
+
+    permitido, motivo = manager.autorizar(
+        "salvar_memoria_persistente",
+        {"chave": "teste", "valor": "valor"},
+    )
+
+    assert permitido is False
+    assert "bloqueada" in motivo.lower()
+    assert manager.fonte_nao_confiavel_pendente == "ler_pagina"
