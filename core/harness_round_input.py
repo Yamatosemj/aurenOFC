@@ -79,3 +79,35 @@ def _montar_input_da_rodada(
             )
 
     return input_items
+
+
+def _montar_input_e_estado_da_rodada(
+    objetivo: str,
+    historico: list[dict[str, str]],
+    resposta_anterior: Any,
+    resultados: list[dict[str, Any]],
+    *,
+    montar_estado: Callable[..., str],
+    preparar_resultado_visual: Callable[[dict], tuple[list[dict], bool] | None],
+    ao_atualizar_geometria: Callable[[], None],
+) -> tuple[list[Any], str]:
+    """Monta o input seguinte e devolve o estado textual efetivamente enviado."""
+    input_items = _montar_input_da_rodada(
+        objetivo,
+        historico,
+        resposta_anterior,
+        resultados,
+        montar_estado=montar_estado,
+        preparar_resultado_visual=preparar_resultado_visual,
+        ao_atualizar_geometria=ao_atualizar_geometria,
+    )
+
+    estado_enviado = ""
+    if input_items and isinstance(input_items[0], dict):
+        conteudo = input_items[0].get("content", [])
+        if conteudo and isinstance(conteudo, list):
+            primeiro = conteudo[0]
+            if isinstance(primeiro, dict):
+                estado_enviado = str(primeiro.get("text", ""))
+
+    return input_items, estado_enviado
