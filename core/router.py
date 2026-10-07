@@ -33,6 +33,7 @@ COMMON_TOOLS = {
 TOOL_GROUPS = {
     "browser": {
         "navegar_navegador",
+        "obter_contexto_navegador",
         "ler_pagina",
         "clicar_elemento",
         "preencher_elemento",
