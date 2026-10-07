@@ -12,9 +12,9 @@ Atualizado em: 2026-10-07
 - **Modelo padrão:** `gpt-5.6-luna`
 - **Branch/PR ativa:** `fix/browser-click-new-tab-page` / PR #77
 - **Head da main:** `0a8304e1b097d458511f017ca1f0d9da19d86726`
-- **Head da branch ativa:** `dac575ea92c82f3599fbc5a016d961914a3792cd`
+- **Head validado da branch ativa:** `b72e43f3c04f6866f90340d1df2d3ec6782ab7b5`
 - **CI da implementação mais recente em main:** pytest, focused Linux e focused Windows verdes
-- **CI do PR #77:** heads anteriores validados; o full CI do head `dac575ea92c82f3599fbc5a016d961914a3792cd` deve ser rechecado após as últimas correções
+- **CI do PR #77:** full tests Linux/Windows, static-checks e visual interaction/Playwright verdes no head validado `b72e43f3c04f6866f90340d1df2d3ec6782ab7b5`
 - **Fase atual:** Browser Intelligence
 
 - [x] confirmação de voz consome o protocolo real da fila e rejeita itens stale/erro/legado
@@ -63,9 +63,9 @@ Atualizado em: 2026-10-07
 - qualquer verificação continua tratando conteúdo da página como dado não confiável, nunca como instrução
 - resultado `None` do verificador não encerra mais uma verificação obrigatória; somente `True` limpa a pendência
 
-## Correções da auditoria em andamento
+## Correções da auditoria validadas
 
-As correções abaixo já estão implementadas no branch ativo, mas **não são marcadas como concluídas operacionalmente enquanto o CI do head atual não estiver verde**:
+As correções abaixo já estão implementadas no branch ativo; o CI do head validado está verde. A execução L4/L5 com modelo real continua sendo um passo manual e explícito.
 
 - confirmação de voz usa o protocolo real `("audio", CapturedAudio)`, rejeita `("erro", exc)`, descarta áudio stale e normaliza respostas afirmativas com segurança
 - contexto de Browser propaga falhas de leitura em vez de mascará-las como sucesso
@@ -117,6 +117,7 @@ As correções abaixo já estão implementadas no branch ativo, mas **não são 
 - **#66** — verificação determinística de preenchimento de elemento — merged
 - **#69** — verificação determinística de rolagem e persistência da evidência entre rodadas — merged
 - **#72** — cobertura do Browser Intelligence no runner live — merged
+- **#76** — normalização CRLF — fechado sem merge; correção e regressão absorvidas pela linha do PR #77
 - **#77** — refinamento da verificação por tipo de ação — aberto; inclui cliques não navegacionais
 
 ## Contratos atuais importantes
@@ -130,11 +131,11 @@ As correções abaixo já estão implementadas no branch ativo, mas **não são 
 
 ## Próximas etapas
 
-A tarefa ativa permanece **Browser Intelligence** até que a verificação por tipo de ação esteja suficientemente robusta e coberta por testes.
+A infraestrutura pesada desta fase está **encerrada** após a validação operacional determinística do Browser Intelligence e o CI verde no head validado.
 
-Próxima etapa: executar o runner live em Windows e registrar o resultado real das tarefas compostas. O CI atual valida o código do runner, mas não executa a bateria L4/L5 com navegador e modelo reais.
+O único passo de validação que permanece fora do CI é a bateria L4/L5 do runner live com navegador e modelo reais em Windows, mantida como execução manual porque depende do ambiente real e do provider. Isso não deve ser substituído por mocks apenas para obter CI verde.
 
-Depois disso, revisar novamente a estabilização e só então abrir novas frentes.
+Novas capacidades e frentes ficam fora desta etapa e permanecem no backlog.
 
 ## Backlog
 
