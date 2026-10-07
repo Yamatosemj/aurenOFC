@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -12,11 +13,18 @@ from core.permission_manager import PermissionLevel, PermissionManager
 from core.tool_contracts import capability_for_tool, validate_tool_arguments
 from core.tool_result import ToolResult
 import tools.dispatcher as dispatcher
+import tools.file_intelligence as file_intelligence
+import core.permission_manager as permission_manager_module
 from tools.file_intelligence import READ_MAX_CHARS, _history, _parse_zone_identifier, inspect_file, read_file
 
 
 def _args(path: Path) -> dict:
     return {"caminho": str(path), "procurar_copias": False, "limite_copias": 5}
+
+@pytest.fixture(autouse=True)
+def _allowed_test_root(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    """Mantem os testes existentes dentro de uma raiz permitida ficticia."""
+    monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [tmp_path.resolve()])
 
 
 def test_inspect_existing_file_metadata_and_hash(tmp_path: Path):
@@ -284,3 +292,174 @@ def test_capability_registry_exposes_file_inspection_and_read():
     assert CAPABILITY_REGISTRY.get("ler_arquivo") is not None
     assert CAPABILITY_REGISTRY.get("inspecionar_arquivo").tools == ("inspecionar_arquivo",)
     assert CAPABILITY_REGISTRY.get("ler_arquivo").tools == ("ler_arquivo",)
+
+
+
+def test_read_and_inspect_outside_allowlist_require_confirmation(tmp_path: Path):
+    allowed = tmp_path / "Desktop"
+    allowed.mkdir()
+    outside = tmp_path.parent / "arquivo-fora.txt"
+    outside.write_text("segredo", encoding="utf-8")
+
+    # A raiz permitida deste teste e deliberadamente mais restrita que o
+    # fixture global para provar a classificacao de um caminho externo.
+    import tools.file_intelligence as module
+    module._read_allowed_roots = lambda: [allowed.resolve()]
+    try:
+        read_result = read_file(str(outside))
+        inspect_result = inspect_file(str(outside))
+    finally:
+        module._read_allowed_roots = lambda: [tmp_path.resolve()]
+
+    assert read_result.ok is False
+    assert read_result.error_code == "path_confirmation_required"
+    assert inspect_result.ok is False
+    assert inspect_result.error_code == "path_confirmation_required"
+
+
+def test_parent_traversal_is_resolved_before_allowlist_check(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    allowed = tmp_path / "Desktop"
+    nested = allowed / "nested"
+    nested.mkdir(parents=True)
+    outside = tmp_path / "fora.txt"
+    outside.write_text("fora", encoding="utf-8")
+    monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [allowed.resolve()])
+
+    traversal = nested / ".." / ".." / "fora.txt"
+    result = read_file(str(traversal))
+
+    assert result.ok is False
+    assert result.error_code == "path_confirmation_required"
+    assert str(outside.resolve()) == result.data["caminho"]
+
+
+def test_symlink_to_outside_is_not_covered_by_allowed_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    allowed = tmp_path / "Desktop"
+    target_dir = tmp_path / "fora"
+    allowed.mkdir()
+    target_dir.mkdir()
+    target = target_dir / "segredo.txt"
+    target.write_text("nao ler automaticamente", encoding="utf-8")
+    link = allowed / "atalho.txt"
+    try:
+        os.symlink(target, link)
+    except OSError as exc:
+        pytest.skip(f"ambiente nao permite criar symlink: {exc}")
+
+    monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [allowed.resolve()])
+    result = read_file(str(link))
+
+    assert result.ok is False
+    assert result.error_code == "path_confirmation_required"
+    assert result.data["caminho"] == str(target.resolve())
+
+
+def test_sensitive_folder_is_blocked_even_inside_allowed_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    allowed = tmp_path / "Desktop"
+    sensitive = allowed / "AppData" / "config.txt"
+    sensitive.parent.mkdir(parents=True)
+    sensitive.write_text("credencial", encoding="utf-8")
+    monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [allowed.resolve()])
+
+    read_result = read_file(str(sensitive))
+    inspect_result = inspect_file(str(sensitive))
+
+    assert read_result.ok is False
+    assert read_result.error_code == "sensitive_path_blocked"
+    assert inspect_result.ok is False
+    assert inspect_result.error_code == "sensitive_path_blocked"
+
+
+class _RecordingConfirmationChannel:
+    def __init__(self, approved: bool):
+        self.approved = approved
+        self.requests = []
+
+    def confirmar(self, request):
+        self.requests.append(request)
+        return self.approved
+
+
+def test_permission_manager_confirms_file_path_outside_allowlist(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    allowed = tmp_path / "Desktop"
+    allowed.mkdir()
+    outside = tmp_path.parent / "fora-permissao.txt"
+    outside.write_text("x", encoding="utf-8")
+    monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [allowed.resolve()])
+
+    channel = _RecordingConfirmationChannel(True)
+    manager = PermissionManager(confirmation_channel=channel)
+    permitido, motivo = manager.autorizar(
+        "ler_arquivo",
+        {"caminho": str(outside), "inicio": 0, "limite_caracteres": 100},
+    )
+
+    assert permitido is True
+    assert "fora" in motivo
+    assert len(channel.requests) == 1
+    assert channel.requests[0].tool_name == "ler_arquivo"
+
+
+def test_permission_manager_blocks_sensitive_file_path_without_confirmation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    allowed = tmp_path / "Desktop"
+    sensitive = allowed / ".ssh" / "config.txt"
+    sensitive.parent.mkdir(parents=True)
+    sensitive.write_text("chave", encoding="utf-8")
+    monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [allowed.resolve()])
+
+    channel = _RecordingConfirmationChannel(True)
+    manager = PermissionManager(confirmation_channel=channel)
+    permitido, motivo = manager.autorizar(
+        "inspecionar_arquivo",
+        {"caminho": str(sensitive), "procurar_copias": False, "limite_copias": 5},
+    )
+
+    assert permitido is False
+    assert "sensivel" in motivo
+    assert channel.requests == []
+
+
+def test_dispatcher_confirmed_path_is_really_read(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    allowed = tmp_path / "Desktop"
+    allowed.mkdir()
+    outside = tmp_path.parent / "fora-dispatcher.txt"
+    outside.write_text("conteudo confirmado", encoding="utf-8")
+    monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [allowed.resolve()])
+
+    channel = _RecordingConfirmationChannel(True)
+    manager = PermissionManager(confirmation_channel=channel)
+    result = dispatcher.executar_ferramenta(
+        SimpleNamespace(
+            name="ler_arquivo",
+            arguments=json.dumps({"caminho": str(outside), "inicio": 0, "limite_caracteres": 100}),
+        ),
+        manager,
+        None,
+    )
+
+    assert result.ok is True
+    assert result.data["file_content"]["conteudo"] == "conteudo confirmado"
+    assert len(channel.requests) == 1
+
+
+def test_dispatcher_does_not_bypass_sensitive_path_with_confirmation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    allowed = tmp_path / "Desktop"
+    sensitive = allowed / ".aws" / "credentials.txt"
+    sensitive.parent.mkdir(parents=True)
+    sensitive.write_text("access_key", encoding="utf-8")
+    monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [allowed.resolve()])
+
+    channel = _RecordingConfirmationChannel(True)
+    manager = PermissionManager(confirmation_channel=channel)
+    result = dispatcher.executar_ferramenta(
+        SimpleNamespace(
+            name="ler_arquivo",
+            arguments=json.dumps({"caminho": str(sensitive), "inicio": 0, "limite_caracteres": 100}),
+        ),
+        manager,
+        None,
+    )
+
+    assert result.ok is False
+    assert result.error_code == "permission_denied"
+    assert channel.requests == []
