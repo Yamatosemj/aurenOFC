@@ -55,6 +55,8 @@ def test_click_element_uses_the_new_tab_as_active_page(monkeypatch):
     class _Element:
         def click(self, timeout):
             assert timeout == 10000
+            if nova not in paginas:
+                paginas.append(nova)
 
         def evaluate(self, _script):
             return "a"
