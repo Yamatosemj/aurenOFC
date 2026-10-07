@@ -5,13 +5,16 @@ argumentos da acao com dados estruturados produzidos por uma leitura posterior.
 """
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 import re
+import secrets
 from typing import Any
 from urllib.parse import urljoin, urlsplit
 
 
-def _parse_args(arguments: str) -> dict[str, Any] | None:
+\n_SENSITIVE_FILL_KEY = secrets.token_bytes(32)\n\n\ndef _compromisso_preenchimento_sensivel(valor: str) -> str:\n    return hmac.new(\n        _SENSITIVE_FILL_KEY,\n        str(valor).encode("utf-8"),\n        hashlib.sha256,\n    ).hexdigest()\n\ndef _parse_args(arguments: str) -> dict[str, Any] | None:
     try:
         value = json.loads(str(arguments or "{}"))
     except (TypeError, ValueError, json.JSONDecodeError):
