@@ -68,6 +68,55 @@ class PermissionManager:
 
     # O orçamento de ações também é definido por capacidade. Capacidade de
     # leitura não consome orçamento; capacidade de controle sim.
+    # Justificativas escritas para toda capacidade mantida em AUTO.
+    # O teste de politica exige que esta tabela acompanhe CAPABILITY_POLICY.
+    AUTO_CAPABILITY_JUSTIFICATIONS = {
+        "memory.read": "Somente consulta memoria; nao altera estado.",
+        "application.open": "Abrir um programa e reversivel e nao publica/envi­a dados por si so; programas administrativos sao elevados para CONFIRM.",
+        "file.search": "Pesquisa nomes/metadados locais sem modificar arquivos.",
+        "file.inspect": "Inspecao e somente leitura; caminhos sensiveis ou fora da allowlist sao elevados para CONFIRM/BLOCKED.",
+        "file.read": "Leitura e somente leitura; caminhos fora da allowlist exigem CONFIRM.",
+        "windows.process.read": "Consulta processos sem alterar execucao.",
+        "windows.window.read": "Consulta janelas/geometry sem alterar estado.",
+        "windows.window.control": "Somente operacoes de janela reversiveis sao AUTO; fechamento exige CONFIRM.",
+        "windows.status.read": "Consulta estado do Windows sem alterar estado.",
+        "windows.screen.read": "Captura leitura visual do estado atual, sem efeito externo.",
+        "windows.clipboard.read": "Somente leitura do clipboard.",
+        "windows.clipboard.write": "Altera estado local do clipboard, mas e reversivel e nao produz efeito externo persistente.",
+        "windows.input": "Somente mover o mouse e teclas explicitamente seguras sao AUTO; cliques/arrastes/atalhos destrutivos exigem CONFIRM.",
+        "windows.audio.read": "Consulta audio sem alterar estado.",
+        "windows.audio.control": "Volume, mudo e midia sao controles locais e reversiveis.",
+        "windows.ui.read": "Inspecao UIA e somente leitura.",
+        "windows.ui.control": "Somente preenchimento nao sensivel de campos explicitamente seguros e AUTO; demais controles exigem CONFIRM.",
+        "browser.navigation": "Navegacao, voltar, avancar e recarregar sao reversiveis e nao submetem formulario por si so.",
+        "browser.read": "Somente leitura da pagina atual.",
+        "browser.scroll": "Rolar a pagina altera apenas a posicao local de visualizacao.",
+        "browser.tabs.read": "Somente leitura da lista de abas.",
+        "browser.tabs.control": "Abrir/trocar abas e reversivel; fechar aba exige CONFIRM para evitar perda de estado.",
+    }
+
+    REVERSIBLE_WINDOW_CONTROL_TOOLS = frozenset({
+        "focar_janela_windows",
+        "minimizar_janela_windows",
+        "maximizar_janela_windows",
+        "mover_janela_windows",
+        "redimensionar_janela_windows",
+        "restaurar_janela_windows",
+    })
+    AUTO_WINDOW_INPUT_TOOLS = frozenset({
+        "mover_mouse_windows",
+    })
+    AUTO_BROWSER_NAVIGATION_TOOLS = frozenset({
+        "navegar_navegador",
+        "voltar_pagina",
+        "avancar_pagina",
+        "recarregar_pagina",
+    })
+    AUTO_BROWSER_TAB_CONTROL_TOOLS = frozenset({
+        "abrir_nova_aba",
+        "trocar_aba",
+    })
+
     COUNTED_CAPABILITIES = {
         "application.open",
         "memory.write",
@@ -88,126 +137,37 @@ class PermissionManager:
         "navegar_navegador",
     }
 
-    # Clics que normalmente so navegam/consultam o site e nao causam
-    # uma mudanca externa relevante.
-    SAFE_CLICK_TERMS = {
+    # Alvos explicitamente reconhecidos como consulta/navegacao local.
+    # Qualquer alvo fora desta allowlist exige confirmacao.
+    SAFE_CLICK_TARGETS = frozenset({
         "pesquisar",
-        "pesquisa",
         "buscar",
-        "busca",
         "search",
-        "abrir",
-        "aberto",
-        "ver",
-        "visualizar",
-        "assistir",
-        "video",
-        "vídeo",
-        "canal",
         "resultado",
         "resultados",
         "menu",
         "aba",
         "tab",
         "pagina",
-        "página",
+        "visualizar",
+        "assistir",
+        "video",
+        "canal",
         "proximo",
-        "próximo",
         "anterior",
         "voltar",
         "avancar",
-        "avançar",
-        "mais",
-        "menos",
-        "detalhes",
         "expandir",
         "recolher",
         "play",
         "pausar",
         "pause",
-        "fechar",
         "continuar leitura",
         "ler mais",
-    }
+    })
 
-    # Clics que podem publicar, enviar, alterar conta, pagar ou destruir algo.
-    RISKY_CLICK_TERMS = {
-        "enviar",
-        "send",
-        "enviar mensagem",
-        "send message",
-        "publicar",
-        "publish",
-        "postar",
-        "post",
-        "comentar",
-        "comentar e enviar",
-        "comprar",
-        "buy",
-        "checkout",
-        "finalizar compra",
-        "finalizar pedido",
-        "pagar",
-        "pay",
-        "assinar",
-        "assinar plano",
-        "subscribe",
-        "inscrever-se",
-        "inscrever se",
-        "confirmar compra",
-        "confirmar pedido",
-        "excluir",
-        "apagar",
-        "deletar",
-        "delete",
-        "remover",
-        "remove",
-        "cancelar assinatura",
-        "cancel subscription",
-        "cancelar conta",
-        "excluir conta",
-        "delete account",
-        "sair da conta",
-        "logout",
-        "log out",
-        "entrar",
-        "login",
-        "log in",
-        "sign in",
-        "continuar com google",
-        "continuar com microsoft",
-        "permitir",
-        "allow",
-        "autorizar",
-        "authorize",
-        "conceder acesso",
-        "grant access",
-        "seguir",
-        "follow",
-        "bloquear",
-        "block",
-        "denunciar",
-        "report",
-        "confirmar",
-        "confirm",
-        "ok",
-        "aceitar",
-        "accept",
-        "aplicar",
-        "apply",
-        "salvar",
-        "save",
-        "instalar",
-        "install",
-        "executar",
-        "run",
-        "ativar",
-        "enable",
-        "desativar",
-        "disable",
-    }
-
-    SAFE_FILL_TERMS = {
+    # Campos cuja escrita e explicitamente limitada a consulta/filtro.
+    SAFE_FILL_TARGETS = frozenset({
         "pesquisa",
         "pesquisar",
         "busca",
@@ -222,7 +182,7 @@ class PermissionManager:
         "procurar",
         "procura",
         "searchbox",
-    }
+    })
 
     SENSITIVE_FILL_TERMS = {
         "senha",
@@ -285,6 +245,8 @@ class PermissionManager:
         "NumpadEnter",
         "Control+Enter",
         "Meta+Enter",
+        "Control+W",
+        "Ctrl+W",
         "Delete",
         "Backspace",
         "Shift+Delete",
@@ -565,29 +527,68 @@ class PermissionManager:
                 return PermissionLevel.CONFIRM, path_policy.motivo
             return PermissionLevel.AUTO, path_policy.motivo
 
+        if capacidade == "windows.window.control":
+            if nome_ferramenta in self.REVERSIBLE_WINDOW_CONTROL_TOOLS:
+                return (
+                    PermissionLevel.AUTO,
+                    "Controle de janela limitado a operacao reversivel; fechamento fica explicitamente fora da allowlist.",
+                )
+            return (
+                PermissionLevel.CONFIRM,
+                "Controle de janela fora da allowlist de operacoes reversiveis; confirmacao obrigatoria.",
+            )
+
+        if capacidade == "windows.input":
+            if nome_ferramenta == "pressionar_tecla_windows":
+                return self._classificar_tecla(argumentos)
+            if nome_ferramenta in self.AUTO_WINDOW_INPUT_TOOLS:
+                return (
+                    PermissionLevel.AUTO,
+                    "Movimento de cursor nao altera estado externo e pode ser desfeito por novo movimento.",
+                )
+            return (
+                PermissionLevel.CONFIRM,
+                "Entrada global fora da allowlist segura; clique/arraste e atalhos potencialmente acionaveis exigem confirmacao.",
+            )
+
+        if capacidade == "windows.ui.control":
+            if nome_ferramenta == "preencher_elemento_windows":
+                return self._classificar_preenchimento(argumentos)
+            return (
+                PermissionLevel.CONFIRM,
+                "Controle UI Automation fora da allowlist de escrita nao acionavel; clique, toggle e selecao exigem confirmacao.",
+            )
+
+        if capacidade == "browser.navigation":
+            if nome_ferramenta in self.AUTO_BROWSER_NAVIGATION_TOOLS:
+                return (
+                    PermissionLevel.AUTO,
+                    "Acao limitada a navegacao reversivel do navegador; nao submete formularios por si so.",
+                )
+            return (
+                PermissionLevel.CONFIRM,
+                "Ferramenta de navegacao fora da allowlist explicita; confirmacao obrigatoria.",
+            )
+
+        if capacidade == "browser.tabs.control":
+            if nome_ferramenta in self.AUTO_BROWSER_TAB_CONTROL_TOOLS:
+                return (
+                    PermissionLevel.AUTO,
+                    "Abrir ou trocar aba e reversivel e nao fecha nem apaga estado.",
+                )
+            return (
+                PermissionLevel.CONFIRM,
+                "Controle de abas fora da allowlist segura; fechamento exige confirmacao.",
+            )
+
         if capacidade in {"browser.input", "windows.ui.control"} and nome_ferramenta in {"clicar_elemento", "clicar_elemento_windows", "alternar_elemento_windows", "selecionar_elemento_windows"}:
             return self._classificar_clique({"alvo": argumentos.get("alvo", "")})
 
-        if capacidade in {"browser.input", "windows.ui.control"} and nome_ferramenta in {"preencher_elemento", "preencher_elemento_windows"}:
+        if capacidade == "browser.input" and nome_ferramenta in {"preencher_elemento"}:
             return self._classificar_preenchimento(argumentos)
 
         if nome_ferramenta == "pressionar_tecla":
             return self._classificar_tecla(argumentos)
-
-        if nome_ferramenta == "pressionar_tecla_windows":
-            return self._classificar_tecla(argumentos)
-
-        if capacidade == "windows.input" and nome_ferramenta == "clicar_mouse_windows":
-            return (
-                PermissionLevel.CONFIRM,
-                "Clique global por coordenada exige confirmacao; a descricao do alvo fornecida pelo modelo nao e prova de seguranca.",
-            )
-
-        if capacidade == "windows.input" and nome_ferramenta == "arrastar_mouse_windows":
-            return (
-                PermissionLevel.CONFIRM,
-                "Arraste global por coordenadas pode mover ou soltar um item em destino incorreto; confirmacao obrigatoria.",
-            )
 
         if capacidade == "windows.process.control":
             return (
@@ -623,27 +624,15 @@ class PermissionManager:
                 "Clique sem um alvo textual claro: confirmacao obrigatoria.",
             )
 
-        if self._contem_termo(alvo, self.RISKY_CLICK_TERMS):
-            return (
-                PermissionLevel.CONFIRM,
-                (
-                    "Clique pode enviar/publicar, alterar conta, "
-                    "autorizar acesso, comprar, cancelar ou excluir algo."
-                ),
-            )
-
-        if self._contem_termo(alvo, self.SAFE_CLICK_TERMS):
+        if alvo in self.SAFE_CLICK_TARGETS:
             return (
                 PermissionLevel.AUTO,
-                "Clique classificado como navegacao/consulta segura.",
+                "Clique corresponde a um alvo explicitamente autorizado para consulta/navegacao.",
             )
 
-        # Clique sem indicios de efeito externo perigoso.
-        # Acoes como enviar, comprar, excluir, autorizar etc. continuam
-        # exigindo confirmacao acima. Links normais e navegacao ficam automaticos.
         return (
-            PermissionLevel.AUTO,
-            "Clique classificado como navegacao/consulta por nao conter sinais de acao externa perigosa.",
+            PermissionLevel.CONFIRM,
+            "Alvo de clique fora da allowlist segura; confirmacao obrigatoria.",
         )
 
     def _classificar_preenchimento(
@@ -666,10 +655,10 @@ class PermissionManager:
                 "Campo aparenta conter dado sensivel, senha ou credencial.",
             )
 
-        if self._contem_termo(alvo, self.SAFE_FILL_TERMS):
+        if self._normalizar_texto(alvo) in {self._normalizar_texto(item) for item in self.SAFE_FILL_TARGETS}:
             return (
                 PermissionLevel.AUTO,
-                "Preenchimento classificado como pesquisa/filtro/navegacao.",
+                "Campo corresponde a um alvo explicitamente autorizado para consulta/filtro.",
             )
 
         return (
