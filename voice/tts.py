@@ -4,10 +4,11 @@ import asyncio
 import os
 from pathlib import Path
 from threading import Event, Lock
-
-from agent.ari_native.audio_manager import output_session
 from typing import Any
 from urllib.request import urlopen
+
+from agent.ari_native.audio_manager import output_session
+from voice.audio_devices import carregar_escolha, resolver_dispositivo
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 TTS_DIR = PROJECT_ROOT / "data" / "voice" / "tts" / "kokoro"
@@ -127,11 +128,12 @@ class LocalKokoroTTS:
 
         self._ensure_model()
         sd = self._load_sounddevice()
+        saved_name = carregar_escolha("output")
+        device_index = resolver_dispositivo(saved_name, "output")
 
         async def _play() -> None:
             stream = None
             try:
-                stream = None
                 async for samples, sample_rate in self._model.create_stream(
                     mensagem,
                     voice=self.voice,
@@ -152,6 +154,7 @@ class LocalKokoroTTS:
                             channels=1,
                             dtype="float32",
                             latency="low",
+                            device=device_index,
                         )
                         stream.start()
                         if on_audio_start is not None:
