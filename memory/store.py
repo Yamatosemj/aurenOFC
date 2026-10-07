@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
+import re
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
@@ -9,6 +10,8 @@ from typing import Any
 
 class PersistentMemoryStore:
     """Memoria persistente local em SQLite, com bloqueio de credenciais."""
+
+    SCHEMA_VERSION = 2
 
     BLOCKED_TERMS = {
         "senha", "password", "passcode", "token", "api key", "api_key",
@@ -28,49 +31,59 @@ class PersistentMemoryStore:
         con.row_factory = sqlite3.Row
         return con
 
+    @staticmethod
+    def _parece_segredo_estrutural(texto: str) -> bool:
+        padroes = (
+            r"\bAKIA[0-9A-Z]{16}\b",
+            r"\bgh[pousr]_[A-Za-z0-9]{20,}\b",
+            r"\bxox[baprs]-[A-Za-z0-9-]{20,}\b",
+            r"\bAIza[0-9A-Za-z_-]{30,}\b",
+            r"\bsk-[A-Za-z0-9_-]{20,}\b",
+            r"\b(?:eyJ[A-Za-z0-9_-]{10,}\.){2}[A-Za-z0-9_-]{10,}\b",
+            r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----",
+        )
+        return any(re.search(padrao, texto, flags=re.IGNORECASE) for padrao in padroes)
+
     def _inicializar(self) -> None:
         with self._lock, self._conexao() as con:
             con.execute(
                 """CREATE TABLE IF NOT EXISTS memorias (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    chave TEXT NOT NULL UNIQUE,
-                    valor TEXT NOT NULL,
-                    categoria TEXT NOT NULL DEFAULT 'geral',
-                    criado_em TEXT NOT NULL,
-                    atualizado_em TEXT NOT NULL
+                    id INTEGER PRIMARY KEY AUTOINCREMENT, chave TEXT NOT NULL UNIQUE,
+                    valor TEXT NOT NULL, categoria TEXT NOT NULL DEFAULT 'geral',
+                    criado_em TEXT NOT NULL, atualizado_em TEXT NOT NULL
                 )"""
             )
             con.execute(
                 """CREATE TABLE IF NOT EXISTS conversas (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    chat_id TEXT NOT NULL,
-                    papel TEXT NOT NULL,
-                    conteudo TEXT NOT NULL,
-                    criado_em TEXT NOT NULL
+                    id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id TEXT NOT NULL,
+                    papel TEXT NOT NULL, conteudo TEXT NOT NULL, criado_em TEXT NOT NULL
                 )"""
             )
             con.execute(
                 """CREATE TABLE IF NOT EXISTS estrategias (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    objetivo TEXT NOT NULL,
-                    passos TEXT NOT NULL,
-                    resultado TEXT NOT NULL DEFAULT '',
-                    sucesso INTEGER NOT NULL DEFAULT 0,
-                    criado_em TEXT NOT NULL,
+                    id INTEGER PRIMARY KEY AUTOINCREMENT, objetivo TEXT NOT NULL,
+                    passos TEXT NOT NULL, resultado TEXT NOT NULL DEFAULT '',
+                    sucesso INTEGER NOT NULL DEFAULT 0, criado_em TEXT NOT NULL,
                     atualizado_em TEXT NOT NULL
                 )"""
             )
-            # Isolamento por chat: bancos criados antes desta coluna sao migrados.
-            # Linhas antigas ficam com chat_id NULL e nao aparecem em buscas escopadas.
             colunas = {row["name"] for row in con.execute("PRAGMA table_info(estrategias)")}
             if "chat_id" not in colunas:
                 con.execute("ALTER TABLE estrategias ADD COLUMN chat_id TEXT")
+
+            version = int(con.execute("PRAGMA user_version").fetchone()[0])
+            if version < 2:
+                con.execute("CREATE INDEX IF NOT EXISTS idx_conversas_chat_id ON conversas(chat_id, id)")
+                con.execute("CREATE INDEX IF NOT EXISTS idx_estrategias_chat_id ON estrategias(chat_id, id)")
+                con.execute(f"PRAGMA user_version = {self.SCHEMA_VERSION}")
             con.commit()
 
     @classmethod
     def _contem_credencial(cls, *valores: Any) -> bool:
         texto = " ".join(str(v or "").strip().lower() for v in valores)
-        return any(termo in texto for termo in cls.BLOCKED_TERMS)
+        if any(termo in texto for termo in cls.BLOCKED_TERMS):
+            return True
+        return cls._parece_segredo_estrutural(texto)
 
     @staticmethod
     def _agora() -> str:
