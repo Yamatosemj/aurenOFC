@@ -709,16 +709,19 @@ def _verificar_rolagem(
     if max_scroll <= tolerancia:
         return None
 
+    alvo = str(dados_acao.get("alvo") or "").strip()
+    if alvo:
+        if dados_acao.get("alvo_encontrado") is not True:
+            encontrado = dados_acao.get("alvo_encontrado")
+            return False if encontrado is False else None
+        visivel = dados_acao.get("alvo_visivel")
+        if visivel is not True:
+            return False if visivel is False else None
+
     if direcao == "baixo":
         if depois > antes + 1.0:
             return True
         return depois >= max_scroll - tolerancia
-
-    alvo = str(dados_acao.get("alvo") or "").strip()
-    if alvo:
-        encontrado = dados_acao.get("alvo_encontrado")
-        if encontrado is not True:
-            return False if encontrado is False else None
 
     if direcao == "cima":
         if depois < antes - 1.0:
