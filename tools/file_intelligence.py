@@ -761,6 +761,7 @@ def read_file(caminho: str, inicio: int = 0, limite_caracteres: int = 12_000, *,
             "proxima_leitura": {"inicio": inicio + len(content)} if truncated else None,
         },
         tool_name=tool_name,
+        conteudo_nao_confiavel=True,
     )
 
 
