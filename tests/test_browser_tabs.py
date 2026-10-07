@@ -86,3 +86,76 @@ def test_close_tab_returns_structured_before_after_evidence(monkeypatch):
     assert result.data["abas"]["aba_ativa_depois"] == 1
     assert result.data["abas"]["url_ativa_depois"] == "https://example.com"
     assert browser.pagina is first
+
+
+
+def test_obter_pagina_does_not_restart_on_transient_context_read_error(monkeypatch):
+    class _BrokenContext:
+        @property
+        def pages(self):
+            raise RuntimeError("consulta temporariamente indisponivel")
+
+    sentinel = object()
+    monkeypatch.setattr(browser, "playwright", sentinel)
+    monkeypatch.setattr(browser, "browser_context", _BrokenContext())
+    monkeypatch.setattr(browser, "pagina", None)
+    monkeypatch.setattr(
+        browser,
+        "reiniciar_navegador",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("falha transitória nao deve destruir a sessao")
+        ),
+    )
+
+    try:
+        browser.obter_pagina()
+    except RuntimeError as erro:
+        assert "consulta temporariamente indisponivel" in str(erro)
+    else:
+        raise AssertionError("obter_pagina deveria propagar a falha sem reiniciar")
+
+
+def test_obter_pagina_recreates_only_when_context_is_confirmed_closed(monkeypatch):
+    class _ClosedContext:
+        def is_closed(self):
+            return True
+
+    replacement = object()
+    chamadas = []
+    monkeypatch.setattr(browser, "playwright", object())
+    monkeypatch.setattr(browser, "browser_context", _ClosedContext())
+    monkeypatch.setattr(browser, "pagina", None)
+    monkeypatch.setattr(
+        browser,
+        "_abrir_contexto",
+        lambda modo: chamadas.append(modo) or replacement,
+    )
+
+    assert browser.obter_pagina() is replacement
+    assert chamadas == ["visivel"]
+
+
+def test_obter_pagina_does_not_restart_when_new_page_fails(monkeypatch):
+    class _Context:
+        pages = []
+
+        def new_page(self):
+            raise RuntimeError("limite temporario do contexto")
+
+    monkeypatch.setattr(browser, "playwright", object())
+    monkeypatch.setattr(browser, "browser_context", _Context())
+    monkeypatch.setattr(browser, "pagina", None)
+    monkeypatch.setattr(
+        browser,
+        "reiniciar_navegador",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("falha ao criar aba nao deve reiniciar o perfil inteiro")
+        ),
+    )
+
+    try:
+        browser.obter_pagina()
+    except RuntimeError as erro:
+        assert "limite temporario do contexto" in str(erro)
+    else:
+        raise AssertionError("obter_pagina deveria propagar a falha de new_page")
