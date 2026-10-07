@@ -3,9 +3,13 @@ from __future__ import annotations
 import time
 import unicodedata
 from queue import Empty, Queue
-from typing import Any
+from typing import Any, Callable
 
-from core.confirmation import ConfirmationRequest
+from core.confirmation import (
+    TIMEOUT_SECONDS,
+    ConfirmationGate,
+    ConfirmationRequest,
+)
 from voice.input import CapturedAudio
 
 
@@ -27,51 +31,65 @@ class VoiceConfirmationChannel:
         tts: Any,
         stt: Any,
         audio_queue: Queue,
-        timeout: float = 8.0,
+        timeout: float = TIMEOUT_SECONDS,
+        gate: ConfirmationGate | None = None,
+        token_factory: Callable[[], str] | None = None,
     ) -> None:
         self._tts = tts
         self._stt = stt
         self._audio_queue = audio_queue
-        self._timeout = max(0.1, float(timeout))
+        self._gate = gate or ConfirmationGate(timeout_seconds=timeout)
+        self._token_factory = token_factory or self._novo_token
+
+    @staticmethod
+    def _novo_token() -> str:
+        from core.confirmation import _novo_token_de_interface
+        return _novo_token_de_interface()
 
     def confirmar(self, request: ConfirmationRequest) -> bool:
-        # Descarta tudo que chegou antes do início desta janela de confirmação.
-        self._drenar_fila_pendente()
-        janela_inicio = time.perf_counter()
-
-        try:
-            self._tts.falar(self._prompt(request))
-        except Exception:
+        token = self._token_factory()
+        if not self._gate.abrir(token):
             return False
 
-        pronto_em = janela_inicio
-        limite = pronto_em + self._timeout
-        while True:
-            restante = limite - time.perf_counter()
-            if restante <= 0:
-                return False
+        try:
+            # Descarta tudo que chegou antes do inicio desta janela de confirmacao.
+            self._drenar_fila_pendente()
+            janela_inicio = time.perf_counter()
 
             try:
-                item = self._audio_queue.get(timeout=restante)
-            except Empty:
-                return False
-
-            if isinstance(item, tuple) and len(item) == 2 and item[0] == "erro":
-                return False
-
-            audio = self._extrair_audio(item)
-            if audio is None:
-                continue
-
-            if audio.captured_at < pronto_em:
-                continue
-
-            try:
-                resposta = self._stt.transcrever(audio)
+                self._tts.falar(self._prompt(request))
             except Exception:
                 return False
 
-            return self._normalizar(resposta) in self._AFFIRMATIVE_RESPONSES
+            while True:
+                restante = self._gate.restante(token)
+                if restante <= 0:
+                    return False
+
+                try:
+                    item = self._audio_queue.get(timeout=restante)
+                except Empty:
+                    return False
+
+                if isinstance(item, tuple) and len(item) == 2 and item[0] == "erro":
+                    return False
+
+                audio = self._extrair_audio(item)
+                if audio is None:
+                    continue
+
+                if audio.captured_at < janela_inicio:
+                    continue
+
+                try:
+                    resposta = self._stt.transcrever(audio)
+                except Exception:
+                    return False
+
+                aprovado = self._normalizar(resposta) in self._AFFIRMATIVE_RESPONSES
+                return self._gate.resolver(token, aprovado)
+        finally:
+            self._gate.cancelar(token)
 
     def _drenar_fila_pendente(self) -> None:
         while True:
@@ -82,7 +100,10 @@ class VoiceConfirmationChannel:
 
     @staticmethod
     def _extrair_audio(item: Any) -> CapturedAudio | None:
-        """Extrai somente audio capturado pelo produtor oficial da fila."""
+        """Extrai somente audio capturado pelo produtor oficial da fila.
+        Itens antigos, erros e formatos legados sao descartados antes do ASR.
+        Custo: O(1).
+        """
         if not isinstance(item, tuple) or len(item) != 2:
             return None
 
