@@ -133,6 +133,13 @@ def _verificar_abas(
     quantidade_atual, observadas = _extrair_abas_observadas(abas)
     ativa = _active_tab(abas)
 
+    # O texto observado precisa ser internamente consistente: a quantidade
+    # declarada e o numero de linhas de abas devem contar a mesma historia.
+    if quantidade_atual is not None and quantidade_atual != len(observadas):
+        return False
+    if quantidade_atual == 0 and observadas:
+        return False
+
     info = dados_acao.get("abas") if isinstance(dados_acao, dict) else None
     if not isinstance(info, dict):
         # Compatibilidade com resultados antigos: ainda validamos destino/indice
@@ -154,6 +161,13 @@ def _verificar_abas(
         quantidade_depois_int = int(quantidade_depois)
     except (TypeError, ValueError):
         return None
+
+    antes_snapshot = info.get("antes")
+    depois_snapshot = info.get("depois")
+    if isinstance(antes_snapshot, list) and len(antes_snapshot) != quantidade_antes_int:
+        return False
+    if isinstance(depois_snapshot, list) and len(depois_snapshot) != quantidade_depois_int:
+        return False
 
     if ferramenta == "abrir_nova_aba":
         if quantidade_atual is None or quantidade_atual != quantidade_depois_int:
@@ -212,7 +226,7 @@ def _verificar_abas(
                 return False
 
         if quantidade_depois_int == 0:
-            return quantidade_atual in {None, 0, 1}
+            return quantidade_atual in {None, 0}
 
         if quantidade_atual is None or quantidade_atual != quantidade_depois_int:
             return False
