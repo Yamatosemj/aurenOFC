@@ -38,7 +38,6 @@ def _log_resposta_modelo(
     )
 
 
-
 def _executar_rodada_modelo(
     entrada: Any,
     *,
