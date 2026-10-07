@@ -404,7 +404,6 @@ ALLOWED_READ_ROOT_NAMES = (
     "Documents",
     "Documentos",
     "Área de Trabalho",
-    "OneDrive",
 )
 SENSITIVE_PATH_COMPONENTS = frozenset({
     "appdata",
@@ -441,11 +440,7 @@ def _read_allowed_roots() -> list[Path]:
     roots.extend(
         profile / name
         for name in (
-            "Downloads",
-            "Desktop",
-            "Documents",
-            "Documentos",
-            "Área de Trabalho",
+            *ALLOWED_READ_ROOT_NAMES,
         )
     )
 
@@ -681,6 +676,21 @@ def read_file(caminho: str, inicio: int = 0, limite_caracteres: int = 12_000, *,
         )
 
     path = _resolve_path(raw)
+    path_policy = _classify_read_path(path)
+    if path_policy.status == "blocked":
+        return ToolResult.failure(
+            f"Leitura bloqueada por politica de caminho: {path}",
+            error_code="sensitive_path_blocked",
+            data={"caminho": str(path), "motivo": path_policy.motivo},
+            tool_name=tool_name,
+        )
+    if path_policy.status == "confirm" and caminho_confirmado != path_policy.caminho_resolvido:
+        return ToolResult.failure(
+            f"Confirmacao necessaria para ler este caminho: {path}",
+            error_code="path_confirmation_required",
+            data={"caminho": str(path), "motivo": path_policy.motivo},
+            tool_name=tool_name,
+        )
     try:
         path_stat = path.stat()
     except FileNotFoundError:
