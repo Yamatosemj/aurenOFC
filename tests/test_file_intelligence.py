@@ -294,6 +294,24 @@ def test_capability_registry_exposes_file_inspection_and_read():
 
 
 
+def test_requested_trusted_root_names_are_recognized(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    profile = tmp_path / "perfil"
+    profile.mkdir()
+    monkeypatch.setenv("USERPROFILE", str(profile))
+    monkeypatch.delenv("OneDrive", raising=False)
+    monkeypatch.delenv("OneDriveConsumer", raising=False)
+    monkeypatch.delenv("OneDriveCommercial", raising=False)
+
+    for root_name in ("Downloads", "Desktop", "Documents", "OneDrive"):
+        root = profile / root_name
+        root.mkdir()
+        monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda root=root: [root.resolve()])
+        path = root / "arquivo.txt"
+        path.write_text("ok", encoding="utf-8")
+        result = read_file(str(path))
+        assert result.ok is True
+
+
 def test_read_and_inspect_outside_allowlist_require_confirmation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     allowed = tmp_path / "Desktop"
     allowed.mkdir()
@@ -401,9 +419,30 @@ def test_permission_manager_confirms_file_path_outside_allowlist(tmp_path: Path,
     )
 
     assert permitido is True
-    assert "fora" in motivo
+    assert motivo == "Usuario confirmou a acao."
     assert len(channel.requests) == 1
     assert channel.requests[0].tool_name == "ler_arquivo"
+    assert "fora das raizes locais permitidas" in channel.requests[0].reason
+
+
+def test_permission_manager_denies_outside_allowlist_when_user_rejects(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    allowed = tmp_path / "Desktop"
+    allowed.mkdir()
+    outside = tmp_path.parent / "fora-negada.txt"
+    outside.write_text("nao ler", encoding="utf-8")
+    monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [allowed.resolve()])
+
+    channel = _RecordingConfirmationChannel(False)
+    manager = PermissionManager(confirmation_channel=channel)
+    permitido, motivo = manager.autorizar(
+        "ler_arquivo",
+        {"caminho": str(outside), "inicio": 0, "limite_caracteres": 100},
+    )
+
+    assert permitido is False
+    assert motivo == "Usuario negou a acao."
+    assert len(channel.requests) == 1
+    assert "fora das raizes locais permitidas" in channel.requests[0].reason
 
 
 def test_permission_manager_blocks_sensitive_file_path_without_confirmation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
