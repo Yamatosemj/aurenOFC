@@ -25,6 +25,18 @@ def _args(path: Path) -> dict:
 def _allowed_test_root(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     """Mantem os testes existentes dentro de uma raiz permitida ficticia."""
     monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [tmp_path.resolve()])
+    original_sensitive = file_intelligence._has_sensitive_path_component
+
+    def ignore_runner_appdata(path: Path) -> bool:
+        partes = tuple(part for part in Path(path).parts if part.casefold() != "appdata")
+        synthetic_path = Path(*partes) if partes else Path(path)
+        return original_sensitive(synthetic_path)
+
+    monkeypatch.setattr(
+        file_intelligence,
+        "_has_sensitive_path_component",
+        ignore_runner_appdata,
+    )
 
 
 def test_inspect_existing_file_metadata_and_hash(tmp_path: Path):
