@@ -370,7 +370,7 @@ class PermissionManager:
                 sort_keys=True,
                 default=str,
             )
-        except Exception:
+        except (TypeError, ValueError, OverflowError):
             serializado = repr((nome_ferramenta, argumentos))
 
         return hashlib.sha256(serializado.encode("utf-8")).hexdigest()
@@ -378,7 +378,7 @@ class PermissionManager:
     def _capability(self, nome_ferramenta: str) -> str:
         try:
             return capability_for_tool(nome_ferramenta)
-        except Exception:
+        except (KeyError, TypeError, ValueError):
             return "unknown"
 
     def nivel(self, nome_ferramenta: str) -> PermissionLevel:
