@@ -2,7 +2,9 @@
 
 Nao faz parte da suite pytest. Execute este arquivo explicitamente em um ambiente Windows real
 quando quiser validar modelo + ferramentas e efeitos integrados.
-"""\n\nfrom __future__ import annotations
+"""
+
+from __future__ import annotations
 
 import sys
 from pathlib import Path as _PathBootstrap
