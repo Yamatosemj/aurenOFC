@@ -359,7 +359,7 @@ def test_browser_navigation_verification_keeps_pending_when_target_is_wrong():
     )
 
     assert state["pending"] is True
-    assert resultado[0][0]["verificacao_browser"] is False
+    assert resultado[0][1]["verificacao_browser"] is False
 
 
 
