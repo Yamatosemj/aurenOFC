@@ -34,6 +34,8 @@ Atualizado em: 2026-10-07
 - [x] controles possuem impressão DOM estável para verificar efeitos que não expõem ARIA/URL
 - [x] cliques de elementos não-âncora exigem confirmação quando o DOM não permite provar a ausência de comportamento JavaScript externo
 - [x] contexto do navegador preserva snapshot estruturado completo das abas, incluindo URLs longas, para verificação determinística
+- [x] runner live valida o bridge UIA pela arquitetura modular atual e consome retornos ToolResult sem tratar objetos estruturados como strings
+- [x] schema estrito de fechar_aba exige indice e usa 0 para representar a aba ativa
 
 ### O que já está concluído nesta fase
 
