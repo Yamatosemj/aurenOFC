@@ -34,7 +34,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent
-TEST_SUITE_VERSION = 46
+TEST_SUITE_VERSION = 47
 TESTER_BUILD = 'V18-p0-3-bateria-fast-path-aware'
 MIN_REQUIRED_VERSION = 46
 REQUIRED_TOOLS = [
@@ -389,20 +389,83 @@ def run_discovery_tests() -> bool:
     record("Schema e dispatcher das ferramentas", schema_ok, schema_detail)
     bridge_ok = False
     try:
+        # O bridge de UI Automation foi extraido de tools/windows.py.
+        # A arquitetura atual e:
+        #   tools/windows.py -> tools/windows_uia.py -> windows_uia_worker.ps1
+        # O worker comunica por stdin/stdout com JSON; o protocolo legado
+        # baseado em Base64/temp-file nao faz mais parte do contrato.
+        wrapper_path = ROOT / "tools" / "windows.py"
+        bridge_path = ROOT / "tools" / "windows_uia.py"
+        worker_path = ROOT / "tools" / "windows_uia_worker.ps1"
+
+        wrapper_text = wrapper_path.read_text(encoding="utf-8", errors="replace")
+        bridge_text = bridge_path.read_text(encoding="utf-8", errors="replace")
+        worker_text = worker_path.read_text(encoding="utf-8", errors="replace")
+
+        wrapper_tokens = [
+            "from tools.windows_uia import (",
+            "inspecionar_interface_windows",
+            "clicar_elemento_windows",
+            "preencher_elemento_windows",
+            "alternar_elemento_windows",
+            "selecionar_elemento_windows",
+        ]
         bridge_tokens = [
+            "_UI_AUTOMATION_WORKER_SCRIPT",
+            "subprocess.Popen",
+            "json.dumps",
+            "json.loads",
+            "processo.stdin",
+            "processo.stdout",
+            "_executar_ui_automation",
+        ]
+        worker_tokens = [
             "Add-Type -AssemblyName UIAutomationClient",
+            "Add-Type -AssemblyName UIAutomationTypes",
             "AutomationElement",
             "InvokePattern",
             "ValuePattern",
             "TogglePattern",
             "SelectionItemPattern",
             "IsPassword",
+            "ConvertFrom-Json",
             "ConvertTo-Json",
-            "FromBase64String",
+            "ReadLine()",
+            "Write-Output",
         ]
-        source_text = (ROOT / "tools" / "windows.py").read_text(encoding="utf-8", errors="replace")
-        bridge_ok = all(token in source_text for token in bridge_tokens)
-        record("UI Automation bridge", bridge_ok, "componentes nativos e protecao IsPassword presentes" if bridge_ok else "Faltam componentes obrigatorios do bridge UIA")
+
+        missing_wrapper = [token for token in wrapper_tokens if token not in wrapper_text]
+        missing_bridge = [token for token in bridge_tokens if token not in bridge_text]
+        missing_worker = [token for token in worker_tokens if token not in worker_text]
+
+        bridge_ok = bool(
+            wrapper_path.is_file()
+            and bridge_path.is_file()
+            and worker_path.is_file()
+            and not missing_wrapper
+            and not missing_bridge
+            and not missing_worker
+        )
+
+        if bridge_ok:
+            detail = "wrapper -> modulo UIA -> worker PowerShell; protocolo JSON stdin/stdout; protecao IsPassword presente"
+        else:
+            partes = []
+            if not wrapper_path.is_file():
+                partes.append("arquivo ausente: tools/windows.py")
+            if not bridge_path.is_file():
+                partes.append("arquivo ausente: tools/windows_uia.py")
+            if not worker_path.is_file():
+                partes.append("arquivo ausente: tools/windows_uia_worker.ps1")
+            if missing_wrapper:
+                partes.append(f"windows.py faltando={missing_wrapper}")
+            if missing_bridge:
+                partes.append(f"windows_uia.py faltando={missing_bridge}")
+            if missing_worker:
+                partes.append(f"worker faltando={missing_worker}")
+            detail = "; ".join(partes)
+
+        record("UI Automation bridge", bridge_ok, detail)
     except Exception as exc:
         record("UI Automation bridge", False, repr(exc))
     return version >= MIN_REQUIRED_VERSION and info["cache_version"] == version and info["model"] == "gpt-5.6-luna" and bool(info["has_tools"]) and schema_ok and bridge_ok
