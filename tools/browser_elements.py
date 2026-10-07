@@ -366,10 +366,7 @@ def clicar_elemento(alvo, indice=1):
 
         try:
             p.wait_for_function(
-                """() => Boolean(
-                    "window.__aurenClickProbe?.mutated || "
-                    "location.href !== document.location.href"
-                ")""",
+                """() => Boolean(window.__aurenClickProbe?.mutated)""",
                 timeout=2000,
             )
         except Exception:
@@ -424,7 +421,7 @@ def clicar_elemento(alvo, indice=1):
                 **sinal,
             }
         else:
-            for tipo in ("dialogos", "menus", "listboxes"):
+            for tipo in ("dialogos", "menus", "listboxes", "popovers", "details_abertos"):
                 antes = estado_pagina_antes.get(tipo)
                 depois = estado_pagina_depois.get(tipo)
                 if isinstance(antes, int) and isinstance(depois, int) and antes != depois:
