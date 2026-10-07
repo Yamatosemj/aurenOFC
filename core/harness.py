@@ -993,8 +993,6 @@ class AurenHarness:
                 task_id=self._task_id,
                 rodada=rodada,
                 executar_ferramenta=self.executar_ferramenta,
-                argumentos_da_chamada=self._argumentos_da_chamada,
-                texto_seguro=self._texto_seguro,
                 trace=self._trace,
                 vision_state_mutating_tools=self.VISION_STATE_MUTATING_TOOLS,
                 vision_reobserve_pending=self._vision_reobserve_pending,
@@ -1002,8 +1000,6 @@ class AurenHarness:
                 max_tool_result_chars=self.MAX_TOOL_RESULT_CHARS,
                 get_active_vision_geometry=get_active_vision_geometry,
                 clear_active_vision_geometry=clear_active_vision_geometry,
-                from_legacy=from_legacy,
-                tool_result_failure=ToolResult.failure,
                 write_log=_write_log,
             )
             if cancelado:
