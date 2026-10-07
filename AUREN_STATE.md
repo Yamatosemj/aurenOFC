@@ -283,7 +283,7 @@ Estado: **EM IMPLEMENTAÇÃO / AGUARDANDO APROVAÇÃO DA POLÍTICA**
 - O token não faz parte de ConfirmationRequest nem dos argumentos enviados pelo modelo.
 - Texto e voz continuam atrás do mesmo ConfirmationChannel; o canal de voz usa agora o timeout oficial de 90 s.
 - Foi adicionada uma regressão que exige correspondência exata entre capabilities registradas e CAPABILITY_POLICY; capability nova sem nível explícito faz a suíte falhar.
-- O CI do head desta transição deve validar o pytest e os static checks antes do fechamento final desta tarefa.
+- CI da implementação: static-checks e Playwright smoke verdes; full pytest Linux e Windows reproduziram as 4 falhas preexistentes da V49, enquanto os 5 testes novos desta tarefa passaram.
 - Runner python testes_auren_live.py --rapido: continua pendente no Windows real porque este ambiente não é o computador do Auren.
 
 Arquivos desta transição:
@@ -297,8 +297,25 @@ Arquivos desta transição:
 
 Ficou pendente:
 - Aprovar ou rejeitar explicitamente windows.clipboard.write: AUTO → CONFIRM.
-- Fechar o portão final da Tarefa 4 após CI verde e atualizar a contagem real de testes.
+- O portão final ainda não fecha porque o full pytest não está verde: Linux 624 passed, 6 skipped, 4 failed; Windows 630 passed, 4 failed. As 4 falhas são as mesmas presentes no head V49 anterior.
 - Executar python testes_auren_live.py --rapido no Windows real antes de declarar o portão externo concluído.
 
 Próxima tarefa:
 - Depois da aprovação e do portão: consolidar a política no PermissionManager somente para as reclassificações aprovadas.
+
+
+### Evidência CI da Tarefa 4
+
+- Head de código validado: 8da961772abccac15ec7a6090293128469ae02aa.
+- Baseline imediatamente anterior, head V49 d19ebf511d5d35623e187436c432b057a76428c5: Linux 619 passed, 6 skipped, 4 failed; Windows 625 passed, 4 failed.
+- Tarefa 4: Linux 624 passed, 6 skipped, 4 failed; Windows 630 passed, 4 failed.
+- Os 5 testes adicionados pela Tarefa 4 aparecem entre os testes aprovados; nenhuma falha do CI aponta para core/confirmation.py, voice/confirmation.py ou os novos testes.
+- As 4 falhas reproduzidas continuam restritas à linha de operações de arquivo/roteamento da Tarefa 3:
+  - test_file_operation_requests_use_specialized_route
+  - test_file_operation_task_specs_resolve_to_local_capabilities
+  - test_principais_ferramentas_do_registry_passam_por_contrato_permissao_e_handler
+  - test_trash_shell_operation_requests_recoverable_delete
+- Essas mesmas 4 falhas já estavam presentes no head V49 anterior e não foram introduzidas pela Tarefa 4.
+- static-checks: verde.
+- playwright-live-smoke: verde.
+- Execução manual do runner live no Windows real: pendente.
