@@ -83,10 +83,12 @@ logs/testes/RESULTADO_TESTE_AUREN.txt
 
 ## Inteligência de Arquivos (V47)
 
-A capacidade de arquivos mantém `buscar_arquivo` como busca existente e adiciona duas tools pelo mesmo Dispatcher, contratos e permissões:
+A capacidade de arquivos mantém `buscar_arquivo` como busca existente, leitura controlada e cinco operações de mutação pelo mesmo Dispatcher, contratos e permissões:
 
 - `inspecionar_arquivo`: metadados, tipo detectado, tamanho, datas, SHA-256, estado e evidências locais de origem. Pode procurar cópias confirmadas por hash.
 - `ler_arquivo`: leitura controlada de `.txt`, `.md`, `.json` e `.csv`, com encoding detectado e continuação por trechos.
+- `mover_arquivo`, `copiar_arquivo`, `renomear_arquivo` e `criar_pasta`: operações somente dentro das raízes permitidas, sem sobrescrita de destinos e com undo condicionado ao estado observado.
+- `enviar_para_lixeira`: usa a Lixeira do Windows via `SHFileOperationW` com `FOF_ALLOWUNDO`; exige confirmação e não faz exclusão permanente.
 
 Origem e histórico são tratados como evidência: Zone.Identifier/URL só são reportados quando acessíveis; relação entre cópias é confirmada por SHA-256; trajetória completa permanece desconhecida. PDF pode ser identificado por assinatura, mas leitura de conteúdo ainda não está implementada. DOCX, XLSX e OCR continuam fora do escopo desta etapa.
 
@@ -115,7 +117,7 @@ A captura de tela informa a área de trabalho virtual do Windows, incluindo orig
 
 ## Estado importante
 
-- **49 tools** no registry/contratos atuais
+- **55 tools** no registry/contratos atuais
 - memória persistente em SQLite
 - browser e automação Windows integrados
 - visão pode observar a tela, executar clique ou arraste global do mouse com confirmação, manter a geometria da captura e da imagem entregue ao modelo e verificar o estado final em tarefas visuais compostas
