@@ -74,11 +74,18 @@ def obter_contexto_navegador(foco: str = "") -> ToolResult:
         f"{abas_resultado.message}\n\n"
         f"{pagina_resultado.message}"
     )
+    abas_snapshot = None
+    if isinstance(abas_resultado.data, dict):
+        snapshot = abas_resultado.data.get("abas")
+        if isinstance(snapshot, list):
+            abas_snapshot = snapshot
+
     return ToolResult.success(
         mensagem,
         data={
             "foco": foco,
             "abas": abas_resultado.message,
+            "abas_snapshot": abas_snapshot,
             "pagina": pagina_resultado.message,
             "scroll": scroll,
             "scroll_disponivel": scroll_disponivel,
