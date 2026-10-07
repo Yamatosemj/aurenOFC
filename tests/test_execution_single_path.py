@@ -163,6 +163,65 @@ def test_principais_ferramentas_do_registry_passam_por_contrato_permissao_e_hand
     assert len(executadas) >= len(tools) - len(pulados)
 
 
+# ------------------------------------------------------------ 1B) plugin nao cria caminho paralelo
+def test_plugin_handler_so_roda_quando_o_dispatcher_o_chama(monkeypatch, tmp_path):
+    from core.plugin_loader import discover_plugins
+
+    approval = tmp_path / "aprovacoes.json"
+    approval.write_text(
+        json.dumps({"unico_plugin": {"habilitado": True, "aprovado": True}}),
+        encoding="utf-8",
+    )
+    plugins_dir = tmp_path / "plugins"
+    plugins_dir.mkdir()
+    marker = tmp_path / "executado.txt"
+    plugin = plugins_dir / "unico_plugin.py"
+    plugin.write_text(
+        f'''
+from pathlib import Path
+from core.tool_result import ToolResult
+
+DEPENDENCIAS = ("core.tool_result",)
+
+TOOL = {{
+    "name": "unico_plugin",
+    "description": "Plugin de caminho unico.",
+    "parameters": {{"type": "object", "properties": {{}}, "required": [], "additionalProperties": False}},
+    "handler": executar,
+}}
+
+CAPABILITY = {{
+    "id": "plugin.unico_plugin",
+    "descricao": "Teste do caminho unico.",
+    "local": True,
+    "deterministica": True,
+    "multi_etapa": False,
+    "exige_raciocinio": False,
+    "resolver": "plugin",
+}}
+
+def executar(argumentos):
+    Path(r"{marker}").write_text("rodou", encoding="utf-8")
+    return ToolResult.success("ok", tool_name=TOOL["name"])
+''',
+        encoding="utf-8",
+    )
+
+    registry = discover_plugins(plugins_dir, approval_file=approval, logger=lambda _msg: None)
+    try:
+        assert not marker.exists()
+        resultado = dispatcher.executar_ferramenta(
+            _item("unico_plugin", {{}}),
+            PermissionManager(),
+            None,
+        )
+        assert resultado.ok
+        assert marker.read_text(encoding="utf-8") == "rodou"
+    finally:
+        registry.descarregar()
+        marker.unlink(missing_ok=True)
+
+
 # ------------------------------------------------------------ 2) atalhos executam PELO Dispatcher
 def test_atalho_executa_pelo_dispatcher_com_contrato_e_permissao(monkeypatch):
     chamadas = []
