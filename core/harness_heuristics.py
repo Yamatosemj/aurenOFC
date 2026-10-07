@@ -69,12 +69,16 @@ def _pode_encerrar_localmente(
     resultados_rodada: list[dict[str, object]],
     *,
     vision_reobserve_pending: bool = False,
+    browser_verification_pending: bool = False,
     visual_mutating_tools: set[str],
     terminal_result_tools: set[str],
     multitab_concluida: Callable[[str, list[dict[str, str]]], bool],
 ) -> bool:
     """Decide se podemos evitar uma rodada adicional do modelo."""
     if vision_reobserve_pending:
+        return False
+
+    if browser_verification_pending:
         return False
 
     # Tarefas visuais compostas precisam observar o estado novo antes de
