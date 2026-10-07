@@ -1106,6 +1106,8 @@ def selecionar_elemento_windows(alvo_janela="", alvo="", indice=1):
 from tools.windows_audio import definir_mudo_windows, definir_volume_windows, obter_audio_windows
 
 from tools.windows_input import (
+    _contexto_dpi_per_monitor_windows,
+    _limites_tela_virtual_windows,
     _pressionar_vk,
     controle_midia_windows,
     pressionar_tecla_windows,
