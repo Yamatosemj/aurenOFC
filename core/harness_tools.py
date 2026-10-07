@@ -40,6 +40,7 @@ def _executar_chamadas_rodada(
     browser_state_mutating_tools = browser_state_mutating_tools or set()
 
     for item in chamadas:
+        verificado_browser: bool | None = None
         if task_manager.should_cancel(task_id):
             cancelado = True
             break
@@ -84,9 +85,8 @@ def _executar_chamadas_rodada(
                 browser_verification_state["argumentos"] = argumentos
                 browser_verification_state["dados_acao"] = dict(resultado_estruturado.data or {})
         elif ferramenta_sucesso and nome == browser_verification_tool:
-            verificado = None
             if browser_verifier is not None and browser_verification_state is not None:
-                verificado = browser_verifier(
+                verificado_browser = browser_verifier(
                     str(browser_verification_state.get("ferramenta") or ""),
                     str(browser_verification_state.get("argumentos") or "{}"),
                     resultado_estruturado.data or {},
@@ -97,9 +97,9 @@ def _executar_chamadas_rodada(
                 task_id=task_id,
                 rodada=rodada,
                 ferramenta=str(browser_verification_state.get("ferramenta") or ""),
-                verificado=verificado,
+                verificado=verificado_browser,
             )
-            if verificado is not True:
+            if verificado_browser is not True:
                 # Verificacao obrigatoria so termina com evidencia deterministica
                 # explicita. `None` significa que o verificador nao conseguiu
                 # provar o resultado e, portanto, a tarefa continua pendente.
@@ -177,6 +177,7 @@ def _executar_chamadas_rodada(
                 "sucesso": ferramenta_sucesso,
                 "image_path": str(imagem_path) if imagem_path else "",
                 "dados": dict(resultado_estruturado.data or {}),
+                "verificacao_browser": verificado_browser,
             }
         )
 
