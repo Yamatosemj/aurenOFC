@@ -863,7 +863,7 @@ class AurenHarness:
                 resultados_rodada,
                 montar_estado=self._montar_estado,
                 preparar_resultado_visual=prepare_vision_result_content,
-                ao_atualizar_geometria=clear_active_vision_geometry,
+                ao_atualizar_geometria=self._marcar_geometria_visual_atualizada,
             )
 
             if self.task_manager.should_cancel(self._task_id):
