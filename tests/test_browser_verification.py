@@ -520,3 +520,80 @@ def test_non_navigational_click_without_specific_effect_remains_pending():
         {"abas": pagina, "pagina": pagina},
         dados,
     ) is None
+
+def test_back_verification_requires_observed_url_change():
+    dados = _contexto("Abas abertas: 1\nAba ativa: 1\nAba 1: Inicio | https://example.com [ATIVA]")
+    acao = {"navegacao": {"operacao": "voltar", "url_antes": "https://example.com/a", "url_depois": "https://example.com", "mudou_url": True}}
+    assert verificar_resultado_navegador("voltar_pagina", "{}", dados, acao) is True
+
+    acao["navegacao"]["mudou_url"] = False
+    assert verificar_resultado_navegador("voltar_pagina", "{}", dados, acao) is False
+
+
+def test_forward_verification_rejects_mismatched_observed_url():
+    dados = _contexto("Abas abertas: 1\nAba ativa: 1\nAba 1: Outra | https://other.example [ATIVA]")
+    acao = {"navegacao": {"operacao": "avancar", "url_depois": "https://example.com", "mudou_url": True}}
+    assert verificar_resultado_navegador("avancar_pagina", "{}", dados, acao) is False
+
+
+def test_reload_verification_requires_new_navigation_time_origin():
+    dados = _contexto("Abas abertas: 1\nAba ativa: 1\nAba 1: Site | https://example.com [ATIVA]")
+    acao = {"navegacao": {"operacao": "recarregar", "url": "https://example.com", "recarregamento_observado": True}}
+    assert verificar_resultado_navegador("recarregar_pagina", "{}", dados, acao) is True
+
+    acao["navegacao"]["recarregamento_observado"] = False
+    assert verificar_resultado_navegador("recarregar_pagina", "{}", dados, acao) is False
+
+
+def test_keyboard_f5_requires_navigation_time_origin_change():
+    dados = _contexto("Abas abertas: 1\nAba ativa: 1\nAba 1: Site | https://example.com [ATIVA]")
+    acao = {"tecla": {
+        "tecla": "F5",
+        "evento_observado": True,
+        "estado_antes": {"time_origin": 100.0},
+        "estado_depois": {"time_origin": 101.0},
+    }}
+    assert verificar_resultado_navegador("pressionar_tecla", '{"tecla":"F5"}', dados, acao) is True
+
+    acao["tecla"]["estado_depois"]["time_origin"] = 100.0
+    assert verificar_resultado_navegador("pressionar_tecla", '{"tecla":"F5"}', dados, acao) is False
+
+
+def test_keyboard_escape_requires_observable_overlay_reduction():
+    dados = _contexto("Abas abertas: 1\nAba ativa: 1\nAba 1: Site | https://example.com [ATIVA]")
+    acao = {"tecla": {
+        "tecla": "Escape",
+        "evento_observado": True,
+        "estado_antes": {"dialogs": 1, "menus": 0, "listboxes": 0},
+        "estado_depois": {"dialogs": 0, "menus": 0, "listboxes": 0},
+    }}
+    assert verificar_resultado_navegador("pressionar_tecla", '{"tecla":"Escape"}', dados, acao) is True
+
+
+def test_keyboard_unknown_effect_remains_inconclusive():
+    dados = _contexto("Abas abertas: 1\nAba ativa: 1\nAba 1: Site | https://example.com [ATIVA]")
+    acao = {"tecla": {
+        "tecla": "Delete",
+        "evento_observado": True,
+        "estado_antes": {"url": "https://example.com", "scroll_y": 100},
+        "estado_depois": {"url": "https://example.com", "scroll_y": 100},
+    }}
+    assert verificar_resultado_navegador("pressionar_tecla", '{"tecla":"Delete"}', dados, acao) is None
+
+
+def test_keyboard_ctrl_w_requires_before_and_after_tabs():
+    dados = _contexto("Abas abertas: 1\nAba ativa: 1\nAba 1: Site | https://example.com [ATIVA]")
+    acao = {"tecla": {
+        "tecla": "Ctrl+W",
+        "evento_observado": True,
+        "estado_antes": {},
+        "estado_depois": {},
+        "abas_antes": [
+            {"indice": 1, "url": "https://example.com", "ativa": True},
+            {"indice": 2, "url": "https://example.com/2", "ativa": False},
+        ],
+        "abas_depois": [
+            {"indice": 1, "url": "https://example.com", "ativa": True},
+        ],
+    }}
+    assert verificar_resultado_navegador("pressionar_tecla", '{"tecla":"Ctrl+W"}', dados, acao) is True
