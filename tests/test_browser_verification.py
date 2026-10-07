@@ -657,12 +657,16 @@ def test_non_navigational_click_verification_accepts_alertdialog_and_popover_eff
     dados["clique"]["navegacao"] = False
     dados["clique"]["efeito"] = {
         "controle": {"chave": "id:abrir"},
+        "pagina_antes": {"popovers": 0},
+        "pagina_depois": {"popovers": 1},
         "sinal": {"tipo": "pagina", "alvo": "popovers", "antes": 0, "depois": 1},
     }
     pagina = _contexto(
         "Abas abertas: 1\nAba ativa: 1\nAba 1: Site | https://example.com [ATIVA]"
     )
     pagina["pagina"] = (
+        "Campos e controles visiveis:\n"
+        "- tag=button | role=button | nome=Abrir | id=abrir | chave=id:abrir\n"
         "Elementos flutuantes visiveis: dialogos=1 | menus=0 | listboxes=0 | popovers=1 | details_abertos=0"
     )
     assert verificar_resultado_navegador(
