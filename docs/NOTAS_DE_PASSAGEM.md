@@ -13,7 +13,7 @@
 
 ## 2026-10-07 — Tarefa 1 — Timeout, retry e escada de modelos com cooldown
 
-Tarefa concluida: em validacao no CI
+Tarefa concluida: 1 — Timeout, retry e escada de modelos com cooldown
 
 Arquivos criados/alterados:
 - providers/model_ladder.py
@@ -38,7 +38,8 @@ Testes:
 - CI pos-commit: aguardando.
 
 Ficou pendente / virou backlog:
-- Validar full pytest no CI e fechar a nota.
-- A execucao live python testes_auren_live.py --rapido nao se aplica: esta tarefa nao mexe em Browser/Windows.
+- A execução live `python testes_auren_live.py --rapido` não se aplica: esta tarefa não mexe em Browser/Windows.
+- Tarefa 2 — memória recuperável sob demanda — passa a ser a próxima tarefa.
+
 
 Proxima tarefa: 2
