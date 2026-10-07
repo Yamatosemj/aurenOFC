@@ -673,3 +673,246 @@ def test_origin_status_distinguishes_zone_classes(monkeypatch, tmp_path: Path, z
     origem = result.data["origem"]
     assert origem["status"] == status
     assert origem["marcacao_zona_internet"] == internet_mark
+
+
+def test_file_operations_move_and_undo_restore_original_path(tmp_path: Path):
+    origem = tmp_path / "origem.txt"
+    destino = tmp_path / "destino.txt"
+    origem.write_text("conteudo original", encoding="utf-8")
+
+    result = files.mover_arquivo(str(origem), str(destino))
+
+    assert result.ok is True
+    assert not origem.exists()
+    assert destino.read_text(encoding="utf-8") == "conteudo original"
+
+    undo_result = __import__("core.undo", fromlist=["undo_last"]).undo_last()
+
+    assert undo_result.ok is True
+    assert origem.read_text(encoding="utf-8") == "conteudo original"
+    assert not destino.exists()
+
+
+def test_file_operations_copy_undo_removes_only_copy(tmp_path: Path):
+    origem = tmp_path / "original.txt"
+    destino = tmp_path / "copia.txt"
+    origem.write_text("nao apagar o original", encoding="utf-8")
+
+    result = files.copiar_arquivo(str(origem), str(destino))
+
+    assert result.ok is True
+    assert origem.read_text(encoding="utf-8") == "nao apagar o original"
+    assert destino.read_text(encoding="utf-8") == "nao apagar o original"
+
+    undo_result = __import__("core.undo", fromlist=["undo_last"]).undo_last()
+
+    assert undo_result.ok is True
+    assert origem.exists()
+    assert origem.read_text(encoding="utf-8") == "nao apagar o original"
+    assert not destino.exists()
+
+
+def test_create_folder_undo_removes_only_empty_folder(tmp_path: Path):
+    pasta = tmp_path / "nova-pasta"
+
+    result = files.criar_pasta(str(pasta))
+
+    assert result.ok is True
+    assert pasta.is_dir()
+
+    undo_result = __import__("core.undo", fromlist=["undo_last"]).undo_last()
+
+    assert undo_result.ok is True
+    assert not pasta.exists()
+
+
+def test_create_folder_undo_refuses_non_empty_folder(tmp_path: Path):
+    pasta = tmp_path / "nova-pasta"
+
+    result = files.criar_pasta(str(pasta))
+    assert result.ok is True
+    (pasta / "arquivo.txt").write_text("nao apagar", encoding="utf-8")
+
+    undo_result = __import__("core.undo", fromlist=["undo_last"]).undo_last()
+
+    assert undo_result.ok is False
+    assert undo_result.error_code == "undo_folder_not_empty"
+    assert pasta.is_dir()
+    assert (pasta / "arquivo.txt").read_text(encoding="utf-8") == "nao apagar"
+
+
+@pytest.mark.parametrize("operacao", ["mover_arquivo", "copiar_arquivo"])
+def test_file_operation_rejects_existing_destination_without_touching_source(tmp_path: Path, operacao: str):
+    origem = tmp_path / "origem.txt"
+    destino = tmp_path / "destino.txt"
+    origem.write_text("origem", encoding="utf-8")
+    destino.write_text("destino existente", encoding="utf-8")
+
+    func = getattr(files, operacao)
+    result = func(str(origem), str(destino))
+
+    assert result.ok is False
+    assert result.error_code == "destination_exists"
+    assert origem.read_text(encoding="utf-8") == "origem"
+    assert destino.read_text(encoding="utf-8") == "destino existente"
+
+
+def test_rename_rejects_existing_destination_without_overwrite(tmp_path: Path):
+    origem = tmp_path / "origem.txt"
+    destino = tmp_path / "destino.txt"
+    origem.write_text("origem", encoding="utf-8")
+    destino.write_text("destino existente", encoding="utf-8")
+
+    result = files.renomear_arquivo(str(origem), "destino.txt")
+
+    assert result.ok is False
+    assert result.error_code == "destination_exists"
+    assert origem.exists()
+    assert destino.read_text(encoding="utf-8") == "destino existente"
+
+
+def test_write_operations_are_blocked_outside_allowlist_even_when_confirmation_would_approve(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    allowed = tmp_path / "Desktop"
+    allowed.mkdir()
+    outside = tmp_path / "fora"
+    outside.mkdir()
+    origem = outside / "origem.txt"
+    destino = outside / "destino.txt"
+    origem.write_text("fora", encoding="utf-8")
+
+    monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [allowed.resolve()])
+    monkeypatch.setattr(file_intelligence, "_has_sensitive_path_component", lambda _path: False)
+
+    channel = _RecordingConfirmationChannel(True)
+    manager = PermissionManager(confirmation_channel=channel)
+
+    permitido, motivo = manager.autorizar(
+        "mover_arquivo",
+        {"origem": str(origem), "destino": str(destino)},
+    )
+
+    assert permitido is False
+    assert "allowlist" in motivo.lower()
+    assert channel.requests == []
+
+
+def test_write_operation_rejects_symlink_traversal(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    allowed = tmp_path / "Desktop"
+    outside = tmp_path / "fora"
+    allowed.mkdir()
+    outside.mkdir()
+    origem = allowed / "origem.txt"
+    origem.write_text("seguro", encoding="utf-8")
+    link_dir = allowed / "atalho"
+    try:
+        link_dir.symlink_to(outside, target_is_directory=True)
+    except (OSError, NotImplementedError) as exc:
+        pytest.skip(f"symlink nao disponivel neste ambiente: {exc}")
+
+    monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [allowed.resolve()])
+
+    result = files.copiar_arquivo(
+        str(origem),
+        str(link_dir / "copia.txt"),
+    )
+
+    assert result.ok is False
+    assert result.error_code == "path_not_allowed"
+    assert not (outside / "copia.txt").exists()
+
+
+def test_rename_never_allows_new_name_to_escape_source_directory(tmp_path: Path):
+    origem = tmp_path / "origem.txt"
+    origem.write_text("origem", encoding="utf-8")
+
+    result = files.renomear_arquivo(str(origem), "../fora.txt")
+
+    assert result.ok is False
+    assert result.error_code == "invalid_rename"
+    assert origem.exists()
+
+
+def test_dispatcher_executes_file_move_through_registered_path(tmp_path: Path):
+    origem = tmp_path / "origem.txt"
+    destino = tmp_path / "destino.txt"
+    origem.write_text("dispatcher", encoding="utf-8")
+
+    result = dispatcher.executar_ferramenta(
+        SimpleNamespace(
+            name="mover_arquivo",
+            arguments=json.dumps({"origem": str(origem), "destino": str(destino)}),
+        ),
+        PermissionManager(max_actions=10),
+        None,
+    )
+
+    assert isinstance(result, ToolResult)
+    assert result.ok is True
+    assert result.tool_name == "mover_arquivo"
+    assert destino.exists()
+    assert not origem.exists()
+
+
+def test_file_operation_permissions_are_auto_except_trash(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [tmp_path.resolve()])
+    manager = PermissionManager()
+
+    for nome, argumentos in (
+        ("mover_arquivo", {"origem": str(tmp_path / "a.txt"), "destino": str(tmp_path / "b.txt")}),
+        ("copiar_arquivo", {"origem": str(tmp_path / "a.txt"), "destino": str(tmp_path / "b.txt")}),
+        ("renomear_arquivo", {"caminho": str(tmp_path / "a.txt"), "novo_nome": "b.txt"}),
+        ("criar_pasta", {"caminho": str(tmp_path / "nova")}),
+    ):
+        nivel, _ = manager.nivel_da_acao(nome, argumentos)
+        assert nivel.value == "auto"
+
+    nivel, _ = manager.nivel_da_acao(
+        "enviar_para_lixeira",
+        {"caminho": str(tmp_path / "a.txt")},
+    )
+    assert nivel.value == "confirm"
+
+
+def test_trash_blocks_permission_for_outside_path_without_confirmation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    allowed = tmp_path / "Desktop"
+    allowed.mkdir()
+    outside = tmp_path / "fora.txt"
+    outside.write_text("nao apagar", encoding="utf-8")
+    monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [allowed.resolve()])
+    monkeypatch.setattr(file_intelligence, "_has_sensitive_path_component", lambda _path: False)
+
+    channel = _RecordingConfirmationChannel(True)
+    manager = PermissionManager(confirmation_channel=channel)
+
+    permitido, motivo = manager.autorizar(
+        "enviar_para_lixeira",
+        {"caminho": str(outside)},
+    )
+
+    assert permitido is False
+    assert "allowlist" in motivo.lower()
+    assert channel.requests == []
+
+
+def test_trash_shell_operation_requests_recoverable_delete(monkeypatch, tmp_path: Path):
+    chamadas = []
+
+    def fake_delete(operation_pointer):
+        operation = operation_pointer.contents
+        chamadas.append(int(operation.fFlags))
+        operation.fAnyOperationsAborted = False
+        return 0
+
+    fake_shell32 = SimpleNamespace(SHFileOperationW=fake_delete)
+    fake_windll = SimpleNamespace(shell32=fake_shell32)
+    monkeypatch.setattr(files.os, "name", "nt")
+    monkeypatch.setattr(files.ctypes, "windll", fake_windll, raising=False)
+
+    resultado = files._enviar_para_lixeira_windows(tmp_path / "arquivo.txt")
+
+    assert resultado.ok is True
+    assert chamadas
+    assert chamadas[0] & files._FOF_ALLOWUNDO
