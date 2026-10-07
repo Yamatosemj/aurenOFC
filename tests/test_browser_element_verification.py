@@ -72,6 +72,7 @@ def test_click_element_uses_the_new_tab_as_active_page(monkeypatch):
     import tools.browser_elements as browser_elements
 
     monkeypatch.setattr(browser_elements, "encontrar_elemento", lambda alvo, indice=1: elemento)
+    monkeypatch.setattr(browser, "obter_pagina", lambda: antiga)
     paginas = [antiga]
     monkeypatch.setattr(browser, "_paginas_abertas", lambda: list(paginas))
     monkeypatch.setattr(browser, "pagina", antiga, raising=False)
