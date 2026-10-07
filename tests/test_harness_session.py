@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 from core.harness_session import _encerrar_sessao_chat, _garantir_sessao_chat
 
 
@@ -145,7 +147,7 @@ def test_closing_session_runs_cleanup_when_log_writer_raises():
 
 
 def test_browser_mutation_is_blocked_while_verification_is_pending():
-    from core.harness_tools import executar_chamadas_ferramentas
+    from core.harness_tools import _executar_chamadas_rodada
     from core.tool_result import ToolResult
 
     class TaskManager:
@@ -160,7 +162,7 @@ def test_browser_mutation_is_blocked_while_verification_is_pending():
         "argumentos": '{"alvo":"Salvar","indice":1}',
         "dados_acao": {},
     }
-    resultados, _, _, _, _ = executar_chamadas_ferramentas(
+    resultados, _, _, _, _ = _executar_chamadas_rodada(
         chamadas=[
             SimpleNamespace(
                 name="clicar_elemento",
@@ -178,6 +180,10 @@ def test_browser_mutation_is_blocked_while_verification_is_pending():
         browser_verification_state=state,
         browser_state_mutating_tools={"clicar_elemento"},
         browser_verifier=lambda *_a: True,
+        trace=None,
+        vision_state_mutating_tools=set(),
+        vision_reobserve_pending=False,
+        falha_nao_recuperada=False,
     )
     assert resultados[0]["sucesso"] is False
     assert resultados[0]["dados"].get("codigo_erro") == "browser_verification_required"
