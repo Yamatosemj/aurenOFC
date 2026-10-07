@@ -85,7 +85,8 @@ def capturar_tela_windows() -> ToolResult:
                 error_code="screenshot_too_large",
                 data={"limite_bytes": SCREENSHOT_MAX_FILE_BYTES},
             )
-        largura_imagem, altura_imagem = imagem.size        return ToolResult.success(
+        largura_imagem, altura_imagem = imagem.size
+        return ToolResult.success(
             f"Tela capturada: {destino.name}",
             data={
                 "image_path": str(destino),
