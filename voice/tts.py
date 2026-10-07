@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import os
 from pathlib import Path
-from threading import Event, Lock
+from threading import Event, Lock, Thread
 
 from agent.ari_native.audio_manager import output_session
 from typing import Any
@@ -165,7 +165,23 @@ class LocalKokoroTTS:
         try:
             with self._lock:
                 with output_session():
-                    asyncio.run(_play())
+                    try:
+                        asyncio.get_running_loop()
+                    except RuntimeError:
+                        asyncio.run(_play())
+                    else:
+                        erro = []
+                        def executar_em_thread():
+                            try:
+                                asyncio.run(_play())
+                            except BaseException as exc:
+                                erro.append(exc)
+
+                        thread = Thread(target=executar_em_thread, name="auren-kokoro", daemon=True)
+                        thread.start()
+                        thread.join()
+                        if erro:
+                            raise erro[0]
         except Exception as exc:
             raise RuntimeError(f"Falha na sintese Kokoro local: {exc}") from exc
 
