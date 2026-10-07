@@ -9,7 +9,7 @@ from core.harness_guards import _tratar_rodada_sem_ferramentas as _tratar_rodada
 from core.harness_model import _executar_rodada_modelo as _executar_rodada_modelo_impl
 from core.harness_round_input import _montar_input_e_estado_da_rodada
 from core.harness_tools import _executar_chamadas_rodada as _executar_chamadas_rodada_impl
-from core.vision import get_active_vision_geometry, prepare_vision_result_content
+from core.vision import clear_active_vision_geometry, get_active_vision_geometry, prepare_vision_result_content
 
 
 def executar_ciclo(
@@ -122,7 +122,7 @@ def executar_ciclo(
                     write_log=write_log,
                     should_cancel=harness.task_manager.should_cancel,
                     encerrar_cancelado=harness._encerrar_cancelado,
-                    criar_resposta=_RespostaWrapper,
+                    criar_resposta=resposta_wrapper,
                 )
                 empty_response_retries = retry.empty_response_retries
 
@@ -149,7 +149,7 @@ def executar_ciclo(
                 task_manager=harness.task_manager,
                 registrar_turno=harness._registrar_turno,
                 write_log=write_log,
-                criar_resposta=_RespostaWrapper,
+                criar_resposta=resposta_wrapper,
             )
             return False, resposta
 
@@ -209,7 +209,7 @@ def executar_ciclo(
                 task_manager=harness.task_manager,
                 registrar_turno=harness._registrar_turno,
                 write_log=write_log,
-                criar_resposta=_RespostaWrapper,
+                criar_resposta=resposta_wrapper,
             )
             return False, resposta
 
