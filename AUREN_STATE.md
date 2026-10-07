@@ -32,6 +32,8 @@ Atualizado em: 2026-10-07
 - [x] navegação retorna `ToolResult` estruturado com evidência da URL final observada
 - [x] rolagem aceita alvo semântico opcional e registra se o alvo foi encontrado
 - [x] controles possuem impressão DOM estável para verificar efeitos que não expõem ARIA/URL
+- [x] cliques de elementos não-âncora exigem confirmação quando o DOM não permite provar a ausência de comportamento JavaScript externo
+- [x] contexto do navegador preserva snapshot estruturado completo das abas, incluindo URLs longas, para verificação determinística
 
 ### O que já está concluído nesta fase
 
