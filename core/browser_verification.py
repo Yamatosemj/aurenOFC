@@ -96,10 +96,16 @@ def verificar_resultado_navegador(
     indice_atual, _titulo, url_atual = ativa
 
     if ferramenta == "navegar_navegador":
-        esperado = _normalize_url(str(args.get("url") or ""))
-        if not esperado:
+        evidencia = _dados_navegacao_acao(dados_acao)
+        if evidencia is None:
             return None
-        return _normalize_url(url_atual) == esperado
+        url_depois = _normalize_url(str(evidencia.get("url_depois") or ""))
+        if not url_depois:
+            return None
+        if _normalize_url(url_atual) != url_depois:
+            return False
+        # A URL solicitada pode redirecionar; a prova primaria e a URL final observada.
+        return True
 
     if ferramenta == "preencher_elemento":
         preenchimento = dados_acao.get("preenchimento") if isinstance(dados_acao, dict) else None
