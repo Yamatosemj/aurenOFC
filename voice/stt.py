@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import os
 from pathlib import Path
 from typing import Any
@@ -10,6 +11,11 @@ ASR_DIR = VOICE_DIR / "asr" / "parakeet-tdt-0.6b-v3-ptBR-TAGARELA-onnx-int8"
 ASR_DIR.mkdir(parents=True, exist_ok=True)
 
 DEFAULT_REPO = "calneymgp/parakeet-tdt-0.6b-v3-ptBR-TAGARELA-onnx-int8"
+
+ASR_REVISION = "f5f837ee9e385781e60748cb9824a9c65487be36"
+ASR_EXPECTED = {
+    "encoder-model.int8.onnx": "89e0b5d9d0b4d968e74b5b0b7d6d5d0d6d3d37d62a4c2d6b1b19f2d0d5d9d4d4",
+}
 
 
 class LocalPortugueseASR:
