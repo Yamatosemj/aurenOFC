@@ -12,6 +12,7 @@ from core.capabilities import CAPABILITY_REGISTRY
 from core.permission_manager import PermissionLevel, PermissionManager
 from core.tool_contracts import capability_for_tool, validate_tool_arguments
 from core.tool_result import ToolResult
+from core.undo import undo_last
 import tools.dispatcher as dispatcher
 import tools.file_intelligence as file_intelligence
 import tools.files as files
@@ -686,7 +687,7 @@ def test_file_operations_move_and_undo_restore_original_path(tmp_path: Path):
     assert not origem.exists()
     assert destino.read_text(encoding="utf-8") == "conteudo original"
 
-    undo_result = __import__("core.undo", fromlist=["undo_last"]).undo_last()
+    undo_result = undo_last()
 
     assert undo_result.ok is True
     assert origem.read_text(encoding="utf-8") == "conteudo original"
@@ -704,7 +705,7 @@ def test_file_operations_copy_undo_removes_only_copy(tmp_path: Path):
     assert origem.read_text(encoding="utf-8") == "nao apagar o original"
     assert destino.read_text(encoding="utf-8") == "nao apagar o original"
 
-    undo_result = __import__("core.undo", fromlist=["undo_last"]).undo_last()
+    undo_result = undo_last()
 
     assert undo_result.ok is True
     assert origem.exists()
@@ -720,7 +721,7 @@ def test_create_folder_undo_removes_only_empty_folder(tmp_path: Path):
     assert result.ok is True
     assert pasta.is_dir()
 
-    undo_result = __import__("core.undo", fromlist=["undo_last"]).undo_last()
+    undo_result = undo_last()
 
     assert undo_result.ok is True
     assert not pasta.exists()
@@ -733,7 +734,7 @@ def test_create_folder_undo_refuses_non_empty_folder(tmp_path: Path):
     assert result.ok is True
     (pasta / "arquivo.txt").write_text("nao apagar", encoding="utf-8")
 
-    undo_result = __import__("core.undo", fromlist=["undo_last"]).undo_last()
+    undo_result = undo_last()
 
     assert undo_result.ok is False
     assert undo_result.error_code == "undo_folder_not_empty"
