@@ -254,6 +254,7 @@ def test_harness_exige_nova_observacao_apos_acao_visual(monkeypatch, tmp_path):
                 "virtual_screen_width": 1920,
                 "virtual_screen_height": 1080,
                 "dpi_per_monitor_aware": True,
+                "captured_at_monotonic": time.monotonic(),
             },
         )
 
