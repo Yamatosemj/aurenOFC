@@ -15,6 +15,7 @@ def executar_ciclo(
     harness: Any,
     objetivo: str,
     resposta_wrapper: Any,
+    write_log: Any,
 ) -> tuple[bool, Any]:
     historico: list[dict[str, str]] = []
     resultados_rodada: list[dict[str, str]] = []
@@ -40,7 +41,7 @@ def executar_ciclo(
         task_manager=harness.task_manager,
         pedir_modelo=harness._pedir_modelo,
         log_resposta_modelo=harness._log_resposta_modelo,
-        write_log=_write_log,
+        write_log=write_log,
         input_items=1,
         estado_chars=len(estado_inicial),
         tool_choice="required" if exigir_ferramenta else None,
@@ -78,7 +79,7 @@ def executar_ciclo(
                 parece_tarefa_multietapa_browser=harness._parece_tarefa_multietapa_browser,
                 extrair_destinos_abas=harness._extrair_destinos_abas,
                 multitab_concluida=harness._multitab_concluida,
-                write_log=_write_log,
+                write_log=write_log,
             )
             harness._vision_guard_attempts = guard.vision_guard_attempts
             harness._multitab_guard_attempts = guard.multitab_guard_attempts
@@ -117,7 +118,7 @@ def executar_ciclo(
                     montar_estado=harness._montar_estado,
                     pedir_modelo=harness._pedir_modelo,
                     log_resposta_modelo=harness._log_resposta_modelo,
-                    write_log=_write_log,
+                    write_log=write_log,
                     should_cancel=harness.task_manager.should_cancel,
                     encerrar_cancelado=harness._encerrar_cancelado,
                     criar_resposta=_RespostaWrapper,
@@ -146,7 +147,7 @@ def executar_ciclo(
                 salvar_estrategia=harness._salvar_estrategia_em_background,
                 task_manager=harness.task_manager,
                 registrar_turno=harness._registrar_turno,
-                write_log=_write_log,
+                write_log=write_log,
                 criar_resposta=_RespostaWrapper,
             )
             return False, resposta
@@ -171,7 +172,7 @@ def executar_ciclo(
             max_tool_result_chars=harness.MAX_TOOL_RESULT_CHARS,
             get_active_vision_geometry=get_active_vision_geometry,
             clear_active_vision_geometry=clear_active_vision_geometry,
-            write_log=_write_log,
+            write_log=write_log,
         )
         if cancelado:
             return harness._encerrar_cancelado("cancelado durante execucao", rodada)
@@ -206,7 +207,7 @@ def executar_ciclo(
                 salvar_estrategia=harness._salvar_estrategia_em_background,
                 task_manager=harness.task_manager,
                 registrar_turno=harness._registrar_turno,
-                write_log=_write_log,
+                write_log=write_log,
                 criar_resposta=_RespostaWrapper,
             )
             return False, resposta
@@ -232,7 +233,7 @@ def executar_ciclo(
             task_manager=harness.task_manager,
             pedir_modelo=harness._pedir_modelo,
             log_resposta_modelo=harness._log_resposta_modelo,
-            write_log=_write_log,
+            write_log=write_log,
             input_items=len(proximo_input),
             estado_chars=len(estado_enviado),
         )
