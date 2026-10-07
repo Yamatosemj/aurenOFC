@@ -153,7 +153,7 @@ Próxima tarefa: 4 — confirmação humana não-forjável, após o portão da T
 
 ## 2026-10-07 — Tarefa 4 — Política reversível/irreversível e confirmação com timeout
 
-Tarefa concluída: implementação da infraestrutura de confirmação; política de risco aprovada sem reclassificação de clipboard
+Tarefa concluída: 4 — política reversível/irreversível e confirmação com timeout
 
 Arquivos criados/alterados:
 - core/confirmation.py
@@ -166,34 +166,31 @@ Arquivos criados/alterados:
 - docs/NOTAS_DE_PASSAGEM.md
 
 Decisões tomadas (e por quê):
-- O Undo existente da linha V49 foi auditado antes de qualquer promoção para AUTO. Arquivos e volume/mudo possuem restauração condicionada ao estado observado; memória e clipboard não possuem restauração exata.
-- memory.write permanece CONFIRM porque esquecer uma memória atualizada não recupera o valor/categoria/timestamp anteriores.
-- windows.clipboard.write recebeu proposta AUTO → CONFIRM, mas o usuário decidiu explicitamente manter AUTO. O PermissionManager já estava em AUTO e não sofreu reclassificação.
-- ConfirmationRequest não carrega token. O token é criado e mantido pela interface, fica fora dos argumentos do modelo e é aceito pelo gate apenas durante a janela válida.
-- Há uma única confirmação pendente por processo nos canais padrão; tokens atrasados ou inválidos não cancelam uma confirmação nova.
-- Timeout padrão: 90 s. Expiração sempre significa negativa e não executa a ação.
-- Texto e voz continuam implementando o mesmo ConfirmationChannel; o canal de voz usa o timeout oficial.
-- Foi adicionada uma regressão que exige que toda capability registrada tenha nível explícito no PermissionManager e rejeita o fallback generic.
-- A política completa das 28 capabilities está documentada em docs/POLITICA_DE_CONFIRMACAO.md.
-- O Mark-LV foi usado somente como referência de arquitetura/risco e casos-limite; nenhum código ou comentário foi copiado.
+- A política completa das 28 capabilities foi consolidada em docs/POLITICA_DE_CONFIRMACAO.md.
+- memory.write permanece CONFIRM porque esquecer_memoria_persistente não restaura valor/categoria/timestamp anteriores.
+- windows.clipboard.write permanece AUTO por decisão explícita do usuário, com a limitação documentada de que o clipboard atual não possui snapshot/undo exato.
+- O ConfirmationRequest não carrega token. O token é criado e mantido pela interface e nunca entra nos argumentos do modelo.
+- O gate padrão mantém uma única confirmação pendente por processo e usa timeout de 90 s; expiração, token inválido e resposta atrasada nunca autorizam a ação.
+- Texto e voz usam o mesmo ConfirmationChannel; a voz usa o timeout oficial.
+- Foi adicionada regressão para exigir correspondência exata entre capabilities registradas e CAPABILITY_POLICY, bloqueando entrada silenciosa de capability sem nível explícito.
+- O Mark-LV foi usado somente como referência de arquitetura, risco e casos-limite; nenhum código ou comentário foi copiado.
 
 Testes:
-- Baseline imediatamente anterior: Linux 622 passed / 6 skipped, conforme registro da Tarefa 3; Windows 628 passed, conforme registro da Tarefa 3.
-- Novos testes da Tarefa 4: 4 testes.
-- CI head 8da961772abccac15ec7a6090293128469ae02aa: static-checks e Playwright smoke verdes; full pytest Linux = 624 passed, 6 skipped, 4 failed; full pytest Windows = 630 passed, 4 failed. Os 5 testes adicionados pela Tarefa 4 passaram.
-- Execução local completa não disponível por ausência de DNS/rede neste ambiente; nenhum resultado local foi inventado.
-- Runner manual python testes_auren_live.py --rapido: pendente no Windows real, porque esta tarefa altera a confirmação usada pelo canal de voz e o ambiente atual não é o computador do Auren.
+- Baseline imediatamente anterior à Tarefa 4: Linux 622 passed / 6 skipped; Windows 628 passed.
+- CI do head de implementação 8da961772abccac15ec7a6090293128469ae02aa: Linux 624 passed / 6 skipped / 4 failed; Windows 630 passed / 4 failed.
+- CI mais recente do PR #78, merge ref 8ece45161c3c877764740a4f1bda1010111d122a: mantém as mesmas 4 falhas preexistentes da Tarefa 3; static-checks e Playwright smoke permanecem verdes.
+- Os 5 testes adicionados pela Tarefa 4 passaram no full pytest.
+- O runner manual python testes_auren_live.py --rapido continua pendente no Windows real.
 
 Ficou pendente / virou backlog:
-- Registrar a decisão: windows.clipboard.write permanece AUTO por escolha explícita do usuário.
-- Registrar que o portão geral não fecha enquanto as 4 falhas preexistentes da V49 permanecerem. Elas já existiam no head V49 anterior, que tinha Linux = 619 passed, 6 skipped, 4 failed e Windows = 625 passed, 4 failed.
-- Executar o runner live no Windows real antes de considerar o portão externo encerrado.
+- O portão global de validação continua bloqueado pelas quatro falhas preexistentes da Tarefa 3:
+  - test_file_operation_requests_use_specialized_route
+  - test_file_operation_task_specs_resolve_to_local_capabilities
+  - test_principais_ferramentas_do_registry_passam_por_contrato_permissao_e_handler
+  - test_trash_shell_operation_requests_recoverable_delete
+- Essas falhas não foram corrigidas aqui para respeitar a regra de uma tarefa por vez.
+- Runner live real do Windows permanece pendente.
+- A Tarefa 5 fica como próxima tarefa, sem ser iniciada neste fechamento.
 
-Próxima tarefa:
-- Concluir o fechamento documental da Tarefa 4 sem reclassificação de clipboard e seguir para o próximo passo somente após o portão.
+Próxima tarefa: 5 — seleção de dispositivos de áudio
 
-
-Atualização do fechamento da evidência:
-- As quatro falhas não envolvem os novos testes de confirmação. O full pytest da Tarefa 4 aprovou todos os cinco testes adicionados.
-- As mesmas quatro falhas foram reproduzidas no head V49 anterior d19ebf511d5d35623e187436c432b057a76428c5, antes das alterações de confirmação.
-- Portanto, elas permanecem como débito da Tarefa 3 e não foram corrigidas nesta tarefa para respeitar a regra de uma tarefa por vez.
