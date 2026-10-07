@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from core.utils import normalizar_nome
+from tools.file_intelligence import _classify_read_path, _is_reparse_point
 
 
 def interpretar_periodo(consulta):
@@ -243,12 +244,27 @@ def buscar_arquivo(consulta):
             continue
 
         try:
-            for arquivo in pasta.rglob("*"):
-                if not arquivo.is_file():
-                    continue
+            for current, directories, filenames in os.walk(pasta, followlinks=False):
+                current_path = Path(current)
+                directories[:] = [
+                    nome for nome in directories
+                    if not _is_reparse_point(current_path / nome)
+                ]
+                for filename in filenames:
+                    arquivo = current_path / filename
+                    if _is_reparse_point(arquivo):
+                        continue
+                    if not arquivo.is_file():
+                        continue
 
-                try:
-                    estatisticas = arquivo.stat()
+                    try:
+                        resolvido = arquivo.resolve(strict=True)
+                        politica = _classify_read_path(resolvido)
+                        if politica.status != "allowed":
+                            continue
+                        estatisticas = resolvido.stat()
+                    except OSError:
+                        continue
                 except OSError:
                     continue
 
@@ -283,7 +299,7 @@ def buscar_arquivo(consulta):
                     (
                         pontuacao,
                         estatisticas.st_mtime,
-                        arquivo
+                        resolvido
                     )
                 )
 
