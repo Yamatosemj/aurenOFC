@@ -368,6 +368,7 @@ def build_vision_geometry(
         "imagem_redimensionada": prepared.resized,
         "imagem_comprimida": prepared.compressed,
         "mime_type_enviado": prepared.mime_type,
+        "captured_at_monotonic": capture_data.get("captured_at_monotonic"),
     }
 
 
