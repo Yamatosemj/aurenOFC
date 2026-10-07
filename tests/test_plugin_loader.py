@@ -40,19 +40,6 @@ from core.tool_result import ToolResult
 
 DEPENDENCIAS = ({dependency!r},)
 
-TOOL = {{
-    "name": {name!r},
-    "description": "Plugin de teste.",
-    "parameters": {{
-        "type": "object",
-        "properties": {{}},
-        "required": [],
-        "additionalProperties": False,
-    }},
-    "strict": True,
-    "handler": executar,
-}}
-
 CAPABILITY = {{
     "id": "plugin.{name}",
     "descricao": "Capacidade de teste.",
@@ -65,6 +52,19 @@ CAPABILITY = {{
 
 def executar(argumentos):
     return ToolResult.success("teste", tool_name=TOOL["name"])
+
+TOOL = {{
+    "name": {name!r},
+    "description": "Plugin de teste.",
+    "parameters": {{
+        "type": "object",
+        "properties": {{}},
+        "required": [],
+        "additionalProperties": False,
+    }},
+    "strict": True,
+    "handler": executar,
+}}
 '''
 
 
