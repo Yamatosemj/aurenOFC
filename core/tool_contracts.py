@@ -126,6 +126,7 @@ _CAPABILITY_RULES: tuple[tuple[str, str], ...] = (
     ("alternar_elemento_windows", "windows.ui.control"),
     ("selecionar_elemento_windows", "windows.ui.control"),
     ("navegar_navegador", "browser.navigation"),
+    ("obter_contexto_navegador", "browser.read"),
     ("ler_pagina", "browser.read"),
     ("clicar_elemento", "browser.input"),
     ("preencher_elemento", "browser.input"),
