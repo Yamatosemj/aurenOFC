@@ -11,7 +11,7 @@ Atualizado em: 2026-10-07
 - **Versão estável:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
 - **Branch/PR ativa:** nenhuma
-- **Head da main:** `2642fc2bd2f7839cd4d361d3bf9eebbae069b69a`
+- **Head da main:** `c72261eb4d49b0ea5556b323d38883d35f901aff`
 - **CI da implementação mais recente:** pytest, focused Linux e focused Windows verdes
 - **Fase atual:** Browser Intelligence
 
@@ -26,6 +26,7 @@ Atualizado em: 2026-10-07
 - [x] ações browser simples preservam o comportamento anterior e não ganham uma rodada extra desnecessária
 - [x] navegação e troca de aba têm verificação determinística de URL/aba ativa
 - [x] preenchimento de campos não sensíveis tem verificação determinística do valor observado
+- [x] rolagem expõe métricas estruturadas e possui verificação determinística da posição observada
 
 ### Próximo passo da fase
 
@@ -34,7 +35,7 @@ Atualizado em: 2026-10-07
 - navegação: confirmar título/URL efetivos — **parcialmente concluído**; URL já é comparada de forma determinística
 - abas: confirmar quantidade, aba ativa e destino — **parcialmente concluído**; aba ativa já é comparada de forma determinística
 - interação com elemento: confirmar o estado relevante da página ou controle — **parcialmente concluído**; preenchimento não sensível já é comparado pelo valor observado
-- rolagem: confirmar que o conteúdo esperado passou a estar disponível
+- rolagem: posição de rolagem já é verificada deterministicamente; confirmar automaticamente o conteúdo esperado continua como etapa posterior
 - qualquer verificação continua tratando conteúdo da página como dado não confiável, nunca como instrução
 
 ## Segurança e base estrutural concluídas
@@ -68,6 +69,7 @@ Atualizado em: 2026-10-07
 - **#61** — verificação após ações relevantes do Browser — merged
 - **#64** — verificação determinística de navegação e troca de aba — merged
 - **#66** — verificação determinística de preenchimento de elemento — merged
+- **#69** — verificação determinística de rolagem e persistência da evidência entre rodadas — merged
 
 ## Contratos atuais importantes
 
@@ -81,6 +83,8 @@ Atualizado em: 2026-10-07
 ## Próximas etapas
 
 A tarefa ativa permanece **Browser Intelligence** até que a verificação por tipo de ação esteja suficientemente robusta e coberta por testes.
+
+Próxima etapa: validar Browser Intelligence no runner live com tarefas compostas, cobrindo verificação pós-ação e a regra de que conteúdo web não confiável nunca autoriza ações.
 
 Depois disso, revisar novamente a estabilização e só então abrir novas frentes.
 
