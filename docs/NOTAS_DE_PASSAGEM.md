@@ -34,8 +34,13 @@ Decisoes tomadas (e por que):
 
 Testes:
 - Baseline antes: 576 passed, 5 warnings
-- Comando: py -m pytest -q
-- CI pos-commit: aguardando.
+- Comando solicitado: py -m pytest -q
+- CI executou: python -m pytest -q
+- Full pytest Linux: 589 passed, 6 skipped, 5 warnings
+- Full pytest Windows: 595 passed, 5 warnings
+- Static checks: verdes
+- Visual/focused CI: verde
+- O checkout local não estava disponível por falha de DNS; por isso o resultado de validação foi obtido pelo CI do GitHub, não por uma execução local simulada.
 
 Ficou pendente / virou backlog:
 - A execução live `python testes_auren_live.py --rapido` não se aplica: esta tarefa não mexe em Browser/Windows.
