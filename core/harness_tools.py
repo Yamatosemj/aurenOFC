@@ -82,6 +82,7 @@ def _executar_chamadas_rodada(
             if browser_verification_state is not None:
                 browser_verification_state["ferramenta"] = nome
                 browser_verification_state["argumentos"] = argumentos
+                browser_verification_state["dados_acao"] = dict(resultado_estruturado.data or {})
         elif ferramenta_sucesso and nome == browser_verification_tool:
             verificado = None
             if browser_verifier is not None and browser_verification_state is not None:
@@ -89,6 +90,7 @@ def _executar_chamadas_rodada(
                     str(browser_verification_state.get("ferramenta") or ""),
                     str(browser_verification_state.get("argumentos") or "{}"),
                     resultado_estruturado.data or {},
+                    browser_verification_state.get("dados_acao"),
                 )
             if verificado is False:
                 browser_verification_pending = True
