@@ -595,6 +595,86 @@ def _resolve_path(value: str) -> Path:
     return Path(str(value or "").strip()).expanduser().resolve(strict=False)
 
 
+def _absolute_unresolved_path(value: str | Path) -> Path:
+    """Normaliza um caminho sem seguir links para permitir a inspeção de reparse points.\n    A função torna caminhos relativos absolutos e preserva a cadeia de diretórios sem resolver symlinks.\n    Custo: O(tamanho do caminho) em memória e tempo.\n    """
+    raw = Path(str(value or "").strip()).expanduser()
+    if not raw.is_absolute():
+        raw = Path.cwd() / raw
+    return Path(os.path.abspath(os.path.normpath(str(raw))))
+
+
+def _existing_reparse_prefix(path: Path) -> Path | None:
+    """Localiza um symlink, junction ou outro reparse point existente no caminho.\n    A inspeção para no primeiro componente inexistente e nunca segue o alvo de um link.\n    Custo: O(n) nos componentes existentes do caminho.\n    """
+    current = Path(path.anchor) if path.anchor else Path()
+    anchor_parts = Path(path.anchor).parts if path.anchor else ()
+    for part in path.parts[len(anchor_parts):]:
+        current = current / part
+        try:
+            current.lstat()
+        except FileNotFoundError:
+            break
+        except OSError:
+            return current
+        if _is_reparse_point(current):
+            return current
+    return None
+
+
+def _classify_write_path(value: str | Path) -> FileReadPathPolicy:
+    """Classifica um caminho de escrita usando a allowlist e bloqueando reparse traversal.\n    Diferente da leitura, qualquer caminho fora das raízes permitidas é bloqueado para impedir confirmação que libere uma escrita.\n    Custo: O(n) nos componentes existentes do caminho, mais a classificação normal da allowlist.\n    """
+    raw = str(value or "").strip()
+    if not raw:
+        return FileReadPathPolicy(
+            status="blocked",
+            motivo="O caminho e obrigatorio para operacoes de arquivo.",
+            caminho_resolvido="",
+            raiz_permitida=None,
+        )
+
+    absoluto = _absolute_unresolved_path(raw)
+    reparse = _existing_reparse_prefix(absoluto)
+    if reparse is not None:
+        return FileReadPathPolicy(
+            status="blocked",
+            motivo=(
+                "Operacao de arquivo bloqueada: o caminho atravessa um "
+                "link simbolico, junction ou outro reparse point."
+            ),
+            caminho_resolvido=str(absoluto),
+            raiz_permitida=None,
+        )
+
+    resolvido = absoluto.resolve(strict=False)
+    leitura = _classify_read_path(resolvido)
+    if leitura.status == "allowed":
+        return leitura
+    if leitura.status == "blocked":
+        return leitura
+    return FileReadPathPolicy(
+        status="blocked",
+        motivo=(
+            "Operacoes de escrita so podem atuar dentro das pastas explicitamente "
+            "permitidas; o caminho informado esta fora da allowlist."
+        ),
+        caminho_resolvido=str(resolvido),
+        raiz_permitida=None,
+    )
+
+
+def _rename_destination(caminho: str | Path, novo_nome: str) -> Path:
+    """Monta o destino de renome sem permitir que o novo nome escape da pasta de origem.\n    O nome deve ser um unico componente de arquivo e nao pode conter separadores, curingas ou caracteres de controle.\n    Custo: O(tamanho do novo nome) em tempo e O(1) em espaço adicional.\n    """
+    nome = str(novo_nome or "").strip()
+    if not nome or nome in {".", ".."}:
+        raise ValueError("novo_nome deve conter um nome de arquivo valido")
+    if Path(nome).name != nome or "/" in nome or "\\\\" in nome:
+        raise ValueError("novo_nome deve ser um unico componente de arquivo")
+    invalidos = set('<>:"/\\\\|?*')
+    if any(ord(ch) < 32 or ch in invalidos for ch in nome):
+        raise ValueError("novo_nome contem caracteres invalidos para o Windows")
+    origem = _absolute_unresolved_path(caminho)
+    return origem.with_name(nome)
+
+
 def inspect_file(caminho: str, procurar_copias: bool = False, limite_copias: int = 5, *, caminho_confirmado: str | None = None) -> ToolResult:
     tool_name = "inspecionar_arquivo"
     raw = str(caminho or "").strip()
