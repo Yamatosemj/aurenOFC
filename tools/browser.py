@@ -232,6 +232,7 @@ def abrir_nova_aba(url="", modo="visivel"):
                 "abas": {
                     "quantidade_antes": quantidade_antes,
                     "quantidade_depois": len(snapshot),
+                    "antes": snapshot_antes,
                     "depois": snapshot,
                     "aba_ativa_depois": numero,
                     "url_ativa_depois": str(pagina.url or "about:blank"),
