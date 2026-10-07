@@ -190,3 +190,19 @@ def test_voice_main_does_not_use_spoken_cancel_keywords():
     assert "_eh_cancelamento" not in source
     assert "cancela isso" not in source
     assert "esquece" not in source
+
+
+def test_tts_is_safe_when_called_from_an_existing_event_loop():
+    import asyncio
+
+    sd = _FakeSoundDevice()
+    model = _FakeKokoro()
+    tts = LocalKokoroTTS(model=model, sounddevice_module=sd)
+
+    async def executar():
+        tts.falar("YouTube aberto.")
+
+    asyncio.run(executar())
+
+    assert model.calls == 1
+    assert len(sd.streams) == 1
