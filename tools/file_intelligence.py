@@ -596,7 +596,10 @@ def _resolve_path(value: str) -> Path:
 
 
 def _absolute_unresolved_path(value: str | Path) -> Path:
-    """Normaliza um caminho sem seguir links para permitir a inspeção de reparse points.\n    A função torna caminhos relativos absolutos e preserva a cadeia de diretórios sem resolver symlinks.\n    Custo: O(tamanho do caminho) em memória e tempo.\n    """
+    """Normaliza um caminho sem seguir links para permitir a inspeção de reparse points.
+    A função torna caminhos relativos absolutos e preserva a cadeia de diretórios sem resolver symlinks.
+    Custo: O(tamanho do caminho) em memória e tempo.
+    """
     raw = Path(str(value or "").strip()).expanduser()
     if not raw.is_absolute():
         raw = Path.cwd() / raw
@@ -604,7 +607,10 @@ def _absolute_unresolved_path(value: str | Path) -> Path:
 
 
 def _existing_reparse_prefix(path: Path) -> Path | None:
-    """Localiza um symlink, junction ou outro reparse point existente no caminho.\n    A inspeção para no primeiro componente inexistente e nunca segue o alvo de um link.\n    Custo: O(n) nos componentes existentes do caminho.\n    """
+    """Localiza um symlink, junction ou outro reparse point existente no caminho.
+    A inspeção para no primeiro componente inexistente e nunca segue o alvo de um link.
+    Custo: O(n) nos componentes existentes do caminho.
+    """
     current = Path(path.anchor) if path.anchor else Path()
     anchor_parts = Path(path.anchor).parts if path.anchor else ()
     for part in path.parts[len(anchor_parts):]:
@@ -621,7 +627,10 @@ def _existing_reparse_prefix(path: Path) -> Path | None:
 
 
 def _classify_write_path(value: str | Path) -> FileReadPathPolicy:
-    """Classifica um caminho de escrita usando a allowlist e bloqueando reparse traversal.\n    Diferente da leitura, qualquer caminho fora das raízes permitidas é bloqueado para impedir confirmação que libere uma escrita.\n    Custo: O(n) nos componentes existentes do caminho, mais a classificação normal da allowlist.\n    """
+    """Classifica um caminho de escrita usando a allowlist e bloqueando reparse traversal.
+    Diferente da leitura, qualquer caminho fora das raízes permitidas é bloqueado para impedir confirmação que libere uma escrita.
+    Custo: O(n) nos componentes existentes do caminho, mais a classificação normal da allowlist.
+    """
     raw = str(value or "").strip()
     if not raw:
         return FileReadPathPolicy(
@@ -662,7 +671,10 @@ def _classify_write_path(value: str | Path) -> FileReadPathPolicy:
 
 
 def _rename_destination(caminho: str | Path, novo_nome: str) -> Path:
-    """Monta o destino de renome sem permitir que o novo nome escape da pasta de origem.\n    O nome deve ser um unico componente de arquivo e nao pode conter separadores, curingas ou caracteres de controle.\n    Custo: O(tamanho do novo nome) em tempo e O(1) em espaço adicional.\n    """
+    """Monta o destino de renome sem permitir que o novo nome escape da pasta de origem.
+    O nome deve ser um unico componente de arquivo e nao pode conter separadores, curingas ou caracteres de controle.
+    Custo: O(tamanho do novo nome) em tempo e O(1) em espaço adicional.
+    """
     nome = str(novo_nome or "").strip()
     if not nome or nome in {".", ".."}:
         raise ValueError("novo_nome deve conter um nome de arquivo valido")
