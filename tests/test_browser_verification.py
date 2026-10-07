@@ -82,3 +82,112 @@ def test_unsupported_browser_action_returns_generic_verification():
         '{"direcao":"baixo"}',
         dados,
     ) is None
+
+
+
+def test_scroll_down_verification_accepts_observed_after_position():
+    assert verificar_resultado_navegador(
+        "rolar_pagina",
+        '{"direcao":"baixo"}',
+        {
+            "abas": (
+                "Abas abertas: 1\n"
+                "Aba ativa: 1\n"
+                "Aba 1: Site | https://example.com [ATIVA]"
+            ),
+            "pagina": "conteudo",
+            "scroll": {
+                "scroll_y": 900,
+                "scroll_height": 3000,
+                "viewport_height": 900,
+            },
+        },
+        {
+            "direcao": "baixo",
+            "scroll_y_antes": 0,
+            "scroll_y_depois": 900,
+            "scroll_height": 3000,
+            "viewport_height": 900,
+        },
+    ) is True
+
+
+def test_scroll_down_verification_rejects_unmoved_or_wrong_position():
+    assert verificar_resultado_navegador(
+        "rolar_pagina",
+        '{"direcao":"baixo"}',
+        {
+            "abas": (
+                "Abas abertas: 1\n"
+                "Aba ativa: 1\n"
+                "Aba 1: Site | https://example.com [ATIVA]"
+            ),
+            "pagina": "conteudo",
+            "scroll": {
+                "scroll_y": 0,
+                "scroll_height": 3000,
+                "viewport_height": 900,
+            },
+        },
+        {
+            "direcao": "baixo",
+            "scroll_y_antes": 0,
+            "scroll_y_depois": 900,
+            "scroll_height": 3000,
+            "viewport_height": 900,
+        },
+    ) is False
+
+
+def test_scroll_to_start_verification_checks_top_position():
+    assert verificar_resultado_navegador(
+        "rolar_pagina",
+        '{"direcao":"inicio"}',
+        {
+            "abas": (
+                "Abas abertas: 1\n"
+                "Aba ativa: 1\n"
+                "Aba 1: Site | https://example.com [ATIVA]"
+            ),
+            "pagina": "conteudo",
+            "scroll": {
+                "scroll_y": 0,
+                "scroll_height": 3000,
+                "viewport_height": 900,
+            },
+        },
+        {
+            "direcao": "inicio",
+            "scroll_y_antes": 900,
+            "scroll_y_depois": 0,
+            "scroll_height": 3000,
+            "viewport_height": 900,
+        },
+    ) is True
+
+
+def test_scroll_to_end_verification_checks_bottom_position():
+    assert verificar_resultado_navegador(
+        "rolar_pagina",
+        '{"direcao":"fim"}',
+        {
+            "abas": (
+                "Abas abertas: 1\n"
+                "Aba ativa: 1\n"
+                "Aba 1: Site | https://example.com [ATIVA]"
+            ),
+            "pagina": "conteudo",
+            "scroll": {
+                "scroll_y": 2100,
+                "scroll_height": 3000,
+                "viewport_height": 900,
+            },
+        },
+        {
+            "direcao": "fim",
+            "scroll_y_antes": 900,
+            "scroll_y_depois": 2100,
+            "scroll_height": 3000,
+            "viewport_height": 900,
+        },
+    ) is True
