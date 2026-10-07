@@ -51,12 +51,16 @@ with sync_playwright() as playwright:
     assert verificado is True
 
     page.locator("#menu").click()
-    contexto_invalido = browser_context_tool.obter_contexto_navegador("")
+    contexto_invalido = browser.ler_pagina("Menu")
     assert contexto_invalido.ok is True
+    dados_contexto_invalido = {
+        "abas": contexto_real.data["abas"],
+        "pagina": contexto_invalido.message,
+    }
     falha_detectada = verificar_resultado_navegador(
         "clicar_elemento",
         '{"alvo":"Menu","indice":1}',
-        contexto_invalido.data,
+        dados_contexto_invalido,
         click.data,
     )
     assert falha_detectada is False
