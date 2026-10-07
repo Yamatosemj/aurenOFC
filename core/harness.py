@@ -197,6 +197,8 @@ class AurenHarness:
         self._multitab_guard_attempts = 0
         self._vision_reobserve_pending = False
         self._vision_guard_attempts = 0
+        self._browser_verification_pending = False
+        self._browser_verification_attempts = 0
         # O Ari usa uma fila de prioridade para tarefas de fundo. No Auren ela
         # fica restrita a aprendizado/persistencia pos-tarefa para não atrasar a resposta.
         self._background_queue = AgentTaskQueue(max_workers=1, max_results=100)
@@ -250,6 +252,7 @@ class AurenHarness:
         resultados_rodada: list[dict[str, Any]],
         *,
         vision_reobserve_pending: bool = False,
+        browser_verification_pending: bool = False,
     ) -> bool:
         # O critério visível de sucesso continua sendo `item.get("sucesso")`,
         # conforme o contrato de ToolResult preservado pelo wrapper.
@@ -257,6 +260,7 @@ class AurenHarness:
             objetivo,
             resultados_rodada,
             vision_reobserve_pending=vision_reobserve_pending,
+            browser_verification_pending=browser_verification_pending,
             visual_mutating_tools=cls.VISUAL_MUTATING_TOOLS,
             terminal_result_tools=cls.TERMINAL_RESULT_TOOLS,
             multitab_concluida=cls._multitab_concluida,
@@ -456,6 +460,8 @@ class AurenHarness:
         self._multitab_guard_attempts = 0
         self._vision_reobserve_pending = False
         self._vision_guard_attempts = 0
+        self._browser_verification_pending = False
+        self._browser_verification_attempts = 0
         objetivo_log = mensagem.strip()
         try:
             plan = self.agent.begin(objetivo_log)
