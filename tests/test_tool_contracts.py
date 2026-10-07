@@ -83,8 +83,11 @@ def test_permissions_are_keyed_by_capability_not_tool_name() -> None:
     assert pm.capability("listar_janelas_windows") == "windows.window.read"
 
 
-def test_fechar_aba_schema_keeps_indice_optional():
+def test_fechar_aba_schema_is_strict_and_requires_indice():
     from core.tools_registry import tools
 
     schema = next(item for item in tools if item["name"] == "fechar_aba")
-    assert schema["parameters"]["required"] == []
+    assert schema["strict"] is True
+    assert schema["parameters"]["required"] == ["indice"]
+    assert schema["parameters"]["additionalProperties"] is False
+    assert schema["parameters"]["properties"]["indice"]["type"] == "integer"
