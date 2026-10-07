@@ -9,7 +9,6 @@ import shutil
 import subprocess
 import tempfile
 
-from core.tool_result import ToolResult
 from tools.windows_window import _encontrar_janela_windows, _user32
 
 
