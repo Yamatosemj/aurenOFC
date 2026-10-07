@@ -134,6 +134,11 @@ class PermissionManager:
     # para evitar bloquear repetições legitimas de cliques/preenchimentos.
     NO_PROGRESS_GUARD_TOOLS = {
         "navegar_navegador",
+        "clicar_elemento",
+        "pressionar_tecla",
+        "clicar_elemento_windows",
+        "alternar_elemento_windows",
+        "selecionar_elemento_windows",
     }
 
     # Alvos explicitamente reconhecidos como consulta/navegacao local.
