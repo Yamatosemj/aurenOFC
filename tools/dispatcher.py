@@ -185,7 +185,7 @@ TOOL_HANDLERS = {
     "voltar_pagina": _sem_memoria(browser.voltar_pagina),
     "avancar_pagina": _sem_memoria(browser.avancar_pagina),
     "recarregar_pagina": _sem_memoria(browser.recarregar_pagina),
-    "rolar_pagina": _sem_memoria(browser.rolar_pagina, "direcao"),
+    "rolar_pagina": _sem_memoria(browser.rolar_pagina, "direcao", "alvo", defaults={"alvo": ""}),
 }
 
 
