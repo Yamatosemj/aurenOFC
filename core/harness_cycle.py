@@ -184,6 +184,9 @@ def executar_ciclo(
         if cancelado:
             return harness._encerrar_cancelado("cancelado durante execucao", rodada)
 
+        if not harness._browser_verification_pending:
+            harness._browser_verification_attempts = 0
+
         # Se o ultimo passo explicitamente pedido ja foi executado
         # com sucesso, encerramos localmente e economizamos uma chamada
         # adicional ao modelo apenas para ele dizer que terminou.
