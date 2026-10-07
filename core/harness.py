@@ -254,6 +254,7 @@ class AurenHarness:
         resultados_rodada: list[dict[str, Any]],
         *,
         vision_reobserve_pending: bool = False,
+        browser_verification_pending: bool = False,
     ) -> bool:
         # O critério visível de sucesso continua sendo `item.get("sucesso")`,
         # conforme o contrato de ToolResult preservado pelo wrapper.
@@ -261,6 +262,7 @@ class AurenHarness:
             objetivo,
             resultados_rodada,
             vision_reobserve_pending=vision_reobserve_pending,
+            browser_verification_pending=browser_verification_pending,
             visual_mutating_tools=cls.VISUAL_MUTATING_TOOLS,
             terminal_result_tools=cls.TERMINAL_RESULT_TOOLS,
             multitab_concluida=cls._multitab_concluida,
