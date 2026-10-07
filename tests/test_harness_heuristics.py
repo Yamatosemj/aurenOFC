@@ -112,3 +112,28 @@ def test_browser_verification_is_enabled_for_composed_browser_task():
 
     assert _parece_tarefa_browser_verificavel("abra o youtube e depois confirme") is True
     assert _parece_tarefa_browser_verificavel("clique em salvar na pagina do youtube e verifique o resultado") is True
+
+
+
+def test_browser_verification_guidance_matches_navigation_actions():
+    from core.harness_heuristics import _orientacao_verificacao_navegador
+
+    guidance = _orientacao_verificacao_navegador("navegar_navegador")
+    assert "titulo" in guidance.lower()
+    assert "url" in guidance.lower()
+
+
+def test_browser_verification_guidance_matches_tab_actions():
+    from core.harness_heuristics import _orientacao_verificacao_navegador
+
+    guidance = _orientacao_verificacao_navegador("abrir_nova_aba")
+    assert "abas" in guidance.lower()
+    assert "ativa" in guidance.lower()
+
+
+def test_browser_verification_guidance_matches_element_actions():
+    from core.harness_heuristics import _orientacao_verificacao_navegador
+
+    guidance = _orientacao_verificacao_navegador("preencher_elemento")
+    assert "elemento" in guidance.lower()
+    assert "valor" in guidance.lower()
