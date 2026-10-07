@@ -73,6 +73,7 @@ def test_navigation_verification_accepts_equivalent_normalized_url():
         "navegar_navegador",
         '{"url":"youtube.com"}',
         dados,
+        {"navegacao": {"url_depois": "https://www.youtube.com/"}},
     ) is True
 
 
@@ -87,6 +88,7 @@ def test_navigation_verification_rejects_wrong_active_url():
         "navegar_navegador",
         '{"url":"youtube.com"}',
         dados,
+        {"navegacao": {"url_depois": "https://www.youtube.com/"}},
     ) is False
 
 
