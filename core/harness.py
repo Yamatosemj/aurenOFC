@@ -56,6 +56,7 @@ from core.harness_serialization import (
     _texto_seguro,
 )
 from core.harness_completion import (
+    _concluir_tarefa_localmente,
     _finalizar_resposta_sucesso,
     _mensagem_conclusao_local,
     _tentar_retry_resposta_vazia,
@@ -919,43 +920,21 @@ class AurenHarness:
                     ferramenta_final,
                     resultados_rodada[-1].get("resultado"),
                 )
-                _write_log(
-                    "TASK_LOCAL_COMPLETION",
-                    task_id=self._task_id,
-                    rodada=rodada,
-                    ferramenta=ferramenta_final,
-                    objetivo=objetivo,
-                )
-                _write_log(
-                    "TASK_END",
-                    task_id=self._task_id,
-                    status="local_completion",
-                    rodada=rodada,
-                )
-                extra = None
-                if self.apos_tarefa is not None:
-                    try:
-                        extra = self.apos_tarefa(objetivo, historico)
-                    except Exception as erro:
-                        _write_log(
-                            "MEMORY_ERROR",
-                            task_id=self._task_id,
-                            erro=str(erro),
-                        )
-                if extra:
-                    mensagem_final += str(extra)
-                self._salvar_estrategia_em_background(
+                resposta = _concluir_tarefa_localmente(
                     objetivo,
                     historico,
                     mensagem_final,
-                    True,
-                )
-                self.task_manager.complete(
-                    mensagem_final,
+                    rodada=rodada,
+                    ferramenta_final=ferramenta_final,
                     task_id=self._task_id,
+                    apos_tarefa=self.apos_tarefa,
+                    salvar_estrategia=self._salvar_estrategia_em_background,
+                    task_manager=self.task_manager,
+                    registrar_turno=self._registrar_turno,
+                    write_log=_write_log,
+                    criar_resposta=_RespostaWrapper,
                 )
-                self._registrar_turno("assistant", mensagem_final)
-                return False, _RespostaWrapper(mensagem_final)
+                return False, resposta
 
             # Nova rodada completamente nova: sem previous_response_id.
             proximo_input = self._montar_input_da_rodada(
