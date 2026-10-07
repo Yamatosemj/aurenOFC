@@ -73,6 +73,7 @@ def encontrar_aplicativo(nome):
 
     melhor = None
     melhor_pontuacao = 0
+    melhores: list[dict] = []
 
     for aplicativo in aplicativos:
         nome_app = normalizar_nome(
@@ -97,6 +98,12 @@ def encontrar_aplicativo(nome):
         if pontuacao > melhor_pontuacao:
             melhor_pontuacao = pontuacao
             melhor = aplicativo
+            melhores = [aplicativo]
+        elif pontuacao == melhor_pontuacao and pontuacao > 0:
+            melhores.append(aplicativo)
+
+    if melhor_pontuacao <= 0 or len(melhores) != 1:
+        return None
 
     return melhor
 
