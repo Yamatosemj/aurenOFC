@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import secrets
 import time
 import unicodedata
 from queue import Empty, Queue
@@ -38,13 +39,20 @@ class VoiceConfirmationChannel:
         self._tts = tts
         self._stt = stt
         self._audio_queue = audio_queue
-        self._gate = gate or ConfirmationGate(timeout_seconds=timeout)
+        if gate is None:
+            from core.confirmation import DEFAULT_CONFIRMATION_GATE
+            self._gate = DEFAULT_CONFIRMATION_GATE
+        else:
+            self._gate = gate
         self._token_factory = token_factory or self._novo_token
 
     @staticmethod
     def _novo_token() -> str:
-        from core.confirmation import _novo_token_de_interface
-        return _novo_token_de_interface()
+        """Gera o nonce opaco exclusivamente na interface de voz.
+        O token fica fora do contrato da tool e nunca e criado pelo modelo.
+        Custo: O(1) para gerar um nonce criptograficamente forte.
+        """
+        return secrets.token_urlsafe(32)
 
     def confirmar(self, request: ConfirmationRequest) -> bool:
         token = self._token_factory()
