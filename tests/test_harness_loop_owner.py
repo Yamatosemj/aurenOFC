@@ -92,6 +92,37 @@ def test_pergunta_simples_termina_com_uma_chamada_ao_modelo():
     assert bench.tools == []
 
 
+def test_browser_action_requires_context_verification_before_local_completion():
+    respostas = {
+        1: _resp([_call(1, "clicar_elemento")]),
+        2: _resp(text="ja conclui"),
+        3: _resp([_call(3, "obter_contexto_navegador")]),
+    }
+
+    def model(n, _bench):
+        return respostas.get(n, _resp(text="verificado e pronto"))
+
+    def executor(item):
+        if item.name == "obter_contexto_navegador":
+            return ToolResult.success(
+                "Contexto confirmado.",
+                tool_name="obter_contexto_navegador",
+                conteudo_nao_confiavel=True,
+            )
+        return ToolResult.success("Clique executado.", tool_name=item.name)
+
+    bench = _Bench(model, executor)
+    _, resposta, task = bench.run("clique no botao comprar")
+    
+    assert resposta.output_text == "Contexto confirmado."
+    assert task.state is TaskState.COMPLETED
+    assert bench.tools == [
+        "clicar_elemento",
+        "obter_contexto_navegador",
+    ]
+    assert bench.model_calls == 3
+
+
 def test_pedido_com_uma_ferramenta_termina_quando_o_modelo_responde():
     bench = _Bench(
         lambda n, b: _resp([_call(n)]) if n == 1 else _resp(text="A pagina diz ola."),
