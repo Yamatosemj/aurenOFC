@@ -11,7 +11,7 @@ Atualizado em: 2026-10-07
 - **Versão estável:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
 - **Branch/PR ativa:** nenhuma
-- **Head da main:** `fb572ab2224d85a21f9c83a2a4b447bad295539a`
+- **Head da main:** `71ebe7b77826d1673f9abe6926e40eb9fb63d0f2`
 - **CI da implementação mais recente:** pytest, focused Linux e focused Windows verdes
 - **Fase atual:** Browser Intelligence
 
@@ -27,6 +27,7 @@ Atualizado em: 2026-10-07
 - [x] navegação e troca de aba têm verificação determinística de URL/aba ativa
 - [x] preenchimento de campos não sensíveis tem verificação determinística do valor observado
 - [x] rolagem expõe métricas estruturadas e possui verificação determinística da posição observada
+- [x] runner live separado possui casos explícitos de verificação pós-ação para navegação e rolagem
 
 ### Próximo passo da fase
 
@@ -70,6 +71,7 @@ Atualizado em: 2026-10-07
 - **#64** — verificação determinística de navegação e troca de aba — merged
 - **#66** — verificação determinística de preenchimento de elemento — merged
 - **#69** — verificação determinística de rolagem e persistência da evidência entre rodadas — merged
+- **#72** — cobertura do Browser Intelligence no runner live — merged
 
 ## Contratos atuais importantes
 
@@ -84,7 +86,7 @@ Atualizado em: 2026-10-07
 
 A tarefa ativa permanece **Browser Intelligence** até que a verificação por tipo de ação esteja suficientemente robusta e coberta por testes.
 
-Próxima etapa: validar Browser Intelligence no runner live com tarefas compostas, cobrindo verificação pós-ação e a regra de que conteúdo web não confiável nunca autoriza ações.
+Próxima etapa: executar o runner live em Windows e registrar o resultado real das tarefas compostas. O CI atual valida o código do runner, mas não executa a bateria L4/L5 com navegador e modelo reais.
 
 Depois disso, revisar novamente a estabilização e só então abrir novas frentes.
 
