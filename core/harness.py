@@ -69,7 +69,10 @@ from core.harness_session import (
     _encerrar_sessao_chat as _encerrar_sessao_chat_impl,
     _garantir_sessao_chat as _garantir_sessao_chat_impl,
 )
-from core.harness_model import _log_resposta_modelo as _log_resposta_modelo_impl
+from core.harness_model import (
+    _executar_rodada_modelo as _executar_rodada_modelo_impl,
+    _log_resposta_modelo as _log_resposta_modelo_impl,
+)
 from core.harness_tools import _executar_chamadas_rodada as _executar_chamadas_rodada_impl
 from core.harness_guards import _tratar_rodada_sem_ferramentas as _tratar_rodada_sem_ferramentas_impl
 from core.harness_heuristics import (
@@ -707,22 +710,22 @@ class AurenHarness:
             return self._encerrar_cancelado("cancelado antes da primeira rodada")
 
         estado_inicial = self._montar_estado(objetivo, historico, incluir_contexto=True)
-        self.task_manager.wait_for_model(self._task_id)
-        _write_log(
-            "MODEL_ROUND_REQUEST",
-            task_id=self._task_id,
+        chamada = _executar_rodada_modelo_impl(
+            estado_inicial,
             rodada=1,
+            task_id=self._task_id,
+            task_manager=self.task_manager,
+            pedir_modelo=self._pedir_modelo,
+            log_resposta_modelo=self._log_resposta_modelo,
+            write_log=_write_log,
             input_items=1,
             estado_chars=len(estado_inicial),
-            tool_choice="required" if exigir_ferramenta else "auto",
+            tool_choice="required" if exigir_ferramenta else None,
+            log_tool_choice="required" if exigir_ferramenta else "auto",
         )
-
-        chamada = self._pedir_modelo(estado_inicial, "required" if exigir_ferramenta else None)
         if chamada is None:
             return False, _RespostaWrapper(self.MSG_ERRO_PROVIDER)
         resposta, latencia_ms, metricas_roteamento = chamada
-        self._log_resposta_modelo(1, resposta, latencia_ms, metricas_roteamento)
-        self.task_manager.resume(self._task_id)
 
         limite_rodadas = self._limite_de_rodadas(objetivo)
         if limite_rodadas != self.max_model_rounds:
@@ -904,20 +907,20 @@ class AurenHarness:
             if self.task_manager.should_cancel(self._task_id):
                 return self._encerrar_cancelado("cancelado antes da proxima rodada", rodada)
 
-            self.task_manager.wait_for_model(self._task_id)
-            _write_log(
-                "MODEL_ROUND_REQUEST",
-                task_id=self._task_id,
+            chamada = _executar_rodada_modelo_impl(
+                proximo_input,
                 rodada=rodada + 1,
+                task_id=self._task_id,
+                task_manager=self.task_manager,
+                pedir_modelo=self._pedir_modelo,
+                log_resposta_modelo=self._log_resposta_modelo,
+                write_log=_write_log,
                 input_items=len(proximo_input),
                 estado_chars=len(estado_enviado),
             )
-            chamada = self._pedir_modelo(proximo_input)
             if chamada is None:
                 return False, _RespostaWrapper(self.MSG_ERRO_PROVIDER)
             resposta, latencia_ms, metricas_roteamento = chamada
-            self._log_resposta_modelo(rodada + 1, resposta, latencia_ms, metricas_roteamento)
-            self.task_manager.resume(self._task_id)
 
         self.task_manager.fail(
             "limite local de rodadas do harness atingido",
