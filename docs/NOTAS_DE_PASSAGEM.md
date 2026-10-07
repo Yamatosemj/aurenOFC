@@ -147,3 +147,47 @@ Ficou pendente / virou backlog:
 - Tarefa 4 — confirmação humana não-forjável continua sendo a próxima frente do roadmap.
 
 Próxima tarefa: 4 — confirmação humana não-forjável, após o portão da Tarefa 3
+
+
+---
+
+## 2026-10-07 — Tarefa 4 — Política reversível/irreversível e confirmação com timeout
+
+Tarefa concluída: implementação da infraestrutura de confirmação; política de risco aguardando aprovação explícita
+
+Arquivos criados/alterados:
+- core/confirmation.py
+- voice/confirmation.py
+- voice/main.py
+- tests/test_confirmation.py
+- tests/test_permission_policy.py
+- docs/POLITICA_DE_CONFIRMACAO.md
+- AUREN_STATE.md
+- docs/NOTAS_DE_PASSAGEM.md
+
+Decisões tomadas (e por quê):
+- O Undo existente da linha V49 foi auditado antes de qualquer promoção para AUTO. Arquivos e volume/mudo possuem restauração condicionada ao estado observado; memória e clipboard não possuem restauração exata.
+- memory.write permanece CONFIRM porque esquecer uma memória atualizada não recupera o valor/categoria/timestamp anteriores.
+- windows.clipboard.write foi classificado como irreversível na política e recebeu proposta AUTO → CONFIRM, mas a alteração no PermissionManager não foi aplicada sem aprovação.
+- ConfirmationRequest não carrega token. O token é criado e mantido pela interface, fica fora dos argumentos do modelo e é aceito pelo gate apenas durante a janela válida.
+- Há uma única confirmação pendente por processo nos canais padrão; tokens atrasados ou inválidos não cancelam uma confirmação nova.
+- Timeout padrão: 90 s. Expiração sempre significa negativa e não executa a ação.
+- Texto e voz continuam implementando o mesmo ConfirmationChannel; o canal de voz usa o timeout oficial.
+- Foi adicionada uma regressão que exige que toda capability registrada tenha nível explícito no PermissionManager e rejeita o fallback generic.
+- A política completa das 28 capabilities está documentada em docs/POLITICA_DE_CONFIRMACAO.md.
+- O Mark-LV foi usado somente como referência de arquitetura/risco e casos-limite; nenhum código ou comentário foi copiado.
+
+Testes:
+- Baseline imediatamente anterior: Linux 622 passed / 6 skipped, conforme registro da Tarefa 3; Windows 628 passed, conforme registro da Tarefa 3.
+- Novos testes da Tarefa 4: 4 testes.
+- CI head 8da961772abccac15ec7a6090293128469ae02aa foi iniciado para a implementação/testes desta transição; static-checks está verde e pytest ainda estava em execução no momento desta nota.
+- Execução local completa não disponível por ausência de DNS/rede neste ambiente; nenhum resultado local foi inventado.
+- Runner manual python testes_auren_live.py --rapido: pendente no Windows real, porque esta tarefa altera a confirmação usada pelo canal de voz e o ambiente atual não é o computador do Auren.
+
+Ficou pendente / virou backlog:
+- Aprovação explícita de windows.clipboard.write: AUTO → CONFIRM.
+- Registrar os números finais do CI e fechar o portão da Tarefa 4 após pytest verde.
+- Executar o runner live no Windows real antes de considerar o portão externo encerrado.
+
+Próxima tarefa:
+- Aplicar somente a reclassificação aprovada e então concluir o portão da Tarefa 4.
