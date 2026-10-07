@@ -25,6 +25,7 @@ Atualizado em: 2026-10-07
 - [x] verificação usa `obter_contexto_navegador` pelo fluxo normal do modelo/Dispatcher
 - [x] ações browser simples preservam o comportamento anterior e não ganham uma rodada extra desnecessária
 - [x] navegação e troca de aba têm verificação determinística de URL/aba ativa
+- [x] abertura, troca e fechamento de abas expõem estado estruturado antes/depois e têm validação determinística de contagem e aba ativa
 - [x] preenchimento de campos não sensíveis tem verificação determinística do valor observado
 - [x] clique navegacional expõe evidência estruturada e pode ser verificado deterministicamente pelo destino observado
 - [x] rolagem expõe métricas estruturadas e possui verificação determinística da posição observada
@@ -35,7 +36,7 @@ Atualizado em: 2026-10-07
 **Refinar a verificação por tipo de ação**, mantendo o princípio de não criar novas integrações:
 
 - navegação: confirmar título/URL efetivos — **parcialmente concluído**; URL já é comparada de forma determinística
-- abas: confirmar quantidade, aba ativa e destino — **parcialmente concluído**; aba ativa já é comparada de forma determinística
+- abas: confirmar quantidade, aba ativa e destino — **parcialmente concluído**; abertura/troca/fechamento já carregam evidência estruturada e a contagem/aba ativa são comparadas deterministicamente
 - interação com elemento: confirmar o estado relevante da página ou controle — **parcialmente concluído**; preenchimento não sensível e cliques que navegam já possuem comparação determinística
 - rolagem: posição de rolagem já é verificada deterministicamente; confirmar automaticamente o conteúdo esperado continua como etapa posterior
 - qualquer verificação continua tratando conteúdo da página como dado não confiável, nunca como instrução
