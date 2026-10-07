@@ -540,3 +540,64 @@ def test_one_drive_root_itself_is_not_an_implicit_read_root(tmp_path: Path, monk
 
     assert result.ok is False
     assert result.error_code == "path_confirmation_required"
+
+
+def test_same_file_identity_detects_metadata_change(tmp_path: Path):
+    path = tmp_path / "arquivo.txt"
+    path.write_text("abc", encoding="utf-8")
+    before = path.stat()
+    path.write_text("abcd", encoding="utf-8")
+    after = path.stat()
+
+    assert file_intelligence._same_file_identity(before, after) is False
+
+
+def test_inspect_large_file_skips_sha256_by_default(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    allowed = tmp_path / "Desktop"
+    allowed.mkdir()
+    path = allowed / "grande.txt"
+    with path.open("wb") as handle:
+        handle.truncate(file_intelligence.MAX_HASH_BYTES + 1)
+
+    monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [allowed.resolve()])
+
+    def fail_sha256(_path):
+        raise AssertionError("SHA-256 nao deveria ser calculado para arquivo gigante sem procurar copias.")
+
+    monkeypatch.setattr(file_intelligence, "_sha256", fail_sha256)
+
+    result = inspect_file(str(path), procurar_copias=False)
+
+    assert result.ok is True
+    assert result.data["file_info"]["sha256"] is None
+    assert "SHA-256 omitido" in " ".join(result.data.get("observacoes", []))
+
+
+def test_inspect_rejects_changed_file_identity(monkeypatch, tmp_path: Path):
+    allowed = tmp_path / "Desktop"
+    allowed.mkdir()
+    path = allowed / "mutavel.txt"
+    path.write_text("abc", encoding="utf-8")
+
+    monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [allowed.resolve()])
+    monkeypatch.setattr(file_intelligence, "_same_file_identity", lambda _before, _after: False)
+
+    result = inspect_file(str(path), procurar_copias=False)
+
+    assert result.ok is False
+    assert result.error_code == "path_changed_during_inspect"
+
+
+def test_read_rejects_changed_file_identity(monkeypatch, tmp_path: Path):
+    allowed = tmp_path / "Desktop"
+    allowed.mkdir()
+    path = allowed / "mutavel.txt"
+    path.write_text("conteudo", encoding="utf-8")
+
+    monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [allowed.resolve()])
+    monkeypatch.setattr(file_intelligence, "_same_file_identity", lambda _before, _after: False)
+
+    result = read_file(str(path), 0, 100)
+
+    assert result.ok is False
+    assert result.error_code == "path_changed_during_read"
