@@ -29,56 +29,89 @@ def test_windows_uia_reuses_window_resolution_boundary():
     assert windows_uia._encontrar_janela_windows.__module__ == "tools.windows_window"
 
 
-def test_windows_uia_reuses_persistent_worker_over_stdin_stdout(monkeypatch):
-    calls = []
-
-    class _Stdin:
-        def write(self, value):
-            calls.append(("write", value))
-            return len(value)
-
-        def flush(self):
-            calls.append(("flush", None))
-
-        def close(self):
-            calls.append(("close", None))
-
-    class _Stdout:
-        def __iter__(self):
-            return iter([
-                '{"ok":true,"operacao":"resolver"}\n',
-                '{"ok":true,"operacao":"inspecionar"}\n',
-            ])
-
+def test_windows_uia_starts_persistent_worker_without_bypass(monkeypatch):
     class _Process:
-        def __init__(self):
-            self.returncode = None
-            self.stdin = _Stdin()
-            self.stdout = _Stdout()
-
-        def poll(self):
-            return None
-
-        def terminate(self):
-            self.returncode = 0
-
-        def wait(self, timeout=None):
-            return 0
-
-        def kill(self):
-            self.returncode = -9
+        returncode = None
+        stdin = object()
+        stdout = object()
 
     processo = _Process()
     popen_calls = []
 
-    def fake_popen(*args, **kwargs):
-        popen_calls.append((args, kwargs))
-        return processo
-
     monkeypatch.setattr(windows_uia.os, "name", "nt")
-    monkeypatch.setattr(windows_uia.shutil, "which", lambda name: "powershell.exe")
-    monkeypatch.setattr(windows_uia.subprocess, "Popen", fake_popen)
-    windows_uia._encerrar_ui_automation_worker()
+    monkeypatch.setattr(windows_uia._UI_AUTOMATION_WORKER_SCRIPT.__class__, "is_file", lambda _self: True)
+    monkeypatch.setattr(windows_uia.shutil, "which", lambda _name: "powershell.exe")
+    monkeypatch.setattr(
+        windows_uia.subprocess,
+        "Popen",
+        lambda *args, **kwargs: popen_calls.append((args, kwargs)) or processo,
+    )
+    monkeypatch.setattr(
+        windows_uia,
+        "_UI_AUTOMATION_WORKER",
+        None,
+    )
+    monkeypatch.setattr(
+        windows_uia,
+        "_UI_AUTOMATION_WORKER_RESPONSES",
+        None,
+    )
+
+    result, responses = windows_uia._iniciar_ui_automation_worker()
+
+    assert result is processo
+    assert responses is not None
+    args, kwargs = popen_calls[0]
+    assert args[0][-5:] == [
+        "-NoProfile",
+        "-NonInteractive",
+        "-STA",
+        "-File",
+        str(windows_uia._UI_AUTOMATION_WORKER_SCRIPT),
+    ]
+    assert "-ExecutionPolicy" not in args[0]
+    assert kwargs["stdin"] is windows_uia.subprocess.PIPE
+    assert kwargs["stdout"] is windows_uia.subprocess.PIPE
+    assert kwargs["stderr"] is windows_uia.subprocess.DEVNULL
+
+
+def test_windows_uia_reuses_worker_for_multiple_operations(monkeypatch):
+    from queue import Queue
+
+    class _Stdin:
+        def __init__(self):
+            self.writes = []
+
+        def write(self, value):
+            self.writes.append(value)
+            return len(value)
+
+        def flush(self):
+            pass
+
+        def close(self):
+            pass
+
+    class _Process:
+        returncode = None
+
+        def __init__(self):
+            self.stdin = _Stdin()
+
+        def poll(self):
+            return None
+
+    processo = _Process()
+    respostas = Queue()
+    respostas.put({"ok": True, "operacao": "resolver"})
+    respostas.put({"ok": True, "operacao": "inspecionar"})
+    starts = []
+
+    monkeypatch.setattr(
+        windows_uia,
+        "_iniciar_ui_automation_worker",
+        lambda: starts.append(True) or (processo, respostas),
+    )
 
     primeiro = windows_uia._executar_ui_automation(
         "resolver",
@@ -89,16 +122,7 @@ def test_windows_uia_reuses_persistent_worker_over_stdin_stdout(monkeypatch):
         {"hwnd": 123, "foco": "", "max_itens": 5},
     )
 
-    try:
-        assert primeiro["ok"] is True
-        assert segundo["ok"] is True
-        assert len(popen_calls) == 1
-        args, kwargs = popen_calls[0]
-        assert args[0][-5:] == ["-NoProfile", "-NonInteractive", "-STA", "-File", str(windows_uia._UI_AUTOMATION_WORKER_SCRIPT)]
-        assert "-ExecutionPolicy" not in args[0]
-        assert kwargs["stdin"] is windows_uia.subprocess.PIPE
-        assert kwargs["stdout"] is windows_uia.subprocess.PIPE
-        assert kwargs["stderr"] is windows_uia.subprocess.DEVNULL
-        assert sum(1 for item in calls if item[0] == "write") == 2
-    finally:
-        windows_uia._encerrar_ui_automation_worker()
+    assert primeiro["ok"] is True
+    assert segundo["ok"] is True
+    assert len(starts) == 2
+    assert len(processo.stdin.writes) == 2
