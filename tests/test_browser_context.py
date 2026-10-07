@@ -18,7 +18,16 @@ def test_browser_context_combines_tabs_and_active_page(monkeypatch):
     monkeypatch.setattr(
         browser,
         "listar_abas",
-        lambda: "Abas abertas: 2\nAba ativa: 2",
+        lambda: ToolResult.success(
+            "Abas abertas: 2\nAba ativa: 2",
+            data={
+                "abas": [
+                    {"indice": 1, "titulo": "Inicio", "url": "https://example.com", "ativa": False},
+                    {"indice": 2, "titulo": "YouTube", "url": "https://example.com/" + "a" * 220, "ativa": True},
+                ],
+            },
+            tool_name="listar_abas",
+        ),
     )
     monkeypatch.setattr(
         browser,
@@ -36,6 +45,8 @@ def test_browser_context_combines_tabs_and_active_page(monkeypatch):
     assert "Abas abertas: 2" in result.message
     assert "Titulo: YouTube" in result.message
     assert result.data["foco"] == "video de teste"
+    assert result.data["abas_snapshot"][1]["ativa"] is True
+    assert len(result.data["abas_snapshot"][1]["url"]) > 180
     assert result.data["scroll"] == {
         "scroll_y": 900,
         "scroll_height": 3000,
