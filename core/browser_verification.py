@@ -71,28 +71,20 @@ def verificar_resultado_navegador(
     if args is None:
         return None
 
+    if ferramenta in {"abrir_nova_aba", "trocar_aba", "fechar_aba"}:
+        return _verificar_abas(ferramenta, args, abas, dados_acao)
+
     ativa = _active_tab(abas)
     if ativa is None:
-        return False if ferramenta in {
-            "navegar_navegador",
-            "abrir_nova_aba",
-            "trocar_aba",
-        } else None
+        return False if ferramenta == "navegar_navegador" else None
 
     indice_atual, _titulo, url_atual = ativa
 
-    if ferramenta in {"navegar_navegador", "abrir_nova_aba"}:
+    if ferramenta == "navegar_navegador":
         esperado = _normalize_url(str(args.get("url") or ""))
         if not esperado:
             return None
         return _normalize_url(url_atual) == esperado
-
-    if ferramenta == "trocar_aba":
-        try:
-            esperado = int(args.get("indice"))
-        except (TypeError, ValueError):
-            return None
-        return indice_atual == esperado
 
     if ferramenta == "preencher_elemento":
         return _controle_com_valor(
@@ -113,6 +105,122 @@ def verificar_resultado_navegador(
         )
 
     return None
+
+
+def _extrair_abas_observadas(abas: str) -> tuple[int | None, list[tuple[int, str, str]]]:
+    texto = str(abas or "")
+    match = re.search(r"(?m)^Abas abertas:\s*(\d+)", texto)
+    quantidade = int(match.group(1)) if match else None
+    encontradas: list[tuple[int, str, str]] = []
+    for linha in texto.splitlines():
+        match = re.match(
+            r"^Aba\s+(\d+):\s*(.*?)\s*\|\s*(.+?)(?:\s*\[ATIVA\])?$",
+            linha.strip(),
+        )
+        if match:
+            encontradas.append(
+                (int(match.group(1)), match.group(2).strip(), match.group(3).strip())
+            )
+    return quantidade, encontradas
+
+
+def _verificar_abas(
+    ferramenta: str,
+    args: dict[str, Any],
+    abas: str,
+    dados_acao: Any,
+) -> bool | None:
+    quantidade_atual, observadas = _extrair_abas_observadas(abas)
+    ativa = _active_tab(abas)
+
+    info = dados_acao.get("abas") if isinstance(dados_acao, dict) else None
+    if not isinstance(info, dict):
+        # Compatibilidade com resultados antigos: ainda validamos destino/indice
+        # quando a ferramenta nao fornece snapshot estruturado.
+        if ferramenta == "trocar_aba" and ativa is not None:
+            try:
+                return ativa[0] == int(args.get("indice"))
+            except (TypeError, ValueError):
+                return None
+        if ferramenta == "abrir_nova_aba":
+            esperado = _normalize_url(str(args.get("url") or ""))
+            return _normalize_url(ativa[2]) == esperado if esperado and ativa else None
+        return None
+
+    quantidade_antes = info.get("quantidade_antes")
+    quantidade_depois = info.get("quantidade_depois")
+    try:
+        quantidade_antes_int = int(quantidade_antes)
+        quantidade_depois_int = int(quantidade_depois)
+    except (TypeError, ValueError):
+        return None
+
+    if ferramenta == "abrir_nova_aba":
+        if quantidade_atual is None or quantidade_atual != quantidade_depois_int:
+            return False
+        if quantidade_depois_int != quantidade_antes_int + 1:
+            return False
+
+        esperado_indice = info.get("aba_ativa_depois")
+        try:
+            if ativa is None or ativa[0] != int(esperado_indice):
+                return False
+        except (TypeError, ValueError):
+            return False
+
+        esperado_url = str(args.get("url") or "").strip()
+        if esperado_url:
+            return _normalize_url(ativa[2]) == _normalize_url(esperado_url)
+
+        return _normalize_url(ativa[2]) in {"about:blank", ""}
+
+    if ferramenta == "trocar_aba":
+        if quantidade_atual is None or quantidade_atual != quantidade_depois_int:
+            return False
+        try:
+            esperado_indice = int(args.get("indice"))
+        except (TypeError, ValueError):
+            return None
+
+        if ativa is None or ativa[0] != esperado_indice:
+            return False
+
+        try:
+            if info.get("aba_ativa_depois") is not None and int(info["aba_ativa_depois"]) != esperado_indice:
+                return False
+        except (TypeError, ValueError):
+            return False
+
+        esperado_url = str(info.get("url_ativa_depois") or "").strip()
+        if esperado_url:
+            return _normalize_url(ativa[2]) == _normalize_url(esperado_url)
+        return True
+
+    if ferramenta == "fechar_aba":
+        if quantidade_depois_int != quantidade_antes_int - 1:
+            return False
+
+        if quantidade_depois_int == 0:
+            return quantidade_atual in {None, 0, 1}
+
+        if quantidade_atual is None or quantidade_atual != quantidade_depois_int:
+            return False
+
+        try:
+            esperado_indice = int(info.get("aba_ativa_depois"))
+        except (TypeError, ValueError):
+            return None
+
+        if ativa is None or ativa[0] != esperado_indice:
+            return False
+
+        esperado_url = str(info.get("url_ativa_depois") or "").strip()
+        if esperado_url:
+            return _normalize_url(ativa[2]) == _normalize_url(esperado_url)
+        return True
+
+    return None
+
 
 def _verificar_clique(dados_clique: Any, indice_atual: int, url_atual: str) -> bool | None:
     if not isinstance(dados_clique, dict):
