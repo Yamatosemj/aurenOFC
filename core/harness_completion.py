@@ -1,6 +1,97 @@
 from __future__ import annotations
 
-from typing import Any, Callable
+from dataclasses import dataclass
+from typing import Any, Callable, Literal
+
+
+@dataclass(frozen=True)
+class _ResultadoRetryRespostaVazia:
+    acao: Literal["continuar", "retornar", "falhar"]
+    resposta: Any = None
+    empty_response_retries: int = 0
+    failure_code: str | None = None
+    failure_message: str | None = None
+
+
+def _tentar_retry_resposta_vazia(
+    objetivo: str,
+    historico: list[dict[str, str]],
+    *,
+    rodada: int,
+    exigir_ferramenta: bool,
+    empty_response_retries: int,
+    task_id: str,
+    mensagem_erro_provider: str,
+    task_manager: Any,
+    montar_estado: Callable[..., str],
+    pedir_modelo: Callable[..., Any],
+    log_resposta_modelo: Callable[..., None],
+    write_log: Callable[..., None],
+    should_cancel: Callable[[str], bool],
+    encerrar_cancelado: Callable[[str, int], Any],
+    criar_resposta: Callable[[str], Any],
+) -> _ResultadoRetryRespostaVazia:
+    if empty_response_retries >= 1:
+        return _ResultadoRetryRespostaVazia(
+            acao="falhar",
+            empty_response_retries=empty_response_retries,
+            failure_code="empty_response",
+            failure_message="Nao consegui produzir uma resposta final.",
+        )
+
+    empty_response_retries += 1
+    estado_retry = montar_estado(
+        objetivo,
+        historico,
+        [{
+            "ferramenta": "nenhuma",
+            "argumentos": "{}",
+            "resultado": "A resposta final veio vazia. Responda de forma objetiva ou continue a execucao necessaria.",
+        }],
+    )
+    if should_cancel(task_id):
+        return _ResultadoRetryRespostaVazia(
+            acao="retornar",
+            resposta=encerrar_cancelado(
+                "cancelado antes do retry de resposta vazia",
+                rodada,
+            ),
+            empty_response_retries=empty_response_retries,
+        )
+
+    tool_choice_retry = "required" if exigir_ferramenta else None
+    task_manager.wait_for_model(task_id)
+    write_log(
+        "MODEL_ROUND_REQUEST",
+        task_id=task_id,
+        rodada=rodada + 1,
+        input_items=1,
+        estado_chars=len(estado_retry),
+        tool_choice=tool_choice_retry,
+        motivo="empty_response_retry",
+    )
+    chamada = pedir_modelo(estado_retry, tool_choice_retry)
+    if chamada is None:
+        return _ResultadoRetryRespostaVazia(
+            acao="retornar",
+            resposta=criar_resposta(mensagem_erro_provider),
+            empty_response_retries=empty_response_retries,
+        )
+
+    resposta, latencia_ms, metricas_roteamento = chamada
+    log_resposta_modelo(
+        rodada + 1,
+        resposta,
+        latencia_ms,
+        metricas_roteamento,
+        motivo="empty_response_retry",
+    )
+    task_manager.resume(task_id)
+    return _ResultadoRetryRespostaVazia(
+        acao="continuar",
+        resposta=resposta,
+        empty_response_retries=empty_response_retries,
+    )
 
 
 def _finalizar_resposta_sucesso(

@@ -58,6 +58,7 @@ from core.harness_serialization import (
 from core.harness_completion import (
     _finalizar_resposta_sucesso,
     _mensagem_conclusao_local,
+    _tentar_retry_resposta_vazia,
 )
 from core.harness_state import _montar_estado
 from core.harness_round_input import _montar_input_da_rodada
@@ -828,46 +829,36 @@ class AurenHarness:
                         rodada,
                     )
                 if not final_texto:
-                    if empty_response_retries < 1:
-                        empty_response_retries += 1
-                        estado_retry = self._montar_estado(
-                            objetivo,
-                            historico,
-                            [{
-                                "ferramenta": "nenhuma",
-                                "argumentos": "{}",
-                                "resultado": "A resposta final veio vazia. Responda de forma objetiva ou continue a execucao necessaria.",
-                            }],
-                        )
-                        if self.task_manager.should_cancel(self._task_id):
-                            return self._encerrar_cancelado("cancelado antes do retry de resposta vazia", rodada)
-                        tool_choice_retry = "required" if exigir_ferramenta else None
-                        self.task_manager.wait_for_model(self._task_id)
-                        _write_log(
-                            "MODEL_ROUND_REQUEST",
-                            task_id=self._task_id,
-                            rodada=rodada + 1,
-                            input_items=1,
-                            estado_chars=len(estado_retry),
-                            tool_choice=tool_choice_retry,
-                            motivo="empty_response_retry",
-                        )
-                        chamada = self._pedir_modelo(estado_retry, tool_choice_retry)
-                        if chamada is None:
-                            return False, _RespostaWrapper(self.MSG_ERRO_PROVIDER)
-                        resposta, latencia_ms, metricas_roteamento = chamada
-                        self._log_resposta_modelo(
-                            rodada + 1,
-                            resposta,
-                            latencia_ms,
-                            metricas_roteamento,
-                            motivo="empty_response_retry",
-                        )
-                        self.task_manager.resume(self._task_id)
+                    retry = _tentar_retry_resposta_vazia(
+                        objetivo,
+                        historico,
+                        rodada=rodada,
+                        exigir_ferramenta=exigir_ferramenta,
+                        empty_response_retries=empty_response_retries,
+                        task_id=self._task_id,
+                        mensagem_erro_provider=self.MSG_ERRO_PROVIDER,
+                        task_manager=self.task_manager,
+                        montar_estado=self._montar_estado,
+                        pedir_modelo=self._pedir_modelo,
+                        log_resposta_modelo=self._log_resposta_modelo,
+                        write_log=_write_log,
+                        should_cancel=self.task_manager.should_cancel,
+                        encerrar_cancelado=self._encerrar_cancelado,
+                        criar_resposta=_RespostaWrapper,
+                    )
+                    empty_response_retries = retry.empty_response_retries
+
+                    if retry.acao == "continuar":
+                        resposta = retry.resposta
                         continue
+
+                    if retry.acao == "retornar":
+                        return retry.resposta
+
                     return self._encerrar_falha(
-                        "empty_response",
-                        "Nao consegui produzir uma resposta final.",
+                        retry.failure_code or "empty_response",
+                        retry.failure_message or "Nao consegui produzir uma resposta final.",
+                        rodada,
                     )
 
                 resposta = _finalizar_resposta_sucesso(
