@@ -95,7 +95,12 @@ def verificar_resultado_navegador(
         )
 
     if ferramenta == "clicar_elemento":
-        return _verificar_clique(dados.get("clique"), indice_atual, url_atual)
+        return _verificar_clique(
+            dados.get("clique"),
+            indice_atual,
+            url_atual,
+            str(dados.get("pagina") or ""),
+        )
 
     if ferramenta == "rolar_pagina":
         return _verificar_rolagem(
@@ -288,28 +293,151 @@ def _verificar_abas(
     return None
 
 
-def _verificar_clique(dados_clique: Any, indice_atual: int, url_atual: str) -> bool | None:
+def _linhas_controle(pagina: str) -> list[str]:
+    return [
+        linha.strip()
+        for linha in str(pagina or "").splitlines()
+        if linha.strip().startswith("- ") and "tag=" in linha
+    ]
+
+
+def _normalizar_valor_estado(valor: Any) -> str:
+    if isinstance(valor, bool):
+        return "true" if valor else "false"
+    if valor is None:
+        return ""
+    return str(valor).strip()
+
+
+def _controle_corresponde_linha(
+    linha: str,
+    controle: Any,
+) -> bool:
+    if not isinstance(controle, dict):
+        return False
+
+    chave = str(controle.get("chave") or "").strip()
+    if chave:
+        return f"chave={chave}" in linha
+
+    for campo, prefixo in (
+        ("id", "id="),
+        ("name", "name="),
+        ("aria_label", "nome="),
+        ("placeholder", "placeholder="),
+    ):
+        valor = str(controle.get(campo) or "").strip()
+        if valor and f"{prefixo}{valor}" in linha:
+            return True
+
+    return False
+
+
+def _estado_controle_na_linha(linha: str, atributo: str) -> str | None:
+    marcador = "estado="
+    if marcador not in linha:
+        return None
+
+    estado = linha.split(marcador, 1)[1]
+    estado = estado.split(" | valor=", 1)[0]
+    estado = estado.split(" |", 1)[0]
+
+    prefixo = f"{atributo}="
+    for item in estado.split(";"):
+        item = item.strip()
+        if item.startswith(prefixo):
+            return item[len(prefixo):].strip()
+
+    return None
+
+
+def _verificar_clique(
+    dados_clique: Any,
+    indice_atual: int,
+    url_atual: str,
+    pagina: str = "",
+) -> bool | None:
     if not isinstance(dados_clique, dict):
         return None
 
-    if not dados_clique.get("navegacao"):
-        # Um clique sem navegacao pode alterar um estado interno da pagina
-        # (modal, checkbox, menu etc.). Sem um contrato especifico desse
-        # elemento, nao afirmamos sucesso nem inventamos evidencia.
+    atual = _normalize_url(url_atual)
+    if dados_clique.get("navegacao"):
+        if not atual:
+            return False
+
+        esperado = str(dados_clique.get("href") or "").strip()
+        anterior = str(dados_clique.get("url_anterior") or "").strip()
+        if esperado and esperado not in {"#", "#top"} and not esperado.lower().startswith("javascript:"):
+            esperado = urljoin(anterior or url_atual, esperado)
+            return atual == _normalize_url(esperado)
+
+        if anterior:
+            return atual != _normalize_url(anterior)
+
         return None
 
-    atual = _normalize_url(url_atual)
-    if not atual:
-        return False
+    efeito = dados_clique.get("efeito")
+    if not isinstance(efeito, dict):
+        return None
 
-    esperado = str(dados_clique.get("href") or "").strip()
-    anterior = str(dados_clique.get("url_anterior") or "").strip()
-    if esperado and esperado not in {"#", "#top"} and not esperado.lower().startswith("javascript:"):
-        esperado = urljoin(anterior or url_atual, esperado)
-        return atual == _normalize_url(esperado)
+    sinal = efeito.get("sinal")
+    controle = efeito.get("controle")
+    if not isinstance(sinal, dict) or not isinstance(controle, dict):
+        return None
 
-    if anterior:
-        return atual != _normalize_url(anterior)
+    tipo = str(sinal.get("tipo") or "")
+    if tipo == "controle":
+        atributo = str(sinal.get("atributo") or "").strip()
+        esperado = _normalizar_valor_estado(sinal.get("depois"))
+        antes = _normalizar_valor_estado(sinal.get("antes"))
+        if not atributo or esperado == "" or esperado == antes:
+            return None
+
+        linhas = [
+            linha for linha in _linhas_controle(pagina)
+            if _controle_corresponde_linha(linha, controle)
+        ]
+        if not linhas or len(linhas) > 1:
+            return None
+
+        observado = _estado_controle_na_linha(linhas[0], atributo)
+        if observado is None:
+            return None
+        return observado == esperado
+
+    if tipo == "pagina":
+        alvo = str(sinal.get("alvo") or "").strip()
+        try:
+            esperado = int(sinal.get("depois"))
+        except (TypeError, ValueError):
+            return None
+        if alvo not in {"dialogos", "menus", "listboxes"}:
+            return None
+
+        marcador = "Elementos flutuantes visiveis:"
+        linha = next(
+            (
+                linha.strip()
+                for linha in str(pagina or "").splitlines()
+                if marcador in linha
+            ),
+            None,
+        )
+        if not linha:
+            return None
+
+        prefixo = f"{alvo}="
+        valor_texto = None
+        for parte in linha.split("|"):
+            parte = parte.strip()
+            if parte.startswith(prefixo):
+                valor_texto = parte[len(prefixo):].strip()
+                break
+        try:
+            observado = int(valor_texto)
+        except (TypeError, ValueError):
+            return None
+        return observado == esperado
 
     return None
 
