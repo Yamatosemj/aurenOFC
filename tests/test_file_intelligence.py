@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import ctypes
 from types import SimpleNamespace
 
 import pytest
@@ -936,7 +937,10 @@ def test_trash_shell_operation_requests_recoverable_delete(monkeypatch, tmp_path
     chamadas = []
 
     def fake_delete(operation_pointer):
-        operation = operation_pointer.contents
+        operation = ctypes.cast(
+            operation_pointer,
+            ctypes.POINTER(files._SHFILEOPSTRUCTW),
+        ).contents
         chamadas.append(int(operation.fFlags))
         operation.fAnyOperationsAborted = False
         return 0
