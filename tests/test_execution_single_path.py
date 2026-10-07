@@ -211,7 +211,7 @@ def executar(argumentos):
     try:
         assert not marker.exists()
         resultado = dispatcher.executar_ferramenta(
-            _item("unico_plugin", {{}}),
+            _item("unico_plugin", {}),
             PermissionManager(),
             None,
         )
