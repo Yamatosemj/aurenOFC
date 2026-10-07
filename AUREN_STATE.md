@@ -10,8 +10,8 @@ Atualizado em: 2026-10-07
 
 - **Versão estável:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** nenhuma
-- **Head da main:** `71ebe7b77826d1673f9abe6926e40eb9fb63d0f2`
+- **Branch/PR ativa:** `fix/browser-click-new-tab-page` / PR #77
+- **Head da main:** `0a8304e1b097d458511f017ca1f0d9da19d86726`
 - **CI da implementação mais recente:** pytest, focused Linux e focused Windows verdes
 - **Fase atual:** Browser Intelligence
 
@@ -26,6 +26,7 @@ Atualizado em: 2026-10-07
 - [x] ações browser simples preservam o comportamento anterior e não ganham uma rodada extra desnecessária
 - [x] navegação e troca de aba têm verificação determinística de URL/aba ativa
 - [x] preenchimento de campos não sensíveis tem verificação determinística do valor observado
+- [x] clique navegacional expõe evidência estruturada e pode ser verificado deterministicamente pelo destino observado
 - [x] rolagem expõe métricas estruturadas e possui verificação determinística da posição observada
 - [x] runner live separado possui casos explícitos de verificação pós-ação para navegação e rolagem
 
@@ -35,9 +36,10 @@ Atualizado em: 2026-10-07
 
 - navegação: confirmar título/URL efetivos — **parcialmente concluído**; URL já é comparada de forma determinística
 - abas: confirmar quantidade, aba ativa e destino — **parcialmente concluído**; aba ativa já é comparada de forma determinística
-- interação com elemento: confirmar o estado relevante da página ou controle — **parcialmente concluído**; preenchimento não sensível já é comparado pelo valor observado
+- interação com elemento: confirmar o estado relevante da página ou controle — **parcialmente concluído**; preenchimento não sensível e cliques que navegam já possuem comparação determinística
 - rolagem: posição de rolagem já é verificada deterministicamente; confirmar automaticamente o conteúdo esperado continua como etapa posterior
 - qualquer verificação continua tratando conteúdo da página como dado não confiável, nunca como instrução
+- resultado `None` do verificador não encerra mais uma verificação obrigatória; somente `True` limpa a pendência
 
 ## Segurança e base estrutural concluídas
 
