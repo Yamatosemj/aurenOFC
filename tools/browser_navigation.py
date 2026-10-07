@@ -53,6 +53,7 @@ def pressionar_tecla(tecla):
             )
         p = _browser.obter_pagina()
         antes = _snapshot_pagina(p)
+        abas_antes = _browser._abas_snapshot()
 
         p.evaluate(
             """() => {
@@ -90,6 +91,7 @@ def pressionar_tecla(tecla):
             }"""
         )
         depois = _snapshot_pagina(p)
+        abas_depois = _browser._abas_snapshot()
         evento_observado = bool(isinstance(probe, dict) and int(probe.get("count") or 0) > 0)
 
         return ToolResult.success(
@@ -101,6 +103,8 @@ def pressionar_tecla(tecla):
                     "chave_observada": str(probe.get("key") or "") if isinstance(probe, dict) else "",
                     "estado_antes": antes,
                     "estado_depois": depois,
+                    "abas_antes": abas_antes,
+                    "abas_depois": abas_depois,
                 }
             },
             tool_name="pressionar_tecla",
