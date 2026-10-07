@@ -265,6 +265,7 @@ def trocar_aba(indice):
 
     abas = _paginas_abertas()
     quantidade_antes = len(abas)
+    snapshot_antes = _abas_snapshot()
     try:
         indice = int(indice)
     except (TypeError, ValueError):
