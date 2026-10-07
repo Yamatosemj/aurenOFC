@@ -228,6 +228,7 @@ class AurenHarness:
         "obter_geometria_janela_windows",
         "ler_area_transferencia_windows",
         "listar_abas",
+        "obter_contexto_navegador",
         "consultar_memoria_persistente",
         # Alteracoes simples cujo retorno ja confirma a acao.
         "definir_volume_windows",
