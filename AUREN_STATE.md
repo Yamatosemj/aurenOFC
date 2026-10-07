@@ -293,7 +293,7 @@ Não houve flexibilização da allowlist, confirmação ou proteção contra rep
 
 ## Registro da Tarefa 4 da sessão — Política reversível/irreversível e confirmação com timeout
 
-Estado: **IMPLEMENTAÇÃO CONCLUÍDA / PORTÃO GLOBAL BLOQUEADO POR DÉBITOS PREEXISTENTES DA TAREFA 3**
+Estado: **CONCLUÍDA — implementação e CI automatizado verdes; runner live continua separado como validação operacional**
 
 - A auditoria confirmou que o Undo real da linha V49 existe em core/undo.py, com LIFO, limite 10 e preservação da entrada quando a reversão falha.
 - Mover/copiar/renomear/criar pasta registram undo condicionado ao estado observado; volume e mudo também capturam o estado anterior antes de registrar reversão.
@@ -326,11 +326,11 @@ Próxima tarefa:
 
 ### Evidência CI da Tarefa 4
 
-- HEAD atual da branch: f4017c9e718b02d6e868c27e520a0ca9845f6112.
+- HEAD atual da branch: a9eba393e6ed62abe90e5007da3dda75f72938d8 (somente consolidação documental após o HEAD de código verde).
 - CI do HEAD atual f4017c9e718b02d6e868c27e520a0ca9845f6112: full pytest Linux **628 passed, 6 skipped, 5 warnings**; full pytest Windows **634 passed, 5 warnings**.
 - Focused Linux/Windows: **verde**.
 - static-checks: **verde**.
 - Playwright smoke: **verde**.
-- As quatro falhas antigas da Tarefa 3 foram corrigidas posteriormente na própria linha de arquivo e não aparecem mais no HEAD atual.
+- As quatro falhas antigas da Tarefa 3 foram corrigidas posteriormente na própria linha de arquivo e não aparecem mais no HEAD de código verde f4017c9….
 - Os cinco testes novos da Tarefa 4 permanecem aprovados no full pytest.
 - Runner manual `python testes_auren_live.py --rapido`: não foi necessário para o gate automatizado desta tarefa, pois a Tarefa 4 não alterou Browser/Windows; continua disponível como validação operacional futura.
