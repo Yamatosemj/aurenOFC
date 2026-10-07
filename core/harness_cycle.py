@@ -183,6 +183,12 @@ def executar_ciclo(
             write_log=write_log,
         )
         harness._browser_verification_pending = bool(browser_verification_state.get("pending", False))
+        if any(
+            item.get("ferramenta") == harness.BROWSER_VERIFICATION_TOOL
+            and item.get("sucesso")
+            for item in resultados_rodada
+        ):
+            harness._browser_verification_guard_attempts = 0
         if cancelado:
             return harness._encerrar_cancelado("cancelado durante execucao", rodada)
 
