@@ -280,13 +280,26 @@ def definir_volume_windows(percentual) -> ToolResult:
                 volume_anterior = valor_anterior
 
     resultado = _aplicar_volume_windows(percentual)
-    if resultado.ok and volume_anterior is not None and volume_anterior != percentual:
+    if not resultado.ok:
+        return ToolResult.failure(
+            resultado.message,
+            error_code=resultado.error_code or "volume_set_failed",
+            data=resultado.data,
+            tool_name="definir_volume_windows",
+        )
+
+    if volume_anterior is not None and volume_anterior != percentual:
         from core.undo import push_undo
         push_undo(
             f"volume para {percentual}%",
             lambda anterior=volume_anterior: _aplicar_volume_windows(anterior),
         )
-    return resultado
+
+    return ToolResult.success(
+        resultado.message,
+        data=resultado.data,
+        tool_name="definir_volume_windows",
+    )
 
 
 def _aplicar_mudo_windows(ativado: bool) -> ToolResult:
@@ -341,10 +354,23 @@ def definir_mudo_windows(ativado) -> ToolResult:
             mudo_anterior = valor_anterior
 
     resultado = _aplicar_mudo_windows(ativado)
-    if resultado.ok and mudo_anterior is not None and mudo_anterior != ativado:
+    if not resultado.ok:
+        return ToolResult.failure(
+            resultado.message,
+            error_code=resultado.error_code or "mute_set_failed",
+            data=resultado.data,
+            tool_name="definir_mudo_windows",
+        )
+
+    if mudo_anterior is not None and mudo_anterior != ativado:
         from core.undo import push_undo
         push_undo(
             f"mudo {'ativado' if ativado else 'desativado'}",
             lambda anterior=mudo_anterior: _aplicar_mudo_windows(anterior),
         )
-    return resultado
+
+    return ToolResult.success(
+        resultado.message,
+        data=resultado.data,
+        tool_name="definir_mudo_windows",
+    )
