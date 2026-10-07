@@ -63,14 +63,23 @@ def _executar_chamadas_rodada(
         )
 
         tool_started_perf = time.perf_counter()
-        try:
-            resultado_bruto = executar_ferramenta(item)
-        except Exception as erro:
+        if browser_verification_pending and nome in browser_state_mutating_tools:
             resultado_bruto = ToolResult.failure(
-                f"Falha inesperada no harness: {erro}",
-                error_code="harness_exception",
+                "Uma mutacao anterior do navegador ainda nao foi verificada. "
+                "Obtenha o contexto do navegador e aguarde evidencia positiva antes "
+                "de executar outra mutacao.",
+                error_code="browser_verification_required",
                 tool_name=nome,
             )
+        else:
+            try:
+                resultado_bruto = executar_ferramenta(item)
+            except Exception as erro:
+                resultado_bruto = ToolResult.failure(
+                    f"Falha inesperada no harness: {erro}",
+                    error_code="harness_exception",
+                    tool_name=nome,
+                )
 
         resultado_estruturado = from_legacy(
             resultado_bruto,
