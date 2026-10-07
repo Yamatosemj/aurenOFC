@@ -723,7 +723,9 @@ def test_non_navigational_click_verification_accepts_dom_only_control_change():
     contexto = _contexto(
         "Abas abertas: 1\n"
         "Aba ativa: 1\n"
-        "Aba 1: Site | https://example.com [ATIVA]\n"
+        "Aba 1: Site | https://example.com [ATIVA]"
+    )
+    contexto["pagina"] = (
         "Campos e controles visiveis:\n"
         f"- tag=button | role=button | nome=Menu | chave=id:menu | dom-fingerprint={compromisso_after}"
     )
@@ -759,7 +761,9 @@ def test_dom_only_click_verification_rejects_unchanged_fingerprint():
     contexto = _contexto(
         "Abas abertas: 1\n"
         "Aba ativa: 1\n"
-        "Aba 1: Site | https://example.com [ATIVA]\n"
+        "Aba 1: Site | https://example.com [ATIVA]"
+    )
+    contexto["pagina"] = (
         "Campos e controles visiveis:\n"
         "- tag=button | role=button | nome=Menu | chave=id:menu | dom-fingerprint=1111111111111111"
     )
