@@ -568,7 +568,10 @@ def _verificar_clique(
         anterior = str(dados_clique.get("url_anterior") or "").strip()
         if esperado and esperado not in {"#", "#top"} and not esperado.lower().startswith("javascript:"):
             esperado = urljoin(anterior or url_atual, esperado)
-            return atual == _normalize_url(esperado)
+            if atual != _normalize_url(esperado):
+                return False
+        elif not anterior:
+            return None
 
         if anterior:
             if atual == _normalize_url(anterior):

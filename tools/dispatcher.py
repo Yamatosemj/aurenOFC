@@ -94,7 +94,7 @@ def _obter_contexto_tecla_windows():
                 "hwnd": int(hwnd),
             },
         }
-    except Exception as erro:
+    except (AttributeError, OSError, TypeError, ValueError) as erro:
         return {"ok": False, "evidencia": {}, "erro": str(erro)}
 
 
