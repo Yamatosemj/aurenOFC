@@ -42,8 +42,7 @@ class BrowserContextSnapshot:
         for aviso in self.avisos:
             linhas.append(f"- {aviso}")
 
-        return "
-".join(linhas)
+        return "\n".join(linhas)
 
 
 def _texto_pagina(pagina: Any, atributo: str, padrao: str = "") -> str:
