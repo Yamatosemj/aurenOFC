@@ -154,11 +154,19 @@ def _verificar_navegacao_historico(ferramenta: str, abas: str, dados_acao: Any) 
     ativa = _active_tab(abas)
     if ativa is None:
         return None
-    _, _, url_atual = ativa
+    _, titulo_atual, url_atual = ativa
     url_depois = str(dados.get("url_depois") or dados.get("url") or "").strip()
     if not url_depois:
         return None
     if _normalize_url(url_atual) != _normalize_url(url_depois):
+        return False
+
+    ready_state = dados.get("ready_state_depois")
+    if ready_state is not None and str(ready_state).strip().casefold() != "complete":
+        return None
+
+    titulo_depois = str(dados.get("titulo_depois") or "").strip()
+    if titulo_atual and titulo_depois and titulo_atual.strip() != titulo_depois:
         return False
 
     if ferramenta in {"voltar_pagina", "avancar_pagina"}:
