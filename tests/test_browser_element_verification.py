@@ -80,3 +80,35 @@ def test_click_element_uses_the_new_tab_as_active_page(monkeypatch):
     assert "URL atual: https://example.com/nova" in result
     assert "Navegacao: sim" in result
     assert browser.pagina is nova
+
+
+
+def test_sensitive_fill_returns_redacted_verification_commitment():
+    import tools.browser_elements as browser_elements
+
+    class _SensitiveElement:
+        def fill(self, value, timeout):
+            assert value == "segredo-super-secreto"
+            assert timeout == 10000
+
+        def input_value(self, timeout=None):
+            assert timeout == 10000
+            return "segredo-super-secreto"
+
+        def get_attribute(self, name):
+            return {"type": "password"}.get(name)
+
+    monkeypatch = __import__("pytest").MonkeyPatch()
+    try:
+        monkeypatch.setattr(browser_elements, "encontrar_elemento", lambda *args, **kwargs: _SensitiveElement())
+        result = browser_elements.preencher_elemento("Senha", "segredo-super-secreto", 1)
+    finally:
+        monkeypatch.undo()
+
+    assert result.ok is True
+    evidence = result.data["preenchimento"]
+    assert evidence["sensivel"] is True
+    assert evidence["verificado_localmente"] is True
+    assert evidence["compromisso"]
+    assert "segredo-super-secreto" not in result.message
+    assert "segredo-super-secreto" not in str(result.data)
