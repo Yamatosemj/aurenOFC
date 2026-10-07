@@ -231,9 +231,12 @@ def _abas_snapshot() -> list[dict[str, object]]:
 def listar_abas():
     """Lista as abas abertas e identifica a aba ativa."""
     abas = _paginas_abertas()
-    if not abas:
-        return "Nenhuma aba aberta no navegador."
-    return _estado_abas()
+    snapshot = _abas_snapshot()
+    return ToolResult.success(
+        _estado_abas() if abas else "Nenhuma aba aberta no navegador.",
+        data={"abas": snapshot},
+        tool_name="listar_abas",
+    )
 
 def abrir_nova_aba(url="", modo="visivel"):
     """Abre uma nova aba e recupera a sessao se o contexto tiver sido encerrado."""
