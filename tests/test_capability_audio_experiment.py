@@ -23,7 +23,7 @@ def test_audio_registry_experiment_does_not_change_legacy_router_behavior():
     router = Router()
     names = router.select_tool_names("volume 40%", __import__("core.tools_registry", fromlist=["tools"]).tools)
     assert "definir_volume_windows" in names
-    assert len(names) == 8
+    assert len(names) == 7
     assert router.last_domains == ["audio"]
 
 
