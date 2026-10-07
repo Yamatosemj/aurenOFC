@@ -12,11 +12,11 @@ Atualizado em: 2026-10-07
 - Modelo padrao: gpt-5.6-luna
 - Branch/PR ativa: fix/browser-click-new-tab-page / PR #77
 - Head da main: 0a8304e1b097d458511f017ca1f0d9da19d86726
-- Head da branch ativa: em validacao da Tarefa 1
+- Head da branch ativa: 07b565e1f49a1cb3162f55799bbaecaa58683f9a
 - Ultimo head funcional validado: b72e43f3c04f6866f90340d1df2d3ec6782ab7b5
 - Baseline de pytest em 2026-10-07: 576 passed, 5 warnings
-- Tarefa atual: Tarefa 1 — Timeout, retry e escada de modelos com cooldown
-- Proxima tarefa apos o portao: Tarefa 2 — memoria recuperavel sob demanda
+- Tarefa atual: Tarefa 2 — memoria recuperavel sob demanda
+- Proxima tarefa apos o portao: Tarefa 3 — undo reversivel
 - Fase do projeto: Browser Intelligence
 
 ## Roadmap Mark
@@ -26,8 +26,8 @@ O Mark-LV e referencia de ideia, problema e casos-limite. Nao e fonte de codigo 
 | Ordem | Tarefa | Origem no Mark-LV | Alvo principal no Auren | Estado |
 |---|---|---|---|---|
 | 0 | Kit de continuidade | padrao de continuidade do projeto | docs/PROMPT_BASE.md, docs/NOTAS_DE_PASSAGEM.md, docs/REFERENCIA_MARK.md, AUREN_STATE.md | CONCLUIDA |
-| 1 | Timeout, retry, escada de modelos e cooldown | core/gemini.py | providers/model_ladder.py, provider/config/usage/testes | ATUAL |
-| 2 | Memoria recuperavel sob demanda | main.py, memory/memory_manager.py | memory/store.py, tools/memory.py | PROXIMA |
+| 1 | Timeout, retry, escada de modelos e cooldown | core/gemini.py | providers/model_ladder.py, provider/config/usage/testes | CONCLUIDA |
+| 2 | Memoria recuperavel sob demanda | main.py, memory/memory_manager.py | memory/store.py, tools/memory.py | ATUAL |
 | 3 | Undo reversivel | core/undo.py | core/ + ferramentas reversiveis | BACKLOG |
 | 4 | Confirmacao humana nao-forjavel | core/confirm.py, ui.py | core/permission_manager.py, voice/confirmation.py | BACKLOG / PARCIAL |
 | 5 | Selecao de dispositivos de audio | core/audio_devices.py | voice/input.py, voice/tts.py | BACKLOG |
@@ -72,3 +72,12 @@ Fontes consultadas em 2026-10-07:
 - Tarefa 8 — avatar + visemes/lip-sync
 - Tarefa 9 — video/HUD/theming
 - Tarefa 10 — historico/uso remoto/extensoes
+
+## Registro final da Tarefa 1
+
+- Tarefa 1 concluida e validada no CI.
+- Full pytest Linux: 589 passed, 6 skipped, 5 warnings.
+- Full pytest Windows: 595 passed, 5 warnings.
+- Static checks: verdes.
+- Nao houve alteracao de Browser/Windows; portanto o runner live manual nao e requisito desta tarefa.
+- O runtime permanece em V47; a proxima frente e a Tarefa 2.
