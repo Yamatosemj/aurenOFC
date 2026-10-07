@@ -1,4 +1,4 @@
-from core.browser_context import (
+from tools.browser_context import (
     BrowserContextSnapshot,
     capturar_contexto_navegador,
 )
