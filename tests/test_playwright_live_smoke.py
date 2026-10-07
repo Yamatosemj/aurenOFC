@@ -36,17 +36,17 @@ with sync_playwright() as playwright:
     assert click.data["clique"]["navegacao"] is False
 
     contexto = browser.ler_pagina("Menu")
-    assert "aria-expanded=true" in contexto
+    assert "aria-expanded=true" in contexto.message
 
     preenchimento = browser.preencher_elemento("Nome", "Victor", 1)
     assert preenchimento.ok is True
 
     leitura = browser.ler_pagina("Nome")
-    assert "valor=Victor" in leitura
+    assert "valor=Victor" in leitura.message
 
     page.locator("#ajuda summary").click()
     leitura_details = browser.ler_pagina("Ajuda")
-    assert "details-open=true" in leitura_details
+    assert "details-open=true" in leitura_details.message
 
     context.close()
     real_browser.close()
