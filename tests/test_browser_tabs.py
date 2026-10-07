@@ -232,3 +232,65 @@ def test_trocar_aba_brings_selected_page_to_front(monkeypatch):
     assert result.ok is True
     assert second.brought_to_front == 1
     assert browser.pagina is second
+
+def test_navegar_navegador_does_not_restart_on_transient_goto_error(monkeypatch):
+    class _Page:
+        url = "https://example.com"
+
+        def goto(self, *args, **kwargs):
+            raise RuntimeError("falha transitoria de rede")
+
+        def is_closed(self):
+            return False
+
+    monkeypatch.setattr(browser, "browser_context", object())
+    monkeypatch.setattr(browser, "modo_navegador", "visivel")
+    monkeypatch.setattr(browser, "obter_pagina", lambda: _Page())
+    monkeypatch.setattr(
+        browser,
+        "reiniciar_navegador",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("falha transitória não deve reiniciar a sessão")
+        ),
+    )
+
+    resultado = browser.navegar_navegador("https://example.com")
+
+    assert "falha transitoria de rede" in resultado
+
+
+def test_navegar_navegador_restarts_only_after_confirmed_page_closure(monkeypatch):
+    class _ClosedPage:
+        url = "https://example.com"
+
+        def goto(self, *args, **kwargs):
+            raise RuntimeError("pagina fechada")
+
+        def is_closed(self):
+            return True
+
+    class _ReplacementPage:
+        url = "https://example.com/novo"
+
+        def goto(self, *args, **kwargs):
+            self.url = args[0]
+
+        def is_closed(self):
+            return False
+
+    replacement = _ReplacementPage()
+    calls = []
+
+    monkeypatch.setattr(browser, "browser_context", object())
+    monkeypatch.setattr(browser, "modo_navegador", "visivel")
+    monkeypatch.setattr(browser, "obter_pagina", lambda: _ClosedPage())
+    monkeypatch.setattr(
+        browser,
+        "reiniciar_navegador",
+        lambda *_args, **_kwargs: calls.append("restart") or replacement,
+    )
+
+    resultado = browser.navegar_navegador("https://example.com/novo")
+
+    assert calls == ["restart"]
+    assert "URL atual: https://example.com/novo" in resultado
