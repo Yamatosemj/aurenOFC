@@ -1416,6 +1416,8 @@ def _run_model_suite_layer(suite_layer: str) -> None:
         ("tabs_flow", "abra o discord na segunda aba e o youtube na terceira aba", "L4"),
         ("tabs_reset_after", "feche todas as abas", "L4"),
         ("youtube", "abra o youtube", "L5"),
+        ("browser_verify_navigation", "abra o youtube e depois confirme a URL e o titulo da pagina atual", "L4"),
+        ("browser_verify_scroll", "na pagina do youtube, role para baixo e confirme a posicao atual da pagina", "L5"),
     ]
     if uia_titulo:
         command_specs.extend([
@@ -1702,6 +1704,8 @@ def _run_model_suite_layer(suite_layer: str) -> None:
                 "audio_read": ("obter_audio_windows", "qual e o volume do computador agora?"),
                 "audio_set": ("definir_volume_windows", audio_volume_command),
                 "tabs_flow": ("navegar_navegador", "abra o discord na segunda aba e o youtube na terceira aba"),
+                "browser_verify_navigation": ("obter_contexto_navegador", "abra o youtube e depois confirme a URL e o titulo da pagina atual"),
+                "browser_verify_scroll": ("obter_contexto_navegador", "na pagina do youtube, role para baixo e confirme a posicao atual da pagina"),
             }
             if uia_titulo:
                 expected_tool_tasks.update({
@@ -1711,6 +1715,17 @@ def _run_model_suite_layer(suite_layer: str) -> None:
                     "uia_checkbox": ("alternar_elemento_windows", f"marque a caixa Check Auren Teste da janela {uia_titulo}"),
                     "uia_select": ("selecionar_elemento_windows", f"selecione a Opcao Dois na janela {uia_titulo}"),
                 })
+
+            def browser_verification_succeeded(task_text: str, ferramenta: str) -> bool:
+                if not task_text:
+                    return False
+                pattern = re.compile(
+                    rf'(?ms)^\[[^\n]+\] TASK_BROWSER_VERIFICATION\n'
+                    rf'(?:  [^\n]*\n)*?  ferramenta: "{re.escape(ferramenta)}"\n'
+                    rf'(?:  [^\n]*\n)*?  verificado: true(?:\n|$)'
+                )
+                return bool(pattern.search(task_text))
+
 
             missing_expected = []
             called_expected = []
@@ -1737,6 +1752,33 @@ def _run_model_suite_layer(suite_layer: str) -> None:
                     called_expected.append(tool_name)
                 else:
                     missing_expected.append(f"{key}:{tool_name}")
+            if expected_tool_tasks and called_expected:  # pelo menos um teste integrado de ferramenta foi executado nesta camada.
+                record(
+                    "Integração: ferramentas escolhidas por camada",
+                    not missing_expected,
+                    f"esperadas={len(called_expected)+len(missing_expected)}; chamadas_ok={sorted(set(called_expected))}; faltando={missing_expected}",
+                )            if command_enabled("browser_verify_navigation"):
+                navigation_block = task_block("abra o youtube e depois confirme a URL e o titulo da pagina atual")
+                nav_called = task_called_tool(navigation_block, "navegar_navegador")
+                nav_context = task_called_tool(navigation_block, "obter_contexto_navegador")
+                nav_verified = browser_verification_succeeded(navigation_block, "navegar_navegador")
+                record(
+                    "Browser Intelligence: verificacao live de navegacao",
+                    nav_called and nav_context and nav_verified,
+                    f"acao={nav_called}; contexto={nav_context}; verificado={nav_verified}",
+                )
+
+            if command_enabled("browser_verify_scroll"):
+                scroll_block = task_block("na pagina do youtube, role para baixo e confirme a posicao atual da pagina")
+                scroll_called = task_called_tool(scroll_block, "rolar_pagina")
+                scroll_context = task_called_tool(scroll_block, "obter_contexto_navegador")
+                scroll_verified = browser_verification_succeeded(scroll_block, "rolar_pagina")
+                record(
+                    "Browser Intelligence: verificacao live de rolagem",
+                    scroll_called and scroll_context and scroll_verified,
+                    f"acao={scroll_called}; contexto={scroll_context}; verificado={scroll_verified}",
+                )
+
             if expected_tool_tasks and called_expected:  # pelo menos um teste integrado de ferramenta foi executado nesta camada.
                 record(
                     "Integração: ferramentas escolhidas por camada",
