@@ -45,6 +45,19 @@ INSTALAR_VOZ.bat
 
 A camada de voz usa dependências separadas de `requirements-voice.txt`.
 
+### Modelo
+
+Por padrão, o Auren usa `gpt-5.6-luna`. Para testar outro modelo sem alterar o código, defina a variável de ambiente `AUREN_MODEL` antes de iniciar o processo.
+
+PowerShell:
+
+```powershell
+$env:AUREN_MODEL = "gpt-5.6-luna"
+python main.py
+```
+
+Um valor vazio ou composto apenas por espaços volta automaticamente ao modelo padrão.
+
 ## Testes
 
 ```powershell
