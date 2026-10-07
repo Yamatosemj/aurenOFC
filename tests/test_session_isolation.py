@@ -158,3 +158,21 @@ def test_legacy_memory_database_migrates_schema_version(tmp_path):
 
     assert version == PersistentMemoryStore.SCHEMA_VERSION
     assert "chat_id" in columns
+
+
+def test_persistent_memory_handles_concurrent_writes(tmp_path):
+    from concurrent.futures import ThreadPoolExecutor
+
+    path = tmp_path / "memory.sqlite3"
+
+    def write(index):
+        store = PersistentMemoryStore(path)
+        return store.salvar(f"chave-{index}", f"valor-{index}", "geral")
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        resultados = list(pool.map(write, range(32)))
+
+    assert all(item["ok"] for item in resultados)
+
+    store = PersistentMemoryStore(path)
+    assert store.consultar("", limite=50)["total"] == 32
