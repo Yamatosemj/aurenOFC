@@ -457,6 +457,13 @@ def _controle_corresponde_linha(
 
 
 def _estado_controle_na_linha(linha: str, atributo: str) -> str | None:
+    if atributo == "domFingerprint":
+        marcador = "dom-fingerprint="
+        if marcador not in linha:
+            return None
+        trecho = linha.split(marcador, 1)[1]
+        return trecho.split(" |", 1)[0].strip()
+
     marcador = "estado="
     if marcador not in linha:
         return None
