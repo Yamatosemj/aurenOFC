@@ -9,6 +9,7 @@ from typing import Any
 
 from core.confirmation import ConfirmationChannel, ConfirmationRequest, TextConfirmationChannel
 from core.tool_contracts import capability_for_tool
+from tools.file_intelligence import _classify_read_path, _resolve_path
 
 
 class PermissionLevel(str, Enum):
@@ -531,6 +532,14 @@ class PermissionManager:
                     "esta bloqueada pela politica de permissoes."
                 ),
             )
+        if capacidade in {"file.read", "file.inspect"}:
+            path = _resolve_path(str(argumentos.get("caminho", "")))
+            path_policy = _classify_read_path(path)
+            if path_policy.status == "blocked":
+                return PermissionLevel.BLOCKED, path_policy.motivo
+            if path_policy.status == "confirm":
+                return PermissionLevel.CONFIRM, path_policy.motivo
+            return PermissionLevel.AUTO, path_policy.motivo
 
         if capacidade in {"browser.input", "windows.ui.control"} and nome_ferramenta in {"clicar_elemento", "clicar_elemento_windows", "alternar_elemento_windows", "selecionar_elemento_windows"}:
             return self._classificar_clique({"alvo": argumentos.get("alvo", "")})
