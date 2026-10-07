@@ -646,7 +646,7 @@ def inspect_file(caminho: str, procurar_copias: bool = False, limite_copias: int
 
 
 def _read_text_range(path: Path, encoding: str, start: int, limit: int) -> tuple[str, bool]:
-    with path.open("r", encoding=encoding, errors="strict", newline="") as handle:
+    with path.open("r", encoding=encoding, errors="strict", newline=None) as handle:
         remaining = start
         while remaining > 0:
             chunk = handle.read(min(64 * 1024, remaining))
