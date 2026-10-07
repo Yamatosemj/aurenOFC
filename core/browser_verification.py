@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 import re
 from typing import Any
-from urllib.parse import urlsplit
+from urllib.parse import urljoin, urlsplit
 
 
 def _parse_args(arguments: str) -> dict[str, Any] | None:
@@ -102,6 +102,9 @@ def verificar_resultado_navegador(
             int(args.get("indice") or 1),
         )
 
+    if ferramenta == "clicar_elemento":
+        return _verificar_clique(dados.get("clique"), indice_atual, url_atual)
+
     if ferramenta == "rolar_pagina":
         return _verificar_rolagem(
             str(args.get("direcao") or ""),
@@ -110,6 +113,32 @@ def verificar_resultado_navegador(
         )
 
     return None
+
+def _verificar_clique(dados_clique: Any, indice_atual: int, url_atual: str) -> bool | None:
+    if not isinstance(dados_clique, dict):
+        return None
+
+    if not dados_clique.get("navegacao"):
+        # Um clique sem navegacao pode alterar um estado interno da pagina
+        # (modal, checkbox, menu etc.). Sem um contrato especifico desse
+        # elemento, nao afirmamos sucesso nem inventamos evidencia.
+        return None
+
+    atual = _normalize_url(url_atual)
+    if not atual:
+        return False
+
+    esperado = str(dados_clique.get("href") or "").strip()
+    anterior = str(dados_clique.get("url_anterior") or "").strip()
+    if esperado and esperado not in {"#", "#top"} and not esperado.lower().startswith("javascript:"):
+        esperado = urljoin(anterior or url_atual, esperado)
+        return atual == _normalize_url(esperado)
+
+    if anterior:
+        return atual != _normalize_url(anterior)
+
+    return None
+
 
 
 def _controle_com_valor(pagina: str, alvo: str, esperado: str, indice: int) -> bool | None:
