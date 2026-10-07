@@ -154,8 +154,7 @@ def encerrar_processo_windows(pid=None, nome=""):
     protegidos = {
         "system", "system idle process", "smss.exe", "csrss.exe", "wininit.exe",
         "services.exe", "lsass.exe", "winlogon.exe", "explorer.exe", "dwm.exe",
-        "msmpeng.exe", "securityhealthservice.exe", "securityhealthservice.exe",
-        "sense.exe", "msseces.exe",
+        "msmpeng.exe", "securityhealthservice.exe", "mssense.exe", "msseces.exe",
     }
 
     if pedido_pid == os.getpid():
