@@ -9,7 +9,7 @@ from typing import Any
 
 from core.confirmation import ConfirmationChannel, ConfirmationRequest, TextConfirmationChannel
 from core.tool_contracts import capability_for_tool
-from tools.file_intelligence import _classify_read_path, _resolve_path
+from tools.file_intelligence import _classify_read_path, _classify_write_path, _rename_destination, _resolve_path
 
 
 class PermissionLevel(str, Enum):
@@ -45,6 +45,8 @@ class PermissionManager:
         "file.search": PermissionLevel.AUTO,
         "file.inspect": PermissionLevel.AUTO,
         "file.read": PermissionLevel.AUTO,
+        "file.manage": PermissionLevel.AUTO,
+        "file.trash": PermissionLevel.CONFIRM,
         "windows.process.read": PermissionLevel.AUTO,
         "windows.process.control": PermissionLevel.CONFIRM,
         "windows.window.read": PermissionLevel.AUTO,
@@ -77,6 +79,7 @@ class PermissionManager:
         "file.search": "Pesquisa nomes/metadados locais sem modificar arquivos.",
         "file.inspect": "Inspecao e somente leitura; caminhos sensiveis ou fora da allowlist sao elevados para CONFIRM/BLOCKED.",
         "file.read": "Leitura e somente leitura; caminhos fora da allowlist exigem CONFIRM.",
+        "file.manage": "Mover, copiar, renomear e criar pasta alteram somente caminhos explicitamente permitidos e nao sobrescrevem destinos existentes.",
         "windows.process.read": "Consulta processos sem alterar execucao.",
         "windows.window.read": "Consulta janelas/geometry sem alterar estado.",
         "windows.window.control": "Somente operacoes de janela reversiveis sao AUTO; fechamento exige CONFIRM.",
@@ -121,6 +124,8 @@ class PermissionManager:
     COUNTED_CAPABILITIES = {
         "application.open",
         "memory.write",
+        "file.manage",
+        "file.trash",
         "browser.navigation",
         "browser.input",
         "browser.tabs.control",
@@ -535,6 +540,35 @@ class PermissionManager:
                 ),
             )
         if capacidade in {"file.read", "file.inspect"}:
+            path = _resolve_path(str(argumentos.get("caminho", "")))
+            path_policy = _classify_read_path(path)
+            if path_policy.status == "blocked":
+                return PermissionLevel.BLOCKED, path_policy.motivo
+            if path_policy.status == "confirm":
+                return PermissionLevel.CONFIRM, path_policy.motivo
+            return PermissionLevel.AUTO, path_policy.motivo
+
+        if capacidade in {"file.manage", "file.trash"}:
+            caminhos = []
+            if nome_ferramenta in {"mover_arquivo", "copiar_arquivo"}:
+                caminhos = [argumentos.get("origem", ""), argumentos.get("destino", "")]
+            elif nome_ferramenta == "renomear_arquivo":
+                caminhos = [argumentos.get("caminho", "")]
+                try:
+                    caminhos.append(str(_rename_destination(str(argumentos.get("caminho", "")), str(argumentos.get("novo_nome", "")))) )
+                except ValueError as exc:
+                    return PermissionLevel.BLOCKED, str(exc)
+            else:
+                caminhos = [argumentos.get("caminho", "")]
+
+            for caminho in caminhos:
+                policy = _classify_write_path(str(caminho))
+                if policy.status != "allowed":
+                    return PermissionLevel.BLOCKED, policy.motivo
+
+            if capacidade == "file.trash":
+                return PermissionLevel.CONFIRM, "Enviar para a Lixeira altera o estado do arquivo; confirmacao explicita obrigatoria e nenhuma exclusao permanente e permitida."
+            return PermissionLevel.AUTO, "Operacao de arquivo limitada a caminhos permitidos e sem sobrescrita de destino."
             path = _resolve_path(str(argumentos.get("caminho", "")))
             path_policy = _classify_read_path(path)
             if path_policy.status == "blocked":
