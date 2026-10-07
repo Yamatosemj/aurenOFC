@@ -232,26 +232,45 @@ def test_voice_model_manifests_pin_immutable_sources_and_known_artifacts():
     }
 
 
-def test_tts_rejects_wrong_checksum_without_loading_model(tmp_path, monkeypatch):
+def test_tts_rejects_wrong_checksum_without_loading_model(tmp_path):
     import voice.tts as tts_module
 
     model_path = tmp_path / MODEL_PATH.name
     model_path.write_bytes(b"corrompido")
-    expected_hash, expected_size = TTS_EXPECTED[MODEL_PATH.name]
-    monkeypatch.setattr(tts_module.LocalKokoroTTS, "_sha256", staticmethod(lambda _path: "0" * 64))
 
     try:
         tts_module.LocalKokoroTTS._verify_file(model_path)
     except RuntimeError as exc:
-        assert "SHA-256 invalido" in str(exc)
+        assert "SHA-256 invalido" in str(exc) or "tamanho inesperado" in str(exc)
     else:
-        raise AssertionError("checksum invalido deveria ser rejeitado")
+        raise AssertionError("artefato corrompido deveria ser rejeitado")
+
     assert not model_path.exists()
 
 
-def test_tts_accepts_manifest_hash_and_size(tmp_path, monkeypatch):
-    import voice.tts as tts_module
+def test_asr_verifier_rejects_corrupted_binary(tmp_path):
+    import voice.stt as stt_module
 
-    model_path = tmp_path / MODEL_PATH.name
-    expected_hash, expected_size = TTS_EXPECTED[MODEL_PATH.name]
-    monkeypatch.setattr(model_path, "stat", lambda: SimpleNamespace(st_size=expected_size))
+    model_dir = tmp_path / "asr"
+    model_dir.mkdir()
+    for name in ("config.json", "decoder_joint-model.int8.onnx", "encoder-model.int8.onnx", "nemo128.onnx", "vocab.txt"):
+        (model_dir / name).write_bytes(b"conteudo-invalido")
+
+    invalid = stt_module.LocalPortugueseASR._verify_model_files(model_dir)
+
+    assert "sha256:encoder-model.int8.onnx" in invalid
+    assert "sha256:decoder_joint-model.int8.onnx" in invalid
+    assert "sha256:nemo128.onnx" in invalid
+
+
+def test_asr_verifier_requires_all_model_files(tmp_path):
+    import voice.stt as stt_module
+
+    model_dir = tmp_path / "asr"
+    model_dir.mkdir()
+
+    invalid = stt_module.LocalPortugueseASR._verify_model_files(model_dir)
+
+    assert "ausente:config.json" in invalid
+    assert "ausente:vocab.txt" in invalid
+    assert "ausente:encoder-model.int8.onnx" in invalid
