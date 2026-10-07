@@ -60,6 +60,7 @@ def _active_tab(abas: str) -> tuple[int, str, str] | None:
 def verificar_resultado_navegador(
     ferramenta: str,
     argumentos: str,
+    resultado_acao: str,
     dados_contexto: Any,
 ) -> bool | None:
     """Retorna True/False quando sabe verificar a acao; None para casos genericos."""
@@ -100,6 +101,23 @@ def verificar_resultado_navegador(
             str(args.get("texto") or ""),
             int(args.get("indice") or 1),
         )
+
+    if ferramenta == "clicar_elemento":
+        navegacao = re.search(
+            r"(?m)^Navegacao:\s*(sim|nao)$",
+            str(resultado_acao or ""),
+            flags=re.IGNORECASE,
+        )
+        if not navegacao or navegacao.group(1).casefold() != "sim":
+            return None
+
+        observado = re.search(
+            r"(?m)^URL atual:\s*(\S+)",
+            str(resultado_acao or ""),
+        )
+        if not observado:
+            return None
+        return _normalize_url(str(url_atual)) == _normalize_url(observado.group(1))
 
     return None
 
