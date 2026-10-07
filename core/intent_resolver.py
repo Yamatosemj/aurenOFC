@@ -271,6 +271,53 @@ class IntentResolver:
                     reason="Objetivo menciona uma operacao explicita sobre abas.",
                 )
 
+        # 3.5) Operacoes de arquivo: reconhece os verbos locais diretamente
+        # para que flexoes comuns do portugues nao dependam de uma regex fraca
+        # no Registry. Os parametros estruturados continuam sendo a fonte dos caminhos.
+        if re.search(r"\b(?:lixeir\w*|jogar fora|joga fora)\b", normalized) and re.search(
+            r"\b(?:arquivo|pasta|diretorio)\b",
+            normalized,
+        ):
+            caminho = _field(data, "caminho", "path", "arquivo", "nome_arquivo", "nome")
+            if caminho:
+                return ResolvedIntent(
+                    capability_id="lixeira_arquivo",
+                    params={"caminho": str(caminho).strip()},
+                    reason_code="matched_file_trash",
+                    reason="Pedido identifica envio explicito para a Lixeira.",
+                )
+
+        if re.search(
+            r"\b(?:mov\w*|copi\w*|renome\w*|cri\w*)\b",
+            normalized,
+        ) and re.search(
+            r"\b(?:arquivo|pasta|diretorio)\b",
+            normalized,
+        ):
+            acao = _field(data, "acao", "ação", "operacao", "operação")
+            if not acao:
+                for verbo, nome in (
+                    (r"\brenome\w*\b", "renomear"),
+                    (r"\bcopi\w*\b", "copiar"),
+                    (r"\bmov\w*\b", "mover"),
+                    (r"\bcri\w*\b", "criar"),
+                ):
+                    if re.search(verbo, normalized):
+                        acao = nome
+                        break
+            if acao:
+                params = {"acao": str(acao).strip()}
+                for name in ("origem", "destino", "caminho", "novo_nome"):
+                    value = _field(data, name)
+                    if value is not None:
+                        params[name] = value
+                return ResolvedIntent(
+                    capability_id="gerenciar_arquivos",
+                    params=params,
+                    reason_code="matched_file_management",
+                    reason="Pedido identifica uma operacao de arquivo com alteracao local.",
+                )
+
         # 4) Programa/aplicativo. Um campo estruturado explicito ganha do texto livre.
         programa = _field(data, "programa", "aplicativo", "app", "software")
         if programa:
