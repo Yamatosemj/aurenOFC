@@ -144,8 +144,6 @@ def encontrar_elemento(alvo, indice=1, preferir_campo=False):
 
 def obter_evidencia_risco_clique(alvo, indice=1):
     """Inspeciona somente a estrutura do elemento para a decisao de permissao."""
-    from tools import browser as _browser
-
     try:
         elemento = encontrar_elemento(alvo, indice)
         evidencia = elemento.evaluate(
