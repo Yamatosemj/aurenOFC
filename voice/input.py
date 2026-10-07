@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from threading import Event, Lock
 
 from agent.ari_native.audio_manager import input_session
@@ -28,6 +28,7 @@ class CapturedAudio:
     rms: float
     peak: float
     device_name: str
+    captured_at: float = field(default_factory=time.perf_counter)
 
 
 class PushToTalkRecorder:
@@ -191,6 +192,7 @@ class PushToTalkRecorder:
             rms=rms,
             peak=peak,
             device_name=device_name,
+            captured_at=time.perf_counter(),
         )
 
     def hotkey_pressionada(self) -> bool:
