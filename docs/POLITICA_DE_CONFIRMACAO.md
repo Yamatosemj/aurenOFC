@@ -84,7 +84,7 @@ A confirmação tem estas regras:
 
 1. O modelo não fornece um parâmetro confirmed=yes ou equivalente.
 2. O token é mantido pelo canal de interface e nunca faz parte dos argumentos da tool/modelo.
-3. Existe no máximo uma confirmação pendente por canal.
+3. O gate padrão mantém no máximo uma confirmação pendente por processo; texto e voz compartilham esse gate. Uma instância customizada de ConfirmationGate pode ser usada isoladamente em testes ou integrações específicas.
 4. A janela padrão é **90 segundos**.
 5. Expirou = **não**.
 6. Uma resposta atrasada ou token inválido é ignorado e nunca autoriza a ação.
