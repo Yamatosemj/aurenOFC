@@ -26,7 +26,7 @@ def _executar_chamadas_rodada(
     browser_verification_state: dict[str, Any] | None = None,
     browser_state_mutating_tools: set[str] | None = None,
     browser_verification_tool: str = "obter_contexto_navegador",
-    browser_verifier: Callable[[str, str, Any], bool | None] | None = None,
+    browser_verifier: Callable[[str, str, str, Any], bool | None] | None = None,
 ) -> tuple[list[dict[str, Any]], int, bool, bool, bool]:
     """Executa as chamadas de uma rodada e atualiza historico/estado operacional."""
     resultados_rodada: list[dict[str, Any]] = []
@@ -82,12 +82,14 @@ def _executar_chamadas_rodada(
             if browser_verification_state is not None:
                 browser_verification_state["ferramenta"] = nome
                 browser_verification_state["argumentos"] = argumentos
+                browser_verification_state["resultado"] = resultado_estruturado.message
         elif ferramenta_sucesso and nome == browser_verification_tool:
             verificado = None
             if browser_verifier is not None and browser_verification_state is not None:
                 verificado = browser_verifier(
                     str(browser_verification_state.get("ferramenta") or ""),
                     str(browser_verification_state.get("argumentos") or "{}"),
+                    str(browser_verification_state.get("resultado") or ""),
                     resultado_estruturado.data or {},
                 )
             if verificado is False:
