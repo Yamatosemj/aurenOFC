@@ -58,8 +58,22 @@ def test_entrada_global_tem_allowlist_de_acoes_e_teclas():
     ):
         assert _nivel(nome, argumentos) == PermissionLevel.CONFIRM
 
+    contexto_windows = {
+        "_key_context_ok": True,
+        "_key_context": {
+            "ambiente": "windows",
+            "context_known": True,
+        },
+    }
     for tecla in ("Tab", "Escape", "Control+L", "Alt+Left"):
-        assert _nivel("pressionar_tecla_windows", {"tecla": tecla}) == PermissionLevel.AUTO
+        args = {"tecla": tecla, **contexto_windows}
+        esperado = PermissionLevel.CONFIRM if tecla in {"Control+L", "Alt+Left"} else PermissionLevel.AUTO
+        assert _nivel("pressionar_tecla_windows", args) == esperado
+
+    assert _nivel(
+        "pressionar_tecla_windows",
+        {"tecla": "Tab"},
+    ) == PermissionLevel.CONFIRM
 
     for tecla in ("Delete", "Control+W", "Ctrl+W", "Alt+F4", "Enter", "F5"):
         assert _nivel("pressionar_tecla_windows", {"tecla": tecla}) == PermissionLevel.CONFIRM
@@ -125,6 +139,15 @@ def test_clique_no_navegador_usa_allowlist_e_evidencia_estrutural():
     assert _nivel("clicar_elemento", {"alvo": "Pesquisar videos", "indice": 1}) == PermissionLevel.CONFIRM
     assert _nivel("clicar_elemento", {"alvo": "Comprar", "indice": 1}) == PermissionLevel.CONFIRM
     assert _nivel("clicar_elemento", _browser_click_args(tag="button", role="button", type="button")) == PermissionLevel.AUTO
+    assert _nivel(
+        "clicar_elemento",
+        _browser_click_args(
+            tag="a",
+            role="link",
+            type="",
+            href="/delete-account",
+        ),
+    ) == PermissionLevel.CONFIRM
 
 
 def test_navegacao_do_navegador_e_allowlistada():
@@ -139,6 +162,9 @@ def test_navegacao_do_navegador_e_allowlistada():
 
 def test_controle_de_abas_trata_fechamento_como_acao_de_risco():
     assert _nivel("abrir_nova_aba", {"url": "", "modo": "visivel"}) == PermissionLevel.AUTO
+    assert _nivel("abrir_nova_aba", {"url": "https://example.com/docs", "modo": "visivel"}) == PermissionLevel.AUTO
+    assert _nivel("abrir_nova_aba", {"url": "https://example.com/logout", "modo": "visivel"}) == PermissionLevel.CONFIRM
+    assert _nivel("abrir_nova_aba", {"url": "javascript:doSomething()", "modo": "visivel"}) == PermissionLevel.CONFIRM
     assert _nivel("trocar_aba", {"indice": 2}) == PermissionLevel.AUTO
     assert _nivel("fechar_aba", {"indice": 2}) == PermissionLevel.CONFIRM
 
@@ -339,3 +365,23 @@ def test_no_progress_guard_covers_repeated_browser_click_and_keypress():
     permitido, motivo = manager.autorizar("pressionar_tecla", argumentos_tecla)
     assert permitido is False
     assert "evid" in motivo.lower() and "progresso" in motivo.lower()
+
+
+def test_browser_safe_key_is_context_sensitive_to_application():
+    assert _nivel(
+        "pressionar_tecla_windows",
+        {
+            "tecla": "Control+L",
+            "_key_context_ok": True,
+            "_key_context": {"ambiente": "windows", "context_known": True},
+        },
+    ) == PermissionLevel.CONFIRM
+
+    assert _nivel(
+        "pressionar_tecla",
+        {
+            "tecla": "Control+L",
+            "_key_context_ok": True,
+            "_key_context": {"ambiente": "browser", "context_known": True},
+        },
+    ) == PermissionLevel.AUTO

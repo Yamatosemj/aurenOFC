@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import ctypes
 import json
+import os
 
 from core.utils import normalizar_nome
 from core.tool_contracts import validate_tool_arguments
 from core.vision import transform_visual_tool_arguments
-from tools import applications, browser, browser_context, browser_elements, file_intelligence, files
+from tools import applications, browser, browser_context, browser_elements, browser_navigation, file_intelligence, files
 from tools import windows
 from tools.memory import salvar_memoria_persistente, consultar_memoria_persistente, esquecer_memoria_persistente
 
@@ -72,6 +74,29 @@ def _resolver_ui_automation_para_permissao(argumentos):
             return {"ok": False, "erro": f"Alvo ambiguo para '{alvo}' durante o preflight."}
 
     return direto
+
+
+def _obter_contexto_tecla_windows():
+    if os.name != "nt":
+        return {"ok": False, "evidencia": {}}
+    try:
+        user32 = ctypes.windll.user32
+        user32.GetForegroundWindow.argtypes = []
+        user32.GetForegroundWindow.restype = ctypes.c_void_p
+        hwnd = user32.GetForegroundWindow()
+        if not hwnd:
+            return {"ok": False, "evidencia": {}}
+        return {
+            "ok": True,
+            "evidencia": {
+                "ambiente": "windows",
+                "context_known": True,
+                "hwnd": int(hwnd),
+            },
+        }
+    except Exception as erro:
+        return {"ok": False, "evidencia": {}, "erro": str(erro)}
+
 
 
 # A execucao concreta e registrada aqui uma vez por tool. O dispatcher
@@ -327,6 +352,22 @@ def executar_ferramenta(item, permission_manager, memory_store) -> ToolResult:
             "_browser_click_preflight_ok": bool(preflight.get("ok")),
             "_browser_click_preflight": dict(preflight.get("evidencia") or {}),
         })
+    if nome == "pressionar_tecla":
+        preflight = browser_navigation.obter_evidencia_risco_tecla(
+            argumentos.get("tecla", "")
+        )
+        argumentos_execucao.update({
+            "_key_context_ok": bool(preflight.get("ok")),
+            "_key_context": dict(preflight.get("evidencia") or {}),
+        })
+
+    if nome == "pressionar_tecla_windows":
+        preflight = _obter_contexto_tecla_windows()
+        argumentos_execucao.update({
+            "_key_context_ok": bool(preflight.get("ok")),
+            "_key_context": dict(preflight.get("evidencia") or {}),
+        })
+
     if nome == "preencher_elemento_windows":
         preflight = _resolver_ui_automation_para_permissao(argumentos)
         if not preflight.get("ok"):

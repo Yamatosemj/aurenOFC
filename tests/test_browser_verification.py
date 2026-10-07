@@ -17,6 +17,20 @@ def _dados_clique_navegacao(*, url_atual="https://youtube.com/watch?v=123", href
             "url_atual": url_atual,
             "navegacao": True,
             "nova_aba": False,
+            "efeito": {
+                "pagina_antes": {
+                    "dom_fingerprint": "aaaa1111",
+                    "texto_relevante": "pagina anterior",
+                    "rota_ativa": "inicio",
+                    "time_origin": 100.0,
+                },
+                "pagina_depois": {
+                    "dom_fingerprint": "bbbb2222",
+                    "texto_relevante": "resultado aberto",
+                    "rota_ativa": "resultado",
+                    "time_origin": 101.0,
+                },
+            },
         }
     }
 
@@ -73,7 +87,11 @@ def test_navigation_verification_accepts_equivalent_normalized_url():
         "navegar_navegador",
         '{"url":"youtube.com"}',
         dados,
-        {"navegacao": {"url_depois": "https://www.youtube.com/"}},
+        {"navegacao": {
+            "url_depois": "https://www.youtube.com/",
+            "estado_antes": {"dom_fingerprint": "a", "time_origin": 1.0},
+            "estado_depois": {"dom_fingerprint": "b", "time_origin": 2.0},
+        }},
     ) is True
 
 
@@ -525,12 +543,18 @@ def test_non_navigational_click_without_specific_effect_remains_pending():
 
 def test_back_verification_requires_observed_url_change():
     dados = _contexto("Abas abertas: 1\nAba ativa: 1\nAba 1: Inicio | https://example.com [ATIVA]")
-    acao = {"navegacao": {"operacao": "voltar", "url_antes": "https://example.com/a", "url_depois": "https://example.com", "mudou_url": True}}
+    acao = {"navegacao": {
+        "operacao": "voltar",
+        "url_antes": "https://example.com/a",
+        "url_depois": "https://example.com",
+        "mudou_url": True,
+        "estado_antes": {"dom_fingerprint": "a", "time_origin": 1},
+        "estado_depois": {"dom_fingerprint": "b", "time_origin": 2},
+    }}
     assert verificar_resultado_navegador("voltar_pagina", "{}", dados, acao) is True
 
     acao["navegacao"]["mudou_url"] = False
     assert verificar_resultado_navegador("voltar_pagina", "{}", dados, acao) is False
-
 
 def test_forward_verification_rejects_mismatched_observed_url():
     dados = _contexto("Abas abertas: 1\nAba ativa: 1\nAba 1: Outra | https://other.example [ATIVA]")
@@ -658,10 +682,21 @@ def test_non_navigational_click_verification_accepts_alertdialog_and_popover_eff
     dados = _dados_clique_navegacao()
     dados["clique"]["navegacao"] = False
     dados["clique"]["efeito"] = {
-        "controle": {"chave": "id:abrir"},
+        "controle": {
+            "chave": "id:abrir",
+            "aria_haspopup": "true",
+        },
         "pagina_antes": {"popovers": 0},
         "pagina_depois": {"popovers": 1},
-        "sinal": {"tipo": "pagina", "alvo": "popovers", "antes": 0, "depois": 1},
+        "sinal": {
+            "tipo": "pagina",
+            "alvo": "popovers",
+            "antes": 0,
+            "depois": 1,
+            "causalidade": "aria-haspopup",
+            "relacao": {"tipo": "aria-haspopup", "valor": "true"},
+            "novos": [{"id": "ajuda", "role": "dialog", "texto": "Ajuda"}],
+        },
     }
     pagina = _contexto(
         "Abas abertas: 1\nAba ativa: 1\nAba 1: Site | https://example.com [ATIVA]"
@@ -678,7 +713,6 @@ def test_non_navigational_click_verification_accepts_alertdialog_and_popover_eff
         dados,
     ) is True
 
-
 def test_browser_navigation_verification_accepts_final_url_after_redirect():
     contexto = _contexto(
         "Abas abertas: 1\n"
@@ -692,6 +726,18 @@ def test_browser_navigation_verification_accepts_final_url_after_redirect():
             "url_antes": "about:blank",
             "url_depois": "https://example.com/dashboard",
             "mudou_url": True,
+            "estado_antes": {
+                "dom_fingerprint": "home",
+                "texto_relevante": "inicio",
+                "rota_ativa": "home",
+                "time_origin": 10.0,
+            },
+            "estado_depois": {
+                "dom_fingerprint": "dash",
+                "texto_relevante": "dashboard",
+                "rota_ativa": "dashboard",
+                "time_origin": 11.0,
+            },
         }
     }
 
@@ -717,7 +763,7 @@ def test_browser_navigation_verification_stays_inconclusive_without_structured_e
     ) is None
 
 
-def test_non_navigational_click_verification_accepts_dom_only_control_change():
+def test_dom_only_click_verification_remains_inconclusive():
     compromisso_before = "1111111111111111"
     compromisso_after = "2222222222222222"
     contexto = _contexto(
@@ -733,10 +779,7 @@ def test_non_navigational_click_verification_accepts_dom_only_control_change():
         "clique": {
             "navegacao": False,
             "efeito": {
-                "controle": {
-                    "chave": "id:menu",
-                    "dom_fingerprint": compromisso_before,
-                },
+                "controle": {"chave": "id:menu"},
                 "pagina_antes": {},
                 "pagina_depois": {},
                 "sinal": {
@@ -748,14 +791,12 @@ def test_non_navigational_click_verification_accepts_dom_only_control_change():
             },
         }
     }
-
     assert verificar_resultado_navegador(
         "clicar_elemento",
         '{"alvo":"Menu","indice":1}',
         contexto,
         acao,
-    ) is True
-
+    ) is None
 
 def test_dom_only_click_verification_rejects_unchanged_fingerprint():
     contexto = _contexto(
@@ -781,14 +822,12 @@ def test_dom_only_click_verification_rejects_unchanged_fingerprint():
             },
         }
     }
-
     assert verificar_resultado_navegador(
         "clicar_elemento",
         '{"alvo":"Menu","indice":1}',
         contexto,
         acao,
-    ) is False
-
+    ) is None
 
 def test_navigation_verification_keeps_pending_when_document_is_not_ready():
     contexto = _contexto(
@@ -834,3 +873,129 @@ def test_navigation_verification_rejects_inconsistent_final_title():
         contexto,
         acao,
     ) is False
+
+
+def test_navigation_same_url_spa_requires_page_state_evidence():
+    contexto = _contexto(
+        "Abas abertas: 1\n"
+        "Aba ativa: 1\n"
+        "Aba 1: App | https://example.com/app [ATIVA]"
+    )
+
+    assert verificar_resultado_navegador(
+        "navegar_navegador",
+        '{"url":"https://example.com/app"}',
+        contexto,
+        {"navegacao": {
+            "url_depois": "https://example.com/app",
+            "titulo_depois": "App",
+            "ready_state_depois": "complete",
+            "estado_antes": {
+                "dom_fingerprint": "aaa",
+                "texto_relevante": "inicio",
+                "rota_ativa": "home",
+                "time_origin": 123.0,
+            },
+            "estado_depois": {
+                "dom_fingerprint": "bbb",
+                "texto_relevante": "detalhes",
+                "rota_ativa": "details",
+                "time_origin": 123.0,
+            },
+        }},
+    ) is True
+
+    assert verificar_resultado_navegador(
+        "navegar_navegador",
+        '{"url":"https://example.com/app"}',
+        contexto,
+        {"navegacao": {
+            "url_depois": "https://example.com/app",
+            "titulo_depois": "App",
+            "ready_state_depois": "complete",
+            "mudou_url": False,
+        }},
+    ) is None
+
+
+def test_click_navigation_without_page_state_is_inconclusive():
+    dados = _dados_clique_navegacao()
+    dados["clique"]["efeito"] = {}
+    assert verificar_resultado_navegador(
+        "clicar_elemento",
+        '{"alvo":"resultado","indice":1}',
+        _contexto(
+            "Abas abertas: 1\n"
+            "Aba ativa: 1\n"
+            "Aba 1: YouTube | https://youtube.com/watch?v=123 [ATIVA]"
+        ),
+        dados,
+    ) is None
+
+
+def test_composite_dom_and_text_evidence_verifies_control_change():
+    contexto = _contexto(
+        "Abas abertas: 1\n"
+        "Aba ativa: 1\n"
+        "Aba 1: Site | https://example.com [ATIVA]"
+    )
+    contexto["pagina"] = (
+        "Campos e controles visiveis:\n"
+        "- tag=button | role=button | nome=Menu | chave=id:menu | texto=Aberto | dom-fingerprint=bbbb"
+    )
+    acao = {
+        "clique": {
+            "navegacao": False,
+            "efeito": {
+                "controle": {"chave": "id:menu"},
+                "sinal": {
+                    "tipo": "controle",
+                    "atributo": "domFingerprint+texto",
+                    "antes": "aaaa",
+                    "depois": "bbbb",
+                    "texto_antes": "Fechado",
+                    "texto_depois": "Aberto",
+                },
+            },
+        }
+    }
+    assert verificar_resultado_navegador(
+        "clicar_elemento",
+        '{"alvo":"Menu","indice":1}',
+        contexto,
+        acao,
+    ) is True
+
+
+def test_composite_dom_evidence_without_text_change_remains_inconclusive():
+    contexto = _contexto(
+        "Abas abertas: 1\n"
+        "Aba ativa: 1\n"
+        "Aba 1: Site | https://example.com [ATIVA]"
+    )
+    contexto["pagina"] = (
+        "Campos e controles visiveis:\n"
+        "- tag=button | role=button | nome=Menu | chave=id:menu | texto=Mesmo | dom-fingerprint=bbbb"
+    )
+    acao = {
+        "clique": {
+            "navegacao": False,
+            "efeito": {
+                "controle": {"chave": "id:menu"},
+                "sinal": {
+                    "tipo": "controle",
+                    "atributo": "domFingerprint+texto",
+                    "antes": "aaaa",
+                    "depois": "bbbb",
+                    "texto_antes": "Mesmo",
+                    "texto_depois": "Mesmo",
+                },
+            },
+        }
+    }
+    assert verificar_resultado_navegador(
+        "clicar_elemento",
+        '{"alvo":"Menu","indice":1}',
+        contexto,
+        acao,
+    ) is None

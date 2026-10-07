@@ -210,6 +210,7 @@ def ler_pagina(foco) -> ToolResult:
                         id: limpar(idAttr, 80),
                         placeholder: limpar(placeholder, 80),
                         chave: limpar(chave, 180),
+                        textoInterno: limpar(el.innerText || '', 120),
                         estados,
                         value: valorSeguro,
                         valor_interno: campoSensivel ? String(el.value || '') : null,
@@ -802,6 +803,8 @@ def ler_pagina(foco) -> ToolResult:
                 partes.append(f"placeholder={item['placeholder']}")
             if item.get("chave"):
                 partes.append(f"chave={item['chave']}")
+            if item.get("textoInterno"):
+                partes.append(f"texto={item['textoInterno']}")
             if item.get("domFingerprint"):
                 partes.append(f"dom-fingerprint={item['domFingerprint']}")
             estado_texto = _estado_controle_texto(item.get("estados", {}))

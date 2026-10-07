@@ -524,6 +524,7 @@ def fechar_navegador():
     playwright = None
 
 def navegar_navegador(url, modo="visivel"):
+    from tools.browser_navigation import _snapshot_pagina
     url = str(url or "").strip()
     modo = str(modo or "visivel").strip().lower()
     if modo not in {"visivel", "oculto"}:
@@ -560,12 +561,14 @@ def navegar_navegador(url, modo="visivel"):
     try:
         if p is None:
             p = obter_pagina()
+        estado_antes = _snapshot_pagina(p)
         antes_url = str(getattr(p, "url", "") or "")
         antes_titulo = _esperar_titulo(p)
         p.goto(url, wait_until="domcontentloaded", timeout=30000)
         ready_state = _esperar_documento_pronto(p)
         depois_url = str(getattr(p, "url", "") or url)
         depois_titulo = _esperar_titulo(p)
+        estado_depois = _snapshot_pagina(p)
         return ToolResult.success(
             f"Naveguei para: {depois_titulo or '[sem titulo]'}\nURL atual: {depois_url}\nModo do navegador: {modo}",
             data={
@@ -578,6 +581,8 @@ def navegar_navegador(url, modo="visivel"):
                     "titulo_depois": depois_titulo,
                     "ready_state_depois": ready_state,
                     "mudou_url": antes_url != depois_url,
+                    "estado_antes": estado_antes,
+                    "estado_depois": estado_depois,
                     "modo": modo,
                 }
             },
@@ -600,10 +605,12 @@ def navegar_navegador(url, modo="visivel"):
             try:
                 p = reiniciar_navegador(modo)
                 tentativa_restart = True
+                estado_antes_retry = _snapshot_pagina(p)
                 try:
                     p.goto(url, wait_until="domcontentloaded", timeout=30000)
                     depois_url = str(getattr(p, "url", "") or url)
                     depois_titulo = _esperar_titulo(p)
+                    estado_depois_retry = _snapshot_pagina(p)
                     return ToolResult.success(
                         f"Naveguei para: {depois_titulo or '[sem titulo]'}\nURL atual: {depois_url}\nModo do navegador: {modo}",
                         data={
@@ -612,7 +619,10 @@ def navegar_navegador(url, modo="visivel"):
                                 "url_solicitada": url,
                                 "url_antes": antes_url if 'antes_url' in locals() else None,
                                 "url_depois": depois_url,
+                                "titulo_depois": depois_titulo,
                                 "mudou_url": True,
+                                "estado_antes": estado_antes_retry,
+                                "estado_depois": estado_depois_retry,
                                 "modo": modo,
                                 "sessao_recriada": True,
                             }

@@ -594,6 +594,14 @@ class PermissionManager:
             )
 
         if capacidade == "browser.tabs.control":
+            if (
+                nome_ferramenta == "abrir_nova_aba"
+                and self._url_navegacao_requer_confirmacao(argumentos.get("url"))
+            ):
+                return (
+                    PermissionLevel.CONFIRM,
+                    "O destino da nova aba possui indicios de acao remota com efeito persistente; confirmacao obrigatoria.",
+                )
             if nome_ferramenta in self.AUTO_BROWSER_TAB_CONTROL_TOOLS:
                 return (
                     PermissionLevel.AUTO,
@@ -689,6 +697,12 @@ class PermissionManager:
         if href.startswith(("javascript:", "data:", "vbscript:")):
             return PermissionLevel.CONFIRM, "Destino executavel do link; confirmacao obrigatoria."
 
+        if href and self._url_navegacao_requer_confirmacao(href):
+            return (
+                PermissionLevel.CONFIRM,
+                "O destino do clique possui indicios de acao remota com efeito persistente; confirmacao obrigatoria.",
+            )
+
         if target == "_blank":
             return PermissionLevel.CONFIRM, "O link abre nova aba; confirmacao obrigatoria para efeito externo ambíguo."
 
@@ -739,30 +753,48 @@ class PermissionManager:
             argumentos.get("tecla", "")
         ).strip()
         tecla_normalizada = self._normalizar_texto(tecla)
+
+        context_ok = argumentos.get("_key_context_ok") is True
+        context = argumentos.get("_key_context")
+        contexto = context if isinstance(context, dict) else {}
+        ambiente = self._normalizar_texto(contexto.get("ambiente", ""))
+
         if tecla_normalizada in {"control+r", "ctrl+r", "f5"}:
             return (
                 PermissionLevel.CONFIRM,
                 "Recarregar pode repetir uma requisicao ou efeito remoto da pagina; confirmacao obrigatoria.",
             )
 
-        safe_keys = {self._normalizar_texto(item) for item in self.SAFE_KEYS}
         risky_keys = {self._normalizar_texto(item) for item in self.RISKY_KEYS}
-
-        if tecla_normalizada in safe_keys:
-            return (
-                PermissionLevel.AUTO,
-                "Tecla classificada como navegacao/controle local seguro.",
-            )
-
         if tecla_normalizada in risky_keys:
             return (
                 PermissionLevel.CONFIRM,
                 "Tecla pode submeter, apagar ou fechar algo dependendo do contexto.",
             )
 
+        safe_keys = {self._normalizar_texto(item) for item in self.SAFE_KEYS}
+        if tecla_normalizada not in safe_keys:
+            return (
+                PermissionLevel.CONFIRM,
+                "Tecla desconhecida ou potencialmente acionavel: confirmacao obrigatoria.",
+            )
+
+        if not context_ok or contexto.get("context_known") is not True:
+            return (
+                PermissionLevel.CONFIRM,
+                "O contexto de foco/aplicacao da tecla nao foi verificado; confirmacao obrigatoria.",
+            )
+
+        if tecla_normalizada in {"control+l", "ctrl+l", "alt+left", "alt+right"}:
+            if ambiente != "browser":
+                return (
+                    PermissionLevel.CONFIRM,
+                    "Este atalho depende do aplicativo em foco; sem contexto de navegador, confirmacao obrigatoria.",
+                )
+
         return (
-            PermissionLevel.CONFIRM,
-            "Tecla desconhecida ou potencialmente acionavel: confirmacao obrigatoria.",
+            PermissionLevel.AUTO,
+            "Tecla e alvo conhecidos em contexto observado; a acao permanece restrita a navegacao/controle local reversivel.",
         )
 
     @staticmethod

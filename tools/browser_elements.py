@@ -156,6 +156,8 @@ def obter_evidencia_risco_clique(alvo, indice=1):
                     type: attr('type').toLowerCase(),
                     href: attr('href'),
                     target: attr('target').toLowerCase(),
+                    aria_controls: attr('aria-controls'),
+                    aria_haspopup: attr('aria-haspopup').toLowerCase(),
                     download: el.hasAttribute('download'),
                     onclick: attr('onclick'),
                     disabled: Boolean(el.disabled),
@@ -191,9 +193,11 @@ def clicar_elemento(alvo, indice=1):
                     const ariaLabel = attr('aria-label') || '';
                     const placeholder = attr('placeholder') || '';
                     const role = attr('role') || '';
+                    const ariaControls = attr('aria-controls') || '';
+                    const ariaHaspopup = attr('aria-haspopup') || '';
                     const texto = String(
                         el.innerText || el.textContent || ''
-                    ).replace(/\s+/g, ' ').trim().slice(0, 120);
+                    ).replace(/\s+/g, ' ').trim().slice(0, 240);
 
                     const fingerprintTexto = (() => {
                         const alvo = el.parentElement || el;
@@ -220,6 +224,9 @@ def clicar_elemento(alvo, indice=1):
                         ariaLabel: ariaLabel.slice(0, 180),
                         placeholder: placeholder.slice(0, 120),
                         role: role.slice(0, 80),
+                        texto: texto.slice(0, 240),
+                        ariaControls: ariaControls.slice(0, 240),
+                        ariaHaspopup: ariaHaspopup.slice(0, 80),
                         tag: String(el.tagName || '').toLowerCase(),
                         domFingerprint: fingerprintTexto,
                         estados: {
@@ -254,6 +261,9 @@ def clicar_elemento(alvo, indice=1):
             "ariaLabel": "",
             "placeholder": "",
             "role": "",
+            "texto": "",
+            "ariaControls": "",
+            "ariaHaspopup": "",
             "tag": "",
             "estados": {},
         }
@@ -277,21 +287,52 @@ def clicar_elemento(alvo, indice=1):
                         document.querySelectorAll(seletores)
                     ).filter(visivel).length;
 
-                    return {
-                        dialogos: contar('dialog, [role="dialog"], [role="alertdialog"]'),
-                        menus: contar('[role="menu"]'),
-                        listboxes: contar('[role="listbox"]'),
-                        popovers: (() => {
-                            try {
-                                return Array.from(document.querySelectorAll('[popover]'))
-                                    .filter(el => el.matches(':popover-open') && visivel(el)).length;
-                            } catch (_) {
-                                return 0;
-                            }
-                        })(),
-                        details_abertos: contar('details[open]')
+                    const limpar = texto => String(texto || '')
+                        .replace(/\s+/g, ' ')
+                        .trim()
+                        .slice(0, 120);
+
+                    const identidade = el => ({
+                        id: String(el.getAttribute('id') || '').slice(0, 160),
+                        role: String(el.getAttribute('role') || el.tagName || '').toLowerCase().slice(0, 80),
+                        texto: limpar(
+                            el.getAttribute('aria-label') ||
+                            el.innerText ||
+                            el.textContent ||
+                            ''
+                        ),
+                    });
+
+                    const listar = (seletores, filtro = null) => Array.from(
+                        document.querySelectorAll(seletores)
+                    ).filter(visivel).filter(el => !filtro || filtro(el))
+                        .slice(0, 20)
+                        .map(identidade);
+
+                    const popovers = listar('[popover]', el => {
+                        try {
+                            return el.matches(':popover-open');
+                        } catch (_) {
+                            return false;
+                        }
+                    });
+
+                    const overlays = {
+                        dialogos: listar('dialog, [role="dialog"], [role="alertdialog"]'),
+                        menus: listar('[role="menu"]'),
+                        listboxes: listar('[role="listbox"]'),
+                        popovers,
+                        details_abertos: listar('details[open]')
                     };
-                }
+
+                    return {
+                        dialogos: overlays.dialogos.length,
+                        menus: overlays.menus.length,
+                        listboxes: overlays.listboxes.length,
+                        popovers: overlays.popovers.length,
+                        details_abertos: overlays.details_abertos.length,
+                        overlays
+                    };
                 """
             )
             if isinstance(estado, dict):
@@ -331,12 +372,96 @@ def clicar_elemento(alvo, indice=1):
                     }
         fingerprint_antes = str(antes.get("domFingerprint") or "")
         fingerprint_depois = str(depois.get("domFingerprint") or "")
-        if fingerprint_antes and fingerprint_depois and fingerprint_antes != fingerprint_depois:
+        texto_antes = str(antes.get("texto") or "").strip()
+        texto_depois = str(depois.get("texto") or "").strip()
+        if (
+            fingerprint_antes
+            and fingerprint_depois
+            and fingerprint_antes != fingerprint_depois
+            and texto_antes
+            and texto_depois
+            and texto_antes != texto_depois
+        ):
             return {
-                "atributo": "domFingerprint",
+                "atributo": "domFingerprint+texto",
                 "antes": fingerprint_antes,
                 "depois": fingerprint_depois,
+                "texto_antes": texto_antes,
+                "texto_depois": texto_depois,
             }
+        return None
+
+    def _sinal_pagina_causal(antes, depois, controle):
+        if not isinstance(antes, dict) or not isinstance(depois, dict) or not isinstance(controle, dict):
+            return None
+
+        overlays_antes = antes.get("overlays")
+        overlays_depois = depois.get("overlays")
+        if not isinstance(overlays_antes, dict) or not isinstance(overlays_depois, dict):
+            return None
+
+        aria_controls = str(
+            controle.get("aria_controls") or controle.get("ariaControls") or ""
+        ).strip().split()
+        aria_haspopup = str(
+            controle.get("aria_haspopup") or controle.get("ariaHaspopup") or ""
+        ).strip().casefold()
+
+        tipos = (
+            ("dialogos", {"dialog", "true"}),
+            ("menus", {"menu", "true"}),
+            ("listboxes", {"listbox"}),
+            ("popovers", {"true"}),
+        )
+
+        def identidade(item):
+            if not isinstance(item, dict):
+                return None
+            return (
+                str(item.get("id") or ""),
+                str(item.get("role") or ""),
+                str(item.get("texto") or ""),
+            )
+
+        for alvo, popup_roles in tipos:
+            antes_itens = overlays_antes.get(alvo, [])
+            depois_itens = overlays_depois.get(alvo, [])
+            if not isinstance(antes_itens, list) or not isinstance(depois_itens, list):
+                continue
+
+            identidades_antes = {identidade(item) for item in antes_itens}
+            novos = [
+                item for item in depois_itens
+                if identidade(item) not in identidades_antes
+            ]
+            if not novos:
+                continue
+
+            if aria_controls:
+                for item in novos:
+                    item_id = str(item.get("id") or "").strip()
+                    if item_id and item_id in aria_controls:
+                        return {
+                            "tipo": "pagina",
+                            "alvo": alvo,
+                            "antes": len(antes_itens),
+                            "depois": len(depois_itens),
+                            "causalidade": "aria-controls",
+                            "relacao": {"tipo": "aria-controls", "valor": item_id},
+                            "novos": [item],
+                        }
+
+            if aria_haspopup in popup_roles:
+                return {
+                    "tipo": "pagina",
+                    "alvo": alvo,
+                    "antes": len(antes_itens),
+                    "depois": len(depois_itens),
+                    "causalidade": "aria-haspopup",
+                    "relacao": {"tipo": "aria-haspopup", "valor": aria_haspopup},
+                    "novos": novos,
+                }
+
         return None
 
     try:
@@ -458,6 +583,9 @@ def clicar_elemento(alvo, indice=1):
                 "aria_label": estado_controle_antes.get("ariaLabel", ""),
                 "placeholder": estado_controle_antes.get("placeholder", ""),
                 "role": estado_controle_antes.get("role", ""),
+                "texto": estado_controle_antes.get("texto", ""),
+                "aria_controls": estado_controle_antes.get("ariaControls", ""),
+                "aria_haspopup": estado_controle_antes.get("ariaHaspopup", ""),
                 "tag": tag_elemento,
                 "dom_fingerprint": estado_controle_antes.get("domFingerprint", ""),
             },
@@ -475,17 +603,14 @@ def clicar_elemento(alvo, indice=1):
                 **sinal,
             }
         else:
-            for tipo in ("dialogos", "menus", "listboxes", "popovers", "details_abertos"):
-                antes = estado_pagina_antes.get(tipo)
-                depois = estado_pagina_depois.get(tipo)
-                if isinstance(antes, int) and isinstance(depois, int) and antes != depois:
-                    efeito["sinal"] = {
-                        "tipo": "pagina",
-                        "alvo": tipo,
-                        "antes": antes,
-                        "depois": depois,
-                    }
-                    break
+            sinal_pagina = _sinal_pagina_causal(
+                estado_pagina_antes,
+                estado_pagina_depois,
+                efeito["controle"],
+            )
+            if sinal_pagina:
+                efeito["sinal"] = sinal_pagina
+
 
         return ToolResult.success(
             f"Cliquei em '{alvo}'.\n"

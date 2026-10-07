@@ -68,38 +68,141 @@ def _esperar_documento_pronto(p, timeout_ms=5000):
 def _snapshot_pagina(p):
     try:
         return p.evaluate(
-            """() => ({
-                url: location.href,
-                titulo: document.title || '',
-                scroll_y: Number(window.scrollY || 0),
-                time_origin: Number(performance.timeOrigin || 0),
-                dialogs: document.querySelectorAll('dialog, [role="dialog"], [role="alertdialog"]').length,
-                menus: document.querySelectorAll('[role="menu"]').length,
-                listboxes: document.querySelectorAll('[role="listbox"]').length,
-                active: (() => {
-                    const el = document.activeElement;
-                    if (!el) return null;
-                    return {
-                        tag: el.tagName || '',
-                        id: el.id || '',
-                        name: el.getAttribute?.('name') || '',
-                        role: el.getAttribute?.('role') || '',
-                        aria_label: el.getAttribute?.('aria-label') || '',
-                    };
-                })(),
-            })"""
+            """() => {
+                const visivel = el => {
+                    if (!el) return false;
+                    const rect = el.getBoundingClientRect();
+                    const cs = getComputedStyle(el);
+                    return rect.width > 0 && rect.height > 0 &&
+                           cs.visibility !== 'hidden' &&
+                           cs.display !== 'none' &&
+                           cs.opacity !== '0';
+                };
+
+                const normalizar = texto => String(texto || '')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+
+                const relevante = document.querySelector(
+                    'main, [role="main"], h1, h2'
+                ) || document.body;
+                const textoRelevante = normalizar(
+                    visivel(relevante)
+                        ? (relevante.innerText || relevante.textContent || '')
+                        : ''
+                ).slice(0, 800);
+
+                const marcadores = Array.from(document.querySelectorAll(
+                    '[aria-current="page"], [aria-current="step"], ' +
+                    '[aria-selected="true"], [data-state="active"], [data-active="true"]'
+                )).filter(visivel).slice(0, 12).map(el => {
+                    const texto = normalizar(
+                        el.getAttribute('aria-label') ||
+                        el.innerText ||
+                        el.textContent ||
+                        ''
+                    ).slice(0, 80);
+                    const id = String(el.id || '').slice(0, 80);
+                    return id ? id + ':' + texto : texto;
+                }).filter(Boolean).join('|').slice(0, 400);
+
+                const hash = entrada => {
+                    const bruto = String(entrada || '');
+                    let valor = 2166136261;
+                    for (let i = 0; i < bruto.length; i += 1) {
+                        valor ^= bruto.charCodeAt(i);
+                        valor = Math.imul(valor, 16777619);
+                    }
+                    return (valor >>> 0).toString(16).padStart(8, '0');
+                };
+
+                const contar = seletores => Array.from(
+                    document.querySelectorAll(seletores)
+                ).filter(visivel).length;
+
+                return {
+                    url: location.href,
+                    titulo: document.title || '',
+                    ready_state: document.readyState || '',
+                    scroll_y: Number(window.scrollY || 0),
+                    time_origin: Number(performance.timeOrigin || 0),
+                    dialogs: contar('dialog, [role="dialog"], [role="alertdialog"]'),
+                    menus: contar('[role="menu"]'),
+                    listboxes: contar('[role="listbox"]'),
+                    dom_fingerprint: hash(textoRelevante + '|' + marcadores),
+                    texto_relevante: textoRelevante,
+                    rota_ativa: marcadores,
+                    active: (() => {
+                        const el = document.activeElement;
+                        if (!el) return null;
+                        return {
+                            tag: el.tagName || '',
+                            id: el.id || '',
+                            name: el.getAttribute?.('name') || '',
+                            role: el.getAttribute?.('role') || '',
+                            aria_label: el.getAttribute?.('aria-label') || '',
+                        };
+                    })(),
+                };
+            }"""
         ) or {}
     except Exception:
         return {
             "url": str(getattr(p, "url", "") or ""),
             "titulo": "",
+            "ready_state": None,
             "scroll_y": None,
             "time_origin": None,
             "dialogs": None,
             "menus": None,
             "listboxes": None,
+            "dom_fingerprint": None,
+            "texto_relevante": "",
+            "rota_ativa": "",
             "active": None,
         }
+
+
+def obter_evidencia_risco_tecla(tecla):
+    from tools import browser as _browser
+
+    try:
+        p = _browser.obter_pagina()
+        evidencia = p.evaluate(
+            """() => {
+                const el = document.activeElement;
+                const role = el?.getAttribute?.('role') || '';
+                const tipo = (el?.getAttribute?.('type') || '').toLowerCase();
+                const tag = String(el?.tagName || '').toLowerCase();
+                const contenteditable = String(
+                    el?.getAttribute?.('contenteditable') || ''
+                ).toLowerCase() === 'true';
+                const editable = contenteditable ||
+                    ['input', 'textarea'].includes(tag) ||
+                    ['textbox', 'searchbox', 'combobox'].includes(role.toLowerCase());
+
+                return {
+                    ambiente: 'browser',
+                    context_known: true,
+                    foco: {
+                        tag,
+                        id: String(el?.id || '').slice(0, 120),
+                        name: String(el?.getAttribute?.('name') || '').slice(0, 120),
+                        role: String(role || '').slice(0, 80),
+                        aria_label: String(
+                            el?.getAttribute?.('aria-label') || ''
+                        ).slice(0, 160),
+                    },
+                    editable,
+                    input_type: tipo,
+                };
+            }"""
+        ) or {}
+        if not isinstance(evidencia, dict):
+            return {"ok": False, "evidencia": {}}
+        return {"ok": True, "evidencia": evidencia}
+    except Exception as erro:
+        return {"ok": False, "evidencia": {}, "erro": str(erro)}
 
 
 def pressionar_tecla(tecla):
