@@ -57,6 +57,44 @@ def _active_tab(abas: str) -> tuple[int, str, str] | None:
     return indice, linha.group("titulo").strip(), linha.group("url").strip()
 
 
+def _normalizar_texto_controle(value: str) -> str:
+    return re.sub(r"\s+", " ", str(value or "")).strip().casefold()
+
+
+def _valor_controle_no_contexto(pagina: str, alvo: str) -> tuple[bool, str]:
+    """Procura um controle estruturado e retorna (encontrado, valor)."""
+    alvo_normalizado = _normalizar_texto_controle(alvo)
+    if not alvo_normalizado:
+        return False, ""
+
+    for linha in str(pagina or "").splitlines():
+        if "tag=" not in linha or "valor=" not in linha:
+            continue
+
+        campos = {}
+        for trecho in linha.lstrip("- ").split(" | "):
+            chave, separador, valor = trecho.partition("=")
+            if separador:
+                campos[chave.strip().casefold()] = valor.strip()
+
+        candidatos = (
+            campos.get("nome", ""),
+            campos.get("name", ""),
+            campos.get("id", ""),
+            campos.get("placeholder", ""),
+        )
+        if any(
+            alvo_normalizado == _normalizar_texto_controle(candidato)
+            for candidato in candidatos
+            if candidato
+        ):
+            return True, campos.get("valor", "")
+
+    return False, ""
+
+
+
+
 def verificar_resultado_navegador(
     ferramenta: str,
     argumentos: str,
@@ -92,5 +130,14 @@ def verificar_resultado_navegador(
         except (TypeError, ValueError):
             return None
         return indice_atual == esperado
+
+    if ferramenta == "preencher_elemento":
+        alvo = str(args.get("alvo") or "")
+        texto_esperado = str(args.get("texto") or "")
+        pagina = str(dados.get("pagina") or "")
+        encontrado, valor_atual = _valor_controle_no_contexto(pagina, alvo)
+        if not encontrado:
+            return None
+        return _normalizar_texto_controle(valor_atual) == _normalizar_texto_controle(texto_esperado)
 
     return None
