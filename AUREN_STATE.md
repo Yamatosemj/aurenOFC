@@ -12,8 +12,9 @@ Atualizado em: 2026-10-07
 - **Modelo padrão:** `gpt-5.6-luna`
 - **Branch/PR ativa:** `fix/browser-click-new-tab-page` / PR #77
 - **Head da main:** `0a8304e1b097d458511f017ca1f0d9da19d86726`
+- **Head da branch ativa:** `48fde963142f849252df9ee13beac1f6c69b6db1`
 - **CI da implementação mais recente em main:** pytest, focused Linux e focused Windows verdes
-- **CI do PR #77:** workflows da branch estão em execução; conclusão ainda não disponível
+- **CI do PR #77:** execução do head atual em andamento; heads anteriores tiveram falhas de testes que estão sendo corrigidas incrementalmente
 - **Fase atual:** Browser Intelligence
 
 ### O que já está concluído nesta fase
@@ -45,6 +46,27 @@ Atualizado em: 2026-10-07
 - rolagem: posição de rolagem já é verificada deterministicamente; confirmar automaticamente o conteúdo esperado continua como etapa posterior
 - qualquer verificação continua tratando conteúdo da página como dado não confiável, nunca como instrução
 - resultado `None` do verificador não encerra mais uma verificação obrigatória; somente `True` limpa a pendência
+
+## Correções da auditoria em andamento
+
+As correções abaixo já estão implementadas no branch ativo, mas **não são marcadas como concluídas operacionalmente enquanto o CI do head atual não estiver verde**:
+
+- confirmação de voz usa o protocolo real `("audio", CapturedAudio)`, rejeita `("erro", exc)`, descarta áudio stale e normaliza respostas afirmativas com segurança
+- contexto de Browser propaga falhas de leitura em vez de mascará-las como sucesso
+- Browser Verification só limpa pendência e reinicia guard após evidência positiva `True`
+- preenchimento sensível possui verificação local por compromisso HMAC sem expor o segredo
+- recuperação do Browser não reinicia a sessão por exceções transitórias; recriação depende de fechamento confirmado
+- foco de aba é observado independentemente da referência interna `pagina`
+- back/forward/reload/keyboard possuem evidência estruturada e verificação conservadora por tipo de ação
+- clique não navegacional usa estado de controle moderno, incluindo `aria-checked`, `details`, `alertdialog` e `popover`
+- clique seguro exige evidência estrutural do elemento antes de receber `AUTO`
+- política de conteúdo não confiável não pode elevar uma capacidade `BLOCKED` e é consumida após uma confirmação contada
+- busca de arquivos compartilha a política de caminho e evita symlink/junction/reparse traversal
+- raiz ampla de OneDrive deixou de ser implicitamente permitida
+- leitura/inspeção rejeitam resultados quando a identidade do arquivo muda durante a operação
+- hashing SHA-256 de arquivos gigantes é limitado para inspeções comuns
+- Kokoro e Parakeet usam referências de artefato e verificações de integridade
+- métricas ASR/TTS passaram a ser medidas no caminho real de voz
 
 ## Segurança e base estrutural concluídas
 
