@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from core.harness_model import _executar_rodada_modelo
-
-from core.harness_model import _log_resposta_modelo
+from core.harness_model import _executar_rodada_modelo, _log_resposta_modelo
 
 
 class _Trace:
