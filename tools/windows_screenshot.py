@@ -104,6 +104,7 @@ def capturar_tela_windows() -> ToolResult:
                     largura_imagem == largura_virtual
                     and altura_imagem == altura_virtual
                 ),
+                "captured_at_monotonic": time.monotonic(),
             },
         )
     except Exception as exc:
