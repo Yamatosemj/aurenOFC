@@ -195,6 +195,17 @@ def clicar_elemento(alvo, indice=1):
                         el.innerText || el.textContent || ''
                     ).replace(/\s+/g, ' ').trim().slice(0, 120);
 
+                    const fingerprintTexto = (() => {
+                        const alvo = el.parentElement || el;
+                        const bruto = String(alvo.outerHTML || '').replace(/\s+/g, ' ').slice(0, 12000);
+                        let hash = 1469598103934665603n;
+                        for (let i = 0; i < bruto.length; i += 1) {
+                            hash ^= BigInt(bruto.charCodeAt(i));
+                            hash = BigInt.asUintN(64, hash * 1099511628211n);
+                        }
+                        return hash.toString(16).padStart(16, '0');
+                    })();
+
                     let chave = '';
                     if (id) chave = 'id:' + id;
                     else if (name) chave = 'name:' + name;
@@ -210,6 +221,7 @@ def clicar_elemento(alvo, indice=1):
                         placeholder: placeholder.slice(0, 120),
                         role: role.slice(0, 80),
                         tag: String(el.tagName || '').toLowerCase(),
+                        domFingerprint: fingerprintTexto,
                         estados: {
                             'aria-expanded': attr('aria-expanded'),
                             'aria-pressed': attr('aria-pressed'),
