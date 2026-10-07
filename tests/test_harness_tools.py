@@ -227,6 +227,7 @@ def test_successful_browser_mutation_marks_verification_pending():
     assert vision_pending is False
     assert cancelled is False
     assert state["pending"] is True
+    assert state["action"] == "clicar_elemento"
 
 
 def test_successful_browser_context_clears_verification_pending():
@@ -262,3 +263,4 @@ def test_successful_browser_context_clears_verification_pending():
     assert vision_pending is False
     assert cancelled is False
     assert state["pending"] is False
+    assert "action" not in state
