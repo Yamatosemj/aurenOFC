@@ -214,11 +214,15 @@ def procurar_executavel(programa):
         )
     ]
 
+    inicio_scan = time.monotonic()
+
     for pasta in pastas:
         if not pasta.exists():
             continue
 
         for candidato in candidatos:
+            if time.monotonic() - inicio_scan >= MAX_EXECUTABLE_SCAN_SECONDS:
+                return None
             comando = [
                 "powershell",
                 "-NoProfile",
