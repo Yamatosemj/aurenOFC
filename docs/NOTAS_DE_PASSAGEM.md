@@ -63,6 +63,7 @@ Arquivos criados/alterados:
 - core/tools_registry.py
 - core/tool_contracts.py
 - core/capabilities.py
+- core/intent_resolver.py
 - core/permission_manager.py
 - core/router.py
 - tests/test_router_tool_selection.py
