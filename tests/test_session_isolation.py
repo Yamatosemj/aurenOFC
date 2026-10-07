@@ -115,3 +115,64 @@ def test_harness_grava_estrategia_com_o_chat_da_sessao(tmp_path, monkeypatch):
         time.sleep(0.02)
     assert store.buscar_estrategias("organizar downloads", chat_id=chat_id)["total"] == 1
     assert store.buscar_estrategias("organizar downloads", chat_id="outro-chat")["total"] == 0
+
+
+def test_memory_blocks_structural_secret_without_keyword(tmp_path):
+    store = PersistentMemoryStore(tmp_path / "memory.sqlite3")
+    secret = "ghp_" + "A" * 24
+
+    result = store.salvar("github token de deploy", "valor inocuo", "geral")
+    assert result["ok"] is False
+
+    result = store.salvar("credencial", secret, "geral")
+    assert result["ok"] is False
+
+
+def test_memory_schema_uses_explicit_user_version(tmp_path):
+    store = PersistentMemoryStore(tmp_path / "memory.sqlite3")
+
+    import sqlite3
+    with sqlite3.connect(store.path) as con:
+        version = con.execute("PRAGMA user_version").fetchone()[0]
+
+    assert version == PersistentMemoryStore.SCHEMA_VERSION
+
+
+def test_legacy_memory_database_migrates_schema_version(tmp_path):
+    import sqlite3
+
+    path = tmp_path / "legacy.sqlite3"
+    with sqlite3.connect(path) as con:
+        con.execute(
+            "CREATE TABLE estrategias (id INTEGER PRIMARY KEY AUTOINCREMENT, objetivo TEXT NOT NULL, "
+            "passos TEXT NOT NULL, resultado TEXT NOT NULL DEFAULT '', sucesso INTEGER NOT NULL DEFAULT 0, "
+            "criado_em TEXT NOT NULL, atualizado_em TEXT NOT NULL)"
+        )
+        con.commit()
+
+    store = PersistentMemoryStore(path)
+
+    with sqlite3.connect(store.path) as con:
+        version = con.execute("PRAGMA user_version").fetchone()[0]
+        columns = {row[1] for row in con.execute("PRAGMA table_info(estrategias)")}
+
+    assert version == PersistentMemoryStore.SCHEMA_VERSION
+    assert "chat_id" in columns
+
+
+def test_persistent_memory_handles_concurrent_writes(tmp_path):
+    from concurrent.futures import ThreadPoolExecutor
+
+    path = tmp_path / "memory.sqlite3"
+
+    def write(index):
+        store = PersistentMemoryStore(path)
+        return store.salvar(f"chave-{index}", f"valor-{index}", "geral")
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        resultados = list(pool.map(write, range(32)))
+
+    assert all(item["ok"] for item in resultados)
+
+    store = PersistentMemoryStore(path)
+    assert store.consultar("", limite=50)["total"] == 32

@@ -96,6 +96,11 @@ TOOL_GROUPS = {
         "buscar_arquivo",
         "inspecionar_arquivo",
         "ler_arquivo",
+        "mover_arquivo",
+        "copiar_arquivo",
+        "renomear_arquivo",
+        "criar_pasta",
+        "enviar_para_lixeira",
     },
     "spotify_desktop": {
         "abrir_programa",
@@ -106,6 +111,9 @@ TOOL_GROUPS = {
         "preencher_elemento_windows",
         "pressionar_tecla_windows",
         "controle_midia_windows",
+    },
+    "undo": {
+        "desfazer_ultima_acao",
     },
     "memory": {
         "salvar_memoria_persistente",
@@ -217,6 +225,16 @@ DOMAIN_PATTERNS: dict[str, tuple[str, ...]] = {
         r"\bpdf\b",
         r"\bpasta\b",
         r"\bdocumento\b",
+        r"\b(?:mova|mover|moverem|copie|copiar|copiam|renomeie|renomear|crie|criar)\b.*\b(?:arquivo|pasta|diretorio)\b",
+        r"\b(?:arquivo|pasta|diretorio)\b.*\b(?:mova|mover|copie|copiar|renomeie|renomear|crie|criar)\b",
+        r"\b(?:lixeira|jogar fora|joga fora)\b.*\b(?:arquivo|pasta|diretorio)\b",
+        r"\b(?:arquivo|pasta|diretorio)\b.*\b(?:lixeira|jogar fora|joga fora)\b",
+    ),
+    "undo": (
+        r"\bdesfaz\w*\b",
+        r"\bdesfazer\b",
+        r"\bdesfac(a|a)?\b",
+        r"\bvoltar\s+atr[aá]s\b",
     ),
     "memory": (
         r"\bmem[oó]ria\b.*\b(lembr|salv|esquec|apag)",

@@ -78,6 +78,84 @@ tools = [
 
     {
         "type": "function",
+        "name": "mover_arquivo",
+        "description": "Move um arquivo para um caminho de destino final dentro das pastas permitidas. Nao sobrescreve destino existente e registra undo.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "origem": {"type": "string", "description": "Caminho atual do arquivo."},
+                "destino": {"type": "string", "description": "Caminho final do arquivo; deve estar dentro de uma pasta permitida."}
+            },
+            "required": ["origem", "destino"],
+            "additionalProperties": False
+        },
+        "strict": True
+    },
+
+    {
+        "type": "function",
+        "name": "copiar_arquivo",
+        "description": "Copia um arquivo para um caminho de destino final dentro das pastas permitidas. Nao sobrescreve destino existente e registra undo.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "origem": {"type": "string", "description": "Caminho atual do arquivo."},
+                "destino": {"type": "string", "description": "Caminho final da copia; deve estar dentro de uma pasta permitida."}
+            },
+            "required": ["origem", "destino"],
+            "additionalProperties": False
+        },
+        "strict": True
+    },
+
+    {
+        "type": "function",
+        "name": "renomear_arquivo",
+        "description": "Renomeia um arquivo dentro da mesma pasta permitida. Nao permite caminhos embutidos no novo nome e registra undo.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "caminho": {"type": "string", "description": "Caminho atual do arquivo."},
+                "novo_nome": {"type": "string", "description": "Novo nome, sem separadores de pasta."}
+            },
+            "required": ["caminho", "novo_nome"],
+            "additionalProperties": False
+        },
+        "strict": True
+    },
+
+    {
+        "type": "function",
+        "name": "criar_pasta",
+        "description": "Cria uma pasta vazia dentro das pastas permitidas e registra undo condicional.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "caminho": {"type": "string", "description": "Caminho da nova pasta."}
+            },
+            "required": ["caminho"],
+            "additionalProperties": False
+        },
+        "strict": True
+    },
+
+    {
+        "type": "function",
+        "name": "enviar_para_lixeira",
+        "description": "Envia um arquivo ou pasta para a Lixeira do Windows usando exclusao recuperavel. Nunca faz exclusao permanente.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "caminho": {"type": "string", "description": "Caminho do arquivo ou pasta a enviar para a Lixeira."}
+            },
+            "required": ["caminho"],
+            "additionalProperties": False
+        },
+        "strict": True
+    },
+
+    {
+        "type": "function",
         "name": "salvar_memoria_persistente",
         "description": "Salva ou atualiza uma informacao explicitamente fornecida pelo usuario na memoria persistente local. Nao use para senhas, tokens ou credenciais.",
         "parameters": {
@@ -514,6 +592,19 @@ tools = [
 
     {
         "type": "function",
+        "name": "desfazer_ultima_acao",
+        "description": "Desfaz a ultima acao reversivel registrada pelo Auren. Se a reversao falhar, a entrada permanece disponivel para nova tentativa.",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+            "additionalProperties": False
+        },
+        "strict": True
+    },
+
+    {
+        "type": "function",
         "name": "controle_midia_windows",
         "description": "Envia um comando global de midia no Windows: play/pause, proxima, anterior ou parar.",
         "parameters": {
@@ -838,13 +929,13 @@ tools = [
     {
         "type": "function",
         "name": "fechar_aba",
-        "description": "Fecha uma aba existente. Se o indice nao for informado, fecha a aba ativa.",
+        "description": "Fecha uma aba existente. Use o indice da aba; use 0 para fechar a aba ativa.",
         "parameters": {
             "type": "object",
             "properties": {
                 "indice": {
                     "type": "integer",
-                    "description": "Numero da aba, comecando em 1. Use 0 para fechar a aba ativa."
+                    "description": "Numero da aba, comecando em 1. Use 0 para a aba ativa."
                 }
             },
             "required": ["indice"],
@@ -909,6 +1000,10 @@ tools = [
                         "inicio",
                         "fim"
                     ]
+                },
+                "alvo": {
+                    "type": "string",
+                    "description": "Texto ou titulo que deve estar visivel apos a rolagem. Opcional."
                 }
             },
             "required": ["direcao"],

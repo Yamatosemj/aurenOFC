@@ -24,7 +24,7 @@ def _sample_for_schema(schema: dict) -> dict:
 
 
 def test_all_registry_tools_have_generic_contracts() -> None:
-    assert len(tools) == 49
+    assert len(tools) == 55
     assert set(DEFAULT_TOOL_CONTRACTS.names()) == {item["name"] for item in tools}
     DEFAULT_TOOL_CONTRACTS.validate_registry()
 
@@ -70,7 +70,7 @@ def test_all_tools_have_registered_handlers() -> None:
     from tools.dispatcher import TOOL_HANDLERS, validar_registry_handlers
     ok, error = validar_registry_handlers()
     assert ok, error
-    assert len(TOOL_HANDLERS) == len(tools) == 49
+    assert len(TOOL_HANDLERS) == len(tools) == 55
 
 
 def test_permissions_are_keyed_by_capability_not_tool_name() -> None:
@@ -81,3 +81,13 @@ def test_permissions_are_keyed_by_capability_not_tool_name() -> None:
     assert not (set(pm.policy) & {item["name"] for item in tools})
     assert pm.nivel("listar_janelas_windows") == PermissionLevel.AUTO
     assert pm.capability("listar_janelas_windows") == "windows.window.read"
+
+
+def test_fechar_aba_schema_is_strict_and_requires_indice():
+    from core.tools_registry import tools
+
+    schema = next(item for item in tools if item["name"] == "fechar_aba")
+    assert schema["strict"] is True
+    assert schema["parameters"]["required"] == ["indice"]
+    assert schema["parameters"]["additionalProperties"] is False
+    assert schema["parameters"]["properties"]["indice"]["type"] == "integer"

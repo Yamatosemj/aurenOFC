@@ -5,9 +5,7 @@ Copyright (c) 2023 [MAD_DOGGO]
 The following Ari-VoiceCommand-derived components are included/adapted in this Auren build under the MIT License:
 - agent/ari_native/response_cache.py
 - agent/ari_native/task_queue.py
-- agent/ari_native/llm_router.py
 - agent/ari_native/audio_manager.py
-- agent/ari_native/wake_word.py
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the conditions of the original license.
 

@@ -6,8 +6,8 @@ from types import SimpleNamespace
 
 from voice.input import AudioCaptureConfig, CapturedAudio, PushToTalkRecorder
 from voice.speech_response import SpeechResponseFormatter
-from voice.stt import LocalPortugueseASR
-from voice.tts import LocalKokoroTTS
+from voice.stt import ASR_EXPECTED, ASR_REVISION, LocalPortugueseASR
+from voice.tts import MODEL_PATH, TTS_EXPECTED, VOICES_PATH, LocalKokoroTTS
 
 
 def test_voice_v3_components_are_lazy_and_constructible():
@@ -190,3 +190,87 @@ def test_voice_main_does_not_use_spoken_cancel_keywords():
     assert "_eh_cancelamento" not in source
     assert "cancela isso" not in source
     assert "esquece" not in source
+
+
+def test_tts_is_safe_when_called_from_an_existing_event_loop():
+    import asyncio
+    from threading import Thread
+
+    sd = _FakeSoundDevice()
+    model = _FakeKokoro()
+    tts = LocalKokoroTTS(model=model, sounddevice_module=sd)
+    erro = []
+
+    def trabalhador():
+        async def executar():
+            tts.falar("YouTube aberto.")
+
+        try:
+            asyncio.run(executar())
+        except BaseException as exc:
+            erro.append(exc)
+
+    thread = Thread(target=trabalhador, daemon=True)
+    thread.start()
+    thread.join()
+
+    assert erro == []
+    assert model.calls == 1
+    assert len(sd.streams) == 1
+
+
+def test_voice_model_manifests_pin_immutable_sources_and_known_artifacts():
+    assert ASR_REVISION == "f5f837ee9e385781e60748cb9824a9c65487be36"
+    assert set(ASR_EXPECTED) == {
+        "encoder-model.int8.onnx",
+        "decoder_joint-model.int8.onnx",
+        "nemo128.onnx",
+    }
+    assert set(TTS_EXPECTED) == {
+        MODEL_PATH.name,
+        VOICES_PATH.name,
+    }
+
+
+def test_tts_rejects_wrong_checksum_without_loading_model(tmp_path):
+    import voice.tts as tts_module
+
+    model_path = tmp_path / MODEL_PATH.name
+    model_path.write_bytes(b"corrompido")
+
+    try:
+        tts_module.LocalKokoroTTS._verify_file(model_path)
+    except RuntimeError as exc:
+        assert "SHA-256 invalido" in str(exc) or "tamanho inesperado" in str(exc)
+    else:
+        raise AssertionError("artefato corrompido deveria ser rejeitado")
+
+    assert not model_path.exists()
+
+
+def test_asr_verifier_rejects_corrupted_binary(tmp_path):
+    import voice.stt as stt_module
+
+    model_dir = tmp_path / "asr"
+    model_dir.mkdir()
+    for name in ("config.json", "decoder_joint-model.int8.onnx", "encoder-model.int8.onnx", "nemo128.onnx", "vocab.txt"):
+        (model_dir / name).write_bytes(b"conteudo-invalido")
+
+    invalid = stt_module.LocalPortugueseASR._verify_model_files(model_dir)
+
+    assert ("sha256:encoder-model.int8.onnx" in invalid or "tamanho:encoder-model.int8.onnx" in invalid)
+    assert ("sha256:decoder_joint-model.int8.onnx" in invalid or "tamanho:decoder_joint-model.int8.onnx" in invalid)
+    assert ("sha256:nemo128.onnx" in invalid or "tamanho:nemo128.onnx" in invalid)
+
+
+def test_asr_verifier_requires_all_model_files(tmp_path):
+    import voice.stt as stt_module
+
+    model_dir = tmp_path / "asr"
+    model_dir.mkdir()
+
+    invalid = stt_module.LocalPortugueseASR._verify_model_files(model_dir)
+
+    assert "ausente:config.json" in invalid
+    assert "ausente:vocab.txt" in invalid
+    assert "ausente:encoder-model.int8.onnx" in invalid

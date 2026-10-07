@@ -5,10 +5,25 @@ argumentos da acao com dados estruturados produzidos por uma leitura posterior.
 """
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 import re
+import secrets
 from typing import Any
-from urllib.parse import urlsplit
+from urllib.parse import urljoin, urlsplit
+
+
+
+_SENSITIVE_FILL_KEY = secrets.token_bytes(32)
+
+
+def _compromisso_preenchimento_sensivel(valor: str) -> str:
+    return hmac.new(
+        _SENSITIVE_FILL_KEY,
+        str(valor).encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
 
 
 def _parse_args(arguments: str) -> dict[str, Any] | None:
@@ -24,6 +39,8 @@ def _normalize_url(value: str) -> str:
     if not url:
         return ""
     if not re.match(r"^https?://", url, flags=re.IGNORECASE):
+        if re.match(r"^[a-z][a-z0-9+.-]*:", url, flags=re.IGNORECASE):
+            return url.rstrip("/")
         url = "https://" + url
     try:
         parsed = urlsplit(url)
@@ -31,7 +48,10 @@ def _normalize_url(value: str) -> str:
         return url.rstrip("/")
     scheme = parsed.scheme.lower()
     hostname = (parsed.hostname or "").lower().removeprefix("www.")
-    port = parsed.port
+    try:
+        port = parsed.port
+    except ValueError:
+        return url.rstrip("/")
     default_port = (scheme == "https" and port == 443) or (scheme == "http" and port == 80)
     netloc = hostname
     if port is not None and not default_port:
@@ -40,7 +60,22 @@ def _normalize_url(value: str) -> str:
     return f"{scheme}://{netloc}{path}" + (f"?{parsed.query}" if parsed.query else "")
 
 
-def _active_tab(abas: str) -> tuple[int, str, str] | None:
+def _active_tab(abas: Any) -> tuple[int, str, str] | None:
+    # Preferencia para o snapshot estruturado: ele preserva a URL completa
+    # sem depender da representacao textual truncada mostrada ao modelo.
+    if isinstance(abas, list):
+        ativos = [item for item in abas if isinstance(item, dict) and item.get("ativa") is True]
+        if len(ativos) != 1:
+            return None
+        item = ativos[0]
+        try:
+            indice = int(item.get("indice"))
+        except (TypeError, ValueError):
+            return None
+        titulo = str(item.get("titulo") or "").strip()
+        url = str(item.get("url") or "").strip()
+        return indice, titulo, url
+
     texto = str(abas or "")
     active = re.search(r"(?m)^Aba ativa:\s*(\d+)", texto)
     if not active:
@@ -65,41 +100,68 @@ def verificar_resultado_navegador(
 ) -> bool | None:
     """Retorna True/False quando sabe verificar a acao; None para casos genericos."""
     dados = dados_contexto if isinstance(dados_contexto, dict) else {}
-    abas = str(dados.get("abas") or "")
+    snapshot = dados.get("abas_snapshot")
+    abas = snapshot if isinstance(snapshot, list) else str(dados.get("abas") or "")
     args = _parse_args(argumentos)
 
     if args is None:
         return None
 
+    if ferramenta in {"abrir_nova_aba", "trocar_aba", "fechar_aba"}:
+        return _verificar_abas(ferramenta, args, abas, dados_acao)
+
     ativa = _active_tab(abas)
     if ativa is None:
-        return False if ferramenta in {
-            "navegar_navegador",
-            "abrir_nova_aba",
-            "trocar_aba",
-        } else None
+        return False if ferramenta == "navegar_navegador" else None
 
     indice_atual, _titulo, url_atual = ativa
 
-    if ferramenta in {"navegar_navegador", "abrir_nova_aba"}:
-        esperado = _normalize_url(str(args.get("url") or ""))
-        if not esperado:
+    if ferramenta == "navegar_navegador":
+        evidencia = _dados_navegacao_acao(dados_acao)
+        if evidencia is None:
             return None
-        return _normalize_url(url_atual) == esperado
+        url_depois = _normalize_url(str(evidencia.get("url_depois") or ""))
+        if not url_depois:
+            return None
+        if _normalize_url(url_atual) != url_depois:
+            return False
 
-    if ferramenta == "trocar_aba":
-        try:
-            esperado = int(args.get("indice"))
-        except (TypeError, ValueError):
+        ready_state = evidencia.get("ready_state_depois")
+        if ready_state is not None and str(ready_state).strip().casefold() != "complete":
             return None
-        return indice_atual == esperado
+
+        titulo_observado = str(evidencia.get("titulo_depois") or "").strip()
+        if titulo_observado:
+            indice, titulo_atual, _ = ativa
+            if titulo_atual and titulo_atual.strip() != titulo_observado:
+                return False
+
+        # A URL solicitada pode redirecionar; a prova primaria e a URL final observada.
+        estado_resultado = _avaliar_mudanca_estado_pagina(
+            evidencia.get("estado_antes"),
+            evidencia.get("estado_depois"),
+        )
+        if estado_resultado is not True:
+            return None
+        return True
 
     if ferramenta == "preencher_elemento":
+        preenchimento = dados_acao.get("preenchimento") if isinstance(dados_acao, dict) else None
         return _controle_com_valor(
             str(dados.get("pagina") or ""),
             str(args.get("alvo") or ""),
             str(args.get("texto") or ""),
             int(args.get("indice") or 1),
+            preenchimento,
+        )
+
+    if ferramenta == "clicar_elemento":
+        clique = dados_acao.get("clique") if isinstance(dados_acao, dict) else dados.get("clique")
+        return _verificar_clique(
+            clique,
+            indice_atual,
+            url_atual,
+            str(dados.get("pagina") or ""),
         )
 
     if ferramenta == "rolar_pagina":
@@ -109,10 +171,607 @@ def verificar_resultado_navegador(
             dados_acao,
         )
 
+    if ferramenta in {"voltar_pagina", "avancar_pagina", "recarregar_pagina"}:
+        return _verificar_navegacao_historico(ferramenta, abas, dados_acao)
+
+    if ferramenta == "pressionar_tecla":
+        return _verificar_tecla(abas, dados_acao)
     return None
 
 
-def _controle_com_valor(pagina: str, alvo: str, esperado: str, indice: int) -> bool | None:
+def _dados_navegacao_acao(dados_acao: Any) -> dict[str, Any] | None:
+    if not isinstance(dados_acao, dict):
+        return None
+    dados = dados_acao.get("navegacao")
+    return dados if isinstance(dados, dict) else None
+
+def _verificar_navegacao_historico(ferramenta: str, abas: str, dados_acao: Any) -> bool | None:
+    dados = _dados_navegacao_acao(dados_acao)
+    if dados is None:
+        return None
+    ativa = _active_tab(abas)
+    if ativa is None:
+        return None
+    _, titulo_atual, url_atual = ativa
+    url_depois = str(dados.get("url_depois") or dados.get("url") or "").strip()
+    if not url_depois:
+        return None
+    if _normalize_url(url_atual) != _normalize_url(url_depois):
+        return False
+
+    ready_state = dados.get("ready_state_depois")
+    if ready_state is not None and str(ready_state).strip().casefold() != "complete":
+        return None
+
+    titulo_depois = str(dados.get("titulo_depois") or "").strip()
+    if titulo_atual and titulo_depois and titulo_atual.strip() != titulo_depois:
+        return False
+
+    if ferramenta in {"voltar_pagina", "avancar_pagina"}:
+        # A URL pode mudar sem que o estado esperado tenha sido demonstrado.
+        estado_resultado = _avaliar_mudanca_estado_pagina(
+            dados.get("estado_antes"),
+            dados.get("estado_depois"),
+        )
+        if estado_resultado is not True:
+            return None
+        mudou = dados.get("mudou_url")
+        if mudou is True:
+            return True
+        if mudou is False and dados.get("evento_historico_observado") is True:
+            return True
+        if mudou is False:
+            return False
+        return None
+
+    if ferramenta == "recarregar_pagina":
+        observado = dados.get("recarregamento_observado")
+        if observado is True:
+            return True
+        if observado is False:
+            return False
+        return None
+
+    return None
+
+def _verificar_tecla(abas: str, dados_acao: Any) -> bool | None:
+    if not isinstance(dados_acao, dict):
+        return None
+    dados = dados_acao.get("tecla")
+    if not isinstance(dados, dict):
+        return None
+    if dados.get("evento_observado") is not True:
+        return False
+
+    tecla = str(dados.get("tecla") or "").strip().casefold()
+    estado_antes = dados.get("estado_antes")
+    estado_depois = dados.get("estado_depois")
+    if not isinstance(estado_antes, dict) or not isinstance(estado_depois, dict):
+        return None
+
+    if tecla in {"f5", "control+r", "ctrl+r"}:
+        antes = estado_antes.get("time_origin")
+        depois = estado_depois.get("time_origin")
+        if antes is None or depois is None:
+            return None
+        return depois != antes
+
+    if tecla in {"escape", "esc"}:
+        pares = []
+        for chave in ("dialogs", "menus", "listboxes"):
+            antes = estado_antes.get(chave)
+            depois = estado_depois.get(chave)
+            if isinstance(antes, int) and isinstance(depois, int):
+                pares.append((antes, depois))
+        if not pares:
+            return None
+        return any(depois < antes for antes, depois in pares)
+
+    if tecla in {"arrowup", "arrowdown", "home", "end", "pageup", "pagedown"}:
+        antes = estado_antes.get("scroll_y")
+        depois = estado_depois.get("scroll_y")
+        if antes is None or depois is None:
+            return None
+        return float(antes) != float(depois)
+
+    if tecla in {"enter", "control+enter", "ctrl+enter"}:
+        antes = _normalize_url(str(estado_antes.get("url") or ""))
+        depois = _normalize_url(str(estado_depois.get("url") or ""))
+        if not antes or not depois:
+            return None
+        return antes != depois
+
+    if tecla in {"control+w", "ctrl+w"}:
+        antes_abas = dados.get("abas_antes")
+        depois_abas = dados.get("abas_depois")
+        if not isinstance(antes_abas, list) or not isinstance(depois_abas, list):
+            return None
+        return len(depois_abas) + 1 == len(antes_abas) if antes_abas else False
+
+    return None
+
+def _extrair_abas_observadas(abas: Any) -> tuple[int | None, list[tuple[int, str, str]]]:
+    if isinstance(abas, list):
+        encontradas: list[tuple[int, str, str]] = []
+        for item in abas:
+            if not isinstance(item, dict):
+                continue
+            try:
+                indice = int(item.get("indice"))
+            except (TypeError, ValueError):
+                return None, []
+            encontradas.append((
+                indice,
+                str(item.get("titulo") or "").strip(),
+                str(item.get("url") or "").strip(),
+            ))
+        indices = [item[0] for item in encontradas]
+        if indices and sorted(indices) != list(range(1, len(indices) + 1)):
+            return None, []
+        return len(encontradas), encontradas
+
+    texto = str(abas or "")
+    match = re.search(r"(?m)^Abas abertas:\s*(\d+)", texto)
+    quantidade = int(match.group(1)) if match else None
+    encontradas = []
+    for linha in texto.splitlines():
+        match = re.match(
+            r"^Aba\s+(\d+):\s*(.*?)\s*\|\s*(.+?)(?:\s*\[ATIVA\])?$",
+            linha.strip(),
+        )
+        if match:
+            encontradas.append(
+                (int(match.group(1)), match.group(2).strip(), match.group(3).strip())
+            )
+    return quantidade, encontradas
+
+
+def _snapshot_tab_active(snapshot: Any) -> tuple[int | None, str | None]:
+    if not isinstance(snapshot, list):
+        return None, None
+    ativos = [item for item in snapshot if isinstance(item, dict) and item.get("ativa") is True]
+    if len(ativos) != 1:
+        return None, None
+    item = ativos[0]
+    try:
+        indice = int(item.get("indice"))
+    except (TypeError, ValueError):
+        return None, None
+    url = str(item.get("url") or "").strip()
+    return indice, url
+
+
+def _snapshot_is_consistent(snapshot: Any, expected_count: int) -> bool:
+    if not isinstance(snapshot, list) or len(snapshot) != expected_count:
+        return False
+    if expected_count == 0:
+        return True
+    indices = []
+    for item in snapshot:
+        if not isinstance(item, dict):
+            return False
+        try:
+            indices.append(int(item.get("indice")))
+        except (TypeError, ValueError):
+            return False
+    if sorted(indices) != list(range(1, expected_count + 1)):
+        return False
+    return _snapshot_tab_active(snapshot)[0] is not None
+
+def _verificar_abas(
+    ferramenta: str,
+    args: dict[str, Any],
+    abas: str,
+    dados_acao: Any,
+) -> bool | None:
+    quantidade_atual, observadas = _extrair_abas_observadas(abas)
+    ativa = _active_tab(abas)
+
+    # O texto observado precisa ser internamente consistente: a quantidade
+    # declarada e o numero de linhas de abas devem contar a mesma historia.
+    if quantidade_atual is not None and quantidade_atual != len(observadas):
+        return False
+    if quantidade_atual == 0 and observadas:
+        return False
+
+    info = dados_acao.get("abas") if isinstance(dados_acao, dict) else None
+    if not isinstance(info, dict):
+        # Compatibilidade com resultados antigos: ainda validamos destino/indice
+        # quando a ferramenta nao fornece snapshot estruturado.
+        if ferramenta == "trocar_aba" and ativa is not None:
+            try:
+                return ativa[0] == int(args.get("indice"))
+            except (TypeError, ValueError):
+                return None
+        if ferramenta == "abrir_nova_aba":
+            esperado = _normalize_url(str(args.get("url") or ""))
+            return _normalize_url(ativa[2]) == esperado if esperado and ativa else None
+        return None
+
+    quantidade_antes = info.get("quantidade_antes")
+    quantidade_depois = info.get("quantidade_depois")
+    try:
+        quantidade_antes_int = int(quantidade_antes)
+        quantidade_depois_int = int(quantidade_depois)
+    except (TypeError, ValueError):
+        return None
+
+    antes_snapshot = info.get("antes")
+    depois_snapshot = info.get("depois")
+    if isinstance(antes_snapshot, list) and not _snapshot_is_consistent(antes_snapshot, quantidade_antes_int):
+        return False
+    if isinstance(depois_snapshot, list) and not _snapshot_is_consistent(depois_snapshot, quantidade_depois_int):
+        return False
+
+    depois_ativo_indice, depois_ativo_url = _snapshot_tab_active(depois_snapshot)
+    if isinstance(depois_snapshot, list) and quantidade_depois_int > 0:
+        if depois_ativo_indice is None:
+            return False
+        if ativa is not None and depois_ativo_indice != ativa[0]:
+            return False
+        if depois_ativo_url and ativa is not None and _normalize_url(depois_ativo_url) != _normalize_url(ativa[2]):
+            return False
+
+    if ferramenta == "abrir_nova_aba":
+        if quantidade_atual is None or quantidade_atual != quantidade_depois_int:
+            return False
+        if quantidade_depois_int != quantidade_antes_int + 1:
+            return False
+
+        esperado_indice = info.get("aba_ativa_depois")
+        try:
+            if ativa is None or ativa[0] != int(esperado_indice):
+                return False
+        except (TypeError, ValueError):
+            return False
+
+        esperado_url = str(args.get("url") or "").strip()
+        if esperado_url:
+            return _normalize_url(ativa[2]) == _normalize_url(esperado_url)
+
+        return _normalize_url(ativa[2]) in {"about:blank", ""}
+
+    if ferramenta == "trocar_aba":
+        if quantidade_atual is None or quantidade_atual != quantidade_depois_int:
+            return False
+        try:
+            esperado_indice = int(args.get("indice"))
+        except (TypeError, ValueError):
+            return None
+
+        if ativa is None or ativa[0] != esperado_indice:
+            return False
+
+        try:
+            if info.get("aba_ativa_depois") is not None and int(info["aba_ativa_depois"]) != esperado_indice:
+                return False
+        except (TypeError, ValueError):
+            return False
+
+        esperado_url = str(info.get("url_ativa_depois") or "").strip()
+        if esperado_url:
+            return _normalize_url(ativa[2]) == _normalize_url(esperado_url)
+        return True
+
+    if ferramenta == "fechar_aba":
+        if quantidade_depois_int != quantidade_antes_int - 1:
+            return False
+
+        indice_solicitado = args.get("indice")
+        indice_fechado = info.get("aba_fechada")
+        if indice_solicitado is not None:
+            try:
+                solicitado = int(indice_solicitado)
+                fechado = int(indice_fechado)
+            except (TypeError, ValueError):
+                return False
+            if solicitado != 0 and fechado != solicitado:
+                return False
+
+        if quantidade_depois_int == 0:
+            return quantidade_atual in {None, 0}
+
+        if quantidade_atual is None or quantidade_atual != quantidade_depois_int:
+            return False
+
+        try:
+            esperado_indice = int(info.get("aba_ativa_depois"))
+        except (TypeError, ValueError):
+            return None
+
+        if ativa is None or ativa[0] != esperado_indice:
+            return False
+
+        esperado_url = str(info.get("url_ativa_depois") or "").strip()
+        if esperado_url:
+            return _normalize_url(ativa[2]) == _normalize_url(esperado_url)
+        return True
+
+    return None
+
+
+def _linhas_controle(pagina: str) -> list[str]:
+    return [
+        linha.strip()
+        for linha in str(pagina or "").splitlines()
+        if linha.strip().startswith("- ") and "tag=" in linha
+    ]
+
+
+def _normalizar_valor_estado(valor: Any) -> str:
+    if isinstance(valor, bool):
+        return "true" if valor else "false"
+    if valor is None:
+        return ""
+    return str(valor).strip()
+
+
+def _controle_corresponde_linha(
+    linha: str,
+    controle: Any,
+) -> bool:
+    if not isinstance(controle, dict):
+        return False
+
+    chave = str(controle.get("chave") or "").strip()
+    if chave:
+        return f"chave={chave}" in linha
+
+    for campo, prefixo in (
+        ("id", "id="),
+        ("name", "name="),
+        ("aria_label", "nome="),
+        ("placeholder", "placeholder="),
+    ):
+        valor = str(controle.get(campo) or "").strip()
+        if valor and f"{prefixo}{valor}" in linha:
+            return True
+
+    return False
+
+
+def _texto_controle_na_linha(linha: str) -> str | None:
+    marcador = "texto="
+    if marcador not in linha:
+        return None
+    trecho = linha.split(marcador, 1)[1]
+    return trecho.split(" |", 1)[0].strip()
+
+
+def _estado_controle_na_linha(linha: str, atributo: str) -> str | None:
+    if atributo == "domFingerprint":
+        marcador = "dom-fingerprint="
+        if marcador not in linha:
+            return None
+        trecho = linha.split(marcador, 1)[1]
+        return trecho.split(" |", 1)[0].strip()
+
+    marcador = "estado="
+    if marcador not in linha:
+        return None
+
+    estado = linha.split(marcador, 1)[1]
+    estado = estado.split(" | valor=", 1)[0]
+    estado = estado.split(" |", 1)[0]
+
+    prefixo = f"{atributo}="
+    for item in estado.split(";"):
+        item = item.strip()
+        if item.startswith(prefixo):
+            return item[len(prefixo):].strip()
+
+    return None
+
+
+def _avaliar_mudanca_estado_pagina(estado_antes: Any, estado_depois: Any) -> bool | None:
+    """Exige evidência observável além de URL/título/readyState isolados."""
+    if not isinstance(estado_antes, dict) or not isinstance(estado_depois, dict):
+        return None
+
+    comparou = False
+    for chave in ("dom_fingerprint", "texto_relevante", "rota_ativa"):
+        antes = str(estado_antes.get(chave) or "").strip()
+        depois = str(estado_depois.get(chave) or "").strip()
+        if antes or depois:
+            comparou = True
+            if antes != depois:
+                return True
+
+    antes_time = estado_antes.get("time_origin")
+    depois_time = estado_depois.get("time_origin")
+    if antes_time is not None and depois_time is not None:
+        try:
+            comparou = True
+            if float(antes_time) != float(depois_time):
+                return True
+        except (TypeError, ValueError):
+            pass
+
+    return False if comparou else None
+
+
+def _verificar_clique(
+    dados_clique: Any,
+    indice_atual: int,
+    url_atual: str,
+    pagina: str = "",
+) -> bool | None:
+    if not isinstance(dados_clique, dict):
+        return None
+
+    atual = _normalize_url(url_atual)
+    if dados_clique.get("navegacao"):
+        if not atual:
+            return False
+
+        esperado = str(dados_clique.get("href") or "").strip()
+        anterior = str(dados_clique.get("url_anterior") or "").strip()
+        if esperado and esperado not in {"#", "#top"} and not esperado.lower().startswith("javascript:"):
+            esperado = urljoin(anterior or url_atual, esperado)
+            if atual != _normalize_url(esperado):
+                return False
+        elif not anterior:
+            return None
+
+        if anterior:
+            if atual == _normalize_url(anterior):
+                return False
+        else:
+            return None
+
+        efeito = dados_clique.get("efeito")
+        if not isinstance(efeito, dict):
+            return None
+        estado_resultado = _avaliar_mudanca_estado_pagina(
+            efeito.get("pagina_antes"),
+            efeito.get("pagina_depois"),
+        )
+        if estado_resultado is not True:
+            return None
+        return True
+
+    efeito = dados_clique.get("efeito")
+    if not isinstance(efeito, dict):
+        return None
+
+    sinal = efeito.get("sinal")
+    controle = efeito.get("controle")
+    if not isinstance(sinal, dict) or not isinstance(controle, dict):
+        return None
+
+    tipo = str(sinal.get("tipo") or "")
+    if tipo == "controle":
+        atributo = str(sinal.get("atributo") or "").strip()
+        esperado = _normalizar_valor_estado(sinal.get("depois"))
+        antes = _normalizar_valor_estado(sinal.get("antes"))
+        if not atributo or esperado == "" or esperado == antes:
+            return None
+
+        linhas = [
+            linha for linha in _linhas_controle(pagina)
+            if _controle_corresponde_linha(linha, controle)
+        ]
+        if not linhas or len(linhas) > 1:
+            return None
+
+        if atributo == "domFingerprint":
+            return None
+
+        if atributo == "domFingerprint+texto":
+            observado_fp = _estado_controle_na_linha(linhas[0], "domFingerprint")
+            observado_texto = _texto_controle_na_linha(linhas[0])
+            texto_depois = _normalizar_valor_estado(sinal.get("texto_depois"))
+            texto_antes = _normalizar_valor_estado(sinal.get("texto_antes"))
+            if (
+                observado_fp is None
+                or observado_texto is None
+                or not texto_depois
+                or texto_depois == texto_antes
+            ):
+                return None
+            return observado_fp == esperado and observado_texto == texto_depois
+
+        observado = _estado_controle_na_linha(linhas[0], atributo)
+        if observado is None:
+            return None
+        return observado == esperado
+
+    if tipo == "pagina":
+        alvo = str(sinal.get("alvo") or "").strip()
+        try:
+            esperado = int(sinal.get("depois"))
+        except (TypeError, ValueError):
+            return None
+        if alvo not in {"dialogos", "menus", "listboxes", "popovers", "details_abertos"}:
+            return None
+
+        causalidade = str(sinal.get("causalidade") or "").strip()
+        relacao = sinal.get("relacao") if isinstance(sinal.get("relacao"), dict) else {}
+        valor_relacao = str(relacao.get("valor") or "").strip()
+        novos = sinal.get("novos")
+        if causalidade not in {"aria-controls", "aria-haspopup", "popover-target"}:
+            return None
+        if not valor_relacao or not isinstance(novos, list) or not novos:
+            return None
+
+        aria_controls = str(controle.get("aria_controls") or "").strip().split()
+        aria_haspopup = str(controle.get("aria_haspopup") or "").strip().casefold()
+        popover_target = str(controle.get("popover_target") or "").strip()
+        if causalidade == "aria-controls":
+            if valor_relacao not in aria_controls:
+                return None
+        elif causalidade == "popover-target":
+            if alvo != "popovers" or valor_relacao != popover_target:
+                return None
+        else:
+            if alvo == "menus":
+                permitidos = {"menu", "true"}
+            elif alvo == "listboxes":
+                permitidos = {"listbox"}
+            else:
+                return None
+            if aria_haspopup not in permitidos:
+                return None
+
+        if not _linhas_controle(pagina):
+            return None
+        linhas_controle = [
+            linha for linha in _linhas_controle(pagina)
+            if _controle_corresponde_linha(linha, controle)
+        ]
+        if len(linhas_controle) != 1:
+            return None
+        marcador = "Elementos flutuantes visiveis:"
+        linha = next(
+            (
+                linha.strip()
+                for linha in str(pagina or "").splitlines()
+                if marcador in linha
+            ),
+            None,
+        )
+        if not linha:
+            return None
+
+        prefixo = f"{alvo}="
+        valor_texto = None
+        for parte in linha.split("|"):
+            parte = parte.strip()
+            if parte.startswith(prefixo):
+                valor_texto = parte[len(prefixo):].strip()
+                break
+        try:
+            observado = int(valor_texto)
+        except (TypeError, ValueError):
+            return None
+        pagina_depois = efeito.get("pagina_depois") if isinstance(efeito.get("pagina_depois"), dict) else {}
+        pagina_antes = efeito.get("pagina_antes") if isinstance(efeito.get("pagina_antes"), dict) else {}
+        antes_acao = pagina_antes.get(alvo)
+        depois_acao = pagina_depois.get(alvo)
+        try:
+            antes_acao = int(antes_acao)
+            depois_acao = int(depois_acao)
+        except (TypeError, ValueError):
+            return None
+        try:
+            esperado_antes = int(sinal.get("antes"))
+        except (TypeError, ValueError):
+            return None
+        if antes_acao != esperado_antes or depois_acao != esperado:
+            return None
+        return observado == esperado
+
+    return None
+
+
+
+def _controle_com_valor(
+    pagina: str,
+    alvo: str,
+    esperado: str,
+    indice: int,
+    evidencia_acao: Any = None,
+) -> bool | None:
     alvo_normalizado = str(alvo or "").strip().casefold()
     if not alvo_normalizado:
         return None
@@ -129,20 +788,31 @@ def _controle_com_valor(pagina: str, alvo: str, esperado: str, indice: int) -> b
     if not candidatas:
         return None
 
-    # Campos sensiveis sao mascarados pelo leitor da pagina. Nao tentamos
-    # inferir o segredo nem tratamos o mascaramento como falha.
-    esperado_texto = str(esperado or "")
+    if isinstance(evidencia_acao, dict) and bool(evidencia_acao.get("sensivel")):
+        compromisso = str(evidencia_acao.get("compromisso") or "").strip()
+        if not compromisso:
+            return None
+        encontradas = []
+        for linha in candidatas:
+            marcador = "compromisso="
+            if marcador not in linha:
+                continue
+            encontradas.append(linha.split(marcador, 1)[1].split(" |", 1)[0].strip())
+        if not encontradas or len(encontradas) > 1:
+            return None
+        if indice != 1:
+            return None
+        return hmac.compare_digest(encontradas[0], compromisso)
+
     if "[REDACTED]" in " ".join(candidatas):
         return None
 
+    esperado_texto = str(esperado or "")
     matches = [
         linha for linha in candidatas
         if f"valor={esperado_texto}" in linha
     ]
     return len(matches) >= max(1, int(indice or 1))
-
-
-
 
 def _numero_scroll(dados: Any, chave: str) -> float | None:
     if not isinstance(dados, dict):
@@ -183,6 +853,15 @@ def _verificar_rolagem(
 
     if max_scroll <= tolerancia:
         return None
+
+    alvo = str(dados_acao.get("alvo") or "").strip()
+    if alvo:
+        if dados_acao.get("alvo_encontrado") is not True:
+            encontrado = dados_acao.get("alvo_encontrado")
+            return False if encontrado is False else None
+        visivel = dados_acao.get("alvo_visivel")
+        if visivel is not True:
+            return False if visivel is False else None
 
     if direcao == "baixo":
         if depois > antes + 1.0:

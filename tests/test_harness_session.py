@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 from core.harness_session import _encerrar_sessao_chat, _garantir_sessao_chat
 
 
@@ -142,3 +144,48 @@ def test_closing_session_runs_cleanup_when_log_writer_raises():
         "clear-harness",
         "clear-redaction",
     ]
+
+
+def test_browser_mutation_is_blocked_while_verification_is_pending():
+    from core.harness_tools import _executar_chamadas_rodada
+    from core.tool_result import ToolResult
+
+    class TaskManager:
+        def should_cancel(self, _task_id): return False
+        def begin_step(self, *_args, **_kwargs): pass
+        def finish_step(self, *_args, **_kwargs): pass
+
+    called = []
+    state = {
+        "pending": True,
+        "ferramenta": "clicar_elemento",
+        "argumentos": '{"alvo":"Salvar","indice":1}',
+        "dados_acao": {},
+    }
+    resultados, _, _, _, _ = _executar_chamadas_rodada(
+        chamadas=[
+            SimpleNamespace(
+                name="clicar_elemento",
+                arguments='{"alvo":"Outro","indice":1}',
+            )
+        ],
+        task_manager=TaskManager(),
+        executar_ferramenta=lambda item: called.append(item) or ToolResult.success("executado"),
+        task_id="chat",
+        rodada=2,
+        historico=[],
+        max_tool_result_chars=4000,
+        get_active_vision_geometry=lambda: None,
+        clear_active_vision_geometry=lambda: None,
+        write_log=lambda *_a, **_k: None,
+        browser_verification_state=state,
+        browser_state_mutating_tools={"clicar_elemento"},
+        browser_verifier=lambda *_a: True,
+        trace=None,
+        vision_state_mutating_tools=set(),
+        vision_reobserve_pending=False,
+        falha_nao_recuperada=False,
+    )
+    assert resultados[0]["sucesso"] is False
+    assert '"codigo_erro":"browser_verification_required"' in resultados[0]["resultado"]
+    assert called == []

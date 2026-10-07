@@ -146,7 +146,16 @@ def test_principais_ferramentas_do_registry_passam_por_contrato_permissao_e_hand
             return spec["minimum"]
         return {"string": "x", "integer": 1, "number": 1, "boolean": True}[spec["type"]]
 
-    pulados = {"preencher_elemento_windows"}  # exige preflight real de UI Automation
+    pulados = {
+        "preencher_elemento_windows",  # exige preflight real de UI Automation
+        # Operacoes de arquivo exigem paths reais dentro da allowlist; este smoke
+        # propositalmente fabrica apenas argumentos genericos para testar o caminho unico.
+        "mover_arquivo",
+        "copiar_arquivo",
+        "renomear_arquivo",
+        "criar_pasta",
+        "enviar_para_lixeira",
+    }
     executadas = []
     for tool in tools:
         nome = tool["name"]

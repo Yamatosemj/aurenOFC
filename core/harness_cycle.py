@@ -13,6 +13,14 @@ from core.browser_verification import verificar_resultado_navegador
 from core.vision import clear_active_vision_geometry, get_active_vision_geometry, prepare_vision_result_content
 
 
+def _browser_verification_concluida(resultados: list[dict[str, Any]]) -> bool:
+    """Retorna True somente quando o verifier produziu evidencia positiva."""
+    return any(
+        item.get("ferramenta") == "obter_contexto_navegador"
+        and item.get("verificacao_browser") is True
+        for item in resultados
+    )
+
 def executar_ciclo(
     harness: Any,
     objetivo: str,
@@ -198,11 +206,7 @@ def executar_ciclo(
         if not harness._browser_verification_pending:
             harness._browser_verification_state.clear()
             harness._browser_verification_state["pending"] = False
-        if any(
-            item.get("ferramenta") == harness.BROWSER_VERIFICATION_TOOL
-            and item.get("sucesso")
-            for item in resultados_rodada
-        ):
+        if _browser_verification_concluida(resultados_rodada):
             harness._browser_verification_guard_attempts = 0
         if cancelado:
             return harness._encerrar_cancelado("cancelado durante execucao", rodada)

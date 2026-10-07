@@ -103,6 +103,32 @@ class TaskTraceStore:
             connection.commit()
         return trace
 
+    def record_late_stage(self, *, task_id: str, category: str, duration_ms: float,
+                           metadata: dict[str, Any] | None = None) -> None:
+        """Persiste etapa que terminou depois do fechamento logico da tarefa."""
+        if category not in {"asr", "tts"}:
+            raise ValueError("etapa tardia deve ser 'asr' ou 'tts'.")
+        duration = max(0.0, float(duration_ms))
+        with self._connect() as connection:
+            sequence = int(connection.execute(
+                "SELECT COALESCE(MAX(sequence), 0) + 1 FROM task_trace_spans WHERE task_id=?",
+                (str(task_id),),
+            ).fetchone()[0])
+            started = datetime.fromtimestamp(
+                time.time() - duration / 1000.0
+            ).astimezone().isoformat(timespec="milliseconds")
+            connection.execute(
+                "INSERT INTO task_trace_spans "
+                "(task_id,sequence,category,name,started_at,duration_ms,success,metadata_json) "
+                "VALUES (?,?,?,?,?,?,?,?)",
+                (str(task_id), sequence, category, category, started, duration, 1,
+                 json.dumps(metadata or {}, ensure_ascii=False, separators=(",", ":"))),
+            )
+            connection.execute(
+                f"UPDATE task_traces SET {category}_ms = {category}_ms + ? WHERE task_id=?",
+                (duration, str(task_id)),
+            )
+            connection.commit()
     def record_span(self, *, task_id: str, sequence: int, category: str, name: str,
                     started_at: str, duration_ms: float, success: bool | None = None,
                     metadata: dict[str, Any] | None = None) -> None:
@@ -216,6 +242,18 @@ class TaskTrace:
                      success: bool | None = True, metadata: dict[str, Any] | None = None) -> None:
         stage = str(category or name)
         duration = max(0.0, float(duration_ms))
+        if self._finished:
+            if stage in {"asr", "tts"}:
+                try:
+                    self.store.record_late_stage(
+                        task_id=self.task_id,
+                        category=stage,
+                        duration_ms=duration,
+                        metadata=metadata,
+                    )
+                except Exception:
+                    pass
+            return
         self._span(stage, name, duration, success=success, metadata=metadata)
         if stage == "context": self.context_ms += duration
         elif stage == "fast_path": self.fast_path_ms += duration; self.task_type = "fast_path"

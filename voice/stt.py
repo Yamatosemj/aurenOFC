@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import os
 from pathlib import Path
 from typing import Any
@@ -10,6 +11,13 @@ ASR_DIR = VOICE_DIR / "asr" / "parakeet-tdt-0.6b-v3-ptBR-TAGARELA-onnx-int8"
 ASR_DIR.mkdir(parents=True, exist_ok=True)
 
 DEFAULT_REPO = "calneymgp/parakeet-tdt-0.6b-v3-ptBR-TAGARELA-onnx-int8"
+
+ASR_REVISION = "f5f837ee9e385781e60748cb9824a9c65487be36"
+ASR_EXPECTED = {
+    "encoder-model.int8.onnx": ("89e33f4b8c5186a7034947f07e41af36b853ab638c5a16be37d55774722b8fc5", 879_746_906),
+    "decoder_joint-model.int8.onnx": ("4150d4d86c89dfee7a9a0d6d7ab2e8d756ba31ffe92ca0242fa93707febc33ac", 53_592_358),
+    "nemo128.onnx": ("a9fde1486ebfcc08f328d75ad4610c67835fea58c73ba57e3209a6f6cf019e9f", 139_764),
+}
 
 
 class LocalPortugueseASR:
@@ -29,8 +37,43 @@ class LocalPortugueseASR:
         self._model = model
         self._runtime = "onnxruntime-cpu"
 
+    @staticmethod
+    def _sha256(path: Path) -> str:
+        digest = hashlib.sha256()
+        with path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+        return digest.hexdigest()
+
+    @classmethod
+    def _verify_model_files(cls, model_dir: Path) -> list[str]:
+        invalid: list[str] = []
+        for name in (
+            "config.json",
+            "encoder-model.int8.onnx",
+            "decoder_joint-model.int8.onnx",
+            "nemo128.onnx",
+            "vocab.txt",
+        ):
+            if not (model_dir / name).is_file():
+                invalid.append(f"ausente:{name}")
+
+        for name, (expected_hash, expected_size) in ASR_EXPECTED.items():
+            path = model_dir / name
+            if not path.is_file():
+                continue
+            try:
+                if path.stat().st_size != expected_size:
+                    invalid.append(f"tamanho:{name}")
+                    continue
+                if cls._sha256(path) != expected_hash:
+                    invalid.append(f"sha256:{name}")
+            except OSError:
+                invalid.append(f"indisponivel:{name}")
+        return invalid
+
     def _download_model(self) -> Path:
-        """Garante o cache local completo do modelo INT8 oficial."""
+        """Garante cache do modelo em revision imutavel e com integridade verificada."""
         self.model_dir.mkdir(parents=True, exist_ok=True)
 
         required = (
@@ -40,43 +83,47 @@ class LocalPortugueseASR:
             "nemo128.onnx",
             "vocab.txt",
         )
-        if not all((self.model_dir / name).exists() for name in required):
-            try:
-                from huggingface_hub import snapshot_download
-            except ImportError as exc:
-                raise RuntimeError(
-                    "hugging-face-hub ausente. Rode INSTALAR_VOZ.bat."
-                ) from exc
+        try:
+            from huggingface_hub import snapshot_download
+        except ImportError as exc:
+            raise RuntimeError(
+                "hugging-face-hub ausente. Rode INSTALAR_VOZ.bat."
+            ) from exc
+
+        invalid = self._verify_model_files(self.model_dir)
+        if invalid:
+            for name in required:
+                try:
+                    (self.model_dir / name).unlink()
+                except FileNotFoundError:
+                    pass
+                except OSError:
+                    pass
 
             print(
-                "Primeiro uso do ASR: baixando Parakeet PT-BR TAGARELA INT8 "
-                f"({self.repo_id})..."
+                "Primeiro uso do ASR ou cache invalido: baixando Parakeet "
+                f"PT-BR TAGARELA INT8 em revision {ASR_REVISION}..."
             )
             try:
                 snapshot_download(
                     repo_id=self.repo_id,
+                    revision=ASR_REVISION,
                     local_dir=str(self.model_dir),
+                    allow_patterns=list(required),
+                    force_download=True,
                 )
             except Exception as exc:
                 raise RuntimeError(
                     f"Falha ao baixar o ASR Parakeet local: {exc}"
                 ) from exc
 
-            missing = [name for name in required if not (self.model_dir / name).exists()]
-            if missing:
-                raise RuntimeError(
-                    "Download do ASR terminou, mas faltam arquivos do modelo: "
-                    + ", ".join(missing)
-                )
+        invalid = self._verify_model_files(self.model_dir)
+        if invalid:
+            raise RuntimeError(
+                "Integridade do cache ASR invalida apos o download: "
+                + ", ".join(invalid)
+            )
 
-        # Compatibilidade com onnx-asr 0.12: o loader espera os nomes
-        # padrao do pacote NeMo, enquanto o modelo TAGARELA INT8 usa
-        # explicitamente os sufixos ".int8.onnx".
-        #
-        # Criamos hard links no mesmo diretorio para reutilizar os mesmos
-        # bytes, sem duplicar ~GB de modelo no disco. Em Windows, os.link()
-        # funciona normalmente para arquivos no mesmo volume. Se o sistema
-        # nao permitir hard link, usamos copia como fallback seguro.
         aliases = {
             "encoder-model.onnx": "encoder-model.int8.onnx",
             "decoder_joint-model.onnx": "decoder_joint-model.int8.onnx",
@@ -85,22 +132,27 @@ class LocalPortugueseASR:
             alias = self.model_dir / alias_name
             source = self.model_dir / source_name
             if alias.exists():
-                continue
+                try:
+                    if alias.stat().st_size == source.stat().st_size:
+                        continue
+                except OSError:
+                    pass
+                try:
+                    alias.unlink()
+                except OSError:
+                    pass
             try:
                 os.link(source, alias)
             except OSError:
                 try:
                     import shutil
-
                     shutil.copy2(source, alias)
                 except Exception as exc:
                     raise RuntimeError(
                         f"Nao foi possivel preparar o alias do modelo '{alias_name}': {exc}"
                     ) from exc
-            print(f"ASR: alias de compatibilidade pronto: {alias_name}")
 
         return self.model_dir
-
     def _ensure_model(self) -> None:
         if self._model is not None:
             return

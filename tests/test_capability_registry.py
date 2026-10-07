@@ -47,8 +47,35 @@ def test_registry_contains_real_v44_capabilities_only():
         "analisar_tela",
         "inspecionar_arquivo",
         "ler_arquivo",
+        "gerenciar_arquivos",
+        "lixeira_arquivo",
+        "desfazer_ultima_acao",
     }
     assert set(CAPABILITY_REGISTRY.ids()) == expected
+
+
+def test_file_operation_task_specs_resolve_to_local_capabilities():
+    mover = Router().route_task_spec(
+        base_spec(
+            "mova o arquivo origem.txt para destino.txt",
+            parametros={"origem": "C:\\temp\\origem.txt", "destino": "C:\\temp\\destino.txt"},
+        )
+    )
+    assert mover.status == "resolved"
+    assert mover.capability_id == "gerenciar_arquivos"
+    assert mover.route == "local"
+    assert mover.params["acao"] == "mover"
+
+    trash = Router().route_task_spec(
+        base_spec(
+            "envie o arquivo para a lixeira",
+            parametros={"caminho": "C:\\temp\\arquivo.txt"},
+        )
+    )
+    assert trash.status == "resolved"
+    assert trash.capability_id == "lixeira_arquivo"
+    assert trash.route == "local"
+    assert trash.params["caminho"] == "C:\\temp\\arquivo.txt"
 
 
 def test_open_youtube_resolves_to_known_service_url_and_local():
@@ -286,3 +313,10 @@ def test_spotify_prefix_request_resolves():
     assert result.capability_id == "tocar_musica_spotify"
     assert result.route == "luna"
     assert result.params["consulta"] == "Evidencias"
+
+
+def test_undo_capability_is_registered_and_backed():
+    capability = CAPABILITY_REGISTRY.get("desfazer_ultima_acao")
+    assert capability is not None
+    assert capability.tools == ("desfazer_ultima_acao",)
+    assert capability.politica_confirmacao == "never"

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import os
 from pathlib import Path
-from threading import Event, Lock
+from threading import Event, Lock, Thread
 
 from agent.ari_native.audio_manager import output_session
 from typing import Any
@@ -16,6 +17,11 @@ VOICES_PATH = TTS_DIR / "voices-v1.0.bin"
 
 MODEL_URL = "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.1/kokoro-v1.0.onnx"
 VOICES_URL = "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.1/voices-v1.0.bin"
+
+TTS_EXPECTED = {
+    MODEL_PATH.name: ("beb0d1848dee9a49da392cc3df26958d46cfa35d321edf434f52949153f0df3a", 325_505_369),
+    VOICES_PATH.name: ("bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d", 28_214_398),
+}
 
 
 class LocalKokoroTTS:
@@ -99,11 +105,54 @@ class LocalKokoroTTS:
                 pass
             raise
 
+    @staticmethod
+    def _sha256(path: Path) -> str:
+        digest = hashlib.sha256()
+        with path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+        return digest.hexdigest()
+
+    @classmethod
+    def _verify_file(cls, path: Path) -> None:
+        esperado = TTS_EXPECTED.get(path.name)
+        if esperado is None:
+            raise RuntimeError(f"Modelo TTS sem manifest de integridade: {path.name}")
+        expected_hash, expected_size = esperado
+        if not path.is_file():
+            raise RuntimeError(f"Arquivo TTS ausente: {path.name}")
+        if path.stat().st_size != expected_size:
+            try:
+                path.unlink()
+            except OSError:
+                pass
+            raise RuntimeError(
+                f"Arquivo TTS com tamanho inesperado: {path.name}. "
+                "O cache foi invalidado; execute novamente para baixar o artefato correto."
+            )
+        if cls._sha256(path) != expected_hash:
+            try:
+                path.unlink()
+            except OSError:
+                pass
+            raise RuntimeError(
+                f"SHA-256 invalido para o arquivo TTS {path.name}; cache invalidado."
+            )
+
     def _ensure_files(self) -> None:
-        if not MODEL_PATH.exists():
-            self._download(MODEL_URL, MODEL_PATH)
-        if not VOICES_PATH.exists():
-            self._download(VOICES_URL, VOICES_PATH)
+        for url, path in ((MODEL_URL, MODEL_PATH), (VOICES_URL, VOICES_PATH)):
+            if path.exists():
+                try:
+                    self._verify_file(path)
+                    continue
+                except RuntimeError:
+                    pass
+                try:
+                    path.unlink()
+                except OSError:
+                    pass
+            self._download(url, path)
+            self._verify_file(path)
 
     def _ensure_model(self) -> None:
         if self._model is not None:
@@ -165,7 +214,23 @@ class LocalKokoroTTS:
         try:
             with self._lock:
                 with output_session():
-                    asyncio.run(_play())
+                    try:
+                        asyncio.get_running_loop()
+                    except RuntimeError:
+                        asyncio.run(_play())
+                    else:
+                        erro = []
+                        def executar_em_thread():
+                            try:
+                                asyncio.run(_play())
+                            except BaseException as exc:
+                                erro.append(exc)
+
+                        thread = Thread(target=executar_em_thread, name="auren-kokoro", daemon=True)
+                        thread.start()
+                        thread.join()
+                        if erro:
+                            raise erro[0]
         except Exception as exc:
             raise RuntimeError(f"Falha na sintese Kokoro local: {exc}") from exc
 

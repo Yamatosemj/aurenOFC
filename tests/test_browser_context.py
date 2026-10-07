@@ -18,7 +18,16 @@ def test_browser_context_combines_tabs_and_active_page(monkeypatch):
     monkeypatch.setattr(
         browser,
         "listar_abas",
-        lambda: "Abas abertas: 2\nAba ativa: 2",
+        lambda: ToolResult.success(
+            "Abas abertas: 2\nAba ativa: 2",
+            data={
+                "abas": [
+                    {"indice": 1, "titulo": "Inicio", "url": "https://example.com", "ativa": False},
+                    {"indice": 2, "titulo": "YouTube", "url": "https://example.com/" + "a" * 220, "ativa": True},
+                ],
+            },
+            tool_name="listar_abas",
+        ),
     )
     monkeypatch.setattr(
         browser,
@@ -36,6 +45,8 @@ def test_browser_context_combines_tabs_and_active_page(monkeypatch):
     assert "Abas abertas: 2" in result.message
     assert "Titulo: YouTube" in result.message
     assert result.data["foco"] == "video de teste"
+    assert result.data["abas_snapshot"][1]["ativa"] is True
+    assert len(result.data["abas_snapshot"][1]["url"]) > 180
     assert result.data["scroll"] == {
         "scroll_y": 900,
         "scroll_height": 3000,
@@ -60,3 +71,40 @@ def test_browser_context_is_read_only_and_untrusted():
     assert result.conteudo_nao_confiavel is True
     assert nivel == PermissionLevel.CONFIRM
     assert "conteudo nao confiavel" in motivo
+
+
+
+def test_browser_context_propagates_active_page_read_failure(monkeypatch):
+    monkeypatch.setattr(browser, "listar_abas", lambda: "Abas abertas: 1\nAba ativa: 1")
+    monkeypatch.setattr(browser, "ler_pagina", lambda _foco: "Nao consegui ler a pagina: pagina fechada.")
+
+    class FailingPage:
+        def evaluate(self, _script):
+            raise AssertionError("Nao deve coletar scroll quando a leitura principal falhou.")
+
+    monkeypatch.setattr(browser, "obter_pagina", lambda: FailingPage())
+
+    result = browser_context.obter_contexto_navegador("teste")
+
+    assert result.ok is False
+    assert result.tool_name == "obter_contexto_navegador"
+    assert result.error_code == "browser_page_read_failed"
+    assert "Nao consegui ler a pagina" in result.message
+
+
+def test_browser_context_reports_partial_scroll_without_claiming_verification_evidence(monkeypatch):
+    monkeypatch.setattr(browser, "listar_abas", lambda: "Abas abertas: 1\nAba ativa: 1")
+    monkeypatch.setattr(browser, "ler_pagina", lambda _foco: "Titulo: teste\nURL: https://example.com")
+
+    class PageWithoutScroll:
+        def evaluate(self, _script):
+            raise RuntimeError("contexto de scroll indisponivel")
+
+    monkeypatch.setattr(browser, "obter_pagina", lambda: PageWithoutScroll())
+
+    result = browser_context.obter_contexto_navegador("teste")
+
+    assert result.ok is True
+    assert result.data["parcial"] is True
+    assert result.data["scroll_disponivel"] is False
+    assert result.data["scroll"] == {}

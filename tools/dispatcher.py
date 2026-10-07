@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+import ctypes
 import json
+import os
 
 from core.utils import normalizar_nome
 from core.tool_contracts import validate_tool_arguments
 from core.vision import transform_visual_tool_arguments
-from tools import applications, browser, browser_context, file_intelligence, files
+from tools import applications, browser, browser_context, browser_elements, browser_navigation, file_intelligence, files
 from tools import windows
 from tools.memory import salvar_memoria_persistente, consultar_memoria_persistente, esquecer_memoria_persistente
+from tools import undo as undo_tools
 
 from core.tool_result import LEGACY_FAILURE_MARKERS, ToolResult, from_legacy
 
@@ -74,6 +77,29 @@ def _resolver_ui_automation_para_permissao(argumentos):
     return direto
 
 
+def _obter_contexto_tecla_windows():
+    if os.name != "nt":
+        return {"ok": False, "evidencia": {}}
+    try:
+        user32 = ctypes.windll.user32
+        user32.GetForegroundWindow.argtypes = []
+        user32.GetForegroundWindow.restype = ctypes.c_void_p
+        hwnd = user32.GetForegroundWindow()
+        if not hwnd:
+            return {"ok": False, "evidencia": {}}
+        return {
+            "ok": True,
+            "evidencia": {
+                "ambiente": "windows",
+                "context_known": True,
+                "hwnd": int(hwnd),
+            },
+        }
+    except (AttributeError, OSError, TypeError, ValueError) as erro:
+        return {"ok": False, "evidencia": {}, "erro": str(erro)}
+
+
+
 # A execucao concreta e registrada aqui uma vez por tool. O dispatcher
 # nao precisa de uma cascata if/elif por nome.
 
@@ -82,12 +108,16 @@ def _sem_memoria(fn, *keys, defaults=None):
     def handler(args, memory_store, context):
         values = [args[k] if k in args else defaults[k] for k in keys]
         return fn(*values)
+    handler.__auren_parameter_keys__ = tuple(keys)
+    handler.__auren_parameter_defaults__ = dict(defaults)
     return handler
 
 
 def _com_memoria(fn, *keys):
     def handler(args, memory_store, context):
         return fn(memory_store, *(args[k] for k in keys))
+    handler.__auren_parameter_keys__ = tuple(keys)
+    handler.__auren_parameter_defaults__ = {}
     return handler
 
 
@@ -135,15 +165,37 @@ def _preencher_windows_handler(args, memory_store, context):
         protegido,
     )
 
+_inspecionar_arquivo_handler.__auren_parameter_keys__ = (
+    "caminho", "procurar_copias", "limite_copias"
+)
+_inspecionar_arquivo_handler.__auren_parameter_defaults__ = {}
+
+_ler_arquivo_handler.__auren_parameter_keys__ = (
+    "caminho", "inicio", "limite_caracteres"
+)
+_ler_arquivo_handler.__auren_parameter_defaults__ = {}
+
+_preencher_windows_handler.__auren_parameter_keys__ = (
+    "alvo_janela", "alvo", "texto", "indice"
+)
+_preencher_windows_handler.__auren_parameter_defaults__ = {}
+
+
 
 TOOL_HANDLERS = {
     "abrir_programa": _sem_memoria(applications.abrir_programa, "programa"),
     "buscar_arquivo": _sem_memoria(files.buscar_arquivo, "consulta"),
     "inspecionar_arquivo": _inspecionar_arquivo_handler,
     "ler_arquivo": _ler_arquivo_handler,
+    "mover_arquivo": _sem_memoria(files.mover_arquivo, "origem", "destino"),
+    "copiar_arquivo": _sem_memoria(files.copiar_arquivo, "origem", "destino"),
+    "renomear_arquivo": _sem_memoria(files.renomear_arquivo, "caminho", "novo_nome"),
+    "criar_pasta": _sem_memoria(files.criar_pasta, "caminho"),
+    "enviar_para_lixeira": _sem_memoria(files.enviar_para_lixeira, "caminho"),
     "salvar_memoria_persistente": _com_memoria(salvar_memoria_persistente, "chave", "valor", "categoria"),
     "consultar_memoria_persistente": _com_memoria(consultar_memoria_persistente, "consulta", "limite"),
     "esquecer_memoria_persistente": _com_memoria(esquecer_memoria_persistente, "chave"),
+    "desfazer_ultima_acao": _sem_memoria(undo_tools.desfazer_ultima_acao),
     "listar_janelas_windows": _sem_memoria(windows.listar_janelas_windows),
     "focar_janela_windows": _sem_memoria(windows.focar_janela_windows, "alvo"),
     "minimizar_janela_windows": _sem_memoria(windows.minimizar_janela_windows, "alvo"),
@@ -161,8 +213,17 @@ TOOL_HANDLERS = {
     "definir_area_transferencia_windows": _sem_memoria(windows.definir_area_transferencia_windows, "texto"),
     "pressionar_tecla_windows": _sem_memoria(windows.pressionar_tecla_windows, "tecla"),
     "mover_mouse_windows": _sem_memoria(windows.mover_mouse_windows, "x", "y"),
-    "clicar_mouse_windows": _sem_memoria(windows.clicar_mouse_windows, "x", "y", "botao", "descricao", defaults={"botao": "esquerdo", "descricao": ""}),
-    "arrastar_mouse_windows": _sem_memoria(windows.arrastar_mouse_windows, "x_inicial", "y_inicial", "x_final", "y_final", "botao", "duracao_ms", "descricao", defaults={"botao": "esquerdo", "duracao_ms": 300, "descricao": ""}),
+    "clicar_mouse_windows": _sem_memoria(
+        windows.clicar_mouse_windows,
+        "x", "y", "botao", "descricao", "coordinate_space", "vision_snapshot_id",
+        defaults={"botao": "esquerdo", "descricao": "", "coordinate_space": "windows", "vision_snapshot_id": ""},
+    ),
+    "arrastar_mouse_windows": _sem_memoria(
+        windows.arrastar_mouse_windows,
+        "x_inicial", "y_inicial", "x_final", "y_final",
+        "botao", "duracao_ms", "descricao", "coordinate_space", "vision_snapshot_id",
+        defaults={"botao": "esquerdo", "duracao_ms": 300, "descricao": "", "coordinate_space": "windows", "vision_snapshot_id": ""},
+    ),
     "obter_audio_windows": _sem_memoria(windows.obter_audio_windows),
     "definir_volume_windows": _sem_memoria(windows.definir_volume_windows, "percentual"),
     "definir_mudo_windows": _sem_memoria(windows.definir_mudo_windows, "ativado"),
@@ -181,23 +242,57 @@ TOOL_HANDLERS = {
     "listar_abas": _sem_memoria(browser.listar_abas),
     "abrir_nova_aba": _sem_memoria(browser.abrir_nova_aba, "url", "modo", defaults={"url": "", "modo": "visivel"}),
     "trocar_aba": _sem_memoria(browser.trocar_aba, "indice"),
-    "fechar_aba": _sem_memoria(browser.fechar_aba, "indice"),
+    "fechar_aba": _sem_memoria(browser.fechar_aba, "indice", defaults={"indice": None}),
     "voltar_pagina": _sem_memoria(browser.voltar_pagina),
     "avancar_pagina": _sem_memoria(browser.avancar_pagina),
     "recarregar_pagina": _sem_memoria(browser.recarregar_pagina),
-    "rolar_pagina": _sem_memoria(browser.rolar_pagina, "direcao"),
+    "rolar_pagina": _sem_memoria(browser.rolar_pagina, "direcao", "alvo", defaults={"alvo": ""}),
 }
 
 
 def validar_registry_handlers() -> tuple[bool, str]:
-    """Confere que o registro de handlers acompanha o registry de tools."""
+    """Confere nomes, parametros e defaults entre registry e dispatcher."""
     from core.tools_registry import tools
+
     names = {item["name"] for item in tools}
     handlers = set(TOOL_HANDLERS)
     missing = sorted(names - handlers)
     extra = sorted(handlers - names)
     if missing or extra:
         return False, f"missing={missing}; extra={extra}"
+
+    for item in tools:
+        nome = item["name"]
+        handler = TOOL_HANDLERS[nome]
+        propriedades = set(item["parameters"].get("properties", {}))
+        obrigatorios = set(item["parameters"].get("required", []))
+        chaves = set(getattr(handler, "__auren_parameter_keys__", ()))
+        defaults = set(getattr(handler, "__auren_parameter_defaults__", {}))
+
+        if chaves != propriedades:
+            return (
+                False,
+                f"{nome}: parametros divergentes; registry={sorted(propriedades)} handler={sorted(chaves)}",
+            )
+
+        if not obrigatorios <= propriedades:
+            return False, f"{nome}: required fora de properties"
+
+        opcionais = propriedades - obrigatorios
+        sem_default = sorted(opcionais - defaults)
+        if sem_default:
+            return (
+                False,
+                f"{nome}: parametros opcionais sem default no dispatcher={sem_default}",
+            )
+
+        defaults_invalidos = sorted(defaults - propriedades)
+        if defaults_invalidos:
+            return (
+                False,
+                f"{nome}: defaults sem parametro correspondente={defaults_invalidos}",
+            )
+
     return True, ""
 
 
@@ -254,6 +349,31 @@ def executar_ferramenta(item, permission_manager, memory_store) -> ToolResult:
                 error_code="vision_coordinate_rejected",
                 tool_name=nome,
             )
+
+    if nome == "clicar_elemento":
+        preflight = browser_elements.obter_evidencia_risco_clique(
+            argumentos.get("alvo", ""),
+            argumentos.get("indice", 1),
+        )
+        argumentos_execucao.update({
+            "_browser_click_preflight_ok": bool(preflight.get("ok")),
+            "_browser_click_preflight": dict(preflight.get("evidencia") or {}),
+        })
+    if nome == "pressionar_tecla":
+        preflight = browser_navigation.obter_evidencia_risco_tecla(
+            argumentos.get("tecla", "")
+        )
+        argumentos_execucao.update({
+            "_key_context_ok": bool(preflight.get("ok")),
+            "_key_context": dict(preflight.get("evidencia") or {}),
+        })
+
+    if nome == "pressionar_tecla_windows":
+        preflight = _obter_contexto_tecla_windows()
+        argumentos_execucao.update({
+            "_key_context_ok": bool(preflight.get("ok")),
+            "_key_context": dict(preflight.get("evidencia") or {}),
+        })
 
     if nome == "preencher_elemento_windows":
         preflight = _resolver_ui_automation_para_permissao(argumentos)

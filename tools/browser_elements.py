@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 import re
 
+from core.browser_verification import _compromisso_preenchimento_sensivel
+from core.tool_result import ToolResult
 from core.utils import normalizar_nome
 
 
@@ -140,8 +142,347 @@ def encontrar_elemento(alvo, indice=1, preferir_campo=False):
         f"Nao encontrei o elemento '{alvo}' na pagina."
     )
 
+def obter_evidencia_risco_clique(alvo, indice=1):
+    """Inspeciona somente a estrutura do elemento para a decisao de permissao."""
+    try:
+        elemento = encontrar_elemento(alvo, indice)
+        evidencia = elemento.evaluate(
+            """el => {
+                const form = el.closest('form');
+                const attr = nome => el.getAttribute(nome) || '';
+                return {
+                    tag: String(el.tagName || '').toLowerCase(),
+                    role: attr('role').toLowerCase(),
+                    type: attr('type').toLowerCase(),
+                    href: attr('href'),
+                    target: attr('target').toLowerCase(),
+                    aria_controls: attr('aria-controls'),
+                    aria_haspopup: attr('aria-haspopup').toLowerCase(),
+                    popover_target: attr('popovertarget'),
+                    download: el.hasAttribute('download'),
+                    onclick: attr('onclick'),
+                    disabled: Boolean(el.disabled),
+                    contenteditable: attr('contenteditable').toLowerCase(),
+                    form: form ? {
+                        method: String(form.getAttribute('method') || 'get').toLowerCase(),
+                        action: String(form.getAttribute('action') || ''),
+                    } : null,
+                };
+            }"""
+        )
+        if not isinstance(evidencia, dict):
+            return {"ok": False, "evidencia": {}}
+        return {"ok": True, "evidencia": evidencia}
+    except Exception as erro:
+        return {"ok": False, "evidencia": {}, "erro": str(erro)}
+
 def clicar_elemento(alvo, indice=1):
     from tools import browser as _browser
+
+    def _capturar_estado_controle(elemento):
+        try:
+            estado = elemento.evaluate(
+                """
+                el => {
+                    const attr = nome => {
+                        const valor = el.getAttribute(nome);
+                        return valor === null ? null : valor;
+                    };
+
+                    const id = attr('id') || '';
+                    const name = attr('name') || '';
+                    const ariaLabel = attr('aria-label') || '';
+                    const placeholder = attr('placeholder') || '';
+                    const role = attr('role') || '';
+                    const ariaControls = attr('aria-controls') || '';
+                    const ariaHaspopup = attr('aria-haspopup') || '';
+                    const popoverTarget = attr('popovertarget') || '';
+                    const texto = String(
+                        el.innerText || el.textContent || ''
+                    ).replace(/\s+/g, ' ').trim().slice(0, 240);
+
+                    const fingerprintTexto = (() => {
+                        const alvo = el.parentElement || el;
+                        const bruto = String(alvo.outerHTML || '').replace(/\s+/g, ' ').slice(0, 12000);
+                        let hash = 1469598103934665603n;
+                        for (let i = 0; i < bruto.length; i += 1) {
+                            hash ^= BigInt(bruto.charCodeAt(i));
+                            hash = BigInt.asUintN(64, hash * 1099511628211n);
+                        }
+                        return hash.toString(16).padStart(16, '0');
+                    })();
+
+                    let chave = '';
+                    if (id) chave = 'id:' + id;
+                    else if (name) chave = 'name:' + name;
+                    else if (ariaLabel) chave = 'aria:' + ariaLabel;
+                    else if (placeholder) chave = 'placeholder:' + placeholder;
+                    else if (texto) chave = 'texto:' + texto;
+
+                    return {
+                        chave,
+                        id: id.slice(0, 120),
+                        name: name.slice(0, 120),
+                        ariaLabel: ariaLabel.slice(0, 180),
+                        placeholder: placeholder.slice(0, 120),
+                        role: role.slice(0, 80),
+                        texto: texto.slice(0, 240),
+                        ariaControls: ariaControls.slice(0, 240),
+                        ariaHaspopup: ariaHaspopup.slice(0, 80),
+                        popoverTarget: popoverTarget.slice(0, 240),
+                        tag: String(el.tagName || '').toLowerCase(),
+                        domFingerprint: fingerprintTexto,
+                        estados: {
+                            'aria-expanded': attr('aria-expanded'),
+                            'aria-pressed': attr('aria-pressed'),
+                            'aria-selected': attr('aria-selected'),
+                            'aria-checked': attr('aria-checked'),
+                            'checked': ('checked' in el) ? Boolean(el.checked) : null,
+                            'selected': ('selected' in el) ? Boolean(el.selected) : null,
+                            'open': ('open' in el)
+                                ? Boolean(el.open)
+                                : (el.tagName === 'SUMMARY' && el.closest('details')
+                                    ? Boolean(el.closest('details').open)
+                                    : null),
+                            'details-open': (el.tagName === 'SUMMARY' && el.closest('details'))
+                                ? Boolean(el.closest('details').open)
+                                : (el.tagName === 'DETAILS' ? Boolean(el.open) : null),
+                            'data-state': attr('data-state')
+                        }
+                    };
+                }
+                """
+            )
+            if isinstance(estado, dict):
+                return estado
+        except Exception:
+            pass
+        return {
+            "chave": "",
+            "id": "",
+            "name": "",
+            "ariaLabel": "",
+            "placeholder": "",
+            "role": "",
+            "texto": "",
+            "ariaControls": "",
+            "ariaHaspopup": "",
+            "popoverTarget": "",
+            "tag": "",
+            "estados": {},
+        }
+
+    def _capturar_estado_pagina(pagina):
+        try:
+            estado = pagina.evaluate(
+                """
+                () => {
+                    const visivel = el => {
+                        const rect = el.getBoundingClientRect();
+                        const cs = getComputedStyle(el);
+                        return rect.width > 0 && rect.height > 0 &&
+                               cs.visibility !== 'hidden' &&
+                               cs.display !== 'none' &&
+                               cs.opacity !== '0' &&
+                               cs.pointerEvents !== 'none';
+                    };
+
+                    const contar = seletores => Array.from(
+                        document.querySelectorAll(seletores)
+                    ).filter(visivel).length;
+
+                    const limpar = texto => String(texto || '')
+                        .replace(/\s+/g, ' ')
+                        .trim()
+                        .slice(0, 120);
+
+                    const identidade = el => ({
+                        id: String(el.getAttribute('id') || '').slice(0, 160),
+                        role: String(el.getAttribute('role') || el.tagName || '').toLowerCase().slice(0, 80),
+                        texto: limpar(
+                            el.getAttribute('aria-label') ||
+                            el.innerText ||
+                            el.textContent ||
+                            ''
+                        ),
+                    });
+
+                    const listar = (seletores, filtro = null) => Array.from(
+                        document.querySelectorAll(seletores)
+                    ).filter(visivel).filter(el => !filtro || filtro(el))
+                        .slice(0, 20)
+                        .map(identidade);
+
+                    const popovers = listar('[popover]', el => {
+                        try {
+                            return el.matches(':popover-open');
+                        } catch (_) {
+                            return false;
+                        }
+                    });
+
+                    const overlays = {
+                        dialogos: listar('dialog, [role="dialog"], [role="alertdialog"]'),
+                        menus: listar('[role="menu"]'),
+                        listboxes: listar('[role="listbox"]'),
+                        popovers,
+                        details_abertos: listar('details[open]')
+                    };
+
+                    return {
+                        dialogos: overlays.dialogos.length,
+                        menus: overlays.menus.length,
+                        listboxes: overlays.listboxes.length,
+                        popovers: overlays.popovers.length,
+                        details_abertos: overlays.details_abertos.length,
+                        overlays
+                    };
+                """
+            )
+            if isinstance(estado, dict):
+                return {
+                    "dialogos": int(estado.get("dialogos", 0)),
+                    "menus": int(estado.get("menus", 0)),
+                    "listboxes": int(estado.get("listboxes", 0)),
+                    "popovers": int(estado.get("popovers", 0)),
+                    "details_abertos": int(estado.get("details_abertos", 0)),
+                }
+        except Exception:
+            pass
+        return {}
+
+    def _sinal_controle(antes, depois):
+        estados_antes = antes.get("estados", {})
+        estados_depois = depois.get("estados", {})
+        for atributo in (
+            "aria-expanded",
+            "aria-pressed",
+            "aria-selected",
+            "aria-checked",
+            "checked",
+            "selected",
+            "open",
+            "details-open",
+            "data-state",
+        ):
+            valor_antes = estados_antes.get(atributo)
+            valor_depois = estados_depois.get(atributo)
+            if valor_antes is not None and valor_depois is not None:
+                if valor_antes != valor_depois:
+                    return {
+                        "atributo": atributo,
+                        "antes": valor_antes,
+                        "depois": valor_depois,
+                    }
+        fingerprint_antes = str(antes.get("domFingerprint") or "")
+        fingerprint_depois = str(depois.get("domFingerprint") or "")
+        texto_antes = str(antes.get("texto") or "").strip()
+        texto_depois = str(depois.get("texto") or "").strip()
+        if (
+            fingerprint_antes
+            and fingerprint_depois
+            and fingerprint_antes != fingerprint_depois
+            and texto_antes
+            and texto_depois
+            and texto_antes != texto_depois
+        ):
+            return {
+                "atributo": "domFingerprint+texto",
+                "antes": fingerprint_antes,
+                "depois": fingerprint_depois,
+                "texto_antes": texto_antes,
+                "texto_depois": texto_depois,
+            }
+        return None
+
+    def _sinal_pagina_causal(antes, depois, controle):
+        if not isinstance(antes, dict) or not isinstance(depois, dict) or not isinstance(controle, dict):
+            return None
+
+        overlays_antes = antes.get("overlays")
+        overlays_depois = depois.get("overlays")
+        if not isinstance(overlays_antes, dict) or not isinstance(overlays_depois, dict):
+            return None
+
+        aria_controls = str(
+            controle.get("aria_controls") or controle.get("ariaControls") or ""
+        ).strip().split()
+        aria_haspopup = str(
+            controle.get("aria_haspopup") or controle.get("ariaHaspopup") or ""
+        ).strip().casefold()
+        popover_target = str(
+            controle.get("popover_target") or controle.get("popoverTarget") or ""
+        ).strip()
+
+        tipos = (
+            ("dialogos", {"dialog"}),
+            ("menus", {"menu", "true"}),
+            ("listboxes", {"listbox"}),
+        )
+
+        def identidade(item):
+            if not isinstance(item, dict):
+                return None
+            return (
+                str(item.get("id") or ""),
+                str(item.get("role") or ""),
+                str(item.get("texto") or ""),
+            )
+
+        for alvo, popup_roles in tipos:
+            antes_itens = overlays_antes.get(alvo, [])
+            depois_itens = overlays_depois.get(alvo, [])
+            if not isinstance(antes_itens, list) or not isinstance(depois_itens, list):
+                continue
+
+            identidades_antes = {identidade(item) for item in antes_itens}
+            novos = [
+                item for item in depois_itens
+                if identidade(item) not in identidades_antes
+            ]
+            if not novos:
+                continue
+
+            if aria_controls:
+                for item in novos:
+                    item_id = str(item.get("id") or "").strip()
+                    if item_id and item_id in aria_controls:
+                        return {
+                            "tipo": "pagina",
+                            "alvo": alvo,
+                            "antes": len(antes_itens),
+                            "depois": len(depois_itens),
+                            "causalidade": "aria-controls",
+                            "relacao": {"tipo": "aria-controls", "valor": item_id},
+                            "novos": [item],
+                        }
+
+            if alvo == "popovers" and popover_target:
+                for item in novos:
+                    item_id = str(item.get("id") or "").strip()
+                    if item_id and item_id == popover_target:
+                        return {
+                            "tipo": "pagina",
+                            "alvo": alvo,
+                            "antes": len(antes_itens),
+                            "depois": len(depois_itens),
+                            "causalidade": "popover-target",
+                            "relacao": {"tipo": "popover-target", "valor": item_id},
+                            "novos": [item],
+                        }
+
+            if aria_haspopup in popup_roles:
+                return {
+                    "tipo": "pagina",
+                    "alvo": alvo,
+                    "antes": len(antes_itens),
+                    "depois": len(depois_itens),
+                    "causalidade": "aria-haspopup",
+                    "relacao": {"tipo": "aria-haspopup", "valor": aria_haspopup},
+                    "novos": novos,
+                }
+
+        return None
 
     try:
         p = _browser.obter_pagina()
@@ -151,25 +492,92 @@ def clicar_elemento(alvo, indice=1):
             indice
         )
 
-        # Identifica informacao do elemento antes do clique para melhorar
-        # a verificacao local de conclusao sem chamar o modelo novamente.
+        estado_controle_antes = _capturar_estado_controle(elemento)
+        estado_pagina_antes = _capturar_estado_pagina(p)
+
         try:
-            tag_elemento = elemento.evaluate("el => el.tagName.toLowerCase()")
             href_elemento = elemento.get_attribute("href") or ""
         except Exception:
-            tag_elemento = ""
             href_elemento = ""
 
-        # Nao esperamos o carregamento completo da pagina aqui.
-        # O navegador continua carregando sozinho e o proximo passo pode
-        # consultar a pagina quando realmente precisar.
-        abas_antes = list(_browser._paginas_abertas())
-        elemento.click(timeout=10000)
+        tag_elemento = str(estado_controle_antes.get("tag") or "")
 
-        # Alguns sites abrem links em nova aba/janela. Quando isso acontece,
-        # a nova pagina passa a ser a aba ativa do Auren.
+        abas_antes = list(_browser._paginas_abertas())
+        popup = None
+        click_executado = False
+        popup_timeout = 1200
         try:
-            p.wait_for_timeout(250)
+            from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+        except Exception:
+            PlaywrightTimeoutError = TimeoutError
+
+        # Instala um observador antes do clique para aguardar mudancas reais
+        # em vez de dormir uma quantidade arbitraria de milissegundos.
+        try:
+            p.evaluate(
+                """() => {
+                    if (window.__aurenClickObserver) {
+                        window.__aurenClickObserver.disconnect();
+                    }
+                    const estado = {mutated: false};
+                    const observer = new MutationObserver(() => {
+                        estado.mutated = true;
+                    });
+                    observer.observe(document.documentElement || document, {
+                        subtree: true,
+                        childList: true,
+                        attributes: true,
+                        characterData: true,
+                    });
+                    window.__aurenClickProbe = estado;
+                    window.__aurenClickObserver = observer;
+                }"""
+            )
+        except Exception:
+            pass
+
+        try:
+            with p.expect_popup(timeout=popup_timeout) as popup_info:
+                elemento.click(timeout=10000)
+                click_executado = True
+            popup = popup_info.value
+        except PlaywrightTimeoutError:
+            if not click_executado:
+                # O timeout pode ter vindo do proprio click, nao da ausencia de popup.
+                try:
+                    elemento.click(timeout=10000)
+                    click_executado = True
+                except Exception as erro:
+                    raise erro
+        except AttributeError:
+            elemento.click(timeout=10000)
+            click_executado = True
+        except Exception as erro:
+            if not click_executado:
+                raise erro
+
+        if popup is not None:
+            try:
+                popup.wait_for_load_state("domcontentloaded", timeout=3000)
+            except Exception:
+                pass
+
+        try:
+            p.wait_for_function(
+                """() => Boolean(window.__aurenClickProbe?.mutated)""",
+                timeout=2000,
+            )
+        except Exception:
+            pass
+        try:
+            p.evaluate(
+                """() => {
+                    if (window.__aurenClickObserver) {
+                        window.__aurenClickObserver.disconnect();
+                    }
+                    window.__aurenClickObserver = null;
+                }"""
+            )
         except Exception:
             pass
 
@@ -177,24 +585,81 @@ def clicar_elemento(alvo, indice=1):
         novas_abas = [aba for aba in abas_depois if aba not in abas_antes]
         if novas_abas:
             _browser.pagina = novas_abas[-1]
-            p = pagina
+            p = novas_abas[-1]
         else:
             p = _browser.obter_pagina()
 
         url_atual = p.url
+        estado_controle_depois = _capturar_estado_controle(elemento)
+        estado_pagina_depois = _capturar_estado_pagina(p)
+
         navegacao = "sim" if novas_abas or url_atual != url_anterior else "nao"
 
-        return (
+        efeito = {
+            "controle": {
+                "chave": estado_controle_antes.get("chave", ""),
+                "id": estado_controle_antes.get("id", ""),
+                "name": estado_controle_antes.get("name", ""),
+                "aria_label": estado_controle_antes.get("ariaLabel", ""),
+                "placeholder": estado_controle_antes.get("placeholder", ""),
+                "role": estado_controle_antes.get("role", ""),
+                "texto": estado_controle_antes.get("texto", ""),
+                "aria_controls": estado_controle_antes.get("ariaControls", ""),
+                "aria_haspopup": estado_controle_antes.get("ariaHaspopup", ""),
+                "popover_target": estado_controle_antes.get("popoverTarget", ""),
+                "tag": tag_elemento,
+                "dom_fingerprint": estado_controle_antes.get("domFingerprint", ""),
+            },
+            "pagina_antes": estado_pagina_antes,
+            "pagina_depois": estado_pagina_depois,
+        }
+
+        sinal = _sinal_controle(
+            estado_controle_antes,
+            estado_controle_depois,
+        )
+        if sinal:
+            efeito["sinal"] = {
+                "tipo": "controle",
+                **sinal,
+            }
+        else:
+            sinal_pagina = _sinal_pagina_causal(
+                estado_pagina_antes,
+                estado_pagina_depois,
+                efeito["controle"],
+            )
+            if sinal_pagina:
+                efeito["sinal"] = sinal_pagina
+
+
+        return ToolResult.success(
             f"Cliquei em '{alvo}'.\n"
             f"Elemento: tag={tag_elemento} | href={href_elemento}\n"
             f"URL anterior: {url_anterior}\n"
             f"URL atual: {url_atual}\n"
-            f"Navegacao: {navegacao}"
+            f"Navegacao: {navegacao}",
+            data={
+                "clique": {
+                    "alvo": str(alvo),
+                    "indice": int(indice),
+                    "tag": tag_elemento,
+                    "href": str(href_elemento),
+                    "url_anterior": str(url_anterior),
+                    "url_atual": str(url_atual),
+                    "navegacao": navegacao == "sim",
+                    "nova_aba": bool(novas_abas),
+                    "efeito": efeito,
+                },
+            },
+            tool_name="clicar_elemento",
         )
 
     except Exception as erro:
-        return (
-            f"Nao consegui clicar em '{alvo}': {erro}"
+        return ToolResult.failure(
+            f"Nao consegui clicar em '{alvo}': {erro}",
+            error_code="click_failed",
+            tool_name="clicar_elemento",
         )
 
 def preencher_elemento(alvo, texto, indice=1):
@@ -202,20 +667,70 @@ def preencher_elemento(alvo, texto, indice=1):
         elemento = encontrar_elemento(
             alvo,
             indice,
-            preferir_campo=True
+            preferir_campo=True,
         )
 
-        elemento.fill(
-            texto,
-            timeout=10000
+        atributos = {}
+        for nome in ("type", "name", "id", "aria-label", "placeholder", "autocomplete"):
+            try:
+                atributos[nome] = str(elemento.get_attribute(nome) or "")
+            except Exception:
+                atributos[nome] = ""
+        texto_identificacao = " ".join(atributos.values()).casefold()
+        sensivel = (
+            atributos.get("type", "").casefold() == "password"
+            or bool(re.search(
+                r"password|senha|token|secret|segredo|pin|cvv|cvc|2fa|one-time-code|verification|verificacao|codigo",
+                texto_identificacao,
+            ))
         )
 
-        return (
-            f"Preenchi '{alvo}' com o texto informado."
+        elemento.fill(texto, timeout=10000)
+
+        observado = None
+        leitura_disponivel = True
+        try:
+            observado = elemento.input_value(timeout=10000)
+        except Exception:
+            leitura_disponivel = False
+
+        verificado_localmente = leitura_disponivel and observado == str(texto)
+        if leitura_disponivel and not verificado_localmente:
+            return ToolResult.failure(
+                f"Preenchimento de '{alvo}' nao correspondeu ao valor solicitado.",
+                error_code="fill_verification_failed",
+                data={
+                    "preenchimento": {
+                        "alvo": str(alvo),
+                        "indice": int(indice),
+                        "sensivel": sensivel,
+                        "verificado_localmente": False,
+                    }
+                },
+                tool_name="preencher_elemento",
+            )
+
+        compromisso = None
+        if sensivel and verificado_localmente:
+            compromisso = _compromisso_preenchimento_sensivel(str(observado))
+
+        return ToolResult.success(
+            f"Preenchi '{alvo}' com o texto informado.",
+            data={
+                "preenchimento": {
+                    "alvo": str(alvo),
+                    "indice": int(indice),
+                    "sensivel": sensivel,
+                    "verificado_localmente": bool(verificado_localmente),
+                    "compromisso": compromisso,
+                }
+            },
+            tool_name="preencher_elemento",
         )
 
     except Exception as erro:
-        return (
-            f"Nao consegui preencher '{alvo}': {erro}"
+        return ToolResult.failure(
+            f"Nao consegui preencher '{alvo}': {erro}",
+            error_code="fill_failed",
+            tool_name="preencher_elemento",
         )
-

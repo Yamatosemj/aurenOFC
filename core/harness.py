@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import contextvars
+
 import time
 from pathlib import Path
 from typing import Any, Callable
@@ -705,6 +707,19 @@ class AurenHarness:
                 self._trace_started_perf = None
                 _CURRENT_SESSION.reset(token)
 
+    def registrar_etapa_voz(self, categoria: str, duration_ms: float) -> None:
+        """Registra uma etapa ASR/TTS no trace da tarefa atual."""
+        trace = self._trace
+        if trace is None:
+            return
+        categoria_normalizada = str(categoria or "").strip().lower()
+        if categoria_normalizada not in {"asr", "tts"}:
+            raise ValueError("categoria de voz deve ser 'asr' ou 'tts'.")
+        trace.record_stage(
+            categoria_normalizada,
+            duration_ms,
+            category=categoria_normalizada,
+        )
     def current_task(self):
         """Retorna um snapshot imutavel da tarefa atual, se existir."""
         return self.task_manager.current_snapshot()

@@ -5,7 +5,8 @@ session_output_tokens = 0
 session_cached_tokens = 0
 session_cache_write_tokens = 0
 session_cost = 0.0
-
+session_model_counts: dict[str, int] = {}
+last_response_model: str | None = None
 
 
 def extrair_metricas_uso(resposta) -> dict[str, int]:
@@ -38,15 +39,27 @@ def calcular_custo_estimado(metricas: dict[str, int] | None) -> float:
     custo += cache_write * 0.25 / 1_000_000
     custo += saida * 1.20 / 1_000_000
     return float(custo)
-def registrar_uso(resposta):
+
+
+def registrar_uso(resposta, *, modelo: str | None = None) -> None:
+    """Registra consumo e identifica o modelo que efetivamente respondeu.
+
+    O modelo vem do degrau escolhido pelo provider; quando omitido, usamos resposta.model para compatibilidade.
+    O custo e O(1) alem do calculo de metricas existente.
+    """
     global session_input_tokens
     global session_output_tokens
     global session_cached_tokens
     global session_cache_write_tokens
     global session_cost
+    global last_response_model
+
+    modelo_registrado = str(modelo or getattr(resposta, "model", "") or "").strip()
+    if modelo_registrado:
+        last_response_model = modelo_registrado
+        session_model_counts[modelo_registrado] = session_model_counts.get(modelo_registrado, 0) + 1
 
     metricas = extrair_metricas_uso(resposta)
-
     if not metricas:
         return
 
@@ -62,12 +75,19 @@ def registrar_uso(resposta):
     session_cache_write_tokens += cache_write
     session_cost += custo
 
+
 def mostrar_uso():
+    modelos = ", ".join(
+        f"{nome}={quantidade}"
+        for nome, quantidade in sorted(session_model_counts.items())
+    )
     print(
         "[sessao: "
         f"entrada={session_input_tokens}, "
         f"saida={session_output_tokens}, "
         f"cache={session_cached_tokens}, "
         f"cache_write={session_cache_write_tokens}, "
-        f"custo_estimado=US${session_cost:.6f}]"
+        f"custo_estimado=US${session_cost:.6f}, "
+        f"ultimo_modelo={last_response_model or 'n/a'}, "
+        f"modelos={modelos or 'n/a'}]"
     )
