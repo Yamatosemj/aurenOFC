@@ -38,6 +38,8 @@ def _tratar_rodada_sem_ferramentas(
     extrair_destinos_abas: Callable[[str], dict[int, str]],
     multitab_concluida: Callable[[str, list[dict[str, str]]], bool],
     write_log: Callable[..., Any],
+    browser_verification_pending: bool = False,
+    browser_verification_attempts: int = 0,
 ) -> _ResultadoGuardSemFerramentas:
     """Decide retries e falhas específicos para rodadas sem chamadas de ferramenta."""
     if exigir_ferramenta and rodada == 1:
