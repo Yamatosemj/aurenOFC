@@ -349,3 +349,12 @@ def test_close_tab_verification_requires_decrement_and_new_active_tab():
         acao,
     ) is False
 
+    acao["abas"]["quantidade_depois"] = 2
+    acao["abas"]["aba_fechada"] = 3
+    assert verificar_resultado_navegador(
+        "fechar_aba",
+        '{"indice":2}',
+        dados,
+        acao,
+    ) is False
+
