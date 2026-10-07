@@ -342,14 +342,31 @@ def rolar_pagina(direcao, alvo=""):
         altura_viewport = float(p.evaluate("window.innerHeight || 0") or 0)
         alvo_normalizado = str(alvo or "").strip().casefold()
         alvo_encontrado = None
+        alvo_visivel = None
         if alvo_normalizado:
             try:
                 alvo_encontrado = bool(p.evaluate(
                     """texto => (document.body?.innerText || '').toLocaleLowerCase().includes(texto)""",
                     alvo_normalizado,
                 ))
+                alvo_visivel = bool(p.evaluate(
+                    """texto => {
+                        const elementos = Array.from(document.querySelectorAll(
+                            'h1,h2,h3,h4,h5,h6,section,article,main,[role="heading"],[id]'
+                        ));
+                        return elementos.some(el => {
+                            const conteudo = (el.innerText || el.textContent || '').toLocaleLowerCase();
+                            if (!conteudo.includes(texto)) return false;
+                            const rect = el.getBoundingClientRect();
+                            return rect.width > 0 && rect.height > 0
+                                && rect.bottom > 0
+                                && rect.top < window.innerHeight;
+                        });
+                    }""",
+                    alvo_normalizado,
+                ))
             except Exception:
-                alvo_encontrado = None
+                alvo_visivel = None
 
         return ToolResult.success(
             f"Pagina rolada para '{direcao}'.",
