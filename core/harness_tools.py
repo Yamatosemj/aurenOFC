@@ -1,7 +1,10 @@
 from __future__ import annotations
 
-from typing import Any, Callable
 import time
+from typing import Any, Callable
+
+from core.harness_serialization import _argumentos_da_chamada, _texto_seguro
+from core.tool_result import ToolResult, from_legacy
 
 
 def _executar_chamadas_rodada(
@@ -12,8 +15,6 @@ def _executar_chamadas_rodada(
     task_id: str,
     rodada: int,
     executar_ferramenta: Callable[[Any], Any],
-    argumentos_da_chamada: Callable[[Any], str],
-    texto_seguro: Callable[[Any, int], str],
     trace: Any,
     vision_state_mutating_tools: set[str],
     vision_reobserve_pending: bool,
@@ -21,8 +22,6 @@ def _executar_chamadas_rodada(
     max_tool_result_chars: int,
     get_active_vision_geometry: Callable[[], Any],
     clear_active_vision_geometry: Callable[[], Any],
-    from_legacy: Callable[..., Any],
-    tool_result_failure: Callable[..., Any],
     write_log: Callable[..., Any],
 ) -> tuple[list[dict[str, Any]], int, bool, bool, bool]:
     """Executa as chamadas de uma rodada e atualiza historico/estado operacional."""
@@ -36,7 +35,7 @@ def _executar_chamadas_rodada(
             break
 
         nome = str(getattr(item, "name", "desconhecida"))
-        argumentos = argumentos_da_chamada(item)
+        argumentos = _argumentos_da_chamada(item)
         task_manager.begin_step(
             nome,
             argumentos,
@@ -56,7 +55,7 @@ def _executar_chamadas_rodada(
         try:
             resultado_bruto = executar_ferramenta(item)
         except Exception as erro:
-            resultado_bruto = tool_result_failure(
+            resultado_bruto = ToolResult.failure(
                 f"Falha inesperada no harness: {erro}",
                 error_code="harness_exception",
                 tool_name=nome,
@@ -105,7 +104,7 @@ def _executar_chamadas_rodada(
             sucesso=ferramenta_sucesso,
         )
 
-        resultado_compacto = texto_seguro(
+        resultado_compacto = _texto_seguro(
             resultado,
             max_tool_result_chars,
         )
