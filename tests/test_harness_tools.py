@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+from core.browser_verification import verificar_resultado_navegador
 from core.harness_tools import _executar_chamadas_rodada
 from core.tool_result import ToolResult
 
@@ -262,3 +263,97 @@ def test_successful_browser_context_clears_verification_pending():
     assert vision_pending is False
     assert cancelled is False
     assert state["pending"] is False
+
+
+def test_browser_navigation_verification_clears_pending_only_when_target_matches():
+    manager = _TaskManager()
+    state = {"pending": False}
+    chamadas = [
+        _item("navegar_navegador", "call-browser-nav", '{"url":"youtube.com"}'),
+        _item("obter_contexto_navegador", "call-browser-context", '{"foco":""}'),
+    ]
+    resultados = iter([
+        ToolResult.success("Naveguei.", tool_name="navegar_navegador"),
+        ToolResult.success(
+            "contexto",
+            tool_name="obter_contexto_navegador",
+            data={
+                "abas": (
+                    "Abas abertas: 1\n"
+                    "Aba ativa: 1\n"
+                    "Aba 1: YouTube | https://www.youtube.com/ [ATIVA]"
+                ),
+                "pagina": "conteudo",
+            },
+        ),
+    ])
+
+    resultado = _executar_chamadas_rodada(
+        chamadas,
+        historico=[],
+        task_manager=manager,
+        task_id="task-browser-nav",
+        rodada=1,
+        executar_ferramenta=lambda _item: next(resultados),
+        trace=None,
+        vision_state_mutating_tools=set(),
+        vision_reobserve_pending=False,
+        falha_nao_recuperada=False,
+        max_tool_result_chars=100,
+        get_active_vision_geometry=lambda: None,
+        clear_active_vision_geometry=lambda: None,
+        write_log=lambda *args, **kwargs: None,
+        browser_verification_state=state,
+        browser_state_mutating_tools={"navegar_navegador"},
+        browser_verification_tool="obter_contexto_navegador",
+        browser_verifier=verificar_resultado_navegador,
+    )
+
+    assert state["pending"] is False
+
+
+def test_browser_navigation_verification_keeps_pending_when_target_is_wrong():
+    manager = _TaskManager()
+    state = {"pending": False}
+    chamadas = [
+        _item("navegar_navegador", "call-browser-nav-2", '{"url":"youtube.com"}'),
+        _item("obter_contexto_navegador", "call-browser-context-2", '{"foco":""}'),
+    ]
+    resultados = iter([
+        ToolResult.success("Naveguei.", tool_name="navegar_navegador"),
+        ToolResult.success(
+            "contexto",
+            tool_name="obter_contexto_navegador",
+            data={
+                "abas": (
+                    "Abas abertas: 1\n"
+                    "Aba ativa: 1\n"
+                    "Aba 1: GitHub | https://github.com/ [ATIVA]"
+                ),
+                "pagina": "conteudo",
+            },
+        ),
+    ])
+
+    _executar_chamadas_rodada(
+        chamadas,
+        historico=[],
+        task_manager=manager,
+        task_id="task-browser-nav-2",
+        rodada=1,
+        executar_ferramenta=lambda _item: next(resultados),
+        trace=None,
+        vision_state_mutating_tools=set(),
+        vision_reobserve_pending=False,
+        falha_nao_recuperada=False,
+        max_tool_result_chars=100,
+        get_active_vision_geometry=lambda: None,
+        clear_active_vision_geometry=lambda: None,
+        write_log=lambda *args, **kwargs: None,
+        browser_verification_state=state,
+        browser_state_mutating_tools={"navegar_navegador"},
+        browser_verification_tool="obter_contexto_navegador",
+        browser_verifier=verificar_resultado_navegador,
+    )
+
+    assert state["pending"] is True

@@ -23,9 +23,10 @@ def _executar_chamadas_rodada(
     get_active_vision_geometry: Callable[[], Any],
     clear_active_vision_geometry: Callable[[], Any],
     write_log: Callable[..., Any],
-    browser_verification_state: dict[str, bool] | None = None,
+    browser_verification_state: dict[str, Any] | None = None,
     browser_state_mutating_tools: set[str] | None = None,
     browser_verification_tool: str = "obter_contexto_navegador",
+    browser_verifier: Callable[[str, str, Any], bool | None] | None = None,
 ) -> tuple[list[dict[str, Any]], int, bool, bool, bool]:
     """Executa as chamadas de uma rodada e atualiza historico/estado operacional."""
     resultados_rodada: list[dict[str, Any]] = []
@@ -78,8 +79,21 @@ def _executar_chamadas_rodada(
 
         if ferramenta_sucesso and nome in browser_state_mutating_tools:
             browser_verification_pending = True
+            if browser_verification_state is not None:
+                browser_verification_state["ferramenta"] = nome
+                browser_verification_state["argumentos"] = argumentos
         elif ferramenta_sucesso and nome == browser_verification_tool:
-            browser_verification_pending = False
+            verificado = None
+            if browser_verifier is not None and browser_verification_state is not None:
+                verificado = browser_verifier(
+                    str(browser_verification_state.get("ferramenta") or ""),
+                    str(browser_verification_state.get("argumentos") or "{}"),
+                    resultado_estruturado.data or {},
+                )
+            if verificado is False:
+                browser_verification_pending = True
+            else:
+                browser_verification_pending = False
         if trace is not None:
             try:
                 trace.record_tool(

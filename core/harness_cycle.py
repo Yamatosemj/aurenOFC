@@ -9,6 +9,7 @@ from core.harness_guards import _tratar_rodada_sem_ferramentas as _tratar_rodada
 from core.harness_model import _executar_rodada_modelo as _executar_rodada_modelo_impl
 from core.harness_round_input import _montar_input_e_estado_da_rodada
 from core.harness_tools import _executar_chamadas_rodada as _executar_chamadas_rodada_impl
+from core.browser_verification import verificar_resultado_navegador
 from core.vision import clear_active_vision_geometry, get_active_vision_geometry, prepare_vision_result_content
 
 
@@ -184,6 +185,7 @@ def executar_ciclo(
             browser_verification_state=browser_verification_state,
             browser_state_mutating_tools=browser_state_mutating_tools,
             browser_verification_tool=harness.BROWSER_VERIFICATION_TOOL,
+            browser_verifier=verificar_resultado_navegador,
             falha_nao_recuperada=falha_nao_recuperada,
             max_tool_result_chars=harness.MAX_TOOL_RESULT_CHARS,
             get_active_vision_geometry=get_active_vision_geometry,
