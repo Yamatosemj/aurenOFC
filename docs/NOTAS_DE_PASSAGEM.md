@@ -180,14 +180,20 @@ Decisões tomadas (e por quê):
 Testes:
 - Baseline imediatamente anterior: Linux 622 passed / 6 skipped, conforme registro da Tarefa 3; Windows 628 passed, conforme registro da Tarefa 3.
 - Novos testes da Tarefa 4: 4 testes.
-- CI head 8da961772abccac15ec7a6090293128469ae02aa foi iniciado para a implementação/testes desta transição; static-checks está verde e pytest ainda estava em execução no momento desta nota.
+- CI head 8da961772abccac15ec7a6090293128469ae02aa: static-checks e Playwright smoke verdes; full pytest Linux = 624 passed, 6 skipped, 4 failed; full pytest Windows = 630 passed, 4 failed. Os 5 testes adicionados pela Tarefa 4 passaram.
 - Execução local completa não disponível por ausência de DNS/rede neste ambiente; nenhum resultado local foi inventado.
 - Runner manual python testes_auren_live.py --rapido: pendente no Windows real, porque esta tarefa altera a confirmação usada pelo canal de voz e o ambiente atual não é o computador do Auren.
 
 Ficou pendente / virou backlog:
 - Aprovação explícita de windows.clipboard.write: AUTO → CONFIRM.
-- Registrar os números finais do CI e fechar o portão da Tarefa 4 após pytest verde.
+- Registrar que o portão geral não fecha enquanto as 4 falhas preexistentes da V49 permanecerem. Elas já existiam no head V49 anterior, que tinha Linux = 619 passed, 6 skipped, 4 failed e Windows = 625 passed, 4 failed.
 - Executar o runner live no Windows real antes de considerar o portão externo encerrado.
 
 Próxima tarefa:
 - Aplicar somente a reclassificação aprovada e então concluir o portão da Tarefa 4.
+
+
+Atualização do fechamento da evidência:
+- As quatro falhas não envolvem os novos testes de confirmação. O full pytest da Tarefa 4 aprovou todos os cinco testes adicionados.
+- As mesmas quatro falhas foram reproduzidas no head V49 anterior d19ebf511d5d35623e187436c432b057a76428c5, antes das alterações de confirmação.
+- Portanto, elas permanecem como débito da Tarefa 3 e não foram corrigidas nesta tarefa para respeitar a regra de uma tarefa por vez.
