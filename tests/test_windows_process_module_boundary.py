@@ -38,3 +38,17 @@ def test_windows_process_name_resolution_rejects_multiple_pids(monkeypatch):
     assert result.ok is False
     assert result.error_code == "process_name_ambiguous"
     assert result.data["pids"] == [1111, 2222]
+
+
+def test_windows_security_process_names_are_protected(monkeypatch):
+    monkeypatch.setattr(windows_processes.os, "name", "nt")
+    monkeypatch.setattr(
+        windows_processes,
+        "_nome_executavel_por_pid_windows",
+        lambda _pid: "msmpeng.exe",
+    )
+
+    result = windows_processes.encerrar_processo_windows(pid=1234)
+
+    assert result.ok is False
+    assert "protegido" in result.message.lower()
