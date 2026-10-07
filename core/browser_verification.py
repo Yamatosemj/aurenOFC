@@ -39,6 +39,8 @@ def _normalize_url(value: str) -> str:
     if not url:
         return ""
     if not re.match(r"^https?://", url, flags=re.IGNORECASE):
+        if re.match(r"^[a-z][a-z0-9+.-]*:", url, flags=re.IGNORECASE):
+            return url.rstrip("/")
         url = "https://" + url
     try:
         parsed = urlsplit(url)
