@@ -704,14 +704,18 @@ class PermissionManager:
             )
 
         if target == "_blank":
-            return PermissionLevel.CONFIRM, "O link abre nova aba; confirmacao obrigatoria para efeito externo ambíguo."
+            return PermissionLevel.CONFIRM, "O link abre nova aba; confirmacao obrigatoria para efeito externo ambiguo."
 
-        if tag not in {"a", "button", "summary", "input", "select", "option", "div", "span"} and not evidencia.get("role"):
-            return PermissionLevel.CONFIRM, "Tipo de elemento desconhecido; confirmacao obrigatoria."
+        # Somente links HTML com destino explicito passam pela allowlist AUTO.
+        # Botoes, divs, summaries e outros elementos podem ter listeners JavaScript
+        # registrados fora do atributo onclick, e o DOM nao fornece uma prova
+        # confiavel de que esses listeners sao inofensivos.
+        if tag != "a" or not href:
+            return PermissionLevel.CONFIRM, "Elemento acionavel pode possuir comportamento JavaScript nao observavel; confirmacao obrigatoria."
 
         return (
             PermissionLevel.AUTO,
-            "Alvo seguro confirmado por texto e pela estrutura real do elemento.",
+            "Link HTML com destino explicito e sem sinais estruturais de efeito persistente.",
         )
 
     def _classificar_preenchimento(
