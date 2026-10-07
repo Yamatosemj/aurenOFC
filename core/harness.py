@@ -55,7 +55,10 @@ from core.harness_serialization import (
     _argumentos_da_chamada,
     _texto_seguro,
 )
-from core.harness_completion import _mensagem_conclusao_local
+from core.harness_completion import (
+    _finalizar_resposta_sucesso,
+    _mensagem_conclusao_local,
+)
 from core.harness_state import _montar_estado
 from core.harness_round_input import _montar_input_da_rodada
 from core.harness_strategy import _salvar_estrategia_em_background as _salvar_estrategia_em_background_impl
@@ -867,35 +870,17 @@ class AurenHarness:
                         "Nao consegui produzir uma resposta final.",
                     )
 
-                extra = None
-                if self.apos_tarefa is not None and historico:
-                    try:
-                        extra = self.apos_tarefa(objetivo, historico)
-                    except Exception as erro:
-                        _write_log(
-                            "MEMORY_ERROR",
-                            task_id=self._task_id,
-                            erro=str(erro),
-                        )
-                if extra:
-                    texto_final = getattr(resposta, "output_text", "") or ""
-                    resposta = _RespostaWrapper(texto_final + str(extra))
-                final_texto = str(getattr(resposta, "output_text", "") or "").strip()
-                self._salvar_estrategia_em_background(
+                resposta = _finalizar_resposta_sucesso(
                     objetivo,
                     historico,
-                    final_texto,
-                    True,
-                )
-                self.task_manager.complete(
-                    final_texto,
+                    resposta,
+                    apos_tarefa=self.apos_tarefa,
                     task_id=self._task_id,
-                )
-                self._registrar_turno("assistant", final_texto)
-                _write_log(
-                    "TASK_STATE",
-                    task_id=self._task_id,
-                    estado=self.task_manager.current_snapshot().state.value if self.task_manager.current_snapshot() else "completed",
+                    salvar_estrategia=self._salvar_estrategia_em_background,
+                    task_manager=self.task_manager,
+                    registrar_turno=self._registrar_turno,
+                    write_log=_write_log,
+                    criar_resposta=_RespostaWrapper,
                 )
                 return False, resposta
 
