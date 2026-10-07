@@ -330,6 +330,7 @@ def fechar_aba(indice=None):
     posicao = abas.index(alvo)
     indice_fechado = posicao + 1
     quantidade_antes = len(abas)
+    snapshot_antes = _abas_snapshot()
     alvo.close()
 
     restantes = _paginas_abertas()
