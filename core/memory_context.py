@@ -162,44 +162,73 @@ def _formatar_indice(memorias: list[dict[str, Any]], chaves_no_core: set[str]) -
     return prefixo + (", ".join(partes) if partes else "nenhuma chave coube")
 
 
-def montar_contexto_memoria(store, objetivo: str = "", chat_id: str | None = None, *, max_chars: int = PROMPT_CORE_CHARS + PROMPT_INDEX_CHARS) -> str:
+def montar_contexto_memoria(
+    store,
+    objetivo: str = "",
+    chat_id: str | None = None,
+    *,
+    max_chars: int = PROMPT_CORE_CHARS + PROMPT_INDEX_CHARS,
+) -> str:
     """Monta o nucleo de memoria e um indice das chaves que ficaram de fora.
-    O nucleo intercala categorias e limita cada uma a seis fatos; o indice contem somente chaves.
+    O nucleo pode priorizar fatos relevantes ao objetivo; o indice preserva chaves omitidas.
     Custo O(n) sobre as memorias persistentes, com orcamento estrito de prompt.
     """
-    del objetivo, chat_id
+    del chat_id
     if store is None:
         return ""
-    try:
-        resultado = store.listar_memorias(limite=store.MAX_MEMORIAS)
-        memorias = list(resultado.get("memorias") or []) if resultado.get("ok") else []
-        resumo_resultado = pop_ultimo_resumo_sessao(store)
-        if not resumo_resultado.get("ok", False):
-            logging.getLogger("auren.memory").warning(
-                "Resumo de sessao pendente nao entrou no contexto: %s",
-                resumo_resultado.get("erro", "erro desconhecido"),
-            )
-            resumo = ""
-        else:
-            resumo = str(resumo_resultado.get("resumo") or "")
-        core, usadas = _formatar_core(memorias, resumo)
-        indice = _formatar_indice(memorias, usadas)
-        texto = core + "\n\n" + indice
-        limite_total = max(0, int(max_chars))
-        if limite_total < len(texto):
-            logging.getLogger("auren.memory").warning(
-                "Orcamento de contexto de memoria reduzido para %s caracteres.",
-                limite_total,
-            )
-            return texto[:limite_total]
-        return texto
-    except Exception as exc:
+
+    resultado = store.listar_memorias(limite=store.MAX_MEMORIAS)
+    if not resultado.get("ok", False):
+        raise RuntimeError(resultado.get("erro", "Falha ao listar memorias."))
+
+    todas = list(resultado.get("memorias") or [])
+    resumo_resultado = pop_ultimo_resumo_sessao(store)
+    if not resumo_resultado.get("ok", False):
         logging.getLogger("auren.memory").warning(
-            "Falha ao montar contexto de memoria: %s",
-            exc,
+            "Resumo de sessao pendente nao entrou no contexto: %s",
+            resumo_resultado.get("erro", "erro desconhecido"),
         )
+        resumo = ""
+    else:
+        resumo = str(resumo_resultado.get("resumo") or "")
+
+    objetivo = " ".join(str(objetivo or "").split())
+    if objetivo:
+        termos = termos_significativos(objetivo)
+        if not termos:
+            if not resumo:
+                return ""
+            todas = []
+            nucleo = []
+        else:
+            relevantes = store.consultar(
+                " ".join(termos),
+                limite=min(50, store.MAX_MEMORIAS),
+            )
+            if not relevantes.get("ok", False):
+                raise RuntimeError(relevantes.get("erro", "Falha ao consultar memorias."))
+            nucleo = list(relevantes.get("memorias") or [])
+            if not nucleo:
+                nucleo = todas
+    else:
+        nucleo = todas
+
+    if not todas and not resumo:
         return ""
-    
+
+    core, usadas = _formatar_core(nucleo, resumo)
+    indice = _formatar_indice(todas, usadas)
+    texto = core + "\n\n" + indice
+    limite_total = max(0, int(max_chars))
+    if limite_total < len(texto):
+        logging.getLogger("auren.memory").warning(
+            "Orcamento de contexto de memoria reduzido para %s caracteres.",
+            limite_total,
+        )
+        return texto[:limite_total]
+    return texto
+
+
 __all__ = [
     "PROMPT_CORE_CHARS",
     "PROMPT_INDEX_CHARS",
