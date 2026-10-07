@@ -11,7 +11,7 @@ from typing import Any, Callable
 from core.task_manager import TaskManager, TaskState
 from core import usage
 from core.task_trace import TaskTrace, TaskTraceStore
-from core.tool_result import ToolResult, from_legacy
+from core.tool_result import ToolResult
 from agent.orchestrator import AgentOrchestrator
 from core.session import SessionContextManager
 from skills.loader import SkillLibrary
@@ -65,6 +65,7 @@ from core.harness_session import (
     _garantir_sessao_chat as _garantir_sessao_chat_impl,
 )
 from core.harness_model import _log_resposta_modelo as _log_resposta_modelo_impl
+from core.harness_tools import _executar_chamadas_rodada as _executar_chamadas_rodada_impl
 from core.harness_heuristics import (
     _parece_tarefa_visual_composta,
     _parece_tarefa_multietapa_browser,
@@ -979,114 +980,30 @@ class AurenHarness:
                 )
                 return False, resposta
 
-            resultados_rodada = []
-
-            for item in chamadas:
-                if self.task_manager.should_cancel(self._task_id):
-                    return self._encerrar_cancelado("cancelado durante execucao", rodada)
-
-                nome = str(getattr(item, "name", "desconhecida"))
-                argumentos = self._argumentos_da_chamada(item)
-                self.task_manager.begin_step(
-                    nome,
-                    argumentos,
-                    task_id=self._task_id,
-                    step=len(historico) + 1,
-                )
-
-                _write_log(
-                    "TOOL_CALL",
-                    task_id=self._task_id,
-                    rodada=rodada,
-                    ferramenta=nome,
-                    argumentos=argumentos,
-                )
-
-                tool_started_perf = time.perf_counter()
-                try:
-                    resultado_bruto = self.executar_ferramenta(item)
-                except Exception as erro:
-                    resultado_bruto = ToolResult.failure(
-                        f"Falha inesperada no harness: {erro}",
-                        error_code="harness_exception",
-                        tool_name=nome,
-                    )
-
-                # O Dispatcher entrega ToolResult; retornos antigos passam apenas pelo
-                # adaptador de compatibilidade. O ciclo nunca decide sucesso olhando
-                # para o texto bruto da ferramenta.
-                resultado_estruturado = from_legacy(
-                    resultado_bruto,
-                    tool_name=nome,
-                )
-                ferramenta_sucesso = resultado_estruturado.ok
-                if self._trace is not None:
-                    try:
-                        self._trace.record_tool(
-                            nome,
-                            (time.perf_counter() - tool_started_perf) * 1000.0,
-                            success=ferramenta_sucesso,
-                        )
-                    except Exception as exc:
-                        _write_log("TRACE_ERROR", task_id=self._task_id, etapa="tool", erro=str(exc))
-
-                if (
-                    ferramenta_sucesso
-                    and nome != "capturar_tela_windows"
-                    and get_active_vision_geometry() is not None
-                    and nome in self.VISION_STATE_MUTATING_TOOLS
-                ):
-                    self._vision_reobserve_pending = True
-                    # Uma acao visual invalida o snapshot usado para calcula-la.
-                    # Qualquer nova coordenada visual exige uma nova observacao.
-                    clear_active_vision_geometry()
-                resultado = resultado_estruturado.for_model()
-                imagem_path = None
-                if isinstance(resultado_estruturado.data, dict):
-                    imagem_path = resultado_estruturado.data.get("image_path")
-
-                _write_log(
-                    "TOOL_RESULT",
-                    task_id=self._task_id,
-                    rodada=rodada,
-                    ferramenta=nome,
-                    resultado=resultado,
-                    sucesso=ferramenta_sucesso,
-                )
-
-                resultado_compacto = self._texto_seguro(
-                    resultado,
-                    self.MAX_TOOL_RESULT_CHARS,
-                )
-                self.task_manager.finish_step(
-                    success=ferramenta_sucesso,
-                    result=resultado_compacto,
-                    error="" if ferramenta_sucesso else resultado_compacto,
-                    task_id=self._task_id,
-                )
-                ferramentas_executadas += 1
-                # Falha so deixa de ser "nao recuperada" quando uma chamada posterior tem sucesso.
-                falha_nao_recuperada = not ferramenta_sucesso
-
-                historico.append(
-                    {
-                        "ferramenta": nome,
-                        "argumentos": argumentos,
-                        "resultado": resultado_compacto,
-                    }
-                )
-
-                resultados_rodada.append(
-                    {
-                        "call_id": str(getattr(item, "call_id", "")),
-                        "ferramenta": nome,
-                        "argumentos": argumentos,
-                        "resultado": resultado_compacto,
-                        "sucesso": ferramenta_sucesso,
-                        "image_path": str(imagem_path) if imagem_path else "",
-                        "dados": dict(resultado_estruturado.data or {}),
-                    }
-                )
+            (
+                resultados_rodada,
+                ferramentas_executadas,
+                falha_nao_recuperada,
+                self._vision_reobserve_pending,
+                cancelado,
+            ) = _executar_chamadas_rodada_impl(
+                chamadas,
+                historico=historico,
+                task_manager=self.task_manager,
+                task_id=self._task_id,
+                rodada=rodada,
+                executar_ferramenta=self.executar_ferramenta,
+                trace=self._trace,
+                vision_state_mutating_tools=self.VISION_STATE_MUTATING_TOOLS,
+                vision_reobserve_pending=self._vision_reobserve_pending,
+                falha_nao_recuperada=falha_nao_recuperada,
+                max_tool_result_chars=self.MAX_TOOL_RESULT_CHARS,
+                get_active_vision_geometry=get_active_vision_geometry,
+                clear_active_vision_geometry=clear_active_vision_geometry,
+                write_log=_write_log,
+            )
+            if cancelado:
+                return self._encerrar_cancelado("cancelado durante execucao", rodada)
 
             # Se o ultimo passo explicitamente pedido ja foi executado
             # com sucesso, encerramos localmente e economizamos uma chamada
