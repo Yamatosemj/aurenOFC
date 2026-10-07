@@ -21,8 +21,6 @@ def test_windows_input_module_owns_keyboard_backend():
     assert windows._pressionar_vk.__module__ == "tools.windows_input"
 
 
-def test_windows_module_no_longer_owns_input_dpi_helpers():
-    assert not hasattr(windows, "_contexto_dpi_per_monitor_windows")
-    assert not hasattr(windows, "_limites_tela_virtual_windows")
-    assert hasattr(windows_input, "_contexto_dpi_per_monitor_windows")
-    assert hasattr(windows_input, "_limites_tela_virtual_windows")
+def test_windows_module_reexports_input_dpi_helpers_used_by_screen_capture():
+    assert windows._contexto_dpi_per_monitor_windows is windows_input._contexto_dpi_per_monitor_windows
+    assert windows._limites_tela_virtual_windows is windows_input._limites_tela_virtual_windows
