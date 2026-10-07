@@ -10,9 +10,9 @@ Atualizado em: 2026-10-07
 
 - **Versão estável:** V48
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** task-5-memory-v48
+- **Branch/PR ativa:** task-5-memory-v48 / PR #79
 - **Head da main:** `0a8304e1b097d458511f017ca1f0d9da19d86726`
-- **CI da implementação mais recente:** pytest, focused Linux e focused Windows verdes
+- **CI da implementação mais recente:** pytest 449 passed / 6 skipped; focused Linux e focused Windows verdes
 - **Fase atual:** Memória Persistente
 
 ### O que já está concluído nesta fase
@@ -82,7 +82,7 @@ Atualizado em: 2026-10-07
 - A tarefa não deve declarar sucesso quando uma verificação obrigatória ainda estiver pendente
 - Mudanças de escopo devem virar backlog, não execução silenciosa
 
-## Tarefa atual — Tarefa 5: Memória: núcleo no prompt, índice de chaves, painel e resumo de sessão
+## Tarefa concluída — Tarefa 5: Memória: núcleo no prompt, índice de chaves, painel e resumo de sessão
 
 - [x] núcleo de memória com orçamento de 900 caracteres
 - [x] índice de chaves com orçamento de 420 caracteres
@@ -92,12 +92,14 @@ Atualizado em: 2026-10-07
 - [x] resumo de sessão salvo no encerramento e consumido uma vez na sessão seguinte
 - [x] filtro de credenciais na escrita, leitura, listagem e resumo
 - [x] limite de segurança explícito sem exclusão silenciosa
+- [x] portão pytest aprovado: 449 passed, 6 skipped
+- [x] 11 testes novos adicionados e coletados na suíte
 
 ## Próximas etapas
 
-A tarefa ativa é **Tarefa 5 — Memória**. O portão de saída exige `py -m pytest -q` verde com mais testes do que antes e cobertura dos casos de orçamento, índice, consulta, listagem, sessão e limite.
+**Próxima tarefa: 6 — Painel visual da memória.**
 
-A validação live do Browser/Windows não faz parte desta tarefa, pois nenhuma capacidade Browser/Windows foi modificada; a pendência anterior permanece no backlog.
+O PR #79 contém a implementação da Tarefa 5 e permanece aberto para revisão/merge. Nenhuma ferramenta Browser/Windows foi alterada nesta tarefa; a validação live final do Browser Intelligence continua no backlog.
 
 ## Backlog
 
