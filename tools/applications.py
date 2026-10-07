@@ -169,10 +169,15 @@ def procurar_atalho(nome):
                 if pontuacao > melhor_pontuacao:
                     melhor_pontuacao = pontuacao
                     melhor = arquivo
+                    empates = [arquivo]
+                elif pontuacao == melhor_pontuacao and pontuacao > 0:
+                    empates.append(arquivo)
 
         except OSError:
             continue
 
+    if len(empates) > 1 and melhor_pontuacao < 100:
+        return None
     return melhor
 
 def _powershell_literal(valor):
