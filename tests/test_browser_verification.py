@@ -713,3 +713,72 @@ def test_browser_navigation_verification_stays_inconclusive_without_structured_e
         contexto,
         None,
     ) is None
+
+
+def test_non_navigational_click_verification_accepts_dom_only_control_change():
+    compromisso_before = "1111111111111111"
+    compromisso_after = "2222222222222222"
+    contexto = _contexto(
+        "Abas abertas: 1\n"
+        "Aba ativa: 1\n"
+        "Aba 1: Site | https://example.com [ATIVA]\n"
+        "Campos e controles visiveis:\n"
+        f"- tag=button | role=button | nome=Menu | chave=id:menu | dom-fingerprint={compromisso_after}"
+    )
+    acao = {
+        "clique": {
+            "navegacao": False,
+            "efeito": {
+                "controle": {
+                    "chave": "id:menu",
+                    "dom_fingerprint": compromisso_before,
+                },
+                "pagina_antes": {},
+                "pagina_depois": {},
+                "sinal": {
+                    "tipo": "controle",
+                    "atributo": "domFingerprint",
+                    "antes": compromisso_before,
+                    "depois": compromisso_after,
+                },
+            },
+        }
+    }
+
+    assert verificar_resultado_navegador(
+        "clicar_elemento",
+        '{"alvo":"Menu","indice":1}',
+        contexto,
+        acao,
+    ) is True
+
+
+def test_dom_only_click_verification_rejects_unchanged_fingerprint():
+    contexto = _contexto(
+        "Abas abertas: 1\n"
+        "Aba ativa: 1\n"
+        "Aba 1: Site | https://example.com [ATIVA]\n"
+        "Campos e controles visiveis:\n"
+        "- tag=button | role=button | nome=Menu | chave=id:menu | dom-fingerprint=1111111111111111"
+    )
+    acao = {
+        "clique": {
+            "navegacao": False,
+            "efeito": {
+                "controle": {"chave": "id:menu"},
+                "sinal": {
+                    "tipo": "controle",
+                    "atributo": "domFingerprint",
+                    "antes": "1111111111111111",
+                    "depois": "2222222222222222",
+                },
+            },
+        }
+    }
+
+    assert verificar_resultado_navegador(
+        "clicar_elemento",
+        '{"alvo":"Menu","indice":1}',
+        contexto,
+        acao,
+    ) is False
