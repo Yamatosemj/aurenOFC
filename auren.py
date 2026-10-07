@@ -10,10 +10,10 @@ from memory.store import PersistentMemoryStore
 
 # Mantemos esses literais no facade para ferramentas de compatibilidade que
 # descobrem a versao lendo o arquivo-fonte sem importar o modulo.
-AUREN_VERSION = 47
+AUREN_VERSION = 48
 MODEL = "gpt-5.6-luna"
 CACHE_KEY = f"auren-v{AUREN_VERSION}"
-ARCHITECTURE_NAME = "V47 ARI NATIVE VISUAL GEOMETRY"
+ARCHITECTURE_NAME = "V48 MEMORY CORE INDEX"
 if (AUREN_VERSION, MODEL, CACHE_KEY, ARCHITECTURE_NAME) != (_CONFIG_AUREN_VERSION, _CONFIG_MODEL, _CONFIG_CACHE_KEY, _CONFIG_ARCHITECTURE_NAME):
     raise RuntimeError("config.py e auren.py estao com versao/modelo incoerentes.")
 
@@ -35,6 +35,7 @@ from tools.fast_paths import comando_rapido as _comando_rapido
 from tools.memory import (
     salvar_memoria_persistente as _salvar_memoria,
     consultar_memoria_persistente as _consultar_memoria,
+    listar_memoria as _listar_memoria,
     esquecer_memoria_persistente as _esquecer_memoria,
 )
 
@@ -71,6 +72,13 @@ def salvar_memoria_persistente(chave='', valor='', categoria='geral'):
 
 def consultar_memoria_persistente(consulta='', limite=5):
     return _consultar_memoria(memory_store, consulta, limite)
+
+def listar_memoria(chave='', categoria='', data='', limite=100):
+    """Lista memorias sem alterar o store persistente.
+    Aplica filtros opcionais e devolve somente dados que passaram pelo filtro de credenciais.
+    Custo O(n) no conjunto de memorias, limitado ao resultado solicitado.
+    """
+    return _listar_memoria(memory_store, chave, categoria, data, limite)
 
 def esquecer_memoria_persistente(chave=''):
     return _esquecer_memoria(memory_store, chave)
