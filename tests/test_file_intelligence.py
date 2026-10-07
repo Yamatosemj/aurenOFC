@@ -346,6 +346,7 @@ def test_read_and_inspect_outside_allowlist_require_confirmation(tmp_path: Path,
     outside = tmp_path.parent / "arquivo-fora.txt"
     outside.write_text("segredo", encoding="utf-8")
     monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [allowed.resolve()])
+    monkeypatch.setattr(file_intelligence, "_has_sensitive_path_component", lambda _path: False)
 
     read_result = read_file(str(outside))
     inspect_result = inspect_file(str(outside))
@@ -438,6 +439,7 @@ def test_permission_manager_confirms_file_path_outside_allowlist(tmp_path: Path,
     outside = tmp_path.parent / "fora-permissao.txt"
     outside.write_text("x", encoding="utf-8")
     monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [allowed.resolve()])
+    monkeypatch.setattr(file_intelligence, "_has_sensitive_path_component", lambda _path: False)
 
     channel = _RecordingConfirmationChannel(True)
     manager = PermissionManager(confirmation_channel=channel)
@@ -459,6 +461,7 @@ def test_permission_manager_denies_outside_allowlist_when_user_rejects(tmp_path:
     outside = tmp_path.parent / "fora-negada.txt"
     outside.write_text("nao ler", encoding="utf-8")
     monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [allowed.resolve()])
+    monkeypatch.setattr(file_intelligence, "_has_sensitive_path_component", lambda _path: False)
 
     channel = _RecordingConfirmationChannel(False)
     manager = PermissionManager(confirmation_channel=channel)
@@ -498,6 +501,7 @@ def test_dispatcher_confirmed_path_is_really_read(tmp_path: Path, monkeypatch: p
     outside = tmp_path.parent / "fora-dispatcher.txt"
     outside.write_text("conteudo confirmado", encoding="utf-8")
     monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [allowed.resolve()])
+    monkeypatch.setattr(file_intelligence, "_has_sensitive_path_component", lambda _path: False)
 
     channel = _RecordingConfirmationChannel(True)
     manager = PermissionManager(confirmation_channel=channel)
