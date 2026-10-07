@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 
+from core.browser_verification import _compromisso_preenchimento_sensivel
 from core.utils import normalizar_nome
 
 
@@ -74,8 +75,23 @@ def ler_pagina(foco):
 
         url = p.url
 
+        def anexar_compromissos_sensiveis(dados):
+            if not isinstance(dados, dict):
+                return {}
+            controles = dados.get("controles")
+            if not isinstance(controles, list):
+                return dados
+            for controle in controles:
+                if not isinstance(controle, dict):
+                    continue
+                valor_interno = controle.pop("valor_interno", None)
+                if valor_interno is None:
+                    continue
+                controle["compromisso"] = _compromisso_preenchimento_sensivel(str(valor_interno))
+            return dados
+
         def avaliar_dom():
-            return p.evaluate(
+            dados = p.evaluate(
             """
             ({foco, focoPalavras, focoOperacional, maxSnippets, maxContexto,
               maxControles, maxLinks}) => {
@@ -172,7 +188,8 @@ def ler_pagina(foco):
                         placeholder: limpar(placeholder, 80),
                         chave: limpar(chave, 180),
                         estados,
-                        value: valorSeguro
+                        value: valorSeguro,
+                    valor_interno: String(el.value || '') if campoSensivel else null
                     });
                 }
 
@@ -528,6 +545,7 @@ def ler_pagina(foco):
                 "maxLinks": max_links,
             },
         )
+            return anexar_compromissos_sensiveis(dados)
 
 
         foco_resultados = any(
@@ -689,6 +707,8 @@ def ler_pagina(foco):
             estado_texto = _estado_controle_texto(item.get("estados", {}))
             if estado_texto:
                 partes.append(f"estado={estado_texto}")
+            if item.get("compromisso"):
+                partes.append(f"compromisso={item['compromisso']}")
             if item.get("value"):
                 partes.append(f"valor={item['value']}")
             linhas.append("- " + " | ".join(partes))
