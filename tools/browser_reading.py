@@ -760,6 +760,8 @@ def ler_pagina(foco):
                     continue
                 nome_detalhe = str(detalhe.get("nome") or "")
                 chave_detalhe = str(detalhe.get("chave") or "")
+                if chave_detalhe and any(f"chave={chave_detalhe}" in linha for linha in linhas):
+                    continue
                 linhas.append(
                     "- tag=summary | nome=" + nome_detalhe
                     + " | chave=" + chave_detalhe
