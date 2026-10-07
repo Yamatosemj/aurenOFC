@@ -5,7 +5,7 @@ import json
 from core.utils import normalizar_nome
 from core.tool_contracts import validate_tool_arguments
 from core.vision import transform_visual_tool_arguments
-from tools import applications, browser, file_intelligence, files
+from tools import applications, browser, browser_context, file_intelligence, files
 from tools import windows
 from tools.memory import salvar_memoria_persistente, consultar_memoria_persistente, esquecer_memoria_persistente
 
@@ -173,6 +173,7 @@ TOOL_HANDLERS = {
     "alternar_elemento_windows": _sem_memoria(windows.alternar_elemento_windows, "alvo_janela", "alvo", "indice"),
     "selecionar_elemento_windows": _sem_memoria(windows.selecionar_elemento_windows, "alvo_janela", "alvo", "indice"),
     "navegar_navegador": _sem_memoria(browser.navegar_navegador, "url", "modo", defaults={"modo": "visivel"}),
+    "obter_contexto_navegador": _sem_memoria(browser_context.obter_contexto_navegador, "foco"),
     "ler_pagina": _sem_memoria(browser.ler_pagina, "foco"),
     "clicar_elemento": _sem_memoria(browser.clicar_elemento, "alvo", "indice"),
     "preencher_elemento": _sem_memoria(browser.preencher_elemento, "alvo", "texto", "indice"),
@@ -307,7 +308,7 @@ def executar_ferramenta(item, permission_manager, memory_store) -> ToolResult:
     # conter texto escrito para induzir o agente a executar outra acao.
     if (
         resultado_estruturado.ok
-        and nome in {"ler_pagina", "ler_arquivo"}
+        and nome in {"ler_pagina", "ler_arquivo", "obter_contexto_navegador"}
         and not resultado_estruturado.conteudo_nao_confiavel
     ):
         resultado_estruturado = ToolResult(

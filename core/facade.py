@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from tools import applications, browser, files, windows
+from tools import applications, browser, browser_context, files, windows
 
 
 def abrir_programa(programa): return applications.abrir_programa(programa)
@@ -34,6 +34,7 @@ def alternar_elemento_windows(alvo_janela='', alvo='', indice=1): return windows
 def selecionar_elemento_windows(alvo_janela='', alvo='', indice=1): return windows.selecionar_elemento_windows(alvo_janela, alvo, indice)
 def navegar_navegador(url, modo='visivel'): return browser.navegar_navegador(url, modo)
 def ler_pagina(foco): return browser.ler_pagina(foco)
+def obter_contexto_navegador(foco=''): return browser_context.obter_contexto_navegador(foco)
 def clicar_elemento(alvo, indice=1): return browser.clicar_elemento(alvo, indice)
 def preencher_elemento(alvo, texto, indice=1): return browser.preencher_elemento(alvo, texto, indice)
 def pressionar_tecla(tecla): return browser.pressionar_tecla(tecla)
