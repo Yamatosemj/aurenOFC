@@ -72,22 +72,52 @@ class PersistentMemoryStore:
                     atualizado_em TEXT NOT NULL
                 )"""
             )
-            colunas = {row["name"] for row in con.execute("PRAGMA table_info(estrategias)")}
-            if "chat_id" not in colunas:
-                try:
-                    con.execute("ALTER TABLE estrategias ADD COLUMN chat_id TEXT")
-                except sqlite3.OperationalError as exc:
-                    # Outro processo pode ter concluido a mesma migracao entre
-                    # o PRAGMA e o ALTER. Nesse caso, a schema final continua
-                    # correta e a inicializacao pode prosseguir.
-                    if "duplicate column name" not in str(exc).casefold():
-                        raise
 
             version = int(con.execute("PRAGMA user_version").fetchone()[0])
-            if version < 2:
-                con.execute("CREATE INDEX IF NOT EXISTS idx_conversas_chat_id ON conversas(chat_id, id)")
-                con.execute("CREATE INDEX IF NOT EXISTS idx_estrategias_chat_id ON estrategias(chat_id, id)")
-                con.execute(f"PRAGMA user_version = {self.SCHEMA_VERSION}")
+            if version > self.SCHEMA_VERSION:
+                raise RuntimeError(
+                    f"Schema de memoria {version} e mais nova que a suportada ({self.SCHEMA_VERSION})."
+                )
+
+            # Versao 1 e o esquema historico sem escopo de chat em estrategias.
+            # Toda base nova tambem passa por esta versao antes da migracao
+            # seguinte, mantendo as alteracoes de schema explicitamente
+            # versionadas e reproduziveis.
+            if version == 0:
+                con.execute("PRAGMA user_version = 1")
+                version = 1
+
+            while version < self.SCHEMA_VERSION:
+                proxima_versao = version + 1
+                if proxima_versao == 2:
+                    colunas = {
+                        row["name"]
+                        for row in con.execute("PRAGMA table_info(estrategias)")
+                    }
+                    if "chat_id" not in colunas:
+                        try:
+                            con.execute(
+                                "ALTER TABLE estrategias ADD COLUMN chat_id TEXT"
+                            )
+                        except sqlite3.OperationalError as exc:
+                            # Outra instancia pode concluir a mesma migracao
+                            # entre o PRAGMA e o ALTER. A coluna ja existe,
+                            # entao a migracao continua de forma idempotente.
+                            if "duplicate column name" not in str(exc).casefold():
+                                raise
+
+                    con.execute(
+                        "CREATE INDEX IF NOT EXISTS idx_conversas_chat_id "
+                        "ON conversas(chat_id, id)"
+                    )
+                    con.execute(
+                        "CREATE INDEX IF NOT EXISTS idx_estrategias_chat_id "
+                        "ON estrategias(chat_id, id)"
+                    )
+
+                con.execute(f"PRAGMA user_version = {proxima_versao}")
+                version = proxima_versao
+
             con.commit()
 
     @classmethod
