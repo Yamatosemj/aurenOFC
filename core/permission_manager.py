@@ -573,6 +573,11 @@ class PermissionManager:
                     PermissionLevel.CONFIRM,
                     "Recarregar pode repetir uma requisicao ou efeito remoto da pagina; confirmacao obrigatoria.",
                 )
+            if nome_ferramenta == "navegar_navegador" and self._url_navegacao_requer_confirmacao(argumentos.get("url")):
+                return (
+                    PermissionLevel.CONFIRM,
+                    "O destino da navegacao possui indicios de acao remota com efeito persistente; confirmacao obrigatoria.",
+                )
             if nome_ferramenta in self.AUTO_BROWSER_NAVIGATION_TOOLS:
                 return (
                     PermissionLevel.AUTO,
@@ -754,6 +759,22 @@ class PermissionManager:
             PermissionLevel.CONFIRM,
             "Tecla desconhecida ou potencialmente acionavel: confirmacao obrigatoria.",
         )
+
+    @staticmethod
+    def _url_navegacao_requer_confirmacao(url: Any) -> bool:
+        texto = str(url or "").strip().casefold()
+        if not texto:
+            return False
+        if texto.startswith(("javascript:", "data:", "vbscript:")):
+            return True
+        caminho = texto.split("?", 1)[0].split("#", 1)[0]
+        termos = (
+            "/logout", "/signout", "/delete", "/remove", "/unsubscribe",
+            "/checkout", "/purchase", "/buy", "/send", "/transfer",
+            "/payment", "/pay", "/confirm", "/cancel-subscription",
+        )
+        return any(termo in caminho for termo in termos)
+
 
     def _classificar_programa(
         self,
