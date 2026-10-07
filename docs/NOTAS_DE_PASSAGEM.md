@@ -2,42 +2,43 @@
 
 ## Modelo
 
-> Tarefa concluída: (número e nome)
+> Tarefa concluida: (numero e nome)
 > Arquivos criados/alterados:
-> Decisões tomadas (e por quê):
-> Testes: (comando, nº de testes antes e depois, resultado)
+> Decisoes tomadas (e por que):
+> Testes: (comando, numero de testes antes e depois, resultado)
 > Ficou pendente / virou backlog:
-> Próxima tarefa: (número)
+> Proxima tarefa: (numero)
 
 ---
 
-## 2026-10-07 — Tarefa 0 — Kit de continuidade
+## 2026-10-07 — Tarefa 1 — Timeout, retry e escada de modelos com cooldown
 
-**Tarefa concluída:** 0 — Kit de continuidade
+Tarefa concluida: em validacao no CI
 
-**Arquivos criados/alterados:**
-- `docs/PROMPT_BASE.md`
-- `docs/NOTAS_DE_PASSAGEM.md`
-- `docs/REFERENCIA_MARK.md`
-- `AUREN_STATE.md`
+Arquivos criados/alterados:
+- providers/model_ladder.py
+- providers/openai_provider.py
+- config.py
+- core/usage.py
+- tests/test_model_ladder.py
+- tests/test_model_config.py
+- AUREN_STATE.md
+- docs/NOTAS_DE_PASSAGEM.md
 
-**Decisões tomadas (e por quê):**
-- Mantida a versão técnica **V47**: a tarefa é exclusivamente documental e não altera runtime.
-- Registrado o PR **#77**, branch `fix/browser-click-new-tab-page`, HEAD final `8ed44a5b562bb33835d1771e4a05f38b15bb1914`.
-- O baseline de hoje foi fixado em **576 testes aprovados**.
-- A documentação separa o que já existe no Auren do que é somente referência de ideia do Mark-LV; tarefas 2–10 não são tratadas como especificações de implementação.
-- A licença **CC BY-NC 4.0** do Mark-LV é respeitada: esta documentação referencia arquivos e ideias, não código ou comentários para cópia.
+Decisoes tomadas (e por que):
+- O SDK recebe timeout explicito e max_retries=0; o fallback fica sob controle unico do Auren.
+- AUREN_MODEL permanece o primeiro degrau. AUREN_MODEL_LADDER apenas adiciona degraus posteriores.
+- 429 -> 5 min; 503/504 e timeout -> 30 min; 404 -> 6 h. 400/401 nao trocam.
+- Ao trocar de modelo durante uma conversa com previous_response_id, o provider exige historico_completo e envia esse historico sem o ID.
+- Nenhuma dependencia nova foi adicionada.
 
-**Testes:**
-- Comando de referência: `py -m pytest -q`
-- Antes: **576 passed**
-- Depois: **576 passed** como baseline de runtime, pois a mudança é exclusivamente documental.
-- Resultado verificado no CI do PR #77 antes deste commit documental, no merge ref `4139b0696fe1e378d80fccb8541e6232b91d01b5`: **576 passed, 5 warnings, 57.44s**.
-- O novo commit não altera runtime; o workflow visual disparado para ele está aguardando execução. Não há um resultado pós-commit do pytest disponível neste momento, então ele não é apresentado como uma execução nova.
+Testes:
+- Baseline antes: 576 passed, 5 warnings
+- Comando: py -m pytest -q
+- CI pos-commit: aguardando.
 
-**Ficou pendente / virou backlog:**
-- Tarefa 1 — Timeout, retry e escada de modelos com cooldown — é a próxima tarefa técnica.
-- Tarefas 2–10 permanecem backlog/documentação de planejamento.
-- A execução manual L4/L5 do runner live continua sendo obrigação da fase Browser Intelligence; esta tarefa não mexeu no Browser.
+Ficou pendente / virou backlog:
+- Validar full pytest no CI e fechar a nota.
+- A execucao live python testes_auren_live.py --rapido nao se aplica: esta tarefa nao mexe em Browser/Windows.
 
-**Próxima tarefa:** 1
+Proxima tarefa: 2
