@@ -543,7 +543,7 @@ class AurenHarness:
     # dado que o Harness consome de agent/ e a estimativa de profundidade do
     # Planner (plan.max_rounds), usada por `_limite_de_rodadas`.
     def _executar_ciclo(self, objetivo: str) -> tuple[bool, Any]:
-        return _executar_ciclo_impl(self, objetivo, _RespostaWrapper)
+        return _executar_ciclo_impl(self, objetivo, _RespostaWrapper, _write_log)
     # --- Mecanica do ciclo (nao decide nada; so executa o que o ciclo decidiu) ---
 
     MSG_ERRO_PROVIDER = "Tive um problema ao acessar o modelo. A tarefa nao foi concluida."
