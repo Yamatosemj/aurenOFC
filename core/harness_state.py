@@ -11,7 +11,7 @@ def _montar_estado(
     incluir_contexto: bool,
     contexto_tarefa: str,
     vision_reobserve_pending: bool,
-    browser_verification_pending: bool,
+    browser_verification_pending: bool = False,
     max_history_items: int,
     max_state_chars: int,
     texto_seguro: Callable[[Any, int], str],
