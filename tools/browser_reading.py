@@ -185,6 +185,15 @@ def ler_pagina(foco):
                         nome, placeholder, nameAttr, idAttr,
                         el.getAttribute('role') || '', el.tagName
                     ].join(' ');
+                    const fingerprintAlvo = el.parentElement || el;
+                    const fingerprintHtml = String(fingerprintAlvo.outerHTML || '')
+                        .replace(/\s+/g, ' ').slice(0, 12000);
+                    let fingerprintHash = 1469598103934665603n;
+                    for (let i = 0; i < fingerprintHtml.length; i += 1) {
+                        fingerprintHash ^= BigInt(fingerprintHtml.charCodeAt(i));
+                        fingerprintHash = BigInt.asUintN(64, fingerprintHash * 1099511628211n);
+                    }
+                    const domFingerprint = fingerprintHash.toString(16).padStart(16, '0');
                     const score = pontuar(textoBusca, 5);
 
                     controles.push({
@@ -199,7 +208,8 @@ def ler_pagina(foco):
                         chave: limpar(chave, 180),
                         estados,
                         value: valorSeguro,
-                    valor_interno: campoSensivel ? String(el.value || '') : null
+                        valor_interno: campoSensivel ? String(el.value || '') : null,
+                        domFingerprint,
                     });
                 }
 
@@ -714,7 +724,9 @@ def ler_pagina(foco):
             "Elementos flutuantes visiveis: "
             f"dialogos={flutuantes.get('dialogos', 0)} | "
             f"menus={flutuantes.get('menus', 0)} | "
-            f"listboxes={flutuantes.get('listboxes', 0)}"
+            f"listboxes={flutuantes.get('listboxes', 0)} | "
+            f"popovers={flutuantes.get('popovers', 0)} | "
+            f"details_abertos={flutuantes.get('details_abertos', 0)}"
         )
         linhas.extend(["", "Campos e controles visiveis:"])
 
@@ -726,9 +738,11 @@ def ler_pagina(foco):
                 "aria-expanded",
                 "aria-pressed",
                 "aria-selected",
+                "aria-checked",
                 "checked",
                 "selected",
                 "open",
+                "details-open",
                 "data-state"
             ):
                 if chave in estados:
@@ -749,6 +763,8 @@ def ler_pagina(foco):
                 partes.append(f"placeholder={item['placeholder']}")
             if item.get("chave"):
                 partes.append(f"chave={item['chave']}")
+            if item.get("domFingerprint"):
+                partes.append(f"dom-fingerprint={item['domFingerprint']}")
             estado_texto = _estado_controle_texto(item.get("estados", {}))
             if estado_texto:
                 partes.append(f"estado={estado_texto}")
