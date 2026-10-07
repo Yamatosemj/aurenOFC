@@ -2,82 +2,234 @@
 
 > Fonte de verdade operacional do Auren.
 > Antes de iniciar uma nova tarefa, compare este arquivo com a branch/PR, o head da main e o CI do GitHub.
-> Historico, memorias da conversa e documentos arquivados nao substituem este estado.
+> Histórico, memórias da conversa e documentos arquivados não substituem este estado.
 
 Atualizado em: 2026-10-07
 
 ## Estado atual
 
-- Versao estavel: V47
-- Modelo padrao: gpt-5.6-luna
-- Branch/PR ativa: fix/browser-click-new-tab-page / PR #77
-- Head da main: 0a8304e1b097d458511f017ca1f0d9da19d86726
-- Head da branch ativa: 07b565e1f49a1cb3162f55799bbaecaa58683f9a
-- Ultimo head funcional validado: b72e43f3c04f6866f90340d1df2d3ec6782ab7b5
-- Baseline de pytest em 2026-10-07: 576 passed, 5 warnings
-- Tarefa atual: Tarefa 2 — memoria recuperavel sob demanda
-- Proxima tarefa apos o portao: Tarefa 3 — undo reversivel
-- Fase do projeto: Browser Intelligence
+- **Versão estável:** V47
+- **Modelo padrão:** `gpt-5.6-luna`
+- **Branch/PR ativa:** `fix/browser-click-new-tab-page` / PR #77
+- **Head da main:** `0a8304e1b097d458511f017ca1f0d9da19d86726`
+- **Último commit da implementação da Tarefa 1:** `fe9e587e26f7e4bef75bf2c8eb4a9d02b75a0dc0`
+- **Último head funcional validado:** `b72e43f3c04f6866f90340d1df2d3ec6782ab7b5`
+- **CI da implementação mais recente em main:** pytest, focused Linux e focused Windows verdes
+- **CI do PR #77:** full tests Linux/Windows, static-checks e visual interaction/Playwright verdes no merge ref `4139b0696fe1e378d80fccb8541e6232b91d01b5`
+- **Baseline de pytest em 2026-10-07:** **576 passed, 5 warnings**
+- **Tarefa atual:** **Tarefa 2 — memória recuperável sob demanda**
+- **Próxima tarefa:** **Tarefa 3 — undo reversível**
+- **Fase do projeto:** Browser Intelligence
 
 ## Roadmap Mark
 
-O Mark-LV e referencia de ideia, problema e casos-limite. Nao e fonte de codigo para copia. Cada implementacao do Auren deve ser escrita de forma independente, usando sua arquitetura, nomes em portugues e ToolResult.
+> O Mark-LV é referência de ideia, problema e casos-limite. Não é fonte de código para cópia. Cada implementação do Auren deve ser escrita de forma independente, usando sua arquitetura, nomes em português e `ToolResult`.
 
 | Ordem | Tarefa | Origem no Mark-LV | Alvo principal no Auren | Estado |
 |---|---|---|---|---|
-| 0 | Kit de continuidade | padrao de continuidade do projeto | docs/PROMPT_BASE.md, docs/NOTAS_DE_PASSAGEM.md, docs/REFERENCIA_MARK.md, AUREN_STATE.md | CONCLUIDA |
-| 1 | Timeout, retry, escada de modelos e cooldown | core/gemini.py | providers/model_ladder.py, provider/config/usage/testes | CONCLUIDA |
-| 2 | Memoria recuperavel sob demanda | main.py, memory/memory_manager.py | memory/store.py, tools/memory.py | ATUAL |
-| 3 | Undo reversivel | core/undo.py | core/ + ferramentas reversiveis | BACKLOG |
-| 4 | Confirmacao humana nao-forjavel | core/confirm.py, ui.py | core/permission_manager.py, voice/confirmation.py | BACKLOG / PARCIAL |
-| 5 | Selecao de dispositivos de audio | core/audio_devices.py | voice/input.py, voice/tts.py | BACKLOG |
-| 6 | Continuidade de sessao | main.py | provider + Harness + memoria | BACKLOG |
-| 7 | Wake word + PTT/ack | core/wake_word.py, core/hotkey.py | camada de voz | BACKLOG / PARCIAL |
-| 8 | Avatar + visemes/lip-sync | core/avatar.py, core/viseme.py, ui.py | nova camada visual | BACKLOG |
-| 9 | Video/HUD/theming | ui.py | nova camada visual/configuracao | BACKLOG |
-| 10 | Historico/uso remoto/extensoes | roadmap LVI+ em readme.md | novo transporte/modulos remotos + Harness | BACKLOG |
+| **0** | Kit de continuidade | padrão de continuidade do projeto | `docs/PROMPT_BASE.md`, `docs/NOTAS_DE_PASSAGEM.md`, `docs/REFERENCIA_MARK.md`, `AUREN_STATE.md` | **CONCLUÍDA** |
+| **1** | Timeout, retry, escada de modelos e cooldown | `core/gemini.py` | `providers/model_ladder.py`, provider/config/usage/testes | **CONCLUÍDA** |
+| **2** | Memória recuperável sob demanda | `main.py`, `memory/memory_manager.py` | `memory/store.py`, `tools/memory.py` | **ATUAL** |
+| **3** | Undo reversível | `core/undo.py` | `core/` + ferramentas reversíveis | **BACKLOG** |
+| **4** | Confirmação humana não-forjável | `core/confirm.py`, `ui.py` | `core/permission_manager.py`, `voice/confirmation.py` | **BACKLOG / PARCIAL** |
+| **5** | Seleção de dispositivos de áudio | `core/audio_devices.py` | `voice/input.py`, `voice/tts.py` | **BACKLOG** |
+| **6** | Continuidade de sessão | `main.py` | provider + Harness + memória | **BACKLOG** |
+| **7** | Wake word + PTT/ack | `core/wake_word.py`, `core/hotkey.py` | camada de voz | **BACKLOG / PARCIAL** |
+| **8** | Avatar + visemes/lip-sync | `core/avatar.py`, `core/viseme.py`, `ui.py` | nova camada visual | **BACKLOG** |
+| **9** | Vídeo/HUD/theming | `ui.py` | nova camada visual/configuração | **BACKLOG** |
+| **10** | Histórico/uso remoto/extensões | roadmap LVI+ em `readme.md` | novo transporte/módulos remotos + Harness conforme cada caso | **BACKLOG** |
 
-## Decisao de continuidade entre modelos
+A especificação detalhada de tarefas futuras permanece fora da implementação até que a tarefa correspondente seja ativada.
 
-A documentacao oficial atual da OpenAI descreve previous_response_id como mecanismo de continuidade multi-turno e permite informar um model por resposta, mas nao afirma que um previous_response_id seja portavel quando a solicitacao muda de modelo. Por isso o Auren adota uma politica conservadora:
+## Decisão de continuidade entre modelos
 
-- a primeira tentativa usa previous_response_id somente no primeiro degrau
-- ao trocar de modelo, o provider remove previous_response_id e envia historico_completo
-- sem historico_completo, a troca falha com o erro estruturado model_ladder_history_required, em vez de perder contexto silenciosamente
-- o fluxo atual do Harness nao usa response_id entre rodadas
+A documentação oficial atual da OpenAI descreve `previous_response_id` como mecanismo de continuidade multi-turno e permite informar um `model` por resposta, mas não afirma que um `previous_response_id` seja portátil quando a solicitação muda de modelo. Por isso o Auren adota uma política conservadora:
+
+- a primeira tentativa usa `previous_response_id` somente no primeiro degrau
+- ao trocar de modelo, o provider remove `previous_response_id` e envia `historico_completo`
+- sem `historico_completo`, a troca falha com o erro estruturado `model_ladder_history_required`, em vez de perder contexto silenciosamente
+- o fluxo atual do Harness não usa `response_id` entre rodadas
 
 Fontes consultadas em 2026-10-07:
 - https://developers.openai.com/api/reference/python/resources/responses/methods/create
 - https://developers.openai.com/api/docs/guides/migrate-to-responses
 - https://github.com/openai/openai-python
 
-## Decisoes da Tarefa 1
+## Decisões da Tarefa 1
 
-- Timeout padrao: 30 s, configuravel por AUREN_REQUEST_TIMEOUT_S. O SDK documenta 600 s como default atual.
-- max_retries: 0. O Auren controla fallback por degrau; o SDK nao repete automaticamente antes do cooldown.
-- Cooldowns: 300 s para 429, 1800 s para 503/504 e timeout, 21600 s para 404.
-- 400/401 nao trocam de modelo.
-- AUREN_MODEL continua sempre como primeiro degrau; AUREN_MODEL_LADDER apenas adiciona degraus posteriores e remove duplicatas.
-- Sem AUREN_MODEL_LADDER, o degrau selecionado continua sendo somente AUREN_MODEL.
-- Nenhuma dependencia nova foi adicionada.
+- Timeout padrão: **30 s**, configurável por `AUREN_REQUEST_TIMEOUT_S`. O SDK atual documenta **600 s** como timeout padrão.
+- `max_retries`: **0**. O Auren controla fallback por degrau; o SDK não repete automaticamente uma chamada antes de o cooldown entrar em ação.
+- Cooldowns: **300 s** para 429, **1800 s** para 503/504 e timeout, **21600 s** para 404.
+- 400/401 não trocam de modelo.
+- `AUREN_MODEL` continua sempre como primeiro degrau; `AUREN_MODEL_LADDER` apenas adiciona degraus posteriores e remove duplicatas.
+- Sem `AUREN_MODEL_LADDER`, o degrau selecionado continua sendo somente `AUREN_MODEL`.
+- Nenhuma dependência nova foi adicionada.
 
-## Backlog
+## O que já está concluído nesta fase
 
-- Tarefa 2 — memoria recuperavel sob demanda
-- Tarefa 3 — undo reversivel
-- Tarefa 4 — confirmacao humana nao-forjavel
-- Tarefa 5 — selecao de dispositivos de audio
-- Tarefa 6 — continuidade de sessao
-- Tarefa 7 — wake word + PTT/ack
-- Tarefa 8 — avatar + visemes/lip-sync
-- Tarefa 9 — video/HUD/theming
-- Tarefa 10 — historico/uso remoto/extensoes
+- [x] confirmação de voz consome o protocolo real da fila e rejeita itens stale/erro/legado
+- [x] contexto de navegador propaga falhas internas sem mascarar sucesso
+- [x] guard de Browser Verification só é resetado após `True` do verifier
+- [x] preenchimento sensível usa evidência protegida sem expor o segredo
+- [x] recuperação do navegador não reinicia a sessão por exceções transitórias
+- [x] foco de aba é separado da referência interna `pagina`
+- [x] busca de arquivos respeita a mesma política de caminhos e evita reparse traversal
+- [x] screenshots possuem retenção e limites de armazenamento
+- [x] encerramento por nome de processo evita `taskkill /IM` ambíguo
+- [x] UI Automation não usa arquivo temporário de saída nem `ExecutionPolicy Bypass`
+- [x] Kokoro e Parakeet possuem manifestos de integridade/revisão
+- [x] navegação retorna `ToolResult` estruturado com evidência da URL final observada
+- [x] rolagem aceita alvo semântico opcional e registra se o alvo foi encontrado
+- [x] controles possuem impressão DOM estável para verificar efeitos que não expõem ARIA/URL
+- [x] cliques de elementos não-âncora exigem confirmação quando o DOM não permite provar a ausência de comportamento JavaScript externo
+- [x] contexto do navegador preserva snapshot estruturado completo das abas, incluindo URLs longas, para verificação determinística
+- [x] runner live valida o bridge UIA pela arquitetura modular atual e consome retornos ToolResult sem tratar objetos estruturados como strings
+- [x] schema estrito de fechar_aba exige indice e usa 0 para representar a aba ativa
+
+### O que já está concluído nesta fase
+
+- [x] contexto unificado do navegador via `obter_contexto_navegador`
+- [x] contexto disponível no registry, contratos, facade e Dispatcher
+- [x] Router inclui contexto junto do subconjunto de ferramentas do browser
+- [x] conteúdo da página marcado como não confiável
+- [x] tarefas browser compostas com ações relevantes exigem nova verificação antes da conclusão
+- [x] verificação usa `obter_contexto_navegador` pelo fluxo normal do modelo/Dispatcher
+- [x] ações browser simples preservam o comportamento anterior e não ganham uma rodada extra desnecessária
+- [x] navegação e troca de aba têm verificação determinística de URL/aba ativa
+- [x] abertura, troca e fechamento de abas expõem estado estruturado antes/depois e têm validação determinística de contagem e aba ativa
+- [x] preenchimento de campos não sensíveis tem verificação determinística do valor observado
+- [x] clique navegacional expõe evidência estruturada e pode ser verificado deterministicamente pelo destino observado
+- [x] cliques sem navegação capturam sinais determinísticos de estado do controle (aria-expanded, aria-pressed, aria-selected, checked, selected, open e data-state) quando disponíveis
+- [x] cliques sem navegação também capturam mudanças de visibilidade em diálogo, menu e listbox, além de popover e `details[open]`
+- [x] clique sem navegação possui fallback por impressão DOM do próprio controle
+- [x] leitor de página expõe esses estados para permitir comparação independente após a ação
+- [x] rolagem expõe métricas estruturadas e possui verificação determinística da posição observada
+- [x] runner live separado possui casos explícitos de verificação pós-ação para navegação e rolagem
+
+### Próximo passo da fase
+
+**Concluir a validação da verificação por tipo de ação e depois executar o runner live**, mantendo o princípio de não criar novas integrações:
+
+- navegação: confirmar título/URL efetivos — **parcialmente concluído**; URL já é comparada de forma determinística
+- abas: confirmar quantidade, aba ativa e destino — **parcialmente concluído**; abertura/troca/fechamento já carregam evidência estruturada e a contagem/aba ativa são comparadas deterministicamente
+- interação com elemento: confirmar o estado relevante da página ou controle — **parcialmente concluído**; preenchimento não sensível e cliques navegacionais já têm comparação determinística, e cliques sem navegação agora verificam sinais específicos do controle ou mudanças estruturadas de dialog/menu/listbox
+- rolagem: posição de rolagem já é verificada deterministicamente; confirmar automaticamente o conteúdo esperado continua como etapa posterior
+- qualquer verificação continua tratando conteúdo da página como dado não confiável, nunca como instrução
+- resultado `None` do verificador não encerra mais uma verificação obrigatória; somente `True` limpa a pendência
+
+## Correções da auditoria validadas
+
+As correções abaixo já estão implementadas no branch ativo; o CI do head validado está verde. A execução L4/L5 com modelo real continua sendo um passo manual e explícito.
+
+- confirmação de voz usa o protocolo real `("audio", CapturedAudio)`, rejeita `("erro", exc)`, descarta áudio stale e normaliza respostas afirmativas com segurança
+- contexto de Browser propaga falhas de leitura em vez de mascará-las como sucesso
+- Browser Verification só limpa pendência e reinicia guard após evidência positiva `True`
+- preenchimento sensível possui verificação local por compromisso HMAC sem expor o segredo
+- recuperação do Browser não reinicia a sessão por exceções transitórias; recriação depende de fechamento confirmado
+- foco de aba é observado independentemente da referência interna `pagina`
+- back/forward/reload/keyboard possuem evidência estruturada e verificação conservadora por tipo de ação
+- clique não navegacional usa estado de controle moderno, incluindo `aria-checked`, `details`, `alertdialog` e `popover`
+- clique seguro exige evidência estrutural do elemento antes de receber `AUTO`
+- política de conteúdo não confiável não pode elevar uma capacidade `BLOCKED` e é consumida após uma confirmação contada
+- busca de arquivos compartilha a política de caminho e evita symlink/junction/reparse traversal
+- raiz ampla de OneDrive deixou de ser implicitamente permitida
+- leitura/inspeção rejeitam resultados quando a identidade do arquivo muda durante a operação
+- hashing SHA-256 de arquivos gigantes é limitado para inspeções comuns
+- Kokoro e Parakeet usam referências de artefato e verificações de integridade
+- métricas ASR/TTS passaram a ser medidas no caminho real de voz
+
+## Segurança e base estrutural concluídas
+
+- [x] allowlist de leitura/inspeção de arquivos
+- [x] defesa contra prompt injection de conteúdo não confiável
+- [x] política de permissões endurecida
+- [x] exceções genéricas reduzidas em caminhos críticos
+- [x] dependências principais fixadas
+- [x] modelo configurável por ambiente com padrão `gpt-5.6-luna`
+- [x] Windows dividido por domínio
+- [x] Browser dividido em leitura, elementos e navegação
+- [x] Harness dividido em runtime, guards, ciclo e demais mecanismos
+- [x] runner live separado da suíte pytest
+- [x] trace persistente por tarefa
+- [x] validação visual Windows com geometria/coordenadas protegidas
+
+## PRs mais recentes
+
+- **#48** — extração de Windows UI Automation — merged
+- **#49** — extração de status do Windows — merged
+- **#50** — extração de captura de tela — merged
+- **#51** — extração de leitura do Browser — merged
+- **#52** — extração de interação com elementos do Browser — merged
+- **#53** — extração de navegação do Browser — merged
+- **#55** — extração do runtime de sessão/logging do Harness — merged
+- **#56** — extração do ciclo de execução do Harness — merged
+- **#57** — separação do runner live de regressão — merged
+- **#58** — Browser Context Intelligence inicial — merged
+- **#60** — contexto do Browser incluído no roteamento especializado — merged
+- **#61** — verificação após ações relevantes do Browser — merged
+- **#64** — verificação determinística de navegação e troca de aba — merged
+- **#66** — verificação determinística de preenchimento de elemento — merged
+- **#69** — verificação determinística de rolagem e persistência da evidência entre rodadas — merged
+- **#72** — cobertura do Browser Intelligence no runner live — merged
+- **#76** — normalização CRLF — fechado sem merge; correção e regressão absorvidas pela linha do PR #77
+- **#77** — refinamento da verificação por tipo de ação — aberto; inclui cliques não navegacionais
+
+## Contratos atuais importantes
+
+- Conteúdo vindo de páginas web é **dado não confiável**
+- Conteúdo não confiável nunca autoriza uma ação por si só
+- Ações continuam passando pelo Router, Dispatcher e PermissionManager normais
+- Não existe caminho paralelo de execução para Browser Intelligence
+- A tarefa não deve declarar sucesso quando uma verificação obrigatória ainda estiver pendente
+- Mudanças de escopo devem virar backlog, não execução silenciosa
+
+## Próximas etapas
+
+A infraestrutura pesada desta fase está **encerrada** após a validação operacional determinística do Browser Intelligence e o CI verde no head validado.
+
+O único passo de validação que permanece fora do CI é a bateria L4/L5 do runner live com navegador e modelo reais em Windows, mantida como execução manual porque depende do ambiente real e do provider. Isso não deve ser substituído por mocks apenas para obter CI verde.
+
+Novas capacidades e frentes ficam fora desta etapa e permanecem no backlog.
 
 ## Registro final da Tarefa 1
 
-- Tarefa 1 concluida e validada no CI.
-- Full pytest Linux: 589 passed, 6 skipped, 5 warnings.
-- Full pytest Windows: 595 passed, 5 warnings.
+- Tarefa 1 concluída e validada pelo portão de saída.
+- Full pytest Linux: **589 passed, 6 skipped, 5 warnings**.
+- Full pytest Windows: **595 passed, 5 warnings**.
 - Static checks: verdes.
-- Nao houve alteracao de Browser/Windows; portanto o runner live manual nao e requisito desta tarefa.
-- O runtime permanece em V47; a proxima frente e a Tarefa 2.
+- Visual/focused CI: verde.
+- Não houve alteração de Browser/Windows; o runner live manual não é requisito desta tarefa.
+- Runtime permanece em **V47**.
+- Próxima frente: **Tarefa 2 — memória recuperável sob demanda**.
+
+## Backlog
+
+Próximas tarefas de roadmap:
+
+- Tarefa 3 — undo reversível
+- Tarefa 4 — confirmação humana não-forjável
+- Tarefa 5 — seleção de dispositivos de áudio
+- Tarefa 6 — continuidade de sessão
+- Tarefa 7 — wake word + PTT/ack
+- Tarefa 8 — avatar + visemes/lip-sync
+- Tarefa 9 — vídeo/HUD/theming
+- Tarefa 10 — histórico/uso remoto/extensões
+
+Ideias futuras que não fazem parte da tarefa atual:
+
+- memória contextual/semântica mais avançada
+- inteligência geral do Windows
+- multi-device
+- terminal no celular
+- ESP32/Arduino
+- Minecraft
+- wake word
+- interface visual avançada
+
+## Regra de continuidade
+
+Toda mudança relevante de arquitetura, comportamento, capacidade, versão ou próximo passo deve atualizar este arquivo na mesma transição.
+
+Fluxo oficial:
+
+`AUREN_STATE.md → branch/PR → CI → implementação → testes → atualização do estado`
