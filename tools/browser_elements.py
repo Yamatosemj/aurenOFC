@@ -327,6 +327,14 @@ def clicar_elemento(alvo, indice=1):
                         "antes": valor_antes,
                         "depois": valor_depois,
                     }
+        fingerprint_antes = str(antes.get("domFingerprint") or "")
+        fingerprint_depois = str(depois.get("domFingerprint") or "")
+        if fingerprint_antes and fingerprint_depois and fingerprint_antes != fingerprint_depois:
+            return {
+                "atributo": "domFingerprint",
+                "antes": fingerprint_antes,
+                "depois": fingerprint_depois,
+            }
         return None
 
     try:
@@ -449,6 +457,7 @@ def clicar_elemento(alvo, indice=1):
                 "placeholder": estado_controle_antes.get("placeholder", ""),
                 "role": estado_controle_antes.get("role", ""),
                 "tag": tag_elemento,
+                "dom_fingerprint": estado_controle_antes.get("domFingerprint", ""),
             },
             "pagina_antes": estado_pagina_antes,
             "pagina_depois": estado_pagina_depois,
