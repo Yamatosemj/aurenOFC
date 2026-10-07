@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from core.harness_guards import _tratar_rodada_sem_ferramentas_impl
-from core.harness_model import _executar_rodada_modelo_impl
+from core.harness_guards import _tratar_rodada_sem_ferramentas as _tratar_rodada_sem_ferramentas_impl
+from core.harness_model import _executar_rodada_modelo as _executar_rodada_modelo_impl
 from core.harness_round_input import _montar_input_e_estado_da_rodada
-from core.harness_tools import _executar_chamadas_rodada_impl
+from core.harness_tools import _executar_chamadas_rodada as _executar_chamadas_rodada_impl
 from core.vision import prepare_vision_result_content
 
 
