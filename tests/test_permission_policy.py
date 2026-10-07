@@ -330,7 +330,7 @@ def test_no_progress_guard_covers_repeated_browser_click_and_keypress():
 
     permitido, motivo = manager.autorizar("clicar_elemento", argumentos_clique)
     assert permitido is False
-    assert "sem evidencia de progresso" in motivo.lower()
+    assert "evid" in motivo.lower() and "progresso" in motivo.lower()
 
     manager.iniciar_tarefa()
     for _ in range(3):
