@@ -21,9 +21,9 @@ Atualizado em: 2026-10-07
 - **Baseline histórico de pytest:** **576 passed, 5 warnings**; baseline imediatamente anterior à Tarefa 3: Linux **605 passed, 6 skipped, 5 warnings** / Windows **611 passed, 5 warnings**
 - **Novos testes da Tarefa 3:** **17**
 - **Ferramentas no registry/contratos após a Tarefa 3:** **55** (eram 50 antes)
-- **Tarefa atual:** **Tarefa 4 da sessão — política de confirmação reversível/irreversível e confirmação com timeout**
+- **Tarefa atual:** **Tarefa 4 da sessão — política de confirmação reversível/irreversível e confirmação com timeout (implementação concluída; portão global bloqueado por débitos preexistentes da Tarefa 3)**
 - **Portão da Tarefa 3:** pytest/runner live do Windows real continuam pendentes; a Tarefa 4 foi iniciada na branch ativa sem alterar silenciosamente a política de risco
-- **Próxima tarefa:** fechar o portão da Tarefa 4 após a decisão de política já tomada e as validações disponíveis
+- **Próxima tarefa:** Tarefa 5 — seleção de dispositivos de áudio, após o fechamento do portão global pendente da Tarefa 3 e o runner live obrigatório no Windows real
 - **Fase do projeto:** Browser Intelligence
 
 ## Roadmap Mark
@@ -36,7 +36,7 @@ Atualizado em: 2026-10-07
 | **1** | Timeout, retry, escada de modelos e cooldown | `core/gemini.py` | `providers/model_ladder.py`, provider/config/usage/testes | **CONCLUÍDA** |
 | **2** | Memória recuperável sob demanda | `main.py`, `memory/memory_manager.py` | `memory/store.py`, `tools/memory.py` | **BACKLOG / RETOMAR** |
 | **3** | Undo reversível | `core/undo.py` | `core/` + ferramentas reversíveis | **EM VALIDAÇÃO** |
-| **4** | Confirmação humana não-forjável | `core/confirm.py`, `ui.py` | `core/permission_manager.py`, `voice/confirmation.py` | **BACKLOG / PARCIAL** |
+| **4** | Confirmação humana não-forjável | `core/confirm.py`, `ui.py` | `core/permission_manager.py`, `voice/confirmation.py` | **CONCLUÍDA — implementação/documentação; portão global herdado da Tarefa 3** |
 | **5** | Seleção de dispositivos de áudio | `core/audio_devices.py` | `voice/input.py`, `voice/tts.py` | **BACKLOG** |
 | **6** | Continuidade de sessão | `main.py` | provider + Harness + memória | **BACKLOG** |
 | **7** | Wake word + PTT/ack | `core/wake_word.py`, `core/hotkey.py` | camada de voz | **BACKLOG / PARCIAL** |
@@ -272,14 +272,14 @@ Fluxo oficial:
 
 ## Registro da Tarefa 4 da sessão — Política reversível/irreversível e confirmação com timeout
 
-Estado: **EM IMPLEMENTAÇÃO / AGUARDANDO APROVAÇÃO DA POLÍTICA**
+Estado: **IMPLEMENTAÇÃO CONCLUÍDA / PORTÃO GLOBAL BLOQUEADO POR DÉBITOS PREEXISTENTES DA TAREFA 3**
 
 - A auditoria confirmou que o Undo real da linha V49 existe em core/undo.py, com LIFO, limite 10 e preservação da entrada quando a reversão falha.
 - Mover/copiar/renomear/criar pasta registram undo condicionado ao estado observado; volume e mudo também capturam o estado anterior antes de registrar reversão.
 - memory.write permanece CONFIRM: esquecer_memoria_persistente não restaura o valor/categoria/timestamp anterior de uma atualização.
 - windows.clipboard.write foi identificado como alteração atualmente sem snapshot/undo do clipboard. O usuário decidiu explicitamente manter AUTO; essa limitação fica documentada e não é tratada como restauração exata.
 - As 28 capabilities atuais do PermissionManager foram classificadas e a matriz completa foi registrada em docs/POLITICA_DE_CONFIRMACAO.md.
-- A confirmação ganhou gate de uma pendência por canal, token opaco mantido na interface, timeout padrão de 90 s, expiração como negativa e descarte de token/resposta atrasados.
+- A confirmação ganhou gate de uma única pendência no gate padrão do processo, token opaco mantido na interface, timeout padrão de 90 s, expiração como negativa e descarte de token/resposta atrasados.
 - O token não faz parte de ConfirmationRequest nem dos argumentos enviados pelo modelo.
 - Texto e voz continuam atrás do mesmo ConfirmationChannel; o canal de voz usa agora o timeout oficial de 90 s.
 - Foi adicionada uma regressão que exige correspondência exata entre capabilities registradas e CAPABILITY_POLICY; capability nova sem nível explícito faz a suíte falhar.
@@ -296,17 +296,18 @@ Arquivos desta transição:
 - AUREN_STATE.md
 
 Ficou pendente:
-- Decisão registrada: windows.clipboard.write permanece AUTO por escolha explícita do usuário.
-- O portão final ainda não fecha porque o full pytest não está verde: Linux 624 passed, 6 skipped, 4 failed; Windows 630 passed, 4 failed. As 4 falhas são as mesmas presentes no head V49 anterior.
+- O portão global ainda não fecha porque o full pytest não está verde: Linux 624 passed, 6 skipped, 4 failed; Windows 630 passed, 4 failed. As 4 falhas são as mesmas presentes no head V49 anterior e pertencem à Tarefa 3.
 - Executar python testes_auren_live.py --rapido no Windows real antes de declarar o portão externo concluído.
 
 Próxima tarefa:
-- Consolidar o fechamento da Tarefa 4 sem reclassificação de clipboard e seguir somente após o portão de validação.
+- Tarefa 5 — seleção de dispositivos de áudio, assim que o portão global herdado da Tarefa 3 estiver fechado.
 
 
 ### Evidência CI da Tarefa 4
 
-- Head de código validado: 8da961772abccac15ec7a6090293128469ae02aa.
+- Head atual da branch após a consolidação documental: fb431df0f40e7289d421ebc0bc74c8ee751ec139.
+- Head de código funcional da implementação antes dos commits documentais: 8da961772abccac15ec7a6090293128469ae02aa.
+- Merge ref atualmente testado pelo CI do PR #78: 8ece45161c3c877764740a4f1bda1010111d122a.
 - Baseline imediatamente anterior, head V49 d19ebf511d5d35623e187436c432b057a76428c5: Linux 619 passed, 6 skipped, 4 failed; Windows 625 passed, 4 failed.
 - Tarefa 4: Linux 624 passed, 6 skipped, 4 failed; Windows 630 passed, 4 failed.
 - Os 5 testes adicionados pela Tarefa 4 aparecem entre os testes aprovados; nenhuma falha do CI aponta para core/confirmation.py, voice/confirmation.py ou os novos testes.
@@ -315,7 +316,8 @@ Próxima tarefa:
   - test_file_operation_task_specs_resolve_to_local_capabilities
   - test_principais_ferramentas_do_registry_passam_por_contrato_permissao_e_handler
   - test_trash_shell_operation_requests_recoverable_delete
-- Essas mesmas 4 falhas já estavam presentes no head V49 anterior e não foram introduzidas pela Tarefa 4.
+- Essas mesmas 4 falhas já estavam presentes no head V49 anterior e não foram introduzidas pela Tarefa 4. O CI mais recente continua reproduzindo exatamente essas quatro falhas, agora no merge ref 8ece45161c3c877764740a4f1bda1010111d122a.
 - static-checks: verde.
 - playwright-live-smoke: verde.
 - Execução manual do runner live no Windows real: pendente.
+- Os cinco testes adicionados pela Tarefa 4 permanecem aprovados no full pytest do CI mais recente.
