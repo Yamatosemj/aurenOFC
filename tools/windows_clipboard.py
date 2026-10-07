@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import ctypes
+
+from tools.windows_window import _user32
 import os
 from ctypes import wintypes
 
