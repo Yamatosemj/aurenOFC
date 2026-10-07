@@ -569,14 +569,6 @@ class PermissionManager:
             if capacidade == "file.trash":
                 return PermissionLevel.CONFIRM, "Enviar para a Lixeira altera o estado do arquivo; confirmacao explicita obrigatoria e nenhuma exclusao permanente e permitida."
             return PermissionLevel.AUTO, "Operacao de arquivo limitada a caminhos permitidos e sem sobrescrita de destino."
-            path = _resolve_path(str(argumentos.get("caminho", "")))
-            path_policy = _classify_read_path(path)
-            if path_policy.status == "blocked":
-                return PermissionLevel.BLOCKED, path_policy.motivo
-            if path_policy.status == "confirm":
-                return PermissionLevel.CONFIRM, path_policy.motivo
-            return PermissionLevel.AUTO, path_policy.motivo
-
         if capacidade == "windows.window.control":
             if nome_ferramenta in self.REVERSIBLE_WINDOW_CONTROL_TOOLS:
                 return (
