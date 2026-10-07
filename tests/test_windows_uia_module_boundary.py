@@ -27,3 +27,32 @@ def test_windows_uia_execution_helpers_live_in_dedicated_module():
 
 def test_windows_uia_reuses_window_resolution_boundary():
     assert windows_uia._encontrar_janela_windows.__module__ == "tools.windows_window"
+
+
+def test_windows_uia_uses_stdin_stdout_without_execution_policy_bypass(monkeypatch):
+    calls = []
+
+    class _Process:
+        returncode = 0
+        stdout = '{"ok":true,"operacao":"resolver"}\n'
+        stderr = ""
+
+    monkeypatch.setattr(windows_uia.shutil, "which", lambda name: "powershell.exe")
+    monkeypatch.setattr(
+        windows_uia.subprocess,
+        "run",
+        lambda *args, **kwargs: calls.append((args, kwargs)) or _Process(),
+    )
+
+    result = windows_uia._executar_ui_automation(
+        "resolver",
+        {"hwnd": 123, "alvo": "Botao"},
+    )
+
+    assert result["ok"] is True
+    assert len(calls) == 1
+    args, kwargs = calls[0]
+    assert "-ExecutionPolicy" not in args
+    assert "-File" not in args
+    assert args[-2:] == ("-Command", "-")
+    assert "__PAYLOAD__" not in kwargs["input"]
