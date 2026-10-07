@@ -28,9 +28,11 @@ def _allowed_test_root(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     original_sensitive = file_intelligence._has_sensitive_path_component
 
     def ignore_runner_appdata(path: Path) -> bool:
-        partes = tuple(part for part in Path(path).parts if part.casefold() != "appdata")
-        synthetic_path = Path(*partes) if partes else Path(path)
-        return original_sensitive(synthetic_path)
+        try:
+            relativo = Path(path).resolve().relative_to(tmp_path.resolve())
+        except ValueError:
+            relativo = Path(path)
+        return original_sensitive(relativo)
 
     monkeypatch.setattr(
         file_intelligence,
