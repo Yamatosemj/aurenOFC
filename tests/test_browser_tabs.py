@@ -12,6 +12,13 @@ class _FakePage:
     def title(self):
         return self._title
 
+    def is_closed(self):
+        return self.closed
+
+    def goto(self, url, wait_until=None, timeout=None):
+        del wait_until, timeout
+        self.url = url
+
     def close(self):
         self.closed = True
 
