@@ -5,12 +5,51 @@ from datetime import datetime
 from pathlib import Path
 
 from core.tool_result import ToolResult
+
+SCREENSHOT_MAX_TOTAL_BYTES = 512 * 1024 * 1024
+SCREENSHOT_MAX_FILES = 200
+SCREENSHOT_MAX_FILE_BYTES = 100 * 1024 * 1024
+SCREENSHOT_RETENTION_DAYS = 7
 from tools.windows_input import (
     _contexto_dpi_per_monitor_windows,
     _limites_tela_virtual_windows,
     _user32,
 )
 
+
+def _limpar_screenshots(destino_dir: Path) -> None:
+    try:
+        arquivos = sorted(
+            (p for p in destino_dir.glob("screen_*.png") if p.is_file()),
+            key=lambda p: p.stat().st_mtime,
+        )
+    except OSError:
+        return
+
+    limite_ts = datetime.now().timestamp() - SCREENSHOT_RETENTION_DAYS * 86400
+    for caminho in list(arquivos):
+        try:
+            if caminho.stat().st_mtime < limite_ts:
+                caminho.unlink()
+        except OSError:
+            pass
+
+    try:
+        arquivos = sorted(
+            (p for p in destino_dir.glob("screen_*.png") if p.is_file()),
+            key=lambda p: p.stat().st_mtime,
+        )
+        total = sum(p.stat().st_size for p in arquivos)
+    except OSError:
+        return
+
+    while arquivos and (len(arquivos) > SCREENSHOT_MAX_FILES or total > SCREENSHOT_MAX_TOTAL_BYTES):
+        caminho = arquivos.pop(0)
+        try:
+            total -= caminho.stat().st_size
+            caminho.unlink()
+        except OSError:
+            pass
 
 def capturar_tela_windows() -> ToolResult:
     """Captura todas as telas e devolve um artefato de imagem para a rodada multimodal."""
@@ -28,6 +67,7 @@ def capturar_tela_windows() -> ToolResult:
 
     destino_dir = Path(__file__).resolve().parents[1] / "runtime" / "screenshots"
     destino_dir.mkdir(parents=True, exist_ok=True)
+    _limpar_screenshots(destino_dir)
     destino = destino_dir / f"screen_{datetime.now().strftime('%Y%m%d-%H%M%S-%f')}.png"
     try:
         user32 = _user32()
