@@ -326,11 +326,20 @@ class PermissionManager:
         self.same_successful_action_count = 0
         self.last_authorized_action_signature: str | None = None
         self.last_authorized_action_tool: str | None = None
+        self._fonte_nao_confiavel_pendente: str | None = None
 
         # A politica base e definida por capacidade, nao por aplicativo ou
         # por cada nome concreto de ferramenta. Classificadores especificos
         # podem elevar o nivel de risco para uma acao individual.
         self.policy: dict[str, PermissionLevel] = dict(self.CAPABILITY_POLICY)
+
+    def registrar_fonte_nao_confiavel(self, nome_ferramenta: str) -> None:
+        """Marca que a proxima acao com efeito externo deve exigir confirmacao."""
+        self._fonte_nao_confiavel_pendente = str(nome_ferramenta or "").strip() or "desconhecida"
+
+    @property
+    def fonte_nao_confiavel_pendente(self) -> str | None:
+        return self._fonte_nao_confiavel_pendente
 
     def iniciar_tarefa(self) -> None:
         self.actions_attempted = 0
@@ -343,6 +352,7 @@ class PermissionManager:
         self.same_successful_action_count = 0
         self.last_authorized_action_signature = None
         self.last_authorized_action_tool = None
+        self._fonte_nao_confiavel_pendente = None
 
     def conta_para_limite(self, nome_ferramenta: str) -> bool:
         """Indica se a capacidade da tool consome o orcamento de acoes."""
@@ -523,6 +533,20 @@ class PermissionManager:
 
         capacidade = self._capability(nome_ferramenta)
         nivel_base = self.nivel(nome_ferramenta)
+
+        if (
+            self._fonte_nao_confiavel_pendente is not None
+            and capacidade in self.COUNTED_CAPABILITIES
+        ):
+            fonte = self._fonte_nao_confiavel_pendente
+            return (
+                PermissionLevel.CONFIRM,
+                (
+                    "Esta acao foi solicitada apos a leitura de conteudo nao confiavel "
+                    f"(fonte: {fonte}). Conteudo externo nunca e uma instrucao do usuario; "
+                    "confirmacao explicita e obrigatoria antes de qualquer acao com efeito externo."
+                ),
+            )
 
         if nivel_base == PermissionLevel.BLOCKED:
             return (

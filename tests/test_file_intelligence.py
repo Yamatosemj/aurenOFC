@@ -165,6 +165,17 @@ def test_read_supported_formats(tmp_path: Path, suffix: str, content: str):
     assert result.data["file_content"]["truncado"] is False
 
 
+def test_read_file_marks_content_as_untrusted(tmp_path: Path):
+    path = tmp_path / "nao-confiavel.txt"
+    path.write_text("conteudo externo", encoding="utf-8")
+
+    result = read_file(str(path), 0, 200)
+
+    assert result.ok is True
+    assert result.conteudo_nao_confiavel is True
+    assert "conteudo_nao_confiavel" in result.for_model()
+
+
 def test_read_utf8_preserves_accents(tmp_path: Path):
     path = tmp_path / "acentos.txt"
     expected = "ação, café, coração"

@@ -67,6 +67,7 @@ class ToolResult:
     data: Mapping[str, Any] | None = None
     error_code: str | None = None
     tool_name: str | None = None
+    conteudo_nao_confiavel: bool = False
 
     @classmethod
     def success(
@@ -75,12 +76,14 @@ class ToolResult:
         *,
         data: Mapping[str, Any] | None = None,
         tool_name: str | None = None,
+        conteudo_nao_confiavel: bool = False,
     ) -> "ToolResult":
         return cls(
             ok=True,
             message=str(message),
             data=data,
             tool_name=tool_name,
+            conteudo_nao_confiavel=conteudo_nao_confiavel,
         )
 
     @classmethod
@@ -91,6 +94,7 @@ class ToolResult:
         error_code: str = "tool_error",
         data: Mapping[str, Any] | None = None,
         tool_name: str | None = None,
+        conteudo_nao_confiavel: bool = False,
     ) -> "ToolResult":
         return cls(
             ok=False,
@@ -98,17 +102,20 @@ class ToolResult:
             data=data,
             error_code=error_code,
             tool_name=tool_name,
+            conteudo_nao_confiavel=conteudo_nao_confiavel,
         )
 
     def for_model(self) -> str:
         """Representacao compacta e estavel enviada de volta ao modelo."""
-        if self.data is None and self.error_code is None:
+        if self.data is None and self.error_code is None and not self.conteudo_nao_confiavel:
             return self.message
 
         payload: dict[str, Any] = {
             "ok": self.ok,
             "mensagem": self.message,
         }
+        if self.conteudo_nao_confiavel:
+            payload["conteudo_nao_confiavel"] = True
         if self.error_code:
             payload["codigo_erro"] = self.error_code
         if self.data is not None:
@@ -126,6 +133,8 @@ class ToolResult:
             payload["dados"] = dict(self.data)
         if self.tool_name:
             payload["ferramenta"] = self.tool_name
+        if self.conteudo_nao_confiavel:
+            payload["conteudo_nao_confiavel"] = True
         return payload
 
     def __str__(self) -> str:
@@ -147,6 +156,7 @@ def from_legacy(value: Any, *, tool_name: str | None = None) -> ToolResult:
             data=value.data,
             error_code=value.error_code,
             tool_name=tool_name,
+            conteudo_nao_confiavel=value.conteudo_nao_confiavel,
         )
 
     if isinstance(value, dict) and isinstance(value.get("ok"), bool):
@@ -160,6 +170,7 @@ def from_legacy(value: Any, *, tool_name: str | None = None) -> ToolResult:
             data=value,
             error_code=(str(value.get("codigo_erro")) if value.get("codigo_erro") else None),
             tool_name=tool_name,
+            conteudo_nao_confiavel=bool(value.get("conteudo_nao_confiavel")),
         )
 
     if isinstance(value, dict):
