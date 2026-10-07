@@ -396,17 +396,157 @@ def _history(path: Path, digest: str | None, limit: int) -> FileHistoryEvidence:
     )
 
 
+
+
+ALLOWED_READ_ROOT_NAMES = (
+    "Downloads",
+    "Desktop",
+    "Documents",
+    "Documentos",
+    "Área de Trabalho",
+    "OneDrive",
+)
+SENSITIVE_PATH_COMPONENTS = frozenset({
+    "appdata",
+    ".ssh",
+    ".aws",
+})
+_BROWSER_PROFILE_PATHS = (
+    ("google", "chrome", "user data"),
+    ("microsoft", "edge", "user data"),
+    ("bravesoftware", "brave-browser", "user data"),
+    ("chromium", "user data"),
+    ("vivaldi", "user data"),
+    ("opera software", "opera stable"),
+    ("mozilla", "firefox", "profiles"),
+)
+
+
+@dataclass(frozen=True)
+class FileReadPathPolicy:
+    status: str
+    motivo: str
+    caminho_resolvido: str
+    raiz_permitida: str | None
+
+
+def _read_allowed_roots() -> list[Path]:
+    roots: list[Path] = []
+    profile_value = os.environ.get("USERPROFILE", "").strip()
+    if profile_value:
+        profile = Path(profile_value).expanduser()
+    else:
+        profile = Path.home()
+
+    roots.extend(
+        profile / name
+        for name in (
+            "Downloads",
+            "Desktop",
+            "Documents",
+            "Documentos",
+            "Área de Trabalho",
+        )
+    )
+
+    onedrive_values = [
+        os.environ.get(name, "").strip()
+        for name in ("OneDrive", "OneDriveConsumer", "OneDriveCommercial")
+    ]
+    for value in onedrive_values:
+        if value:
+            roots.append(Path(value).expanduser())
+
+    # Em instalações comuns do Windows, o OneDrive pode existir mesmo quando
+    # a variável de ambiente não foi propagada ao processo.
+    roots.append(profile / "OneDrive")
+
+    unique: list[Path] = []
+    seen: set[str] = set()
+    for root in roots:
+        try:
+            resolved = root.expanduser().resolve(strict=False)
+        except OSError:
+            resolved = root.expanduser().absolute()
+        key = str(resolved).casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(resolved)
+    return unique
+
+
+def _path_is_relative_to(path: Path, root: Path) -> bool:
+    try:
+        path.relative_to(root)
+        return True
+    except ValueError:
+        return False
+
+
+def _has_sensitive_path_component(path: Path) -> bool:
+    parts = tuple(part.casefold() for part in path.parts)
+    if any(part in SENSITIVE_PATH_COMPONENTS for part in parts):
+        return True
+    for pattern in _BROWSER_PROFILE_PATHS:
+        size = len(pattern)
+        if any(parts[index:index + size] == pattern for index in range(0, len(parts) - size + 1)):
+            return True
+    return False
+
+
+def _classify_read_path(path: Path) -> FileReadPathPolicy:
+    """Classifica o caminho ja resolvido antes de qualquer leitura de conteudo."""
+    if _has_sensitive_path_component(path):
+        return FileReadPathPolicy(
+            status="blocked",
+            motivo="O caminho esta em uma pasta sensivel protegida (AppData, .ssh, .aws ou perfil de navegador).",
+            caminho_resolvido=str(path),
+            raiz_permitida=None,
+        )
+
+    for root in _read_allowed_roots():
+        if _path_is_relative_to(path, root):
+            return FileReadPathPolicy(
+                status="allowed",
+                motivo="O caminho esta dentro de uma raiz local explicitamente permitida.",
+                caminho_resolvido=str(path),
+                raiz_permitida=str(root),
+            )
+
+    return FileReadPathPolicy(
+        status="confirm",
+        motivo="O caminho esta fora das raizes locais permitidas e exige confirmacao do usuario.",
+        caminho_resolvido=str(path),
+        raiz_permitida=None,
+    )
+
 def _resolve_path(value: str) -> Path:
     return Path(str(value or "").strip()).expanduser().resolve(strict=False)
 
 
-def inspect_file(caminho: str, procurar_copias: bool = False, limite_copias: int = 5) -> ToolResult:
+def inspect_file(caminho: str, procurar_copias: bool = False, limite_copias: int = 5, *, caminho_confirmado: str | None = None) -> ToolResult:
     tool_name = "inspecionar_arquivo"
     raw = str(caminho or "").strip()
     if not raw:
         return ToolResult.failure("O caminho do arquivo e obrigatorio.", error_code="invalid_path", tool_name=tool_name)
 
     path = _resolve_path(raw)
+    path_policy = _classify_read_path(path)
+    if path_policy.status == "blocked":
+        return ToolResult.failure(
+            f"Leitura bloqueada por politica de caminho: {path}",
+            error_code="sensitive_path_blocked",
+            data={"caminho": str(path), "motivo": path_policy.motivo},
+            tool_name=tool_name,
+        )
+    if path_policy.status == "confirm" and caminho_confirmado != path_policy.caminho_resolvido:
+        return ToolResult.failure(
+            f"Confirmacao necessaria para ler este caminho: {path}",
+            error_code="path_confirmation_required",
+            data={"caminho": str(path), "motivo": path_policy.motivo},
+            tool_name=tool_name,
+        )
     try:
         path.lstat()
     except FileNotFoundError:
@@ -522,7 +662,7 @@ def _read_text_range(path: Path, encoding: str, start: int, limit: int) -> tuple
         return content, bool(handle.read(1))
 
 
-def read_file(caminho: str, inicio: int = 0, limite_caracteres: int = 12_000) -> ToolResult:
+def read_file(caminho: str, inicio: int = 0, limite_caracteres: int = 12_000, *, caminho_confirmado: str | None = None) -> ToolResult:
     tool_name = "ler_arquivo"
     raw = str(caminho or "").strip()
     if not raw:
@@ -624,4 +764,6 @@ __all__ = [
     "read_file",
     "_parse_zone_identifier",
     "_history",
+    "FileReadPathPolicy",
+    "_classify_read_path",
 ]
