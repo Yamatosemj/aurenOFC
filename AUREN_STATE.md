@@ -21,9 +21,9 @@ Atualizado em: 2026-10-07
 - **Baseline histórico de pytest:** **576 passed, 5 warnings**; baseline imediatamente anterior à Tarefa 3: Linux **605 passed, 6 skipped, 5 warnings** / Windows **611 passed, 5 warnings**
 - **Novos testes da Tarefa 3:** **17**
 - **Ferramentas no registry/contratos após a Tarefa 3:** **55** (eram 50 antes)
-- **Tarefa atual:** **Tarefa 3 da sessão — operações de arquivo seguras com undo e Lixeira**
-- **Portão da Tarefa 3:** pytest final e `python testes_auren_live.py --rapido` no Windows real ainda pendentes
-- **Próxima tarefa:** **Tarefa 4 — confirmação humana não-forjável, após fechar o portão da Tarefa 3**
+- **Tarefa atual:** **Tarefa 4 da sessão — política de confirmação reversível/irreversível e confirmação com timeout**
+- **Portão da Tarefa 3:** pytest/runner live do Windows real continuam pendentes; a Tarefa 4 foi iniciada na branch ativa sem alterar silenciosamente a política de risco
+- **Próxima tarefa:** aprovação explícita da reclassificação proposta em windows.clipboard.write e fechamento do portão da Tarefa 4
 - **Fase do projeto:** Browser Intelligence
 
 ## Roadmap Mark
@@ -268,3 +268,37 @@ Toda mudança relevante de arquitetura, comportamento, capacidade, versão ou pr
 Fluxo oficial:
 
 `AUREN_STATE.md → branch/PR → CI → implementação → testes → atualização do estado`
+
+
+## Registro da Tarefa 4 da sessão — Política reversível/irreversível e confirmação com timeout
+
+Estado: **EM IMPLEMENTAÇÃO / AGUARDANDO APROVAÇÃO DA POLÍTICA**
+
+- A auditoria confirmou que o Undo real da linha V49 existe em core/undo.py, com LIFO, limite 10 e preservação da entrada quando a reversão falha.
+- Mover/copiar/renomear/criar pasta registram undo condicionado ao estado observado; volume e mudo também capturam o estado anterior antes de registrar reversão.
+- memory.write permanece CONFIRM: esquecer_memoria_persistente não restaura o valor/categoria/timestamp anterior de uma atualização.
+- windows.clipboard.write foi identificado como alteração atualmente não reversível pelo Auren: não há snapshot/undo do clipboard. A proposta é AUTO → CONFIRM, mas nenhuma reclassificação foi aplicada sem aprovação.
+- As 28 capabilities atuais do PermissionManager foram classificadas e a matriz completa foi registrada em docs/POLITICA_DE_CONFIRMACAO.md.
+- A confirmação ganhou gate de uma pendência por canal, token opaco mantido na interface, timeout padrão de 90 s, expiração como negativa e descarte de token/resposta atrasados.
+- O token não faz parte de ConfirmationRequest nem dos argumentos enviados pelo modelo.
+- Texto e voz continuam atrás do mesmo ConfirmationChannel; o canal de voz usa agora o timeout oficial de 90 s.
+- Foi adicionada uma regressão que exige correspondência exata entre capabilities registradas e CAPABILITY_POLICY; capability nova sem nível explícito faz a suíte falhar.
+- O CI do head desta transição deve validar o pytest e os static checks antes do fechamento final desta tarefa.
+- Runner python testes_auren_live.py --rapido: continua pendente no Windows real porque este ambiente não é o computador do Auren.
+
+Arquivos desta transição:
+- core/confirmation.py
+- voice/confirmation.py
+- voice/main.py
+- tests/test_confirmation.py
+- tests/test_permission_policy.py
+- docs/POLITICA_DE_CONFIRMACAO.md
+- AUREN_STATE.md
+
+Ficou pendente:
+- Aprovar ou rejeitar explicitamente windows.clipboard.write: AUTO → CONFIRM.
+- Fechar o portão final da Tarefa 4 após CI verde e atualizar a contagem real de testes.
+- Executar python testes_auren_live.py --rapido no Windows real antes de declarar o portão externo concluído.
+
+Próxima tarefa:
+- Depois da aprovação e do portão: consolidar a política no PermissionManager somente para as reclassificações aprovadas.
