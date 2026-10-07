@@ -112,7 +112,7 @@ def ler_pagina(foco):
 
                 const controles = [];
                 for (const el of document.querySelectorAll(
-                    "input, textarea, select, button, [role='button'], [role='textbox'], [role='searchbox'], [role='combobox']"
+                    "input, textarea, select, button, summary, [role='button'], [role='textbox'], [role='searchbox'], [role='combobox'], [role='tab'], [role='menuitem'], [role='checkbox'], [role='radio']"
                 )) {
                     if (!visivel(el)) continue;
                     const nome = nomeDoElemento(el);
@@ -121,7 +121,29 @@ def ler_pagina(foco):
                     const idAttr = el.getAttribute('id') || '';
                     const tipo = (el.getAttribute('type') || '').toLowerCase();
                     const autocomplete = (el.getAttribute('autocomplete') || '').toLowerCase();
+                    const ariaExpanded = el.getAttribute('aria-expanded');
+                    const ariaPressed = el.getAttribute('aria-pressed');
+                    const ariaSelected = el.getAttribute('aria-selected');
+                    const dataState = el.getAttribute('data-state');
+                    const checked = ('checked' in el) ? Boolean(el.checked) : null;
+                    const selected = ('selected' in el) ? Boolean(el.selected) : null;
+                    const open = ('open' in el) ? Boolean(el.open) : null;
                     if (!nome && !placeholder && !nameAttr && !idAttr) continue;
+
+                    let chave = '';
+                    if (idAttr) chave = 'id:' + idAttr;
+                    else if (nameAttr) chave = 'name:' + nameAttr;
+                    else if (nome) chave = 'aria:' + nome;
+                    else if (placeholder) chave = 'placeholder:' + placeholder;
+
+                    const estados = {};
+                    if (ariaExpanded !== null) estados['aria-expanded'] = ariaExpanded;
+                    if (ariaPressed !== null) estados['aria-pressed'] = ariaPressed;
+                    if (ariaSelected !== null) estados['aria-selected'] = ariaSelected;
+                    if (checked !== null) estados.checked = checked;
+                    if (selected !== null) estados.selected = selected;
+                    if (open !== null) estados.open = open;
+                    if (dataState !== null) estados['data-state'] = dataState;
 
                     const textoSensivel = [
                         nome, placeholder, nameAttr, idAttr, autocomplete, tipo
@@ -148,6 +170,8 @@ def ler_pagina(foco):
                         nameAttr: limpar(nameAttr, 80),
                         id: limpar(idAttr, 80),
                         placeholder: limpar(placeholder, 80),
+                        chave: limpar(chave, 180),
+                        estados,
                         value: valorSeguro
                     });
                 }
@@ -475,8 +499,18 @@ def ler_pagina(foco):
                     );
                 }
 
+                const elementosFlutuantes = {
+                    dialogos: Array.from(document.querySelectorAll('dialog, [role="dialog"]'))
+                        .filter(visivel).length,
+                    menus: Array.from(document.querySelectorAll('[role="menu"]'))
+                        .filter(visivel).length,
+                    listboxes: Array.from(document.querySelectorAll('[role="listbox"]'))
+                        .filter(visivel).length
+                };
+
                 return {
                     controles: controles.slice(0, Number(maxControles || 10)),
+                    elementosFlutuantes,
                     links: links.slice(0, Number(maxLinks || 10)),
                     candidatosOrdem,
                     resultadosEstruturados: resultadosEstruturados.slice(0, 12),
@@ -612,7 +646,31 @@ def ler_pagina(foco):
             for item in snippets:
                 linhas.append(f"- {item.get('texto', '')}")
 
+        flutuantes = dados.get("elementosFlutuantes", {})
+        linhas.append(
+            "Elementos flutuantes visiveis: "
+            f"dialogos={flutuantes.get('dialogos', 0)} | "
+            f"menus={flutuantes.get('menus', 0)} | "
+            f"listboxes={flutuantes.get('listboxes', 0)}"
+        )
         linhas.extend(["", "Campos e controles visiveis:"])
+
+        def _estado_controle_texto(estados):
+            partes = []
+            if not isinstance(estados, dict):
+                return ""
+            for chave in (
+                "aria-expanded",
+                "aria-pressed",
+                "aria-selected",
+                "checked",
+                "selected",
+                "open",
+                "data-state"
+            ):
+                if chave in estados:
+                    partes.append(f"{chave}={estados[chave]}")
+            return ";".join(partes)
 
         for item in dados.get("controles", []):
             partes = [f"tag={item.get('tag', '')}"]
@@ -626,6 +684,11 @@ def ler_pagina(foco):
                 partes.append(f"id={item['id']}")
             if item.get("placeholder"):
                 partes.append(f"placeholder={item['placeholder']}")
+            if item.get("chave"):
+                partes.append(f"chave={item['chave']}")
+            estado_texto = _estado_controle_texto(item.get("estados", {}))
+            if estado_texto:
+                partes.append(f"estado={estado_texto}")
             if item.get("value"):
                 partes.append(f"valor={item['value']}")
             linhas.append("- " + " | ".join(partes))
