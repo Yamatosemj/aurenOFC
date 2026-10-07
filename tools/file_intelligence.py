@@ -504,6 +504,24 @@ def _has_sensitive_path_component(path: Path) -> bool:
     return False
 
 
+def _onedrive_roots() -> list[Path]:
+    roots: list[Path] = []
+    profile_value = os.environ.get("USERPROFILE", "").strip()
+    profile = Path(profile_value).expanduser() if profile_value else Path.home()
+    for env_name in ("OneDrive", "OneDriveConsumer", "OneDriveCommercial"):
+        value = os.environ.get(env_name, "").strip()
+        if value:
+            roots.append(Path(value).expanduser().resolve(strict=False))
+    roots.append((profile / "OneDrive").resolve(strict=False))
+    unique: list[Path] = []
+    seen: set[str] = set()
+    for root in roots:
+        key = str(root).casefold()
+        if key not in seen:
+            seen.add(key)
+            unique.append(root)
+    return unique
+
 def _classify_read_path(path: Path) -> FileReadPathPolicy:
     """Classifica o caminho ja resolvido antes de qualquer leitura de conteudo."""
     if _has_sensitive_path_component(path):
@@ -514,6 +532,20 @@ def _classify_read_path(path: Path) -> FileReadPathPolicy:
             raiz_permitida=None,
         )
 
+    for onedrive_root in _onedrive_roots():
+        if not _path_is_relative_to(path, onedrive_root):
+            continue
+        allowed_one_drive_subroots = [
+            onedrive_root / nome
+            for nome in ONEDRIVE_ALLOWED_SUBROOT_NAMES
+        ]
+        if not any(_path_is_relative_to(path, subroot) for subroot in allowed_one_drive_subroots):
+            return FileReadPathPolicy(
+                status="confirm",
+                motivo="O caminho esta dentro da raiz OneDrive, mas fora das subpastas explicitamente permitidas.",
+                caminho_resolvido=str(path),
+                raiz_permitida=None,
+            )
     for root in _read_allowed_roots():
         if _path_is_relative_to(path, root):
             return FileReadPathPolicy(
