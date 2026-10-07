@@ -12,7 +12,7 @@ Atualizado em: 2026-10-07
 - **Modelo padrão:** `gpt-5.6-luna`
 - **Branch/PR ativa:** `fix/browser-click-new-tab-page` / PR #77
 - **Head da main:** `0a8304e1b097d458511f017ca1f0d9da19d86726`
-- **Head da branch ativa:** `HEAD de PR #77 / branch `fix/browser-click-new-tab-page``
+- **Head da branch ativa:** HEAD de PR #77 (`fix/browser-click-new-tab-page`)
 - **Último head funcional validado:** `b72e43f3c04f6866f90340d1df2d3ec6782ab7b5`
 - **CI da implementação mais recente em main:** pytest, focused Linux e focused Windows verdes
 - **CI do PR #77:** full tests Linux/Windows, static-checks e visual interaction/Playwright verdes no head validado `b72e43f3c04f6866f90340d1df2d3ec6782ab7b5`
