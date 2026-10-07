@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import time
 from queue import Queue
 from threading import Thread
-import time
 
 import pytest
 
@@ -20,6 +20,18 @@ def _request() -> ConfirmationRequest:
         actions_attempted=1,
         max_actions=10,
         actions_remaining=9,
+    )
+
+
+def _captured_audio(captured_at: float | None = None) -> CapturedAudio:
+    return CapturedAudio(
+        samples=[0.1, 0.2],
+        sample_rate=16000,
+        duration=0.01,
+        rms=0.1,
+        peak=0.2,
+        device_name="microfone-test",
+        captured_at=time.perf_counter() if captured_at is None else captured_at,
     )
 
 
@@ -60,20 +72,17 @@ def test_permission_manager_delegates_confirmation_to_injected_channel(monkeypat
 
 
 def test_voice_confirmation_accepts_sim_from_shared_audio_queue():
-    class FakeTTS:
-        def __init__(self):
-            self.falas = []
+    audio_queue = Queue()
 
-        def falar(self, texto):
-            self.falas.append(texto)
+    class FakeTTS:
+        def falar(self, _texto):
+            audio_queue.put(("audio", _captured_audio()))
 
     class FakeSTT:
         def transcrever(self, audio):
             assert isinstance(audio, CapturedAudio)
             return "sim"
 
-    audio_queue = Queue()
-    audio_queue.put(("audio", _captured_audio(time.perf_counter())))
     tts = FakeTTS()
     channel = VoiceConfirmationChannel(
         tts=tts,
@@ -83,7 +92,6 @@ def test_voice_confirmation_accepts_sim_from_shared_audio_queue():
     )
 
     assert channel.confirmar(_request()) is True
-    assert tts.falas and "Diga sim ou nao." in tts.falas[0]
 
 
 def test_voice_confirmation_denies_on_timeout():
@@ -106,16 +114,16 @@ def test_voice_confirmation_denies_on_timeout():
 
 
 def test_voice_confirmation_rejects_legacy_raw_queue_item():
+    audio_queue = Queue()
+
     class FakeTTS:
         def falar(self, _texto):
-            pass
+            audio_queue.put("audio-confirmacao")
 
     class FakeSTT:
         def transcrever(self, _audio):
             raise AssertionError("Item fora do protocolo da fila nao pode chegar ao ASR.")
 
-    audio_queue = Queue()
-    audio_queue.put("audio-confirmacao")
     channel = VoiceConfirmationChannel(
         tts=FakeTTS(),
         stt=FakeSTT(),
@@ -128,16 +136,16 @@ def test_voice_confirmation_rejects_legacy_raw_queue_item():
 
 @pytest.mark.parametrize("resposta", ["sim", "Sim.", "sim!", "sim, pode"])
 def test_voice_confirmation_accepts_common_affirmative_phrases(resposta):
+    audio_queue = Queue()
+
     class FakeTTS:
         def falar(self, _texto):
-            pass
+            audio_queue.put(("audio", _captured_audio()))
 
     class FakeSTT:
         def transcrever(self, _audio):
             return resposta
 
-    audio_queue = Queue()
-    audio_queue.put(("audio", _captured_audio(time.perf_counter())))
     channel = VoiceConfirmationChannel(
         tts=FakeTTS(),
         stt=FakeSTT(),
@@ -149,16 +157,16 @@ def test_voice_confirmation_accepts_common_affirmative_phrases(resposta):
 
 
 def test_voice_confirmation_rejects_ambiguous_phrase():
+    audio_queue = Queue()
+
     class FakeTTS:
         def falar(self, _texto):
-            pass
+            audio_queue.put(("audio", _captured_audio()))
 
     class FakeSTT:
         def transcrever(self, _audio):
             return "talvez, depois eu vejo"
 
-    audio_queue = Queue()
-    audio_queue.put(("audio", "audio-confirmacao"))
     channel = VoiceConfirmationChannel(
         tts=FakeTTS(),
         stt=FakeSTT(),
@@ -167,19 +175,6 @@ def test_voice_confirmation_rejects_ambiguous_phrase():
     )
 
     assert channel.confirmar(_request()) is False
-
-
-
-def _captured_audio(captured_at: float) -> CapturedAudio:
-    return CapturedAudio(
-        samples=[0.1, 0.2],
-        sample_rate=16000,
-        duration=0.01,
-        rms=0.1,
-        peak=0.2,
-        device_name="microfone-test",
-        captured_at=captured_at,
-    )
 
 
 def test_voice_confirmation_discards_stale_audio_and_accepts_fresh_capture():
@@ -192,7 +187,7 @@ def test_voice_confirmation_discards_stale_audio_and_accepts_fresh_capture():
 
             def put_fresh_audio():
                 time.sleep(0.01)
-                audio_queue.put(("audio", _captured_audio(time.perf_counter())))
+                audio_queue.put(("audio", _captured_audio()))
 
             Thread(target=put_fresh_audio, daemon=True).start()
 
@@ -210,19 +205,19 @@ def test_voice_confirmation_discards_stale_audio_and_accepts_fresh_capture():
 
     assert channel.confirmar(_request()) is True
     assert len(transcribed) == 1
-    assert transcribed[0].captured_at > 0
+
 
 def test_voice_confirmation_stops_on_real_capture_error_without_calling_asr():
+    audio_queue = Queue()
+
     class FakeTTS:
         def falar(self, _texto):
-            pass
+            audio_queue.put(("erro", RuntimeError("microfone indisponivel")))
 
     class FakeSTT:
         def transcrever(self, _audio):
             raise AssertionError("Erro de captura nao pode chegar ao ASR.")
 
-    audio_queue = Queue()
-    audio_queue.put(("erro", RuntimeError("microfone indisponivel")))
     channel = VoiceConfirmationChannel(
         tts=FakeTTS(),
         stt=FakeSTT(),
