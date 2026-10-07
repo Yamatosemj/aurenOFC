@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import builtins
 import secrets
+import threading
 import time
 from dataclasses import dataclass
 from typing import Callable, Protocol
@@ -49,6 +50,7 @@ class ConfirmationGate:
         self._timeout_seconds = timeout
         self._clock = clock or time.monotonic
         self._pending: _PendingConfirmation | None = None
+        self._lock = threading.RLock()
 
     @property
     def timeout_seconds(self) -> float:
@@ -68,17 +70,18 @@ class ConfirmationGate:
             return False
 
         agora = self._clock()
-        if self._esta_expirada(agora):
-            self._pending = None
+        with self._lock:
+            if self._esta_expirada(agora):
+                self._pending = None
 
-        if self._pending is not None:
-            return False
+            if self._pending is not None:
+                return False
 
-        self._pending = _PendingConfirmation(
-            token=token,
-            created_at=agora,
-        )
-        return True
+            self._pending = _PendingConfirmation(
+                token=token,
+                created_at=agora,
+            )
+            return True
 
     def resolver(self, token: str, aprovado: bool) -> bool:
         """Resolve a confirmacao somente para o token pendente e ainda valido.
@@ -86,45 +89,48 @@ class ConfirmationGate:
         Custo: O(1).
         """
         agora = self._clock()
-        pendente = self._pending
+        with self._lock:
+            pendente = self._pending
 
-        if pendente is None:
-            return False
+            if pendente is None:
+                return False
 
-        self._pending = None
+            self._pending = None
 
-        if agora - pendente.created_at > self._timeout_seconds:
-            return False
+            if agora - pendente.created_at > self._timeout_seconds:
+                return False
 
-        if str(token or "") != pendente.token:
-            return False
+            if str(token or "") != pendente.token:
+                return False
 
-        return bool(aprovado)
+            return bool(aprovado)
 
     def cancelar(self, token: str) -> None:
         """Cancela a confirmacao vinculada ao token sem executar nenhuma acao.
         O cancelamento so afeta a confirmacao que pertence a esta interface.
         Custo: O(1).
         """
-        if self._pending is None:
-            return
-        if str(token or "") == self._pending.token:
-            self._pending = None
+        with self._lock:
+            if self._pending is None:
+                return
+            if str(token or "") == self._pending.token:
+                self._pending = None
 
     def restante(self, token: str) -> float:
         """Retorna os segundos restantes para o token ainda pendente.
         Token invalido ou confirmacao expirada retorna zero.
         Custo: O(1).
         """
-        pendente = self._pending
-        if pendente is None or str(token or "") != pendente.token:
-            return 0.0
+        with self._lock:
+            pendente = self._pending
+            if pendente is None or str(token or "") != pendente.token:
+                return 0.0
 
-        restante = self._timeout_seconds - (self._clock() - pendente.created_at)
-        if restante <= 0:
-            self._pending = None
-            return 0.0
-        return restante
+            restante = self._timeout_seconds - (self._clock() - pendente.created_at)
+            if restante <= 0:
+                self._pending = None
+                return 0.0
+            return restante
 
     def pendente(self) -> bool:
         """Indica se existe uma confirmacao valida aguardando resposta.
