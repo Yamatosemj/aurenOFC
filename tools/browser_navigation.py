@@ -237,15 +237,31 @@ def rolar_pagina(direcao):
 
         if direcao == "cima":
             p.mouse.wheel(0, -900)
+            try:
+                p.wait_for_function("window.scrollY < arguments[0]", antes, timeout=1500)
+            except Exception:
+                pass
 
         elif direcao == "baixo":
             p.mouse.wheel(0, 900)
+            try:
+                p.wait_for_function("window.scrollY > arguments[0]", antes, timeout=1500)
+            except Exception:
+                pass
 
         elif direcao == "inicio":
-            p.evaluate("window.scrollTo(0, 0)")
+            p.evaluate("window.scrollTo({top: 0, behavior: 'auto'})")
+            try:
+                p.wait_for_function("window.scrollY === 0", timeout=1500)
+            except Exception:
+                pass
 
         elif direcao == "fim":
-            p.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            p.evaluate("window.scrollTo({top: document.body.scrollHeight, behavior: 'auto'})")
+            try:
+                p.wait_for_function("window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2", timeout=1500)
+            except Exception:
+                pass
 
         depois = float(p.evaluate("window.scrollY || 0") or 0)
         altura_documento = float(p.evaluate(
