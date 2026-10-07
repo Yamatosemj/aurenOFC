@@ -82,12 +82,16 @@ def _sem_memoria(fn, *keys, defaults=None):
     def handler(args, memory_store, context):
         values = [args[k] if k in args else defaults[k] for k in keys]
         return fn(*values)
+    handler.__auren_parameter_keys__ = tuple(keys)
+    handler.__auren_parameter_defaults__ = dict(defaults)
     return handler
 
 
 def _com_memoria(fn, *keys):
     def handler(args, memory_store, context):
         return fn(memory_store, *(args[k] for k in keys))
+    handler.__auren_parameter_keys__ = tuple(keys)
+    handler.__auren_parameter_defaults__ = {}
     return handler
 
 
@@ -134,6 +138,22 @@ def _preencher_windows_handler(args, memory_store, context):
         indice,
         protegido,
     )
+
+_inspecionar_arquivo_handler.__auren_parameter_keys__ = (
+    "caminho", "procurar_copias", "limite_copias"
+)
+_inspecionar_arquivo_handler.__auren_parameter_defaults__ = {}
+
+_ler_arquivo_handler.__auren_parameter_keys__ = (
+    "caminho", "inicio", "limite_caracteres"
+)
+_ler_arquivo_handler.__auren_parameter_defaults__ = {}
+
+_preencher_windows_handler.__auren_parameter_keys__ = (
+    "alvo_janela", "alvo", "texto", "indice"
+)
+_preencher_windows_handler.__auren_parameter_defaults__ = {}
+
 
 
 TOOL_HANDLERS = {
@@ -190,14 +210,48 @@ TOOL_HANDLERS = {
 
 
 def validar_registry_handlers() -> tuple[bool, str]:
-    """Confere que o registro de handlers acompanha o registry de tools."""
+    """Confere nomes, parametros e defaults entre registry e dispatcher."""
     from core.tools_registry import tools
+
     names = {item["name"] for item in tools}
     handlers = set(TOOL_HANDLERS)
     missing = sorted(names - handlers)
     extra = sorted(handlers - names)
     if missing or extra:
         return False, f"missing={missing}; extra={extra}"
+
+    for item in tools:
+        nome = item["name"]
+        handler = TOOL_HANDLERS[nome]
+        propriedades = set(item["parameters"].get("properties", {}))
+        obrigatorios = set(item["parameters"].get("required", []))
+        chaves = set(getattr(handler, "__auren_parameter_keys__", ()))
+        defaults = set(getattr(handler, "__auren_parameter_defaults__", {}))
+
+        if chaves != propriedades:
+            return (
+                False,
+                f"{nome}: parametros divergentes; registry={sorted(propriedades)} handler={sorted(chaves)}",
+            )
+
+        if not obrigatorios <= propriedades:
+            return False, f"{nome}: required fora de properties"
+
+        opcionais = propriedades - obrigatorios
+        sem_default = sorted(opcionais - defaults)
+        if sem_default:
+            return (
+                False,
+                f"{nome}: parametros opcionais sem default no dispatcher={sem_default}",
+            )
+
+        defaults_invalidos = sorted(defaults - propriedades)
+        if defaults_invalidos:
+            return (
+                False,
+                f"{nome}: defaults sem parametro correspondente={defaults_invalidos}",
+            )
+
     return True, ""
 
 
