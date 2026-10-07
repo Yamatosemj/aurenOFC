@@ -12,6 +12,7 @@ class _ResultadoGuardSemFerramentas:
     multitab_guard_attempts: int
     failure_code: str | None = None
     failure_message: str | None = None
+    browser_verification_guard_attempts: int = 0
 
 
 def _tratar_rodada_sem_ferramentas(
