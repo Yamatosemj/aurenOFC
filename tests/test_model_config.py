@@ -38,9 +38,10 @@ def test_provider_uses_configured_model(monkeypatch):
 
     import providers.openai_provider as provider_module
 
-    provider_module = importlib.reload(provider_module)
-    assert provider_module.MODEL == loaded.MODEL
-
-
-def teardown_module(_module):
-    importlib.reload(config)
+    try:
+        provider_module = importlib.reload(provider_module)
+        assert provider_module.MODEL == loaded.MODEL
+    finally:
+        monkeypatch.delenv("AUREN_MODEL", raising=False)
+        importlib.reload(config)
+        importlib.reload(provider_module)
