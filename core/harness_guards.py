@@ -26,8 +26,6 @@ def _tratar_rodada_sem_ferramentas(
     vision_reobserve_pending: bool,
     vision_guard_attempts: int,
     multitab_guard_attempts: int,
-    browser_verification_pending: bool,
-    browser_verification_attempts: int,
     task_id: str,
 
     task_manager: Any,
