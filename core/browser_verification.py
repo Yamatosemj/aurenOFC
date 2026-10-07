@@ -93,6 +93,14 @@ def verificar_resultado_navegador(
             return None
         return indice_atual == esperado
 
+    if ferramenta == "preencher_elemento":
+        return _controle_com_valor(
+            str(dados.get("pagina") or ""),
+            str(args.get("alvo") or ""),
+            str(args.get("texto") or ""),
+            int(args.get("indice") or 1),
+        )
+
     return None
 
 
