@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 from queue import Queue
+from threading import Thread
+import time
 
 import pytest
 
 from core.confirmation import ConfirmationRequest, TextConfirmationChannel
 from core.permission_manager import PermissionManager
 from voice.confirmation import VoiceConfirmationChannel
+from voice.input import CapturedAudio
 
 
 def _request() -> ConfirmationRequest:
@@ -164,3 +167,45 @@ def test_voice_confirmation_rejects_ambiguous_phrase():
     )
 
     assert channel.confirmar(_request()) is False
+
+
+
+def _captured_audio(captured_at: float) -> CapturedAudio:
+    return CapturedAudio(
+        samples=[0.1, 0.2],
+        sample_rate=16000,
+        duration=0.01,
+        rms=0.1,
+        peak=0.2,
+        device_name="microfone-test",
+        captured_at=captured_at,
+    )
+
+
+def test_voice_confirmation_discards_stale_audio_and_accepts_fresh_capture():
+    audio_queue = Queue()
+    audio_queue.put(("audio", _captured_audio(time.perf_counter() - 10.0)))
+    fresh_audio = _captured_audio(time.perf_counter() + 0.05)
+    transcribed = []
+
+    class FakeTTS:
+        def falar(self, _texto):
+            def put_fresh_audio():
+                time.sleep(0.01)
+                audio_queue.put(("audio", fresh_audio))
+            Thread(target=put_fresh_audio, daemon=True).start()
+
+    class FakeSTT:
+        def transcrever(self, audio):
+            transcribed.append(audio)
+            return "sim"
+
+    channel = VoiceConfirmationChannel(
+        tts=FakeTTS(),
+        stt=FakeSTT(),
+        audio_queue=audio_queue,
+        timeout=0.2,
+    )
+
+    assert channel.confirmar(_request()) is True
+    assert transcribed == [fresh_audio]
