@@ -377,7 +377,7 @@ CAPABILITY_DEFINITIONS: tuple[Capability, ...] = (
         politica_confirmacao="core_policy",
         resolver="file_manage",
         tools=("mover_arquivo", "copiar_arquivo", "renomear_arquivo", "criar_pasta"),
-        prioridade=63,
+        prioridade=64,
         padroes_objetivo=(
             r"\b(mov|copi|renome|cri)\w*\b.*\b(arquivo|pasta|diretorio)\b",
             r"\b(arquivo|pasta|diretorio)\b.*\b(mov|copi|renome|cri)\w*\b",
@@ -396,10 +396,10 @@ CAPABILITY_DEFINITIONS: tuple[Capability, ...] = (
         politica_confirmacao="core_policy",
         resolver="file_trash",
         tools=("enviar_para_lixeira",),
-        prioridade=64,
+        prioridade=63,
         padroes_objetivo=(
-            r"\b(lixeir|joga|envia|mand|mov)\w*\b.*\b(arquivo|pasta|lixeira)\b",
-            r"\b(arquivo|pasta)\b.*\b(lixeir|joga fora|envia para a lixeira)\w*\b",
+            r"\b(lixeir\w*|jogar fora|joga fora)\b.*\b(arquivo|pasta)\b",
+            r"\b(arquivo|pasta)\b.*\b(lixeir\w*|jogar fora|joga fora)\b",
         ),
     ),
 
