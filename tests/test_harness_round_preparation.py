@@ -54,19 +54,9 @@ def test_preparacao_preserva_imagem_e_geometria_da_rodada():
     assert atualizacoes == [True]
 
 
-def test_estado_vazio_quando_primeiro_item_nao_contem_texto():
+def test_estado_enviado_pode_ser_vazio_sem_alterar_o_input():
     resposta = SimpleNamespace(output=[])
     input_items, estado_enviado = _montar_input_e_estado_da_rodada(
-        "objetivo",
-        [],
-        resposta,
-        [],
-        montar_estado=lambda *_args, **_kwargs: "estado",
-        preparar_resultado_visual=lambda _resultado: None,
-        ao_atualizar_geometria=lambda: None,
-    )
-    input_items[0]["content"][0].pop("text")
-    _, estado_enviado = _montar_input_e_estado_da_rodada(
         "objetivo",
         [],
         resposta,
@@ -75,4 +65,5 @@ def test_estado_vazio_quando_primeiro_item_nao_contem_texto():
         preparar_resultado_visual=lambda _resultado: None,
         ao_atualizar_geometria=lambda: None,
     )
+    assert input_items[0]["content"][0]["text"] == ""
     assert estado_enviado == ""
