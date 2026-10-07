@@ -15,7 +15,7 @@ Atualizado em: 2026-10-07
 - **Último commit da implementação da Tarefa 1:** `fe9e587e26f7e4bef75bf2c8eb4a9d02b75a0dc0`
 - **Último head funcional validado:** `b72e43f3c04f6866f90340d1df2d3ec6782ab7b5`
 - **Head da implementação da Tarefa 2 (em validação):** `119bf4fe01408580f15710f9cf63300f45c8c2bd`
-- **Head da Tarefa 3 (operações de arquivo):** `77482666972863805be33f95e94da1281bb78ac5` no PR #78
+- **Head da implementação da Tarefa 3 antes desta sincronização de estado:** `ec39b33d527d81ade64df7dc95eed0f3317a4983`; o branch/PR continua sendo a fonte do HEAD atual
 - **CI da implementação mais recente em main:** pytest, focused Linux e focused Windows verdes
 - **CI do PR #77:** full tests Linux/Windows, static-checks e visual interaction/Playwright verdes no merge ref `4139b0696fe1e378d80fccb8541e6232b91d01b5`
 - **Baseline histórico de pytest:** **576 passed, 5 warnings**; baseline imediatamente anterior à Tarefa 3: Linux **605 passed, 6 skipped, 5 warnings** / Windows **611 passed, 5 warnings**
