@@ -72,3 +72,26 @@ def test_screenshot_cleanup_deletes_oldest_when_file_count_exceeds_limit(tmp_pat
     assert not arquivos[0].exists()
     assert arquivos[1].exists()
     assert arquivos[2].exists()
+
+
+def test_screenshot_cleanup_removes_expired_and_excess_files(tmp_path, monkeypatch):
+    import os
+    import time
+    import tools.windows_screenshot as module
+
+    monkeypatch.setattr(module, "SCREENSHOT_MAX_FILES", 2)
+    monkeypatch.setattr(module, "SCREENSHOT_MAX_TOTAL_BYTES", 8)
+
+    arquivos = []
+    for indice, tamanho in enumerate((4, 4, 4), start=1):
+        caminho = tmp_path / f"screen_{indice:02d}.png"
+        caminho.write_bytes(b"x" * tamanho)
+        timestamp = time.time() - (indice * 60)
+        os.utime(caminho, (timestamp, timestamp))
+        arquivos.append(caminho)
+
+    module._limpar_screenshots(tmp_path)
+
+    restantes = sorted(tmp_path.glob("screen_*.png"))
+    assert len(restantes) <= 2
+    assert sum(path.stat().st_size for path in restantes) <= 8
