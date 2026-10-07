@@ -708,7 +708,8 @@ public static class AurenUiWin32 {
         } else {
             throw "Operacao UI Automation desconhecida: $($payload.operacao)"
         }
-    }    return $resultado
+    }
+    return $resultado
     } catch {
         return [pscustomobject]@{
             ok=$false
