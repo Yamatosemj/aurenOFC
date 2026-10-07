@@ -36,3 +36,53 @@ def _log_resposta_modelo(
         router=metricas_roteamento,
         **extra,
     )
+
+
+def _executar_rodada_modelo(
+    entrada: Any,
+    *,
+    rodada: int,
+    task_id: str,
+    task_manager: Any,
+    pedir_modelo: Callable[
+        [Any, str | None],
+        tuple[Any, float, dict[str, Any]] | None,
+    ],
+    log_resposta_modelo: Callable[..., Any],
+    write_log: Callable[..., Any],
+    input_items: int,
+    estado_chars: int,
+    tool_choice: str | None = None,
+    log_tool_choice: str | None = None,
+) -> tuple[Any, float, dict[str, Any]] | None:
+    """Executa a mecânica completa de uma rodada do modelo.
+
+    O Harness continua decidindo quando a rodada deve acontecer e qual input
+    enviar. Este helper só preserva a sequência operacional:
+    espera -> log da requisição -> chamada -> log da resposta -> retomada.
+    """
+    task_manager.wait_for_model(task_id)
+
+    detalhes = {
+        "task_id": task_id,
+        "rodada": rodada,
+        "input_items": input_items,
+        "estado_chars": estado_chars,
+    }
+    if log_tool_choice is not None:
+        detalhes["tool_choice"] = log_tool_choice
+    write_log("MODEL_ROUND_REQUEST", **detalhes)
+
+    chamada = pedir_modelo(entrada, tool_choice)
+    if chamada is None:
+        return None
+
+    resposta, latencia_ms, metricas_roteamento = chamada
+    log_resposta_modelo(
+        rodada,
+        resposta,
+        latencia_ms,
+        metricas_roteamento,
+    )
+    task_manager.resume(task_id)
+    return resposta, latencia_ms, metricas_roteamento
