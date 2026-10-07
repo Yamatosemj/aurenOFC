@@ -43,7 +43,7 @@ def _user32():
 
 def controle_midia_windows(acao):
     if os.name != "nt":
-        return "Controle de midia so esta disponivel no Windows."
+        return ToolResult.failure("Controle de midia so esta disponivel no Windows.", error_code="windows_only", tool_name="controle_midia_windows")
 
     mapa = {
         "play_pause": 0xB3,
@@ -76,9 +76,9 @@ def controle_midia_windows(acao):
             0xB1: "música anterior",
             0xB2: "parar",
         }
-        return f"Comando de midia enviado: {nomes[vk]}."
+        return ToolResult.success(f"Comando de midia enviado: {nomes[vk]}.", tool_name="controle_midia_windows")
     except Exception as erro:
-        return f"Nao consegui enviar o comando de midia: {erro}"
+        return ToolResult.failure(f"Nao consegui enviar o comando de midia: {erro}", error_code="media_command_failed", tool_name="controle_midia_windows")
 
 _WINDOWS_VK = {
     "backspace": 0x08,
@@ -134,17 +134,17 @@ def _pressionar_vk(vk, soltura=False):
 
 def pressionar_tecla_windows(tecla):
     if os.name != "nt":
-        return "Controle de teclado global so esta disponivel no Windows."
+        return ToolResult.failure("Controle de teclado global so esta disponivel no Windows.", error_code="windows_only", tool_name="pressionar_tecla_windows")
 
     partes = [parte.strip() for parte in str(tecla).split("+") if parte.strip()]
     if not partes:
-        return "Tecla vazia."
+        return ToolResult.failure("Tecla vazia.", error_code="key_empty", tool_name="pressionar_tecla_windows")
 
     vks = []
     for parte in partes:
         vk = _windows_vk(parte)
         if vk is None:
-            return f"Nao reconheco a tecla global '{parte}'."
+            return ToolResult.failure(f"Nao reconheco a tecla global '{parte}'.", error_code="key_invalid", tool_name="pressionar_tecla_windows")
         vks.append(vk)
 
     try:
@@ -152,9 +152,9 @@ def pressionar_tecla_windows(tecla):
             _pressionar_vk(vk, soltura=False)
         for vk in reversed(vks):
             _pressionar_vk(vk, soltura=True)
-        return f"Tecla global pressionada: {tecla}"
+        return ToolResult.success(f"Tecla global pressionada: {tecla}", tool_name="pressionar_tecla_windows")
     except Exception as erro:
-        return f"Nao consegui pressionar a tecla global: {erro}"
+        return ToolResult.failure(f"Nao consegui pressionar a tecla global: {erro}", error_code="key_press_failed", tool_name="pressionar_tecla_windows")
 
 DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = ctypes.c_void_p(-4)
 
@@ -196,7 +196,7 @@ def _limites_tela_virtual_windows(user32):
 
 def mover_mouse_windows(x, y):
     if os.name != "nt":
-        return "Controle do mouse global so esta disponivel no Windows."
+        return ToolResult.failure("Controle do mouse global so esta disponivel no Windows.", error_code="windows_only", tool_name="mover_mouse_windows")
 
     try:
         x = int(x)
@@ -206,20 +206,22 @@ def mover_mouse_windows(x, y):
         limite_x = origem_x + largura
         limite_y = origem_y + altura
         if x < origem_x or y < origem_y or x >= limite_x or y >= limite_y:
-            return (
+            return ToolResult.failure(
                 f"Coordenadas fora da area de trabalho virtual: ({x}, {y}). "
                 f"Limites detectados: x={origem_x}..{limite_x - 1}, "
-                f"y={origem_y}..{limite_y - 1}."
+                f"y={origem_y}..{limite_y - 1}.",
+                error_code="mouse_coordinates_out_of_bounds",
+                tool_name="mover_mouse_windows",
             )
         if not user32.SetCursorPos(x, y):
-            return "Nao consegui mover o mouse."
-        return f"Mouse movido para ({x}, {y})."
+            return ToolResult.failure("Nao consegui mover o mouse.", error_code="mouse_move_failed", tool_name="mover_mouse_windows")
+        return ToolResult.success(f"Mouse movido para ({x}, {y}).", tool_name="mover_mouse_windows")
     except Exception as erro:
-        return f"Nao consegui mover o mouse: {erro}"
+        return ToolResult.failure(f"Nao consegui mover o mouse: {erro}", error_code="mouse_move_failed", tool_name="mover_mouse_windows")
 
 def clicar_mouse_windows(x, y, botao="esquerdo", descricao=""):
     if os.name != "nt":
-        return "Controle do mouse global so esta disponivel no Windows."
+        return ToolResult.failure("Controle do mouse global so esta disponivel no Windows.", error_code="windows_only", tool_name="clicar_mouse_windows")
 
     try:
         x = int(x)
@@ -229,13 +231,15 @@ def clicar_mouse_windows(x, y, botao="esquerdo", descricao=""):
         limite_x = origem_x + largura
         limite_y = origem_y + altura
         if x < origem_x or y < origem_y or x >= limite_x or y >= limite_y:
-            return (
+            return ToolResult.failure(
                 f"Coordenadas fora da area de trabalho virtual: ({x}, {y}). "
                 f"Limites detectados: x={origem_x}..{limite_x - 1}, "
-                f"y={origem_y}..{limite_y - 1}."
+                f"y={origem_y}..{limite_y - 1}.",
+                error_code="mouse_coordinates_out_of_bounds",
+                tool_name="clicar_mouse_windows",
             )
         if not user32.SetCursorPos(x, y):
-            return "Nao consegui posicionar o mouse."
+            return ToolResult.failure("Nao consegui posicionar o mouse.", error_code="mouse_position_failed", tool_name="clicar_mouse_windows")
 
         button = str(botao).strip().lower()
         events = {
@@ -257,9 +261,9 @@ def clicar_mouse_windows(x, y, botao="esquerdo", descricao=""):
         time.sleep(0.02)
         MOUSEEVENTF(down_up[1], 0, 0, 0, 0)
         detalhe = f" ({descricao})" if descricao else ""
-        return f"Clique global executado em ({x}, {y}), botao {button}{detalhe}."
+        return ToolResult.success(f"Clique global executado em ({x}, {y}), botao {button}{detalhe}.", tool_name="clicar_mouse_windows")
     except Exception as erro:
-        return f"Nao consegui clicar com o mouse: {erro}"
+        return ToolResult.failure(f"Nao consegui clicar com o mouse: {erro}", error_code="mouse_click_failed", tool_name="clicar_mouse_windows")
 
 
 def arrastar_mouse_windows(
@@ -273,7 +277,7 @@ def arrastar_mouse_windows(
 ):
     """Arrasta o mouse entre duas coordenadas globais da area de trabalho."""
     if os.name != "nt":
-        return "Controle do mouse global so esta disponivel no Windows."
+        return ToolResult.failure("Controle do mouse global so esta disponivel no Windows.", error_code="windows_only", tool_name="arrastar_mouse_windows")
 
     try:
         x_inicial = int(x_inicial)
@@ -362,11 +366,12 @@ def arrastar_mouse_windows(
             mouse_event(down_up[1], 0, 0, 0, 0)
 
         detalhe = f" ({descricao})" if descricao else ""
-        return (
+        return ToolResult.success(
             f"Arraste global executado de ({x_inicial}, {y_inicial}) "
             f"para ({x_final}, {y_final}), botao {button}, "
-            f"duracao {duracao_ms} ms{detalhe}."
+            f"duracao {duracao_ms} ms{detalhe}.",
+            tool_name="arrastar_mouse_windows",
         )
     except Exception as erro:
-        return f"Nao consegui arrastar com o mouse: {erro}"
+        return ToolResult.failure(f"Nao consegui arrastar com o mouse: {erro}", error_code="mouse_drag_failed", tool_name="arrastar_mouse_windows")
 

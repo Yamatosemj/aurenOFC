@@ -10,6 +10,7 @@ import threading
 import time
 from queue import Empty, Queue
 
+from core.tool_result import ToolResult
 from tools.windows_window import _encontrar_janela_windows, _user32
 
 _UI_AUTOMATION_WORKER_SCRIPT = Path(__file__).with_name("windows_uia_worker.ps1")
@@ -207,18 +208,18 @@ def _executar_ui_automation(operacao, dados):
             return {"ok": False, "erro": str(erro)}
 
 
-def inspecionar_interface_windows(alvo_janela="", foco="", max_itens=40):
+def inspecionar_interface_windows(alvo_janela="", foco="", max_itens=40) -> ToolResult:
     """Inspeciona controles visiveis da janela usando UI Automation."""
     hwnd, titulo, erro = _ui_automation_janela(alvo_janela)
     if erro:
-        return erro
+        return ToolResult.failure(erro, error_code="uia_window_resolution_failed", tool_name="inspecionar_interface_windows")
     try:
         max_itens = max(1, min(80, int(max_itens)))
     except (TypeError, ValueError):
-        return "Quantidade maxima de itens invalida."
+        return ToolResult.failure("Quantidade maxima de itens invalida.", error_code="uia_max_items_invalid", tool_name="inspecionar_interface_windows")
     resultado = _executar_ui_automation("inspecionar", {"hwnd": _ui_automation_hwnd_int(hwnd), "foco": str(foco or ""), "max_itens": max_itens})
     if not resultado.get("ok"):
-        return f"Nao consegui inspecionar a interface de '{titulo}': {resultado.get('erro', 'erro desconhecido')}"
+        return ToolResult.failure(f"Nao consegui inspecionar a interface de '{titulo}': {resultado.get('erro', 'erro desconhecido')}", error_code="uia_inspection_failed", tool_name="inspecionar_interface_windows")
     controles = resultado.get("controles") or []
     linhas = [
         f"Janela: {titulo}",
@@ -238,18 +239,24 @@ def inspecionar_interface_windows(alvo_janela="", foco="", max_itens=40):
         linhas.append(linha)
     if foco and not controles:
         linhas.append(f"Nenhum controle correspondeu a '{foco}'.")
-    return "\n".join(linhas)
+    return ToolResult.success("\n".join(linhas), tool_name="inspecionar_interface_windows")
 
-def _executar_acao_ui_windows(operacao, alvo_janela, alvo, indice, texto=None, permitir_protegido=False):
+def _executar_acao_ui_windows(operacao, alvo_janela, alvo, indice, texto=None, permitir_protegido=False) -> ToolResult:
     hwnd, titulo, erro = _ui_automation_janela(alvo_janela)
+    tool_name = {
+        "clicar": "clicar_elemento_windows",
+        "preencher": "preencher_elemento_windows",
+        "alternar": "alternar_elemento_windows",
+        "selecionar": "selecionar_elemento_windows",
+    }.get(operacao, operacao)
     if erro:
-        return erro
+        return ToolResult.failure(erro, error_code="uia_window_resolution_failed", tool_name=tool_name)
     try:
         indice = int(indice)
         if indice < 1:
-            return "O indice do elemento deve comecar em 1."
+            return ToolResult.failure("O indice do elemento deve comecar em 1.", error_code="uia_index_invalid", tool_name=tool_name)
     except (TypeError, ValueError):
-        return "Indice de elemento invalido."
+        return ToolResult.failure("Indice de elemento invalido.", error_code="uia_index_invalid", tool_name=tool_name)
     dados = {"hwnd": _ui_automation_hwnd_int(hwnd), "alvo": str(alvo or ""), "indice": indice}
     if texto is not None:
         dados["texto"] = str(texto)
@@ -258,14 +265,18 @@ def _executar_acao_ui_windows(operacao, alvo_janela, alvo, indice, texto=None, p
     resultado = _executar_ui_automation(operacao, dados)
     if not resultado.get("ok"):
         verbos = {"clicar": "clicar", "preencher": "preencher", "alternar": "alternar", "selecionar": "selecionar"}
-        return f"Nao consegui {verbos.get(operacao, operacao)} '{alvo}' na janela '{titulo}': {resultado.get('erro', 'erro desconhecido')}"
+        return ToolResult.failure(f"Nao consegui {verbos.get(operacao, operacao)} '{alvo}' na janela '{titulo}': {resultado.get('erro', 'erro desconhecido')}", error_code="uia_action_failed", tool_name=tool_name)
     if operacao == "preencher" and resultado.get("confirmado") is False:
         nome_real = resultado.get("nome") or alvo
         automation_id = resultado.get("automation_id") or "[sem AutomationId]"
         protegido = resultado.get("protegido")
-        return (f"Preenchimento nao confirmado em '{nome_real}' (automation_id={automation_id}; protegido={protegido}) "
-                f"na janela '{titulo}'. O controle nao confirmou o valor solicitado.")
-    return str(resultado.get("resultado") or "Acao concluida.")
+        return ToolResult.failure(
+            (f"Preenchimento nao confirmado em '{nome_real}' (automation_id={automation_id}; protegido={protegido}) "
+             f"na janela '{titulo}'. O controle nao confirmou o valor solicitado."),
+            error_code="uia_fill_not_confirmed",
+            tool_name=tool_name,
+        )
+    return ToolResult.success(str(resultado.get("resultado") or "Acao concluida."), tool_name=tool_name)
 
 def clicar_elemento_windows(alvo_janela="", alvo="", indice=1):
     return _executar_acao_ui_windows("clicar", alvo_janela, alvo, indice)

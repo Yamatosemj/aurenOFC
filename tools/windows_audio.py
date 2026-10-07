@@ -173,9 +173,9 @@ def _audio_hresult_ok(hr, operacao):
     if int(hr) != 0:
         raise OSError(f"{operacao} falhou: HRESULT=0x{int(hr) & 0xFFFFFFFF:08X}")
 
-def obter_audio_windows():
+def obter_audio_windows() -> ToolResult:
     if os.name != "nt":
-        return "Controle de audio so esta disponivel no Windows."
+        return ToolResult.failure("Controle de audio so esta disponivel no Windows.", error_code="windows_only", tool_name="obter_audio_windows")
 
     try:
         volume = ctypes.c_float()
@@ -200,13 +200,13 @@ def obter_audio_windows():
 
         percentual = max(0, min(100, round(float(volume.value) * 100)))
         estado = "ativado" if bool(mute.value) else "desativado"
-        return f"Volume atual: {percentual}%. Mudo: {estado}."
+        return ToolResult.success(f"Volume atual: {percentual}%. Mudo: {estado}.", tool_name="obter_audio_windows")
     except Exception as erro:
-        return f"Nao consegui consultar o audio do Windows: {erro}"
+        return ToolResult.failure(f"Nao consegui consultar o audio do Windows: {erro}", error_code="audio_read_failed", tool_name="obter_audio_windows")
 
-def definir_volume_windows(percentual):
+def definir_volume_windows(percentual) -> ToolResult:
     if os.name != "nt":
-        return "Controle de audio so esta disponivel no Windows."
+        return ToolResult.failure("Controle de audio so esta disponivel no Windows.", error_code="windows_only", tool_name="definir_volume_windows")
 
     try:
         percentual = int(percentual)
@@ -214,6 +214,7 @@ def definir_volume_windows(percentual):
         return ToolResult.failure(
             "Volume invalido. Informe uma porcentagem inteira de 0 a 100.",
             error_code="volume_invalid",
+            tool_name="definir_volume_windows",
         )
 
     if not 0 <= percentual <= 100:
@@ -234,18 +235,19 @@ def definir_volume_windows(percentual):
                 None,
             )
             _audio_hresult_ok(hr, "Definicao do volume")
-        return f"Volume definido para {percentual}%."
+        return ToolResult.success(f"Volume definido para {percentual}%.", tool_name="definir_volume_windows")
     except Exception as erro:
-        return f"Nao consegui definir o volume: {erro}"
+        return ToolResult.failure(f"Nao consegui definir o volume: {erro}", error_code="volume_set_failed", tool_name="definir_volume_windows")
 
-def definir_mudo_windows(ativado):
+def definir_mudo_windows(ativado) -> ToolResult:
     if os.name != "nt":
-        return "Controle de audio so esta disponivel no Windows."
+        return ToolResult.failure("Controle de audio so esta disponivel no Windows.", error_code="windows_only", tool_name="definir_mudo_windows")
 
     if not isinstance(ativado, bool):
         return ToolResult.failure(
             "O estado do mudo deve ser verdadeiro ou falso.",
             error_code="mute_state_invalid",
+            tool_name="definir_mudo_windows",
         )
 
     try:
@@ -260,7 +262,7 @@ def definir_mudo_windows(ativado):
                 None,
             )
             _audio_hresult_ok(hr, "Definicao do mudo")
-        return f"Mudo {'ativado' if ativado else 'desativado'}."
+        return ToolResult.success(f"Mudo {'ativado' if ativado else 'desativado'}.", tool_name="definir_mudo_windows")
     except Exception as erro:
-        return f"Nao consegui alterar o mudo: {erro}"
+        return ToolResult.failure(f"Nao consegui alterar o mudo: {erro}", error_code="mute_set_failed", tool_name="definir_mudo_windows")
 

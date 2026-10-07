@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from core.utils import normalizar_nome
+from core.tool_result import ToolResult
 from tools.file_intelligence import _classify_read_path, _is_reparse_point
 
 MAX_SEARCH_FILES = 10_000
@@ -71,7 +72,7 @@ def interpretar_periodo(consulta):
 
     return None, None, None
 
-def buscar_arquivo(consulta):
+def buscar_arquivo(consulta) -> ToolResult:
     pedido = normalizar_nome(consulta)
 
     inicio, fim, descricao = interpretar_periodo(
@@ -312,14 +313,18 @@ def buscar_arquivo(consulta):
             continue
     if not candidatos:
         if descricao:
-            return (
+            return ToolResult.failure(
                 f"Nao encontrei arquivos em "
-                f"{descricao}."
+                f"{descricao}.",
+                error_code="files_not_found",
+                tool_name="buscar_arquivo",
             )
 
-        return (
+        return ToolResult.failure(
             "Nao encontrei arquivos "
-            "correspondentes."
+            "correspondentes.",
+            error_code="files_not_found",
+            tool_name="buscar_arquivo",
         )
 
     candidatos.sort(
@@ -371,4 +376,7 @@ def buscar_arquivo(consulta):
             f"{arquivo}"
         )
 
-    return "\n".join(linhas)
+    return ToolResult.success(
+        "\n".join(linhas),
+        tool_name="buscar_arquivo",
+    )

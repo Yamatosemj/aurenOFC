@@ -3,10 +3,11 @@ from __future__ import annotations
 import re
 
 from core.browser_verification import _compromisso_preenchimento_sensivel
+from core.tool_result import ToolResult
 from core.utils import normalizar_nome
 
 
-def ler_pagina(foco):
+def ler_pagina(foco) -> ToolResult:
     from tools import browser as _browser
 
     try:
@@ -840,8 +841,8 @@ def ler_pagina(foco):
         if len(resultado) > limite_final:
             resultado = resultado[:limite_final] + "\n[resultado truncado]"
 
-        return resultado
+        return ToolResult.success(resultado, tool_name="ler_pagina", conteudo_nao_confiavel=True)
 
     except Exception as erro:
-        return f"Nao consegui ler a pagina: {erro}"
+        return ToolResult.failure(f"Nao consegui ler a pagina: {erro}", error_code="browser_page_read_failed", tool_name="ler_pagina")
 
