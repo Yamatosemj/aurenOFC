@@ -597,3 +597,68 @@ def test_keyboard_ctrl_w_requires_before_and_after_tabs():
         ],
     }}
     assert verificar_resultado_navegador("pressionar_tecla", '{"tecla":"Ctrl+W"}', dados, acao) is True
+
+def test_non_navigational_click_verification_accepts_aria_checked():
+    dados = _dados_clique_navegacao()
+    dados["clique"]["navegacao"] = False
+    dados["clique"]["efeito"] = {
+        "controle": {"chave": "id:check", "id": "check"},
+        "sinal": {
+            "tipo": "controle",
+            "atributo": "aria-checked",
+            "antes": "false",
+            "depois": "true",
+        },
+    }
+    pagina = _contexto(
+        "Campos e controles visiveis:\n"
+        "- tag=button | nome=Opcao | id=check | chave=id:check | estado=aria-checked=true"
+    )
+    assert verificar_resultado_navegador(
+        "clicar_elemento",
+        '{"alvo":"Opcao","indice":1}',
+        pagina,
+        dados,
+    ) is True
+
+
+def test_non_navigational_click_verification_accepts_native_details_open_state():
+    dados = _dados_clique_navegacao()
+    dados["clique"]["navegacao"] = False
+    dados["clique"]["efeito"] = {
+        "controle": {"chave": "tag:summary:ajuda"},
+        "sinal": {
+            "tipo": "controle",
+            "atributo": "details-open",
+            "antes": False,
+            "depois": True,
+        },
+    }
+    pagina = _contexto(
+        "Campos e controles visiveis:\n"
+        "- tag=summary | nome=Ajuda | chave=tag:summary:ajuda | estado=details-open=true"
+    )
+    assert verificar_resultado_navegador(
+        "clicar_elemento",
+        '{"alvo":"Ajuda","indice":1}',
+        pagina,
+        dados,
+    ) is True
+
+
+def test_non_navigational_click_verification_accepts_alertdialog_and_popover_effect():
+    dados = _dados_clique_navegacao()
+    dados["clique"]["navegacao"] = False
+    dados["clique"]["efeito"] = {
+        "controle": {"chave": "id:abrir"},
+        "sinal": {"tipo": "pagina", "alvo": "popovers", "antes": 0, "depois": 1},
+    }
+    pagina = _contexto(
+        "Elementos flutuantes visiveis: dialogos=1 | menus=0 | listboxes=0 | popovers=1 | details_abertos=0"
+    )
+    assert verificar_resultado_navegador(
+        "clicar_elemento",
+        '{"alvo":"Abrir","indice":1}',
+        pagina,
+        dados,
+    ) is True
