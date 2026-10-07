@@ -62,6 +62,7 @@ from core.harness_guards import _tratar_rodada_sem_ferramentas as _tratar_rodada
 from core.harness_heuristics import (
     _parece_tarefa_visual_composta,
     _parece_tarefa_multietapa_browser,
+    _parece_tarefa_browser_verificavel,
     _parece_tarefa_de_acao,
     _ultima_acao_solicitada,
     _pode_encerrar_localmente as _pode_encerrar_localmente_impl,
@@ -331,6 +332,10 @@ class AurenHarness:
     @staticmethod
     def _parece_tarefa_multietapa_browser(objetivo: str) -> bool:
         return _parece_tarefa_multietapa_browser(objetivo)
+
+    @staticmethod
+    def _parece_tarefa_browser_verificavel(objetivo: str) -> bool:
+        return _parece_tarefa_browser_verificavel(objetivo)
 
     @classmethod
     def _multitab_concluida(cls, objetivo: str, historico: list[dict[str, str]]) -> bool:
