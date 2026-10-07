@@ -19,7 +19,7 @@ Atualizado em: 2026-10-07
 - **CI da implementação mais recente em main:** pytest, focused Linux e focused Windows verdes
 - **CI do PR #77:** full tests Linux/Windows, static-checks e visual interaction/Playwright verdes no merge ref `4139b0696fe1e378d80fccb8541e6232b91d01b5`
 - **Baseline histórico de pytest:** **576 passed, 5 warnings**; baseline imediatamente anterior à Tarefa 3: Linux **605 passed, 6 skipped, 5 warnings** / Windows **611 passed, 5 warnings**
-- **Novos testes adicionados nesta transição:** **16**
+- **Novos testes da Tarefa 3:** **17**
 - **Ferramentas no registry/contratos após a Tarefa 3:** **55** (eram 50 antes)
 - **Tarefa atual:** **Tarefa 3 da sessão — operações de arquivo seguras com undo e Lixeira**
 - **Portão da Tarefa 3:** pytest final e `python testes_auren_live.py --rapido` no Windows real ainda pendentes
