@@ -75,8 +75,17 @@ def capturar_tela_windows() -> ToolResult:
             imagem = ImageGrab.grab(all_screens=True)
             origem_x, origem_y, largura_virtual, altura_virtual = _limites_tela_virtual_windows(user32)
         imagem.save(destino, format="PNG", optimize=True)
-        largura_imagem, altura_imagem = imagem.size
-        return ToolResult.success(
+        if destino.stat().st_size > SCREENSHOT_MAX_FILE_BYTES:
+            try:
+                destino.unlink()
+            except OSError:
+                pass
+            return ToolResult.failure(
+                "A captura excedeu o limite de tamanho permitido.",
+                error_code="screenshot_too_large",
+                data={"limite_bytes": SCREENSHOT_MAX_FILE_BYTES},
+            )
+        largura_imagem, altura_imagem = imagem.size        return ToolResult.success(
             f"Tela capturada: {destino.name}",
             data={
                 "image_path": str(destino),
