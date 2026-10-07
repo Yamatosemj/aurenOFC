@@ -194,15 +194,26 @@ def test_voice_main_does_not_use_spoken_cancel_keywords():
 
 def test_tts_is_safe_when_called_from_an_existing_event_loop():
     import asyncio
+    from threading import Thread
 
     sd = _FakeSoundDevice()
     model = _FakeKokoro()
     tts = LocalKokoroTTS(model=model, sounddevice_module=sd)
+    erro = []
 
-    async def executar():
-        tts.falar("YouTube aberto.")
+    def trabalhador():
+        async def executar():
+            tts.falar("YouTube aberto.")
 
-    asyncio.run(executar())
+        try:
+            asyncio.run(executar())
+        except BaseException as exc:
+            erro.append(exc)
 
+    thread = Thread(target=trabalhador, daemon=True)
+    thread.start()
+    thread.join()
+
+    assert erro == []
     assert model.calls == 1
     assert len(sd.streams) == 1
