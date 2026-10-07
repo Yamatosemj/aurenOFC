@@ -451,10 +451,8 @@ class PermissionManager:
                 ),
             )
 
-        if conta_para_limite:
-            self.actions_attempted += 1
-
         nivel, motivo = self.nivel_da_acao(
+
             nome_ferramenta,
             argumentos,
         )
@@ -466,6 +464,8 @@ class PermissionManager:
             )
 
         if nivel == PermissionLevel.AUTO:
+            if conta_para_limite:
+                self.actions_attempted += 1
             self.last_authorized_action_signature = assinatura_atual
             self.last_authorized_action_tool = nome_ferramenta
             return True, motivo
@@ -486,6 +486,8 @@ class PermissionManager:
                     self._fonte_nao_confiavel_pendente = None
 
             if aprovado:
+                if conta_para_limite:
+                    self.actions_attempted += 1
                 self.last_authorized_action_signature = assinatura_atual
                 self.last_authorized_action_tool = nome_ferramenta
                 return True, "Usuario confirmou a acao."
