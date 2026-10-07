@@ -5,7 +5,7 @@ import json
 from core.utils import normalizar_nome
 from core.tool_contracts import validate_tool_arguments
 from core.vision import transform_visual_tool_arguments
-from tools import applications, browser, browser_context, file_intelligence, files
+from tools import applications, browser, browser_context, browser_elements, file_intelligence, files
 from tools import windows
 from tools.memory import salvar_memoria_persistente, consultar_memoria_persistente, esquecer_memoria_persistente
 
@@ -255,6 +255,15 @@ def executar_ferramenta(item, permission_manager, memory_store) -> ToolResult:
                 tool_name=nome,
             )
 
+    if nome == "clicar_elemento":
+        preflight = browser_elements.obter_evidencia_risco_clique(
+            argumentos.get("alvo", ""),
+            argumentos.get("indice", 1),
+        )
+        argumentos_execucao.update({
+            "_browser_click_preflight_ok": bool(preflight.get("ok")),
+            "_browser_click_preflight": dict(preflight.get("evidencia") or {}),
+        })
     if nome == "preencher_elemento_windows":
         preflight = _resolver_ui_automation_para_permissao(argumentos)
         if not preflight.get("ok"):
