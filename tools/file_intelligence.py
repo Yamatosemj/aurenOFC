@@ -826,6 +826,22 @@ def read_file(caminho: str, inicio: int = 0, limite_caracteres: int = 12_000, *,
             tool_name=tool_name,
         )
 
+    try:
+        current_stat = path.stat()
+    except OSError as exc:
+        return ToolResult.failure(
+            f"Nao foi possivel confirmar a estabilidade do arquivo apos a leitura: {exc}",
+            error_code="path_changed_during_read",
+            data={"caminho": str(path)},
+            tool_name=tool_name,
+        )
+    if not _same_file_identity(path_stat, current_stat):
+        return ToolResult.failure(
+            "O arquivo mudou durante a leitura e o resultado foi descartado.",
+            error_code="path_changed_during_read",
+            data={"caminho": str(path)},
+            tool_name=tool_name,
+        )
     result = FileContent(
         formato=extension.lstrip("."),
         encoding=encoding or "unknown",
