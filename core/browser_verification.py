@@ -23,7 +23,10 @@ def _compromisso_preenchimento_sensivel(valor: str) -> str:
         _SENSITIVE_FILL_KEY,
         str(valor).encode("utf-8"),
         hashlib.sha256,
-    ).hexdigest()\ndef _parse_args(arguments: str) -> dict[str, Any] | None:
+    ).hexdigest()
+
+
+def _parse_args(arguments: str) -> dict[str, Any] | None:
     try:
         value = json.loads(str(arguments or "{}"))
     except (TypeError, ValueError, json.JSONDecodeError):
