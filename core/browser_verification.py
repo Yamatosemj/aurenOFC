@@ -94,3 +94,35 @@ def verificar_resultado_navegador(
         return indice_atual == esperado
 
     return None
+
+
+def _controle_com_valor(pagina: str, alvo: str, esperado: str, indice: int) -> bool | None:
+    alvo_normalizado = str(alvo or "").strip().casefold()
+    if not alvo_normalizado:
+        return None
+
+    linhas = [
+        linha.strip()
+        for linha in str(pagina or "").splitlines()
+        if "valor=" in linha and linha.strip().startswith("-")
+    ]
+    candidatas = [
+        linha for linha in linhas
+        if alvo_normalizado in linha.casefold()
+    ]
+    if not candidatas:
+        return None
+
+    # Campos sensiveis sao mascarados pelo leitor da pagina. Nao tentamos
+    # inferir o segredo nem tratamos o mascaramento como falha.
+    esperado_texto = str(esperado or "")
+    if "[REDACTED]" in " ".join(candidatas):
+        return None
+
+    matches = [
+        linha for linha in candidatas
+        if f"valor={esperado_texto}" in linha
+    ]
+    return len(matches) >= max(1, int(indice or 1))
+
+
