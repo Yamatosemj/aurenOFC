@@ -293,7 +293,7 @@ def executar_ferramenta(item, permission_manager, memory_store) -> ToolResult:
 
     try:
         resultado = TOOL_HANDLERS[nome](argumentos_execucao, memory_store, contexto)
-    except Exception as erro:
+    except (OSError, RuntimeError, TypeError, ValueError, KeyError) as erro:
         permission_manager.registrar_resultado(False, nome, argumentos)
         return ToolResult.failure(
             f"Falha ao executar '{nome}': {erro}",

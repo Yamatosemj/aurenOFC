@@ -10,6 +10,7 @@ from __future__ import annotations
 import ast
 import builtins
 import json
+import pytest
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -107,6 +108,30 @@ def test_erro_do_handler_nao_derruba_o_processo(monkeypatch):
     monkeypatch.setitem(dispatcher.TOOL_HANDLERS, "obter_status_windows", _handler([], "x", RuntimeError("boom")))
     r = dispatcher.executar_ferramenta(_item("obter_status_windows", {}), PermissionManager(), None)
     assert r.ok is False and r.error_code == "exception" and "boom" in r.message
+
+
+def test_erro_operacional_conhecido_do_handler_e_convertido(monkeypatch):
+    monkeypatch.setitem(
+        dispatcher.TOOL_HANDLERS,
+        "obter_status_windows",
+        _handler([], "x", ValueError("entrada invalida")),
+    )
+    r = dispatcher.executar_ferramenta(_item("obter_status_windows", {}), PermissionManager(), None)
+    assert r.ok is False and r.error_code == "exception" and "entrada invalida" in r.message
+
+
+def test_excecao_de_programacao_nao_e_silenciosamente_convertida(monkeypatch):
+    monkeypatch.setitem(
+        dispatcher.TOOL_HANDLERS,
+        "obter_status_windows",
+        _handler([], "x", AssertionError("invariante quebrada")),
+    )
+    with pytest.raises(AssertionError, match="invariante quebrada"):
+        dispatcher.executar_ferramenta(
+            _item("obter_status_windows", {}),
+            PermissionManager(),
+            None,
+        )
 
 
 def test_principais_ferramentas_do_registry_passam_por_contrato_permissao_e_handler(monkeypatch):
@@ -214,6 +239,19 @@ def test_fast_paths_nao_toca_ferramentas_nem_permissoes_diretamente():
     assert not (mods & proibidos), mods & proibidos
     codigo = (ROOT / "tools" / "fast_paths.py").read_text(encoding="utf-8")
     assert ".autorizar(" not in codigo and ".registrar_resultado(" not in codigo
+
+
+def test_caminhos_criticos_nao_usam_except_exception_generico():
+    for rel in ("core/permission_manager.py", "tools/dispatcher.py"):
+        arvore = ast.parse((ROOT / rel).read_text(encoding="utf-8"))
+        genericos = [
+            no
+            for no in ast.walk(arvore)
+            if isinstance(no, ast.ExceptHandler)
+            and isinstance(no.type, ast.Name)
+            and no.type.id == "Exception"
+        ]
+        assert not genericos, rel
 
 
 def test_so_o_dispatcher_importa_os_modulos_de_ferramenta_no_runtime():
