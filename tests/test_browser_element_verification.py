@@ -43,3 +43,40 @@ def test_fill_verification_does_not_infer_redacted_secret():
             "- tag=input | nome=Senha | valor=[REDACTED]"
         ),
     ) is None
+
+def test_click_element_uses_the_new_tab_as_active_page(monkeypatch):
+    class _Page:
+        def __init__(self, url):
+            self.url = url
+
+        def wait_for_timeout(self, _milliseconds):
+            return None
+
+    class _Element:
+        def click(self, timeout):
+            assert timeout == 10000
+
+        def evaluate(self, _script):
+            return "a"
+
+        def get_attribute(self, _name):
+            return "https://example.com/nova"
+
+    antiga = _Page("https://example.com")
+    nova = _Page("https://example.com/nova")
+    elemento = _Element()
+
+    import tools.browser as browser
+    import tools.browser_elements as browser_elements
+
+    monkeypatch.setattr(browser_elements, "encontrar_elemento", lambda alvo, indice=1: elemento)
+    monkeypatch.setattr(browser, "obter_pagina", lambda: antiga)
+    monkeypatch.setattr(browser, "_paginas_abertas", lambda: [antiga, nova])
+    monkeypatch.setattr(browser, "pagina", antiga, raising=False)
+
+    result = browser_elements.clicar_elemento("Abrir")
+
+    assert "URL anterior: https://example.com" in result
+    assert "URL atual: https://example.com/nova" in result
+    assert "Navegacao: sim" in result
+    assert browser.pagina is nova
