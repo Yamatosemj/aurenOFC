@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from core.harness_completion import _finalizar_resposta_sucesso
+from core.harness_completion import (
+    _concluir_tarefa_localmente,
+    _finalizar_resposta_sucesso,
+)
 
 
 class _TaskManager:
