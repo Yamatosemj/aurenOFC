@@ -399,6 +399,41 @@ class IntentResolver:
                     reason="Pedido identifica inspecao estruturada do arquivo.",
                 )
 
+        if capability_id == "gerenciar_arquivos":
+            acao = _field(data, "acao", "ação", "operacao", "operação")
+            if not acao:
+                for marcador, nome in (
+                    ("renome", "renomear"),
+                    ("copi", "copiar"),
+                    ("mov", "mover"),
+                    ("cri", "criar"),
+                ):
+                    if marcador in normalized:
+                        acao = nome
+                        break
+            if acao:
+                params = {"acao": str(acao).strip()}
+                for name in ("origem", "destino", "caminho", "novo_nome"):
+                    value = _field(data, name)
+                    if value is not None:
+                        params[name] = value
+                return ResolvedIntent(
+                    capability_id="gerenciar_arquivos",
+                    params=params,
+                    reason_code="matched_file_management",
+                    reason="Regra do Registry identificou uma operacao de arquivo com alteracao local.",
+                )
+
+        if capability_id == "lixeira_arquivo":
+            caminho = _field(data, "caminho", "path", "arquivo", "nome_arquivo", "nome")
+            if caminho:
+                return ResolvedIntent(
+                    capability_id="lixeira_arquivo",
+                    params={"caminho": str(caminho).strip()},
+                    reason_code="matched_file_trash",
+                    reason="Regra do Registry identificou envio explicito para a Lixeira.",
+                )
+
         if capability_id == "ler_arquivo":
             caminho = _field(data, "caminho", "path", "arquivo", "nome_arquivo", "nome")
             if caminho:
