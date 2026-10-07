@@ -72,7 +72,7 @@ class PermissionManager:
     # O teste de politica exige que esta tabela acompanhe CAPABILITY_POLICY.
     AUTO_CAPABILITY_JUSTIFICATIONS = {
         "memory.read": "Somente consulta memoria; nao altera estado.",
-        "application.open": "Abrir um programa e reversivel e nao publica/envi­a dados por si so; programas administrativos sao elevados para CONFIRM.",
+        "application.open": "Abrir um programa e reversivel e nao publica nem envia dados por si so; programas administrativos sao elevados para CONFIRM.",
         "file.search": "Pesquisa nomes/metadados locais sem modificar arquivos.",
         "file.inspect": "Inspecao e somente leitura; caminhos sensiveis ou fora da allowlist sao elevados para CONFIRM/BLOCKED.",
         "file.read": "Leitura e somente leitura; caminhos fora da allowlist exigem CONFIRM.",
