@@ -91,6 +91,23 @@ def _com_memoria(fn, *keys):
     return handler
 
 
+def _inspecionar_arquivo_handler(args, memory_store, context):
+    return file_intelligence.inspect_file(
+        args["caminho"],
+        args["procurar_copias"],
+        args["limite_copias"],
+        caminho_confirmado=args.get("_caminho_confirmado"),
+    )
+
+
+def _ler_arquivo_handler(args, memory_store, context):
+    return file_intelligence.read_file(
+        args["caminho"],
+        args["inicio"],
+        args["limite_caracteres"],
+        caminho_confirmado=args.get("_caminho_confirmado"),
+    )
+
 def _preencher_windows_handler(args, memory_store, context):
     protegido = bool(context.get("uia_protected"))
 
@@ -122,8 +139,8 @@ def _preencher_windows_handler(args, memory_store, context):
 TOOL_HANDLERS = {
     "abrir_programa": _sem_memoria(applications.abrir_programa, "programa"),
     "buscar_arquivo": _sem_memoria(files.buscar_arquivo, "consulta"),
-    "inspecionar_arquivo": _sem_memoria(file_intelligence.inspect_file, "caminho", "procurar_copias", "limite_copias"),
-    "ler_arquivo": _sem_memoria(file_intelligence.read_file, "caminho", "inicio", "limite_caracteres"),
+    "inspecionar_arquivo": _inspecionar_arquivo_handler,
+    "ler_arquivo": _ler_arquivo_handler,
     "salvar_memoria_persistente": _com_memoria(salvar_memoria_persistente, "chave", "valor", "categoria"),
     "consultar_memoria_persistente": _com_memoria(consultar_memoria_persistente, "consulta", "limite"),
     "esquecer_memoria_persistente": _com_memoria(esquecer_memoria_persistente, "chave"),
@@ -267,6 +284,12 @@ def executar_ferramenta(item, permission_manager, memory_store) -> ToolResult:
             error_code="permission_denied",
             tool_name=nome,
         )
+
+    if nome in {"inspecionar_arquivo", "ler_arquivo"}:
+        path = file_intelligence._resolve_path(str(argumentos_execucao.get("caminho", "")))
+        path_policy = file_intelligence._classify_read_path(path)
+        if path_policy.status == "confirm":
+            argumentos_execucao["_caminho_confirmado"] = path_policy.caminho_resolvido
 
     try:
         resultado = TOOL_HANDLERS[nome](argumentos_execucao, memory_store, contexto)
