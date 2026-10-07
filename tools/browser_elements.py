@@ -144,6 +144,126 @@ def encontrar_elemento(alvo, indice=1, preferir_campo=False):
 def clicar_elemento(alvo, indice=1):
     from tools import browser as _browser
 
+    def _capturar_estado_controle(elemento):
+        try:
+            estado = elemento.evaluate(
+                """
+                el => {
+                    const attr = nome => {
+                        const valor = el.getAttribute(nome);
+                        return valor === null ? null : valor;
+                    };
+
+                    const id = attr('id') || '';
+                    const name = attr('name') || '';
+                    const ariaLabel = attr('aria-label') || '';
+                    const placeholder = attr('placeholder') || '';
+                    const role = attr('role') || '';
+                    const texto = String(
+                        el.innerText || el.textContent || ''
+                    ).replace(/\s+/g, ' ').trim().slice(0, 120);
+
+                    let chave = '';
+                    if (id) chave = 'id:' + id;
+                    else if (name) chave = 'name:' + name;
+                    else if (ariaLabel) chave = 'aria:' + ariaLabel;
+                    else if (placeholder) chave = 'placeholder:' + placeholder;
+                    else if (texto) chave = 'texto:' + texto;
+
+                    return {
+                        chave,
+                        id: id.slice(0, 120),
+                        name: name.slice(0, 120),
+                        ariaLabel: ariaLabel.slice(0, 180),
+                        placeholder: placeholder.slice(0, 120),
+                        role: role.slice(0, 80),
+                        tag: String(el.tagName || '').toLowerCase(),
+                        estados: {
+                            'aria-expanded': attr('aria-expanded'),
+                            'aria-pressed': attr('aria-pressed'),
+                            'aria-selected': attr('aria-selected'),
+                            'checked': ('checked' in el) ? Boolean(el.checked) : null,
+                            'selected': ('selected' in el) ? Boolean(el.selected) : null,
+                            'open': ('open' in el) ? Boolean(el.open) : null,
+                            'data-state': attr('data-state')
+                        }
+                    };
+                }
+                """
+            )
+            if isinstance(estado, dict):
+                return estado
+        except Exception:
+            pass
+        return {
+            "chave": "",
+            "id": "",
+            "name": "",
+            "ariaLabel": "",
+            "placeholder": "",
+            "role": "",
+            "tag": "",
+            "estados": {},
+        }
+
+    def _capturar_estado_pagina(pagina):
+        try:
+            estado = pagina.evaluate(
+                """
+                () => {
+                    const visivel = el => {
+                        const rect = el.getBoundingClientRect();
+                        const cs = getComputedStyle(el);
+                        return rect.width > 0 && rect.height > 0 &&
+                               cs.visibility !== 'hidden' &&
+                               cs.display !== 'none';
+                    };
+
+                    const contar = seletores => Array.from(
+                        document.querySelectorAll(seletores)
+                    ).filter(visivel).length;
+
+                    return {
+                        dialogos: contar('dialog, [role="dialog"]'),
+                        menus: contar('[role="menu"]'),
+                        listboxes: contar('[role="listbox"]')
+                    };
+                }
+                """
+            )
+            if isinstance(estado, dict):
+                return {
+                    "dialogos": int(estado.get("dialogos", 0)),
+                    "menus": int(estado.get("menus", 0)),
+                    "listboxes": int(estado.get("listboxes", 0)),
+                }
+        except Exception:
+            pass
+        return {}
+
+    def _sinal_controle(antes, depois):
+        estados_antes = antes.get("estados", {})
+        estados_depois = depois.get("estados", {})
+        for atributo in (
+            "aria-expanded",
+            "aria-pressed",
+            "aria-selected",
+            "checked",
+            "selected",
+            "open",
+            "data-state",
+        ):
+            valor_antes = estados_antes.get(atributo)
+            valor_depois = estados_depois.get(atributo)
+            if valor_antes is not None and valor_depois is not None:
+                if valor_antes != valor_depois:
+                    return {
+                        "atributo": atributo,
+                        "antes": valor_antes,
+                        "depois": valor_depois,
+                    }
+        return None
+
     try:
         p = _browser.obter_pagina()
         url_anterior = p.url
@@ -152,23 +272,19 @@ def clicar_elemento(alvo, indice=1):
             indice
         )
 
-        # Identifica informacao do elemento antes do clique para melhorar
-        # a verificacao local de conclusao sem chamar o modelo novamente.
+        estado_controle_antes = _capturar_estado_controle(elemento)
+        estado_pagina_antes = _capturar_estado_pagina(p)
+
         try:
-            tag_elemento = elemento.evaluate("el => el.tagName.toLowerCase()")
             href_elemento = elemento.get_attribute("href") or ""
         except Exception:
-            tag_elemento = ""
             href_elemento = ""
 
-        # Nao esperamos o carregamento completo da pagina aqui.
-        # O navegador continua carregando sozinho e o proximo passo pode
-        # consultar a pagina quando realmente precisar.
+        tag_elemento = str(estado_controle_antes.get("tag") or "")
+
         abas_antes = list(_browser._paginas_abertas())
         elemento.click(timeout=10000)
 
-        # Alguns sites abrem links em nova aba/janela. Quando isso acontece,
-        # a nova pagina passa a ser a aba ativa do Auren.
         try:
             p.wait_for_timeout(250)
         except Exception:
@@ -183,7 +299,46 @@ def clicar_elemento(alvo, indice=1):
             p = _browser.obter_pagina()
 
         url_atual = p.url
+        estado_controle_depois = _capturar_estado_controle(elemento)
+        estado_pagina_depois = _capturar_estado_pagina(p)
+
         navegacao = "sim" if novas_abas or url_atual != url_anterior else "nao"
+
+        efeito = {
+            "controle": {
+                "chave": estado_controle_antes.get("chave", ""),
+                "id": estado_controle_antes.get("id", ""),
+                "name": estado_controle_antes.get("name", ""),
+                "aria_label": estado_controle_antes.get("ariaLabel", ""),
+                "placeholder": estado_controle_antes.get("placeholder", ""),
+                "role": estado_controle_antes.get("role", ""),
+                "tag": tag_elemento,
+            },
+            "pagina_antes": estado_pagina_antes,
+            "pagina_depois": estado_pagina_depois,
+        }
+
+        sinal = _sinal_controle(
+            estado_controle_antes,
+            estado_controle_depois,
+        )
+        if sinal:
+            efeito["sinal"] = {
+                "tipo": "controle",
+                **sinal,
+            }
+        else:
+            for tipo in ("dialogos", "menus", "listboxes"):
+                antes = estado_pagina_antes.get(tipo)
+                depois = estado_pagina_depois.get(tipo)
+                if isinstance(antes, int) and isinstance(depois, int) and antes != depois:
+                    efeito["sinal"] = {
+                        "tipo": "pagina",
+                        "alvo": tipo,
+                        "antes": antes,
+                        "depois": depois,
+                    }
+                    break
 
         return ToolResult.success(
             f"Cliquei em '{alvo}'.\n"
@@ -195,12 +350,13 @@ def clicar_elemento(alvo, indice=1):
                 "clique": {
                     "alvo": str(alvo),
                     "indice": int(indice),
-                    "tag": str(tag_elemento),
+                    "tag": tag_elemento,
                     "href": str(href_elemento),
                     "url_anterior": str(url_anterior),
                     "url_atual": str(url_atual),
                     "navegacao": navegacao == "sim",
                     "nova_aba": bool(novas_abas),
+                    "efeito": efeito,
                 },
             },
             tool_name="clicar_elemento",
