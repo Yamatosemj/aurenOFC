@@ -133,9 +133,9 @@ Decisões tomadas (e por quê):
 
 Testes:
 - Baseline imediatamente anterior: Linux 605 passed, 6 skipped, 5 warnings; Windows 611 passed, 5 warnings.
-- Novos testes desta tarefa: 16.
+- Novos testes desta tarefa: 17.
 - Comando exigido: `py -m pytest -q`.
-- Validação automatizada esperada após os 16 testes novos: Linux 621 passed / 6 skipped; Windows 627 passed, antes do resultado real do CI.
+- Validação automatizada esperada após os 17 testes novos: Linux 622 passed / 6 skipped; Windows 628 passed, antes do resultado real do CI.
 - Execução local completa não disponível neste ambiente; não foi criado um resultado de teste falso.
 - Runner manual `python testes_auren_live.py --rapido`: pendente no Windows real, como exige o portão da tarefa.
 
