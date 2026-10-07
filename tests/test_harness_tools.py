@@ -337,7 +337,7 @@ def test_browser_navigation_verification_keeps_pending_when_target_is_wrong():
         ),
     ])
 
-    _executar_chamadas_rodada(
+    resultado = _executar_chamadas_rodada(
         chamadas,
         historico=[],
         task_manager=manager,
@@ -359,7 +359,7 @@ def test_browser_navigation_verification_keeps_pending_when_target_is_wrong():
     )
 
     assert state["pending"] is True
-    assert results[0]["verificacao_browser"] is False
+    assert resultado[0][0]["verificacao_browser"] is False
 
 
 
