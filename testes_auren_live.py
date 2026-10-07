@@ -59,6 +59,7 @@ REQUIRED_TOOLS = [
     "preencher_elemento_windows",
     "alternar_elemento_windows",
     "selecionar_elemento_windows",
+    "obter_contexto_navegador",
     "salvar_memoria_persistente",
     "consultar_memoria_persistente",
     "esquecer_memoria_persistente",
@@ -1233,7 +1234,7 @@ def _testes_estaticos_v42() -> None:
     from core.tools_registry import tools as _tools_registry
     from core.tool_contracts import DEFAULT_TOOL_CONTRACTS, validate_tool_arguments
     contracts_runtime_ok = (
-        len(DEFAULT_TOOL_CONTRACTS.names()) == len(_tools_registry) == 45
+        len(DEFAULT_TOOL_CONTRACTS.names()) == len(_tools_registry) == 49
         and set(DEFAULT_TOOL_CONTRACTS.names()) == {item["name"] for item in _tools_registry}
         and validate_tool_arguments("listar_janelas_windows", {})[0]
         and not validate_tool_arguments("mover_mouse_windows", {"x": "960", "y": 540})[0]
