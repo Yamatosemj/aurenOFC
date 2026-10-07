@@ -10,7 +10,7 @@ Atualizado em: 2026-10-06 (item 5 em execução)
 
 - **Base estável (main):** V47
 - **Trabalho ativo:** Estabilização e limpeza pós-V47
-- **Branch/PR ativa:** nenhuma — PR #6, #7, #8, #9, #11, #12, #13, #14, #15, #16, #17, #18, #19, #20, #21, #22, #23, #24, #25, #26, #27, #28 e #29 encerradas por merge
+- **Branch/PR ativa:** nenhuma — PR #6, #7, #8, #9, #11, #12, #13, #14, #15, #16, #17, #18, #19, #20, #21, #22, #23, #24, #25, #26, #27, #28, #29 e #30 encerradas por merge
 - **Head da main:** 2d26ab10eafeb9deab859137775b3d3f8cdea76e
 - **Status da PR #6:** merged
 - **Status da PR #9:** merged — item 1 da revisão geral
