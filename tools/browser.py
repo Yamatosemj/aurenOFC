@@ -4,7 +4,6 @@ import re
 from pathlib import Path
 
 from config import BROWSER_PROFILE_DIR
-from core.tool_result import ToolResult
 
 playwright = None
 browser = None
@@ -363,91 +362,11 @@ from tools.browser_elements import (
     preencher_elemento,
 )
 
-def pressionar_tecla(tecla):
-    try:
-        p = obter_pagina()
-        p.keyboard.press(tecla)
 
-        return f"Pressionei a tecla '{tecla}'."
-
-    except Exception as erro:
-        return (
-            f"Nao consegui pressionar '{tecla}': {erro}"
-        )
-
-def voltar_pagina():
-    try:
-        p = obter_pagina()
-        p.go_back(
-            wait_until="domcontentloaded",
-            timeout=12000
-        )
-
-        return (
-            "Voltei para a pagina anterior.\n"
-            f"URL atual: {p.url}"
-        )
-
-    except Exception as erro:
-        return f"Nao consegui voltar: {erro}"
-
-def avancar_pagina():
-    try:
-        p = obter_pagina()
-        p.go_forward(
-            wait_until="domcontentloaded",
-            timeout=12000
-        )
-
-        return (
-            "Avancei para a proxima pagina.\n"
-            f"URL atual: {p.url}"
-        )
-
-    except Exception as erro:
-        return f"Nao consegui avancar: {erro}"
-
-def recarregar_pagina():
-    try:
-        p = obter_pagina()
-        p.reload(
-            wait_until="domcontentloaded",
-            timeout=12000
-        )
-
-        return (
-            "Pagina recarregada.\n"
-            f"URL atual: {p.url}"
-        )
-
-    except Exception as erro:
-        return f"Nao consegui recarregar: {erro}"
-
-def rolar_pagina(direcao):
-    try:
-        p = obter_pagina()
-
-        if direcao == "cima":
-            p.mouse.wheel(0, -900)
-
-        elif direcao == "baixo":
-            p.mouse.wheel(0, 900)
-
-        elif direcao == "inicio":
-            p.evaluate("window.scrollTo(0, 0)")
-
-        elif direcao == "fim":
-            p.evaluate(
-                "window.scrollTo(0, document.body.scrollHeight)"
-            )
-
-        else:
-            return ToolResult.failure(
-                "Direcao invalida. Use cima, baixo, inicio ou fim.",
-                error_code="scroll_direction_invalid",
-            )
-
-        return f"Pagina rolada para '{direcao}'."
-
-    except Exception as erro:
-        return f"Nao consegui rolar a pagina: {erro}"
+from tools.browser_navigation import (
+    pressionar_tecla,
+    voltar_pagina,
+    avancar_pagina,
+    recarregar_pagina,
+    rolar_pagina,
+)
