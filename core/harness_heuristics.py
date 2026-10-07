@@ -132,6 +132,7 @@ def _pode_encerrar_localmente(
         "obter_geometria_janela_windows",
         "ler_area_transferencia_windows",
         "listar_abas",
+        "obter_contexto_navegador",
         "consultar_memoria_persistente",
     }
     if ferramenta == "listar_abas" and _parece_tarefa_multietapa_browser(objetivo):
