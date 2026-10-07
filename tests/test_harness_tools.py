@@ -192,3 +192,73 @@ def test_cancellation_before_execution_preserves_previous_failure_state():
     assert failed is True
     assert pending is False
     assert cancelled is True
+
+
+def test_successful_browser_mutation_marks_verification_pending():
+    manager = _TaskManager()
+    state = {"pending": False}
+
+    results, count, failed, vision_pending, cancelled = _executar_chamadas_rodada(
+        [_item("clicar_elemento", "call-browser-1")],
+        historico=[],
+        task_manager=manager,
+        task_id="task-browser-1",
+        rodada=1,
+        executar_ferramenta=lambda _: ToolResult.success(
+            "Clique executado.",
+            tool_name="clicar_elemento",
+        ),
+        trace=None,
+        vision_state_mutating_tools=set(),
+        vision_reobserve_pending=False,
+        falha_nao_recuperada=False,
+        max_tool_result_chars=100,
+        get_active_vision_geometry=lambda: None,
+        clear_active_vision_geometry=lambda: None,
+        write_log=lambda *args, **kwargs: None,
+        browser_verification_state=state,
+        browser_state_mutating_tools={"clicar_elemento"},
+        browser_verification_tool="obter_contexto_navegador",
+    )
+
+    assert results[0]["sucesso"] is True
+    assert count == 1
+    assert failed is False
+    assert vision_pending is False
+    assert cancelled is False
+    assert state["pending"] is True
+
+
+def test_successful_browser_context_clears_verification_pending():
+    manager = _TaskManager()
+    state = {"pending": True}
+
+    results, count, failed, vision_pending, cancelled = _executar_chamadas_rodada(
+        [_item("obter_contexto_navegador", "call-browser-2")],
+        historico=[],
+        task_manager=manager,
+        task_id="task-browser-2",
+        rodada=2,
+        executar_ferramenta=lambda _: ToolResult.success(
+            "Contexto atualizado.",
+            tool_name="obter_contexto_navegador",
+        ),
+        trace=None,
+        vision_state_mutating_tools=set(),
+        vision_reobserve_pending=False,
+        falha_nao_recuperada=False,
+        max_tool_result_chars=100,
+        get_active_vision_geometry=lambda: None,
+        clear_active_vision_geometry=lambda: None,
+        write_log=lambda *args, **kwargs: None,
+        browser_verification_state=state,
+        browser_state_mutating_tools={"clicar_elemento"},
+        browser_verification_tool="obter_contexto_navegador",
+    )
+
+    assert results[0]["sucesso"] is True
+    assert count == 1
+    assert failed is False
+    assert vision_pending is False
+    assert cancelled is False
+    assert state["pending"] is False

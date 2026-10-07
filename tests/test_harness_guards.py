@@ -255,3 +255,77 @@ def test_without_any_guard_condition_proceeds_with_current_response():
 
     assert resultado.acao == "prosseguir"
     assert resultado.resposta is resposta
+
+
+def test_browser_verification_guard_requires_context_after_browser_action():
+    events = []
+    manager = _TaskManager()
+    montar_estado, pedir_modelo, log_resposta = _base_callbacks(
+        events,
+        [_resposta("agora vou verificar")],
+    )
+
+    resultado = _tratar_rodada_sem_ferramentas(
+        objetivo="abra o youtube",
+        historico=[{
+            "ferramenta": "navegar_navegador",
+            "argumentos": '{"url":"https://youtube.com"}',
+            "resultado": "Naveguei",
+        }],
+        rodada=2,
+        exigir_ferramenta=False,
+        ferramentas_executadas=1,
+        resposta=_resposta("pronto"),
+        vision_reobserve_pending=False,
+        vision_guard_attempts=0,
+        multitab_guard_attempts=0,
+        task_id="task-browser-guard",
+        task_manager=manager,
+        montar_estado=montar_estado,
+        pedir_modelo=pedir_modelo,
+        log_resposta_modelo=log_resposta,
+        parece_tarefa_multietapa_browser=lambda _: False,
+        extrair_destinos_abas=lambda _: {},
+        multitab_concluida=lambda *_: False,
+        write_log=lambda *args, **kwargs: events.append(("write_log", args, kwargs)),
+        browser_verification_pending=True,
+        browser_verification_guard_attempts=0,
+    )
+
+    assert resultado.acao == "continuar"
+    assert resultado.browser_verification_guard_attempts == 1
+    assert resultado.resposta.output_text == "agora vou verificar"
+    assert manager.events == [("wait", "task-browser-guard"), ("resume", "task-browser-guard")]
+    assert any(
+        item[0] == "write_log"
+        and item[1][0] == "TASK_BROWSER_GUARD"
+        for item in events
+    )
+
+
+def test_browser_verification_guard_exhaustion_returns_failure():
+    resultado = _tratar_rodada_sem_ferramentas(
+        objetivo="abra o youtube",
+        historico=[],
+        rodada=4,
+        exigir_ferramenta=False,
+        ferramentas_executadas=1,
+        resposta=_resposta("pronto"),
+        vision_reobserve_pending=False,
+        vision_guard_attempts=0,
+        multitab_guard_attempts=0,
+        task_id="task-browser-guard-2",
+        task_manager=_TaskManager(),
+        montar_estado=lambda *args: "unused",
+        pedir_modelo=lambda *args: None,
+        log_resposta_modelo=lambda *args, **kwargs: None,
+        parece_tarefa_multietapa_browser=lambda _: False,
+        extrair_destinos_abas=lambda _: {},
+        multitab_concluida=lambda *_: False,
+        write_log=lambda *args, **kwargs: None,
+        browser_verification_pending=True,
+        browser_verification_guard_attempts=2,
+    )
+
+    assert resultado.acao == "falhar"
+    assert resultado.failure_code == "browser_verification_missing"

@@ -3,11 +3,12 @@ from __future__ import annotations
 from core.harness_heuristics import _pode_encerrar_localmente
 
 
-def _decide(objetivo, resultados, *, vision=False, multitab=False):
+def _decide(objetivo, resultados, *, vision=False, browser=False, multitab=False):
     return _pode_encerrar_localmente(
         objetivo,
         resultados,
         vision_reobserve_pending=vision,
+        browser_verification_pending=browser,
         visual_mutating_tools={
             "clicar_elemento",
             "clicar_elemento_windows",
@@ -90,3 +91,24 @@ def test_multiplas_ferramentas_sem_ultima_acao_nao_concluem_automaticamente():
             {"ferramenta": "consultar_memoria_persistente", "sucesso": True},
         ],
     ) is False
+
+
+def test_nao_conclui_com_verificacao_do_navegador_pendente():
+    assert _decide(
+        "abra o youtube",
+        [{"ferramenta": "navegar_navegador", "sucesso": True}],
+        browser=True,
+    ) is False
+
+def test_browser_verification_is_not_enabled_for_simple_browser_action():
+    from core.harness_heuristics import _parece_tarefa_browser_verificavel
+
+    assert _parece_tarefa_browser_verificavel("clique no botao salvar") is False
+    assert _parece_tarefa_browser_verificavel("abra o youtube") is False
+
+
+def test_browser_verification_is_enabled_for_composed_browser_task():
+    from core.harness_heuristics import _parece_tarefa_browser_verificavel
+
+    assert _parece_tarefa_browser_verificavel("abra o youtube e depois confirme") is True
+    assert _parece_tarefa_browser_verificavel("clique em salvar na pagina do youtube e verifique o resultado") is True

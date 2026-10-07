@@ -71,6 +71,8 @@ def executar_ciclo(
                 resposta=resposta,
                 vision_reobserve_pending=harness._vision_reobserve_pending,
                 vision_guard_attempts=harness._vision_guard_attempts,
+                browser_verification_pending=harness._browser_verification_pending,
+                browser_verification_guard_attempts=harness._browser_verification_guard_attempts,
                 multitab_guard_attempts=harness._multitab_guard_attempts,
                 task_id=harness._task_id,
                 task_manager=harness.task_manager,
@@ -83,6 +85,7 @@ def executar_ciclo(
                 write_log=write_log,
             )
             harness._vision_guard_attempts = guard.vision_guard_attempts
+            harness._browser_verification_guard_attempts = guard.browser_verification_guard_attempts
             harness._multitab_guard_attempts = guard.multitab_guard_attempts
 
             if guard.acao == "continuar":
@@ -153,6 +156,15 @@ def executar_ciclo(
             )
             return False, resposta
 
+        browser_verification_enabled = harness._parece_tarefa_browser_verificavel(objetivo)
+        browser_verification_state = {
+            "pending": harness._browser_verification_pending if browser_verification_enabled else False
+        }
+        browser_state_mutating_tools = (
+            harness.BROWSER_STATE_MUTATING_TOOLS
+            if browser_verification_enabled
+            else set()
+        )
         (
             resultados_rodada,
             ferramentas_executadas,
@@ -169,12 +181,22 @@ def executar_ciclo(
             trace=harness._trace,
             vision_state_mutating_tools=harness.VISION_STATE_MUTATING_TOOLS,
             vision_reobserve_pending=harness._vision_reobserve_pending,
+            browser_verification_state=browser_verification_state,
+            browser_state_mutating_tools=browser_state_mutating_tools,
+            browser_verification_tool=harness.BROWSER_VERIFICATION_TOOL,
             falha_nao_recuperada=falha_nao_recuperada,
             max_tool_result_chars=harness.MAX_TOOL_RESULT_CHARS,
             get_active_vision_geometry=get_active_vision_geometry,
             clear_active_vision_geometry=clear_active_vision_geometry,
             write_log=write_log,
         )
+        harness._browser_verification_pending = bool(browser_verification_state.get("pending", False))
+        if any(
+            item.get("ferramenta") == harness.BROWSER_VERIFICATION_TOOL
+            and item.get("sucesso")
+            for item in resultados_rodada
+        ):
+            harness._browser_verification_guard_attempts = 0
         if cancelado:
             return harness._encerrar_cancelado("cancelado durante execucao", rodada)
 
@@ -188,6 +210,7 @@ def executar_ciclo(
             objetivo,
             resultados_rodada,
             vision_reobserve_pending=harness._vision_reobserve_pending,
+            browser_verification_pending=harness._browser_verification_pending,
         ):
             if harness.task_manager.should_cancel(harness._task_id):
                 return harness._encerrar_cancelado("cancelado antes da conclusao local", rodada)

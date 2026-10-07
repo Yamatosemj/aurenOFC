@@ -62,6 +62,7 @@ from core.harness_guards import _tratar_rodada_sem_ferramentas as _tratar_rodada
 from core.harness_heuristics import (
     _parece_tarefa_visual_composta,
     _parece_tarefa_multietapa_browser,
+    _parece_tarefa_browser_verificavel,
     _parece_tarefa_de_acao,
     _ultima_acao_solicitada,
     _pode_encerrar_localmente as _pode_encerrar_localmente_impl,
@@ -197,6 +198,8 @@ class AurenHarness:
         self._multitab_guard_attempts = 0
         self._vision_reobserve_pending = False
         self._vision_guard_attempts = 0
+        self._browser_verification_pending = False
+        self._browser_verification_guard_attempts = 0
         # O Ari usa uma fila de prioridade para tarefas de fundo. No Auren ela
         # fica restrita a aprendizado/persistencia pos-tarefa para não atrasar a resposta.
         self._background_queue = AgentTaskQueue(max_workers=1, max_results=100)
@@ -226,6 +229,7 @@ class AurenHarness:
         "obter_geometria_janela_windows",
         "ler_area_transferencia_windows",
         "listar_abas",
+        "obter_contexto_navegador",
         "consultar_memoria_persistente",
         # Alteracoes simples cujo retorno ja confirma a acao.
         "definir_volume_windows",
@@ -250,6 +254,7 @@ class AurenHarness:
         resultados_rodada: list[dict[str, Any]],
         *,
         vision_reobserve_pending: bool = False,
+        browser_verification_pending: bool = False,
     ) -> bool:
         # O critério visível de sucesso continua sendo `item.get("sucesso")`,
         # conforme o contrato de ToolResult preservado pelo wrapper.
@@ -257,10 +262,27 @@ class AurenHarness:
             objetivo,
             resultados_rodada,
             vision_reobserve_pending=vision_reobserve_pending,
+            browser_verification_pending=browser_verification_pending,
             visual_mutating_tools=cls.VISUAL_MUTATING_TOOLS,
             terminal_result_tools=cls.TERMINAL_RESULT_TOOLS,
             multitab_concluida=cls._multitab_concluida,
         )
+
+    BROWSER_STATE_MUTATING_TOOLS = {
+        "navegar_navegador",
+        "clicar_elemento",
+        "preencher_elemento",
+        "pressionar_tecla",
+        "abrir_nova_aba",
+        "trocar_aba",
+        "fechar_aba",
+        "voltar_pagina",
+        "avancar_pagina",
+        "recarregar_pagina",
+        "rolar_pagina",
+    }
+
+    BROWSER_VERIFICATION_TOOL = "obter_contexto_navegador"
 
     VISION_STATE_MUTATING_TOOLS = {
         "clicar_mouse_windows",
@@ -311,6 +333,10 @@ class AurenHarness:
     def _parece_tarefa_multietapa_browser(objetivo: str) -> bool:
         return _parece_tarefa_multietapa_browser(objetivo)
 
+    @staticmethod
+    def _parece_tarefa_browser_verificavel(objetivo: str) -> bool:
+        return _parece_tarefa_browser_verificavel(objetivo)
+
     @classmethod
     def _multitab_concluida(cls, objetivo: str, historico: list[dict[str, str]]) -> bool:
         return _multitab_concluida(objetivo, historico)
@@ -333,6 +359,7 @@ class AurenHarness:
             incluir_contexto=incluir_contexto,
             contexto_tarefa=self._contexto_tarefa,
             vision_reobserve_pending=getattr(self, "_vision_reobserve_pending", False),
+            browser_verification_pending=getattr(self, "_browser_verification_pending", False),
             max_history_items=self.DEFAULT_MAX_HISTORY_ITEMS,
             max_state_chars=self.MAX_STATE_CHARS,
             texto_seguro=self._texto_seguro,
