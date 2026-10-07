@@ -176,6 +176,31 @@ class ToolContractRegistry:
     def capabilities(self) -> dict[str, str]:
         return {name: contract.capability for name, contract in self._contracts.items()}
 
+    def registrar(self, item: dict[str, Any], capability_id: str) -> None:
+        """Registra o contrato de uma nova tool sem alterar as tools nativas.
+        A capacidade vem do loader; o schema da tool continua sendo validado pelo mesmo contrato.
+        Custo: insercao O(1) no mapa de contratos."""
+        name = item.get("name")
+        if not isinstance(name, str) or not name:
+            raise ToolContractError("tool de plugin sem nome valido")
+        if name in self._contracts:
+            raise ToolContractError(f"tool ja registrada: '{name}'")
+        parameters = item.get("parameters") or {"type": "object"}
+        if not isinstance(parameters, dict) or parameters.get("type") != "object":
+            raise ToolContractError(f"schema invalido para '{name}'")
+        self._contracts[name] = ToolContract(
+            name=name,
+            capability=str(capability_id),
+            description=str(item.get("description") or ""),
+            parameters=parameters,
+        )
+
+    def remover(self, name: str) -> None:
+        """Remove um contrato dinamico pelo nome da tool registrada.
+        Contratos nativos permanecem no mapa; nomes ausentes sao ignorados.
+        Custo: O(1) para a remocao do mapa."""
+        self._contracts.pop(str(name), None)
+
     def validate_registry(self) -> None:
         if len(self._contracts) != len(tools):
             raise ToolContractError("registro de contratos diverge do registry de tools")
@@ -189,6 +214,38 @@ class ToolContractRegistry:
 
 DEFAULT_TOOL_CONTRACTS = ToolContractRegistry()
 DEFAULT_TOOL_CONTRACTS.validate_registry()
+
+
+def registrar_tool_plugin(item: dict[str, Any], capability_id: str) -> None:
+    """Insere uma tool de plugin no mesmo registry usado pelo Dispatcher e modelo.
+    O contrato e criado antes da entrada ser publicada na lista global de tools.
+    Custo: O(1) no contrato mais O(1) amortizado no append da lista."""
+    name = item.get("name")
+    if not isinstance(name, str) or not name:
+        raise ToolContractError("tool de plugin sem nome valido")
+    if any(existing.get("name") == name for existing in tools):
+        raise ToolContractError(f"tool ja registrada: '{name}'")
+    DEFAULT_TOOL_CONTRACTS.registrar(item, capability_id)
+    try:
+        tools.append({
+            "type": item.get("type", "function"),
+            "name": name,
+            "description": item.get("description", ""),
+            "parameters": item.get("parameters") or {"type": "object"},
+            "strict": bool(item.get("strict", True)),
+        })
+    except Exception:
+        DEFAULT_TOOL_CONTRACTS.remover(name)
+        raise
+
+
+def remover_tool_plugin(name: str) -> None:
+    """Remove uma tool de plugin da lista global e de seu contrato dinamico.
+    A remocao sincroniza o registry do modelo com o Dispatcher.
+    Custo: O(n) para localizar o item na lista de tools."""
+    nome = str(name)
+    DEFAULT_TOOL_CONTRACTS.remover(nome)
+    tools[:] = [item for item in tools if item.get("name") != nome]
 
 
 def capability_for_tool(name: str) -> str:
