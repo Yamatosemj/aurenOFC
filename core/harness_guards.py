@@ -34,6 +34,8 @@ def _tratar_rodada_sem_ferramentas(
     extrair_destinos_abas: Callable[[str], dict[int, str]],
     multitab_concluida: Callable[[str, list[dict[str, str]]], bool],
     write_log: Callable[..., Any],
+    browser_verification_pending: bool = False,
+    browser_verification_guard_attempts: int = 0,
 ) -> _ResultadoGuardSemFerramentas:
     """Decide retries e falhas específicos para rodadas sem chamadas de ferramenta."""
     if exigir_ferramenta and rodada == 1:
@@ -143,6 +145,65 @@ def _tratar_rodada_sem_ferramentas(
             multitab_guard_attempts,
             "visual_verification_missing",
             "A tarefa visual nao foi concluida porque a mudanca da interface nao foi verificada.",
+        )
+
+    if browser_verification_pending:
+        if browser_verification_guard_attempts < 2:
+            nova_tentativa = browser_verification_guard_attempts + 1
+            estado_retry = montar_estado(
+                objetivo,
+                historico,
+                [{
+                    "ferramenta": "guard_browser_verificacao",
+                    "argumentos": "{}",
+                    "resultado": (
+                        "A ultima acao do navegador alterou a pagina, abas ou conteudo visivel, "
+                        "mas o estado novo ainda nao foi verificado. "
+                        "Use obter_contexto_navegador antes de concluir a tarefa."
+                    ),
+                }],
+            )
+            write_log(
+                "TASK_BROWSER_GUARD",
+                task_id=task_id,
+                rodada=rodada,
+                tentativa=nova_tentativa,
+            )
+            task_manager.wait_for_model(task_id)
+            chamada = pedir_modelo(estado_retry, "required")
+            if chamada is None:
+                return _ResultadoGuardSemFerramentas(
+                    "retornar",
+                    "Tive um problema ao acessar o modelo. A tarefa nao foi concluida.",
+                    vision_guard_attempts,
+                    multitab_guard_attempts,
+                    browser_verification_guard_attempts=nova_tentativa,
+                )
+            nova_resposta, latencia_ms, metricas_roteamento = chamada
+            log_resposta_modelo(
+                rodada + 1,
+                nova_resposta,
+                latencia_ms,
+                metricas_roteamento,
+                motivo="browser_verification_required",
+            )
+            task_manager.resume(task_id)
+            return _ResultadoGuardSemFerramentas(
+                "continuar",
+                nova_resposta,
+                vision_guard_attempts,
+                multitab_guard_attempts,
+                browser_verification_guard_attempts=nova_tentativa,
+            )
+
+        return _ResultadoGuardSemFerramentas(
+            "falhar",
+            resposta,
+            vision_guard_attempts,
+            multitab_guard_attempts,
+            "browser_verification_missing",
+            "A tarefa do navegador nao foi concluida porque a mudanca da pagina ou das abas nao foi verificada.",
+            browser_verification_guard_attempts=browser_verification_guard_attempts,
         )
 
     if (
