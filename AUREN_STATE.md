@@ -11,7 +11,7 @@ Atualizado em: 2026-10-07
 - **Versão estável:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
 - **Branch/PR ativa:** nenhuma
-- **Head da main:** `c72261eb4d49b0ea5556b323d38883d35f901aff`
+- **Head da main:** `fb572ab2224d85a21f9c83a2a4b447bad295539a`
 - **CI da implementação mais recente:** pytest, focused Linux e focused Windows verdes
 - **Fase atual:** Browser Intelligence
 
