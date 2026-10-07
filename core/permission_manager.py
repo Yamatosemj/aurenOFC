@@ -590,7 +590,10 @@ class PermissionManager:
                 "Controle de abas fora da allowlist segura; fechamento exige confirmacao.",
             )
 
-        if capacidade in {"browser.input", "windows.ui.control"} and nome_ferramenta in {"clicar_elemento", "clicar_elemento_windows", "alternar_elemento_windows", "selecionar_elemento_windows"}:
+        if capacidade == "browser.input" and nome_ferramenta == "clicar_elemento":
+            return self._classificar_clique(argumentos)
+
+        if capacidade == "windows.ui.control" and nome_ferramenta in {"clicar_elemento_windows", "alternar_elemento_windows", "selecionar_elemento_windows"}:
             return self._classificar_clique({"alvo": argumentos.get("alvo", "")})
 
         if capacidade == "browser.input" and nome_ferramenta in {"preencher_elemento"}:
