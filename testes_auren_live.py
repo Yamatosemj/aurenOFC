@@ -1757,7 +1757,9 @@ def _run_model_suite_layer(suite_layer: str) -> None:
                     "Integração: ferramentas escolhidas por camada",
                     not missing_expected,
                     f"esperadas={len(called_expected)+len(missing_expected)}; chamadas_ok={sorted(set(called_expected))}; faltando={missing_expected}",
-                )            if command_enabled("browser_verify_navigation"):
+                )
+
+            if command_enabled("browser_verify_navigation"):
                 navigation_block = task_block("abra o youtube e depois confirme a URL e o titulo da pagina atual")
                 nav_called = task_called_tool(navigation_block, "navegar_navegador")
                 nav_context = task_called_tool(navigation_block, "obter_contexto_navegador")
@@ -1779,12 +1781,6 @@ def _run_model_suite_layer(suite_layer: str) -> None:
                     f"acao={scroll_called}; contexto={scroll_context}; verificado={scroll_verified}",
                 )
 
-            if expected_tool_tasks and called_expected:  # pelo menos um teste integrado de ferramenta foi executado nesta camada.
-                record(
-                    "Integração: ferramentas escolhidas por camada",
-                    not missing_expected,
-                    f"esperadas={len(called_expected)+len(missing_expected)}; chamadas_ok={sorted(set(called_expected))}; faltando={missing_expected}",
-                )
             if command_enabled("window_minimize"):
                 min_block = task_block(f"minimize a janela {titulo_janela}")
                 record(
