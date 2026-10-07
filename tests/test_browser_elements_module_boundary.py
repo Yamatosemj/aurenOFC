@@ -42,6 +42,8 @@ def test_click_result_exposes_structured_navigation_evidence(monkeypatch):
 
         def click(self, timeout):
             assert timeout == 10000
+            if nova not in paginas:
+                paginas.append(nova)
 
     import tools.browser as browser
 
@@ -49,7 +51,8 @@ def test_click_result_exposes_structured_navigation_evidence(monkeypatch):
     nova = _Page("https://example.com/destino")
     monkeypatch.setattr(browser_elements, "encontrar_elemento", lambda alvo, indice=1: _Element())
     monkeypatch.setattr(browser, "obter_pagina", lambda: antiga)
-    monkeypatch.setattr(browser, "_paginas_abertas", lambda: [antiga, nova])
+    paginas = [antiga]
+    monkeypatch.setattr(browser, "_paginas_abertas", lambda: list(paginas))
     monkeypatch.setattr(browser, "pagina", antiga, raising=False)
 
     result = browser_elements.clicar_elemento("Destino")
