@@ -431,3 +431,92 @@ def test_close_last_tab_requires_observed_zero_tabs():
         dados,
         acao,
     ) is True
+
+def test_non_navigational_click_verification_accepts_observed_toggle_state():
+    dados = _dados_clique_navegacao()
+    dados["clique"].update({
+        "navegacao": False,
+        "efeito": {
+            "controle": {
+                "chave": "id:menu",
+                "id": "menu",
+                "role": "button",
+            },
+            "sinal": {
+                "tipo": "controle",
+                "atributo": "aria-expanded",
+                "antes": "false",
+                "depois": "true",
+            },
+        },
+    })
+
+    pagina = (
+        "Abas abertas: 1\n"
+        "Aba ativa: 1\n"
+        "Aba 1: Site | https://example.com [ATIVA]\n"
+        "Elementos flutuantes visiveis: dialogos=0 | menus=1 | listboxes=0\n"
+        "Campos e controles visiveis:\n"
+        "- tag=button | role=button | nome=Menu | id=menu | chave=id:menu | estado=aria-expanded=true"
+    )
+
+    assert verificar_resultado_navegador(
+        "clicar_elemento",
+        '{"alvo":"Menu","indice":1}',
+        {"abas": pagina, "pagina": pagina},
+        dados,
+    ) is True
+
+
+def test_non_navigational_click_verification_rejects_wrong_toggle_state():
+    dados = _dados_clique_navegacao()
+    dados["clique"].update({
+        "navegacao": False,
+        "efeito": {
+            "controle": {"chave": "id:menu"},
+            "sinal": {
+                "tipo": "controle",
+                "atributo": "aria-expanded",
+                "antes": "false",
+                "depois": "true",
+            },
+        },
+    })
+
+    pagina = (
+        "Abas abertas: 1\n"
+        "Aba ativa: 1\n"
+        "Aba 1: Site | https://example.com [ATIVA]\n"
+        "Campos e controles visiveis:\n"
+        "- tag=button | role=button | id=menu | chave=id:menu | estado=aria-expanded=false"
+    )
+
+    assert verificar_resultado_navegador(
+        "clicar_elemento",
+        '{"alvo":"Menu","indice":1}',
+        {"abas": pagina, "pagina": pagina},
+        dados,
+    ) is False
+
+
+def test_non_navigational_click_without_specific_effect_remains_pending():
+    dados = _dados_clique_navegacao()
+    dados["clique"]["navegacao"] = False
+    dados["clique"]["efeito"] = {
+        "controle": {"chave": "id:menu"},
+    }
+
+    pagina = (
+        "Abas abertas: 1\n"
+        "Aba ativa: 1\n"
+        "Aba 1: Site | https://example.com [ATIVA]\n"
+        "Campos e controles visiveis:\n"
+        "- tag=button | role=button | id=menu | chave=id:menu"
+    )
+
+    assert verificar_resultado_navegador(
+        "clicar_elemento",
+        '{"alvo":"Menu","indice":1}',
+        {"abas": pagina, "pagina": pagina},
+        dados,
+    ) is None
