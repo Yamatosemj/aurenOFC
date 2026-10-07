@@ -1,4 +1,4 @@
-openai
-playwright
-jsonschema
-Pillow>=11.0,<13
+openai==3.26.0
+playwright==1.63.0
+jsonschema==4.26.0
+Pillow==12.3.0
