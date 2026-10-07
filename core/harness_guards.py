@@ -6,7 +6,7 @@ from typing import Any, Callable, Literal
 
 @dataclass(frozen=True)
 class _ResultadoGuardSemFerramentas:
-    acao: Literal["continuar", "falhar", "prosseguir"]
+    acao: Literal["continuar", "falhar", "retornar", "prosseguir"]
     resposta: Any
     vision_guard_attempts: int
     multitab_guard_attempts: int
@@ -61,12 +61,10 @@ def _tratar_rodada_sem_ferramentas(
         chamada = pedir_modelo(estado_retry, "required")
         if chamada is None:
             return _ResultadoGuardSemFerramentas(
-                "falhar",
-                resposta,
+                "retornar",
+                "Tive um problema ao acessar o modelo. A tarefa nao foi concluida.",
                 vision_guard_attempts,
                 multitab_guard_attempts,
-                "provider_error",
-                "Tive um problema ao acessar o modelo. A tarefa nao foi concluida.",
             )
         nova_resposta, latencia_ms, metricas_roteamento = chamada
         log_resposta_modelo(
@@ -117,12 +115,10 @@ def _tratar_rodada_sem_ferramentas(
             chamada = pedir_modelo(estado_retry, "required")
             if chamada is None:
                 return _ResultadoGuardSemFerramentas(
-                    "falhar",
-                    resposta,
+                    "retornar",
+                    "Tive um problema ao acessar o modelo. A tarefa nao foi concluida.",
                     nova_tentativa,
                     multitab_guard_attempts,
-                    "provider_error",
-                    "Tive um problema ao acessar o modelo. A tarefa nao foi concluida.",
                 )
             nova_resposta, latencia_ms, metricas_roteamento = chamada
             log_resposta_modelo(
@@ -179,12 +175,10 @@ def _tratar_rodada_sem_ferramentas(
         chamada = pedir_modelo(estado_retry, "required")
         if chamada is None:
             return _ResultadoGuardSemFerramentas(
-                "falhar",
-                resposta,
+                "retornar",
+                "Tive um problema ao acessar o modelo. A tarefa nao foi concluida.",
                 vision_guard_attempts,
                 nova_tentativa,
-                "provider_error",
-                "Tive um problema ao acessar o modelo. A tarefa nao foi concluida.",
             )
         nova_resposta, latencia_ms, metricas_roteamento = chamada
         log_resposta_modelo(
