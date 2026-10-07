@@ -222,7 +222,7 @@ def abrir_nova_aba(url="", modo="visivel"):
         abas_atuais = _paginas_abertas()
         numero = abas_atuais.index(pagina) + 1 if pagina in abas_atuais else 1
         snapshot = _abas_snapshot()
-        return ToolResult.success
+        return ToolResult.success(
             f"Nova aba aberta: {numero}\n"
             f"Titulo: {pagina.title() or '[sem titulo]'}\n"
             f"URL atual: {pagina.url or 'about:blank'}\n"
