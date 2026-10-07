@@ -142,6 +142,39 @@ def encontrar_elemento(alvo, indice=1, preferir_campo=False):
         f"Nao encontrei o elemento '{alvo}' na pagina."
     )
 
+def obter_evidencia_risco_clique(alvo, indice=1):
+    """Inspeciona somente a estrutura do elemento para a decisao de permissao."""
+    from tools import browser as _browser
+
+    try:
+        elemento = encontrar_elemento(alvo, indice)
+        evidencia = elemento.evaluate(
+            """el => {
+                const form = el.closest('form');
+                const attr = nome => el.getAttribute(nome) || '';
+                return {
+                    tag: String(el.tagName || '').toLowerCase(),
+                    role: attr('role').toLowerCase(),
+                    type: attr('type').toLowerCase(),
+                    href: attr('href'),
+                    target: attr('target').toLowerCase(),
+                    download: el.hasAttribute('download'),
+                    onclick: attr('onclick'),
+                    disabled: Boolean(el.disabled),
+                    contenteditable: attr('contenteditable').toLowerCase(),
+                    form: form ? {
+                        method: String(form.getAttribute('method') || 'get').toLowerCase(),
+                        action: String(form.getAttribute('action') || ''),
+                    } : null,
+                };
+            }"""
+        )
+        if not isinstance(evidencia, dict):
+            return {"ok": False, "evidencia": {}}
+        return {"ok": True, "evidencia": evidencia}
+    except Exception as erro:
+        return {"ok": False, "evidencia": {}, "erro": str(erro)}
+
 def clicar_elemento(alvo, indice=1):
     from tools import browser as _browser
 
