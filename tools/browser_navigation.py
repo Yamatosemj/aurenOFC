@@ -221,7 +221,7 @@ def recarregar_pagina():
         return ToolResult.failure(f"Nao consegui recarregar: {erro}", error_code="browser_reload_failed", tool_name="recarregar_pagina")
 
 
-def rolar_pagina(direcao):
+def rolar_pagina(direcao, alvo=""):
     from tools import browser as _browser
 
     if direcao not in {"cima", "baixo", "inicio", "fim"}:
@@ -268,6 +268,16 @@ def rolar_pagina(direcao):
             "Math.max(document.body?.scrollHeight || 0, document.documentElement?.scrollHeight || 0)"
         ) or 0)
         altura_viewport = float(p.evaluate("window.innerHeight || 0") or 0)
+        alvo_normalizado = str(alvo or "").strip().casefold()
+        alvo_encontrado = None
+        if alvo_normalizado:
+            try:
+                alvo_encontrado = bool(p.evaluate(
+                    """texto => (document.body?.innerText || '').toLocaleLowerCase().includes(texto)""",
+                    alvo_normalizado,
+                ))
+            except Exception:
+                alvo_encontrado = None
 
         return ToolResult.success(
             f"Pagina rolada para '{direcao}'.",
@@ -277,6 +287,8 @@ def rolar_pagina(direcao):
                 "scroll_y_depois": depois,
                 "scroll_height": altura_documento,
                 "viewport_height": altura_viewport,
+                "alvo": str(alvo or ""),
+                "alvo_encontrado": alvo_encontrado,
             },
             tool_name="rolar_pagina",
         )
