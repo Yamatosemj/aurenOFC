@@ -46,7 +46,10 @@ def _normalize_url(value: str) -> str:
         return url.rstrip("/")
     scheme = parsed.scheme.lower()
     hostname = (parsed.hostname or "").lower().removeprefix("www.")
-    port = parsed.port
+    try:
+        port = parsed.port
+    except ValueError:
+        return url.rstrip("/")
     default_port = (scheme == "https" and port == 443) or (scheme == "http" and port == 80)
     netloc = hostname
     if port is not None and not default_port:
