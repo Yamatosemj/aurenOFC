@@ -22,7 +22,13 @@ def test_audio_is_subset_and_contains_required_tools():
 
 def test_browser_multitab_keeps_browser_controls():
     names = names_for("abra duas abas, Discord e YouTube")
-    required = {"listar_abas", "abrir_nova_aba", "trocar_aba", "navegar_navegador"}
+    required = {
+        "listar_abas",
+        "abrir_nova_aba",
+        "trocar_aba",
+        "navegar_navegador",
+        "obter_contexto_navegador",
+    }
     assert required <= set(names)
     assert len(names) < len(tools)
 
