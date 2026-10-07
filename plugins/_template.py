@@ -8,19 +8,6 @@ from core.tool_result import ToolResult
 
 DEPENDENCIAS = ("core.tool_result",)
 
-TOOL = {
-    "name": "nome_da_ferramenta",
-    "description": "Descreva exatamente o que a ferramenta faz.",
-    "parameters": {
-        "type": "object",
-        "properties": {},
-        "required": [],
-        "additionalProperties": False,
-    },
-    "strict": True,
-    "handler": executar,
-}
-
 
 CAPABILITY = {
     "id": "plugin.nome_da_ferramenta",
@@ -43,3 +30,17 @@ def executar(argumentos: dict) -> ToolResult:
         "Substitua este corpo pelo comportamento do plugin.",
         tool_name=TOOL["name"],
     )
+
+
+TOOL = {
+    "name": "nome_da_ferramenta",
+    "description": "Descreva exatamente o que a ferramenta faz.",
+    "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": False,
+    },
+    "strict": True,
+    "handler": executar,
+}
