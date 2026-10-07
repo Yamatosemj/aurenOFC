@@ -107,7 +107,7 @@ class ToolResult:
 
     def for_model(self) -> str:
         """Representacao compacta e estavel enviada de volta ao modelo."""
-        if self.data is None and self.error_code is None:
+        if self.data is None and self.error_code is None and not self.conteudo_nao_confiavel:
             return self.message
 
         payload: dict[str, Any] = {
