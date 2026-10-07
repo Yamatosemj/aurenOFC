@@ -126,7 +126,7 @@ def test_arraste_com_origem_virtual_negativa_continua_valido(monkeypatch):
             self.events.append(event)
 
     fake = FakeUser32()
-    monkeypatch.setattr(windows, "_user32", lambda: fake)
+    monkeypatch.setattr(windows_input, "_user32", lambda: fake)
 
     result = windows.arrastar_mouse_windows(
         -100,
@@ -167,7 +167,7 @@ def test_clique_recebe_coordenada_convertida_da_imagem(monkeypatch):
             self.events.append(event)
 
     fake = FakeUser32()
-    monkeypatch.setattr(windows, "_user32", lambda: fake)
+    monkeypatch.setattr(windows_input, "_user32", lambda: fake)
 
     x, y = image_point_to_virtual_screen(
         960,
@@ -216,7 +216,7 @@ def test_arraste_usa_duas_coordenadas_convertidas_da_imagem(monkeypatch):
             self.events.append(event)
 
     fake = FakeUser32()
-    monkeypatch.setattr(windows, "_user32", lambda: fake)
+    monkeypatch.setattr(windows_input, "_user32", lambda: fake)
 
     origem = image_point_to_virtual_screen(
         480,
