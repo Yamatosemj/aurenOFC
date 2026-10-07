@@ -53,7 +53,6 @@ def _finalizar_resposta_sucesso(
     return resposta
 
 
-
 def _mensagem_conclusao_local(
     objetivo: str,
     ferramenta: str,
