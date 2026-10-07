@@ -8,19 +8,22 @@ Atualizado em: 2026-10-07
 
 ## Estado atual
 
-- **Versão estável:** V47 (V48 em validação)
+- **Versão estável:** V47 (V48 do undo e V49 de operações de arquivo em validação)
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** `fix/browser-click-new-tab-page` / PR #77
+- **Branch/PR ativa:** `feat/file-operations-v49` / PR #78
 - **Head da main:** `0a8304e1b097d458511f017ca1f0d9da19d86726`
 - **Último commit da implementação da Tarefa 1:** `fe9e587e26f7e4bef75bf2c8eb4a9d02b75a0dc0`
 - **Último head funcional validado:** `b72e43f3c04f6866f90340d1df2d3ec6782ab7b5`
 - **Head da implementação da Tarefa 2 (em validação):** `119bf4fe01408580f15710f9cf63300f45c8c2bd`
+- **Head da Tarefa 3 (operações de arquivo):** `77482666972863805be33f95e94da1281bb78ac5` no PR #78
 - **CI da implementação mais recente em main:** pytest, focused Linux e focused Windows verdes
 - **CI do PR #77:** full tests Linux/Windows, static-checks e visual interaction/Playwright verdes no merge ref `4139b0696fe1e378d80fccb8541e6232b91d01b5`
-- **Baseline de pytest em 2026-10-07:** **576 passed, 5 warnings**
+- **Baseline histórico de pytest:** **576 passed, 5 warnings**; baseline imediatamente anterior à Tarefa 3: Linux **605 passed, 6 skipped, 5 warnings** / Windows **611 passed, 5 warnings**
 - **Novos testes adicionados nesta transição:** **16**
-- **Tarefa atual:** **Tarefa 2 — undo reversível (ativada nesta sessão; corresponde ao item 3 do roadmap interno)**
-- **Próxima tarefa:** **Tarefa 4 — confirmação humana não-forjável, após fechar a validação do undo**
+- **Ferramentas no registry/contratos após a Tarefa 3:** **55** (eram 50 antes)
+- **Tarefa atual:** **Tarefa 3 da sessão — operações de arquivo seguras com undo e Lixeira**
+- **Portão da Tarefa 3:** pytest final e `python testes_auren_live.py --rapido` no Windows real ainda pendentes
+- **Próxima tarefa:** **Tarefa 4 — confirmação humana não-forjável, após fechar o portão da Tarefa 3**
 - **Fase do projeto:** Browser Intelligence
 
 ## Roadmap Mark
@@ -204,6 +207,20 @@ Novas capacidades e frentes ficam fora desta etapa e permanecem no backlog.
 - Runtime permanece em **V47**.
 - Próxima frente: **Tarefa 2 — memória recuperável sob demanda**.
 
+## Registro da Tarefa 3 da sessão — Operações de arquivo seguras
+
+Esta transição adiciona cinco ferramentas de arquivo, mantendo o fluxo único Router → Dispatcher → Contrato → Permissão → Ferramenta → ToolResult. A numeração continua separada do roadmap histórico: o roadmap interno chama o undo de Tarefa 3, enquanto esta sessão usa Tarefa 3 para operações de arquivo conforme o prompt-base recebido.
+
+- Ferramentas: `mover_arquivo`, `copiar_arquivo`, `renomear_arquivo`, `criar_pasta` e `enviar_para_lixeira`.
+- Caminhos: operações de mutação usam a mesma allowlist de `ler_arquivo`, mas endurecida para BLOQUEIO fora das raízes permitidas; symlink, junction e outros reparse points no caminho são recusados sem seguir o alvo.
+- Destino: nenhum destino existente é sobrescrito; a escolha desta tarefa é retornar erro estruturado `destination_exists`, em vez de gerar `(1)`, para manter resultado previsível.
+- Undo: mover, copiar, renomear e criar pasta registram reversão; mover/renomear só restauram quando o arquivo continua com o mesmo SHA-256, copiar só remove a cópia se ela continuar idêntica, e criar pasta só remove se ainda estiver vazia.
+- Lixeira: `SHFileOperationW` é chamado com `FOF_ALLOWUNDO`; exclusão permanente não faz parte do runtime. A Lixeira não registra undo porque a restauração não é considerada confiável neste desenho.
+- Permissões: `file.manage` = AUTO; `file.trash` = CONFIRM. Ambas contam no orçamento de ações.
+- Dependências: nenhuma nova dependência foi adicionada.
+- Testes: 16 testes novos; o total esperado sobe de 605 para 621 no Linux e de 611 para 627 no Windows, sujeito ao CI final.
+- Runner live: ainda pendente, pois depende do Windows real do Auren e não deve ser falsificado por mocks.
+
 ## Registro da Tarefa 2 — Undo reversível
 
 Esta transição implementa o undo solicitado pelo prompt da sessão. O roadmap interno anterior ainda numerava essa frente como Tarefa 3; a diferença de numeração fica registrada aqui para não transformar continuidade de conversa em falso histórico.
@@ -219,6 +236,8 @@ Esta transição implementa o undo solicitado pelo prompt da sessão. O roadmap 
 - Status: a implementação está no branch ativo, mas V48 ainda não é estável enquanto o portão de saída não for fechado no ambiente apropriado.
 
 ## Backlog
+
+A Tarefa 3 da sessão não cria novos itens fora do escopo; o próximo trabalho de confirmação humana permanece o item previsto no roadmap.
 
 Próximas tarefas de roadmap:
 
