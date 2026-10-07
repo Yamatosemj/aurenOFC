@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 
+from core.browser_verification import _compromisso_preenchimento_sensivel
 from core.tool_result import ToolResult
 from core.utils import normalizar_nome
 
@@ -374,20 +375,70 @@ def preencher_elemento(alvo, texto, indice=1):
         elemento = encontrar_elemento(
             alvo,
             indice,
-            preferir_campo=True
+            preferir_campo=True,
         )
 
-        elemento.fill(
-            texto,
-            timeout=10000
+        atributos = {}
+        for nome in ("type", "name", "id", "aria-label", "placeholder", "autocomplete"):
+            try:
+                atributos[nome] = str(elemento.get_attribute(nome) or "")
+            except Exception:
+                atributos[nome] = ""
+        texto_identificacao = " ".join(atributos.values()).casefold()
+        sensivel = (
+            atributos.get("type", "").casefold() == "password"
+            or bool(re.search(
+                r"password|senha|token|secret|segredo|pin|cvv|cvc|2fa|one-time-code|verification|verificacao|codigo",
+                texto_identificacao,
+            ))
         )
 
-        return (
-            f"Preenchi '{alvo}' com o texto informado."
+        elemento.fill(texto, timeout=10000)
+
+        observado = None
+        leitura_disponivel = True
+        try:
+            observado = elemento.input_value(timeout=10000)
+        except Exception:
+            leitura_disponivel = False
+
+        verificado_localmente = leitura_disponivel and observado == str(texto)
+        if leitura_disponivel and not verificado_localmente:
+            return ToolResult.failure(
+                f"Preenchimento de '{alvo}' nao correspondeu ao valor solicitado.",
+                error_code="fill_verification_failed",
+                data={
+                    "preenchimento": {
+                        "alvo": str(alvo),
+                        "indice": int(indice),
+                        "sensivel": sensivel,
+                        "verificado_localmente": False,
+                    }
+                },
+                tool_name="preencher_elemento",
+            )
+
+        compromisso = None
+        if sensivel and verificado_localmente:
+            compromisso = _compromisso_preenchimento_sensivel(str(observado))
+
+        return ToolResult.success(
+            f"Preenchi '{alvo}' com o texto informado.",
+            data={
+                "preenchimento": {
+                    "alvo": str(alvo),
+                    "indice": int(indice),
+                    "sensivel": sensivel,
+                    "verificado_localmente": bool(verificado_localmente),
+                    "compromisso": compromisso,
+                }
+            },
+            tool_name="preencher_elemento",
         )
 
     except Exception as erro:
-        return (
-            f"Nao consegui preencher '{alvo}': {erro}"
+        return ToolResult.failure(
+            f"Nao consegui preencher '{alvo}': {erro}",
+            error_code="fill_failed",
+            tool_name="preencher_elemento",
         )
-
