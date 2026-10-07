@@ -399,6 +399,25 @@ def test_capability_do_plugin_nao_pode_definir_permissao(tmp_path):
         registry.descarregar()
 
 
+
+def test_prompt_usa_capacidade_de_plugin_do_registry(monkeypatch, tmp_path):
+    approval = tmp_path / "aprovacoes.json"
+    _write_approval(approval, prompt_plugin={"habilitado": True, "aprovado": False})
+    monkeypatch.setenv("AUREN_PLUGINS_APPROVAL_FILE", str(approval))
+    directory = _tmp_plugins_with(tmp_path, "prompt_plugin")
+    _write_plugin(directory, "prompt_plugin.py", _valid_plugin("prompt_plugin"))
+
+    registry = discover_plugins(directory, approval_file=approval, logger=lambda _msg: None)
+    try:
+        from core.prompt import gerar_instrucoes
+        prompt = gerar_instrucoes()
+        assert "plugin.prompt_plugin" in prompt
+        assert "prompt_plugin" in prompt
+        assert "CONFIRM ate aprovacao local" in prompt
+    finally:
+        registry.descarregar()
+
+
 def test_tool_do_plugin_usa_contrato_dinamico(monkeypatch, tmp_path):
     approval = tmp_path / "aprovacoes.json"
     _write_approval(approval, contrato_plugin={"habilitado": True, "aprovado": True})
