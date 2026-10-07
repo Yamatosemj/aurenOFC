@@ -12,11 +12,36 @@ Atualizado em: 2026-10-07
 - **Modelo padrão:** `gpt-5.6-luna`
 - **Branch/PR ativa:** `fix/browser-click-new-tab-page` / PR #77
 - **Head da main:** `0a8304e1b097d458511f017ca1f0d9da19d86726`
-- **Head da branch ativa:** HEAD de PR #77 (`fix/browser-click-new-tab-page`)
+- **Head da branch ativa:** `627b305dd433ebb7603f40507847f707533bf794`
 - **Último head funcional validado:** `b72e43f3c04f6866f90340d1df2d3ec6782ab7b5`
 - **CI da implementação mais recente em main:** pytest, focused Linux e focused Windows verdes
-- **CI do PR #77:** full tests Linux/Windows, static-checks e visual interaction/Playwright verdes no head validado `b72e43f3c04f6866f90340d1df2d3ec6782ab7b5`
-- **Fase atual:** Browser Intelligence
+- **CI do PR #77:** full tests Linux/Windows, static-checks e visual interaction/Playwright verdes no merge ref `4139b0696fe1e378d80fccb8541e6232b91d01b5`
+- **Baseline de pytest em 2026-10-07:** **576 passed, 5 warnings**
+- **Tarefa documental atual:** **Tarefa 0 — Kit de continuidade**
+- **Próxima tarefa técnica:** **Tarefa 1 — Timeout, retry e escada de modelos com cooldown**
+- **Fase do projeto:** Browser Intelligence
+
+## Roadmap Mark
+
+> O Mark-LV é referência de ideia, problema e casos-limite. Não é fonte de código para cópia. Cada implementação do Auren deve ser escrita de forma independente, usando sua arquitetura, nomes em português e `ToolResult`.
+
+| Ordem | Tarefa | Origem no Mark-LV | Alvo principal no Auren | Estado |
+|---|---|---|---|---|
+| **0** | Kit de continuidade | padrão de continuidade do projeto | `docs/PROMPT_BASE.md`, `docs/NOTAS_DE_PASSAGEM.md`, `docs/REFERENCIA_MARK.md`, `AUREN_STATE.md` | **ATUAL** |
+| **1** | Timeout, retry, escada de modelos e cooldown | `core/gemini.py` | `providers/model_ladder.py`, provider/config/usage/testes | **PRÓXIMA** |
+| **2** | Memória recuperável sob demanda | `main.py`, `memory/memory_manager.py` | `memory/store.py`, `tools/memory.py` | **BACKLOG / PARCIAL** |
+| **3** | Undo reversível | `core/undo.py` | `core/` + ferramentas reversíveis | **BACKLOG** |
+| **4** | Confirmação humana não-forjável | `core/confirm.py`, `ui.py` | `core/permission_manager.py`, `voice/confirmation.py` | **BACKLOG / PARCIAL** |
+| **5** | Seleção de dispositivos de áudio | `core/audio_devices.py` | `voice/input.py`, `voice/tts.py` | **BACKLOG** |
+| **6** | Continuidade de sessão | `main.py` | provider + Harness + memória | **BACKLOG** |
+| **7** | Wake word + PTT/ack | `core/wake_word.py`, `core/hotkey.py` | camada de voz | **BACKLOG / PARCIAL** |
+| **8** | Avatar + visemes/lip-sync | `core/avatar.py`, `core/viseme.py`, `ui.py` | nova camada visual | **BACKLOG** |
+| **9** | Vídeo/HUD/theming | `ui.py` | nova camada visual/configuração | **BACKLOG** |
+| **10** | Histórico/uso remoto/extensões | roadmap LVI+ em `readme.md` | novo transporte/módulos remotos + Harness conforme cada caso | **BACKLOG** |
+
+A especificação detalhada de tarefas futuras permanece fora da implementação até que a tarefa correspondente seja ativada.
+
+## O que já está concluído nesta fase
 
 - [x] confirmação de voz consome o protocolo real da fila e rejeita itens stale/erro/legado
 - [x] contexto de navegador propaga falhas internas sem mascarar sucesso
