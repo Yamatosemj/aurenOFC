@@ -26,7 +26,6 @@ from core.local_decision import DecisionResult, LocalDecisionEngine
 # todas as ferramentas, preservando a compatibilidade da V43.
 COMMON_TOOLS = {
     "consultar_memoria_persistente",
-    "listar_memoria",
     "obter_status_windows",
     "listar_janelas_windows",
 }
