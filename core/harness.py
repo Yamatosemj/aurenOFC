@@ -11,7 +11,7 @@ from typing import Any, Callable
 from core.task_manager import TaskManager, TaskState
 from core import usage
 from core.task_trace import TaskTrace, TaskTraceStore
-from core.tool_result import ToolResult, from_legacy
+from core.tool_result import ToolResult
 from agent.orchestrator import AgentOrchestrator
 from core.session import SessionContextManager
 from skills.loader import SkillLibrary
