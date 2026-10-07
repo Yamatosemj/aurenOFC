@@ -284,10 +284,84 @@ def clicar_elemento(alvo, indice=1):
         tag_elemento = str(estado_controle_antes.get("tag") or "")
 
         abas_antes = list(_browser._paginas_abertas())
-        elemento.click(timeout=10000)
+        popup = None
+        click_executado = False
+        popup_timeout = 1200
+        try:
+            from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+        except Exception:
+            PlaywrightTimeoutError = TimeoutError
+
+        # Instala um observador antes do clique para aguardar mudancas reais
+        # em vez de dormir uma quantidade arbitraria de milissegundos.
+        try:
+            p.evaluate(
+                """() => {
+                    if (window.__aurenClickObserver) {
+                        window.__aurenClickObserver.disconnect();
+                    }
+                    const estado = {mutated: false};
+                    const observer = new MutationObserver(() => {
+                        estado.mutated = true;
+                    });
+                    observer.observe(document.documentElement || document, {
+                        subtree: true,
+                        childList: true,
+                        attributes: true,
+                        characterData: true,
+                    });
+                    window.__aurenClickProbe = estado;
+                    window.__aurenClickObserver = observer;
+                }"""
+            )
+        except Exception:
+            pass
 
         try:
-            p.wait_for_timeout(250)
+            with p.expect_popup(timeout=popup_timeout) as popup_info:
+                elemento.click(timeout=10000)
+                click_executado = True
+            popup = popup_info.value
+        except PlaywrightTimeoutError:
+            if not click_executado:
+                # O timeout pode ter vindo do proprio click, nao da ausencia de popup.
+                try:
+                    elemento.click(timeout=10000)
+                    click_executado = True
+                except Exception as erro:
+                    raise erro
+        except AttributeError:
+            elemento.click(timeout=10000)
+            click_executado = True
+        except Exception as erro:
+            if not click_executado:
+                raise erro
+
+        if popup is not None:
+            try:
+                popup.wait_for_load_state("domcontentloaded", timeout=3000)
+            except Exception:
+                pass
+
+        try:
+            p.wait_for_function(
+                """() => Boolean(
+                    "window.__aurenClickProbe?.mutated || "
+                    "location.href !== document.location.href"
+                ")""",
+                timeout=2000,
+            )
+        except Exception:
+            pass
+        try:
+            p.evaluate(
+                """() => {
+                    if (window.__aurenClickObserver) {
+                        window.__aurenClickObserver.disconnect();
+                    }
+                    window.__aurenClickObserver = null;
+                }"""
+            )
         except Exception:
             pass
 
