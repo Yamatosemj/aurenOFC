@@ -104,6 +104,17 @@ def verificar_resultado_navegador(
             return None
         if _normalize_url(url_atual) != url_depois:
             return False
+
+        ready_state = evidencia.get("ready_state_depois")
+        if ready_state is not None and str(ready_state).strip().casefold() != "complete":
+            return None
+
+        titulo_observado = str(evidencia.get("titulo_depois") or "").strip()
+        if titulo_observado:
+            indice, titulo_atual, _ = ativa
+            if titulo_atual and titulo_atual.strip() != titulo_observado:
+                return False
+
         # A URL solicitada pode redirecionar; a prova primaria e a URL final observada.
         return True
 
