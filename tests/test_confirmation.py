@@ -6,7 +6,7 @@ from threading import Thread
 
 import pytest
 
-from core.confirmation import ConfirmationRequest, TextConfirmationChannel
+from core.confirmation import ConfirmationGate, ConfirmationRequest, TextConfirmationChannel, TIMEOUT_SECONDS
 from core.permission_manager import PermissionManager
 from voice.confirmation import VoiceConfirmationChannel
 from voice.input import CapturedAudio
@@ -223,6 +223,68 @@ def test_voice_confirmation_stops_on_real_capture_error_without_calling_asr():
         stt=FakeSTT(),
         audio_queue=audio_queue,
         timeout=0.1,
+    )
+
+    assert channel.confirmar(_request()) is False
+
+
+def test_confirmation_gate_expires_as_denial():
+    agora = [0.0]
+    gate = ConfirmationGate(
+        timeout_seconds=90.0,
+        clock=lambda: agora[0],
+    )
+
+    assert gate.abrir("token-ui-1") is True
+    assert gate.pendente() is True
+
+    agora[0] = 90.001
+
+    assert gate.resolver("token-ui-1", True) is False
+    assert gate.pendente() is False
+
+
+def test_confirmation_gate_ignores_late_token_without_cancelling_new_pending():
+    agora = [0.0]
+    gate = ConfirmationGate(
+        timeout_seconds=TIMEOUT_SECONDS,
+        clock=lambda: agora[0],
+    )
+
+    assert gate.abrir("token-antigo") is True
+
+    agora[0] = 1.0
+    assert gate.resolver("token-errado", True) is False
+    assert gate.pendente() is True
+
+    assert gate.resolver("token-antigo", True) is True
+    assert gate.pendente() is False
+
+
+def test_confirmation_gate_allows_only_one_pending_confirmation():
+    gate = ConfirmationGate(timeout_seconds=90.0, clock=lambda: 0.0)
+
+    assert gate.abrir("primeiro") is True
+    assert gate.abrir("segundo") is False
+    assert gate.resolver("primeiro", True) is True
+
+
+def test_text_confirmation_rejects_answer_after_expiration():
+    agora = [0.0]
+    gate = ConfirmationGate(
+        timeout_seconds=90.0,
+        clock=lambda: agora[0],
+    )
+
+    def responder_depois_do_prazo(_prompt):
+        agora[0] = 90.001
+        return "sim"
+
+    channel = TextConfirmationChannel(
+        input_fn=responder_depois_do_prazo,
+        output_fn=lambda _texto: None,
+        gate=gate,
+        token_factory=lambda: "token-ui-texto",
     )
 
     assert channel.confirmar(_request()) is False
