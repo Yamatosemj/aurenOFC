@@ -107,6 +107,9 @@ TOOL_GROUPS = {
         "pressionar_tecla_windows",
         "controle_midia_windows",
     },
+    "undo": {
+        "desfazer_ultima_acao",
+    },
     "memory": {
         "salvar_memoria_persistente",
         "consultar_memoria_persistente",
@@ -217,6 +220,12 @@ DOMAIN_PATTERNS: dict[str, tuple[str, ...]] = {
         r"\bpdf\b",
         r"\bpasta\b",
         r"\bdocumento\b",
+    ),
+    "undo": (
+        r"\bdesfaz\w*\b",
+        r"\bdesfazer\b",
+        r"\bdesfac(a|a)?\b",
+        r"\bvoltar\s+atr[aá]s\b",
     ),
     "memory": (
         r"\bmem[oó]ria\b.*\b(lembr|salv|esquec|apag)",

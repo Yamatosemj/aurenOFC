@@ -119,6 +119,7 @@ _CAPABILITY_RULES: tuple[tuple[str, str], ...] = (
     ("obter_audio_windows", "windows.audio.read"),
     ("definir_volume_windows", "windows.audio.control"),
     ("definir_mudo_windows", "windows.audio.control"),
+    ("desfazer_ultima_acao", "undo.control"),
     ("controle_midia_windows", "windows.audio.control"),
     ("inspecionar_interface_windows", "windows.ui.read"),
     ("clicar_elemento_windows", "windows.ui.control"),

@@ -56,6 +56,7 @@ class PermissionManager:
         "windows.input": PermissionLevel.AUTO,
         "windows.audio.read": PermissionLevel.AUTO,
         "windows.audio.control": PermissionLevel.AUTO,
+        "undo.control": PermissionLevel.AUTO,
         "windows.ui.read": PermissionLevel.AUTO,
         "windows.ui.control": PermissionLevel.AUTO,
         "browser.navigation": PermissionLevel.AUTO,
@@ -86,6 +87,7 @@ class PermissionManager:
         "windows.input": "Somente mover o mouse e teclas explicitamente seguras sao AUTO; cliques/arrastes/atalhos destrutivos exigem CONFIRM.",
         "windows.audio.read": "Consulta audio sem alterar estado.",
         "windows.audio.control": "Volume, mudo e midia sao controles locais e reversiveis.",
+        "undo.control": "Desfazer reaplica o estado anterior capturado por uma acao reversivel ja autorizada.",
         "windows.ui.read": "Inspecao UIA e somente leitura.",
         "windows.ui.control": "Somente preenchimento nao sensivel de campos explicitamente seguros e AUTO; demais controles exigem CONFIRM.",
         "browser.navigation": "Navegacao, voltar, avancar e recarregar sao reversiveis e nao submetem formulario por si so.",
@@ -126,6 +128,7 @@ class PermissionManager:
         "windows.window.control",
         "windows.input",
         "windows.audio.control",
+        "undo.control",
         "windows.ui.control",
     }
 
@@ -624,6 +627,12 @@ class PermissionManager:
         if nome_ferramenta == "pressionar_tecla":
             return self._classificar_tecla(argumentos)
 
+        if capacidade == "undo.control":
+            return (
+                PermissionLevel.AUTO,
+                "Desfazer usa somente a reversao registrada pela propria acao anterior e nao inventa estado.",
+            )
+
         if capacidade == "windows.process.control":
             return (
                 PermissionLevel.CONFIRM,
@@ -858,6 +867,9 @@ class PermissionManager:
         argumentos: dict[str, Any],
     ) -> str:
         capacidade = self._capability(nome_ferramenta)
+
+        if nome_ferramenta == "desfazer_ultima_acao":
+            return "desfazer a ultima acao reversivel"
 
         if nome_ferramenta == "clicar_elemento":
             alvo = argumentos.get("alvo", "")

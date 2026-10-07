@@ -10,6 +10,7 @@ from core.vision import transform_visual_tool_arguments
 from tools import applications, browser, browser_context, browser_elements, browser_navigation, file_intelligence, files
 from tools import windows
 from tools.memory import salvar_memoria_persistente, consultar_memoria_persistente, esquecer_memoria_persistente
+from tools import undo as undo_tools
 
 from core.tool_result import LEGACY_FAILURE_MARKERS, ToolResult, from_legacy
 
@@ -189,6 +190,7 @@ TOOL_HANDLERS = {
     "salvar_memoria_persistente": _com_memoria(salvar_memoria_persistente, "chave", "valor", "categoria"),
     "consultar_memoria_persistente": _com_memoria(consultar_memoria_persistente, "consulta", "limite"),
     "esquecer_memoria_persistente": _com_memoria(esquecer_memoria_persistente, "chave"),
+    "desfazer_ultima_acao": _sem_memoria(undo_tools.desfazer_ultima_acao),
     "listar_janelas_windows": _sem_memoria(windows.listar_janelas_windows),
     "focar_janela_windows": _sem_memoria(windows.focar_janela_windows, "alvo"),
     "minimizar_janela_windows": _sem_memoria(windows.minimizar_janela_windows, "alvo"),

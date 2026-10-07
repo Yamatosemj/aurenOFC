@@ -175,7 +175,11 @@ def _audio_hresult_ok(hr, operacao):
 
 def obter_audio_windows() -> ToolResult:
     if os.name != "nt":
-        return ToolResult.failure("Controle de audio so esta disponivel no Windows.", error_code="windows_only", tool_name="obter_audio_windows")
+        return ToolResult.failure(
+            "Controle de audio so esta disponivel no Windows.",
+            error_code="windows_only",
+            tool_name="obter_audio_windows",
+        )
 
     try:
         volume = ctypes.c_float()
@@ -199,14 +203,57 @@ def obter_audio_windows() -> ToolResult:
             _audio_hresult_ok(hr_mute, "Leitura do mudo")
 
         percentual = max(0, min(100, round(float(volume.value) * 100)))
-        estado = "ativado" if bool(mute.value) else "desativado"
-        return ToolResult.success(f"Volume atual: {percentual}%. Mudo: {estado}.", tool_name="obter_audio_windows")
+        mudo = bool(mute.value)
+        estado = "ativado" if mudo else "desativado"
+        return ToolResult.success(
+            f"Volume atual: {percentual}%. Mudo: {estado}.",
+            data={"percentual": percentual, "mudo": mudo},
+            tool_name="obter_audio_windows",
+        )
     except Exception as erro:
-        return ToolResult.failure(f"Nao consegui consultar o audio do Windows: {erro}", error_code="audio_read_failed", tool_name="obter_audio_windows")
+        return ToolResult.failure(
+            f"Nao consegui consultar o audio do Windows: {erro}",
+            error_code="audio_read_failed",
+            tool_name="obter_audio_windows",
+        )
+
+
+def _aplicar_volume_windows(percentual: int) -> ToolResult:
+    """Aplica o volume sem registrar outra entrada de undo.
+    Esse caminho e usado pelo setter publico e pelo callback de reversao.
+    Custo: uma chamada COM ao endpoint de audio do Windows.
+    """
+    try:
+        valor = ctypes.c_float(percentual / 100.0)
+        with _AudioEndpointContext() as endpoint:
+            hr = _audio_com_call(
+                endpoint,
+                _AUDIO_ENDPOINT_METHOD_SET_MASTER_VOLUME_SCALAR,
+                ctypes.c_long,
+                [ctypes.c_float, ctypes.c_void_p],
+                valor,
+                None,
+            )
+            _audio_hresult_ok(hr, "Definicao do volume")
+        return ToolResult.success(
+            f"Volume definido para {percentual}%.",
+            tool_name="definir_volume_windows",
+        )
+    except Exception as erro:
+        return ToolResult.failure(
+            f"Nao consegui definir o volume: {erro}",
+            error_code="volume_set_failed",
+            tool_name="definir_volume_windows",
+        )
+
 
 def definir_volume_windows(percentual) -> ToolResult:
     if os.name != "nt":
-        return ToolResult.failure("Controle de audio so esta disponivel no Windows.", error_code="windows_only", tool_name="definir_volume_windows")
+        return ToolResult.failure(
+            "Controle de audio so esta disponivel no Windows.",
+            error_code="windows_only",
+            tool_name="definir_volume_windows",
+        )
 
     try:
         percentual = int(percentual)
@@ -221,35 +268,32 @@ def definir_volume_windows(percentual) -> ToolResult:
         return ToolResult.failure(
             "Volume invalido. Informe uma porcentagem inteira de 0 a 100.",
             error_code="volume_invalid",
+            tool_name="definir_volume_windows",
         )
 
-    try:
-        valor = ctypes.c_float(percentual / 100.0)
-        with _AudioEndpointContext() as endpoint:
-            hr = _audio_com_call(
-                endpoint,
-                _AUDIO_ENDPOINT_METHOD_SET_MASTER_VOLUME_SCALAR,
-                ctypes.c_long,
-                [ctypes.c_float, ctypes.c_void_p],
-                valor,
-                None,
-            )
-            _audio_hresult_ok(hr, "Definicao do volume")
-        return ToolResult.success(f"Volume definido para {percentual}%.", tool_name="definir_volume_windows")
-    except Exception as erro:
-        return ToolResult.failure(f"Nao consegui definir o volume: {erro}", error_code="volume_set_failed", tool_name="definir_volume_windows")
+    leitura = obter_audio_windows()
+    volume_anterior = None
+    if leitura.ok and isinstance(leitura.data, dict):
+        valor_anterior = leitura.data.get("percentual")
+        if isinstance(valor_anterior, int) and not isinstance(valor_anterior, bool):
+            if 0 <= valor_anterior <= 100:
+                volume_anterior = valor_anterior
 
-def definir_mudo_windows(ativado) -> ToolResult:
-    if os.name != "nt":
-        return ToolResult.failure("Controle de audio so esta disponivel no Windows.", error_code="windows_only", tool_name="definir_mudo_windows")
-
-    if not isinstance(ativado, bool):
-        return ToolResult.failure(
-            "O estado do mudo deve ser verdadeiro ou falso.",
-            error_code="mute_state_invalid",
-            tool_name="definir_mudo_windows",
+    resultado = _aplicar_volume_windows(percentual)
+    if resultado.ok and volume_anterior is not None and volume_anterior != percentual:
+        from core.undo import push_undo
+        push_undo(
+            f"volume para {percentual}%",
+            lambda anterior=volume_anterior: _aplicar_volume_windows(anterior),
         )
+    return resultado
 
+
+def _aplicar_mudo_windows(ativado: bool) -> ToolResult:
+    """Aplica o estado de mudo sem criar uma nova entrada de undo.
+    Esse caminho e compartilhado pelo setter publico e pelo callback salvo.
+    Custo: uma chamada COM ao endpoint de audio do Windows.
+    """
     try:
         valor = wintypes.BOOL(1 if ativado else 0)
         with _AudioEndpointContext() as endpoint:
@@ -262,7 +306,45 @@ def definir_mudo_windows(ativado) -> ToolResult:
                 None,
             )
             _audio_hresult_ok(hr, "Definicao do mudo")
-        return ToolResult.success(f"Mudo {'ativado' if ativado else 'desativado'}.", tool_name="definir_mudo_windows")
+        return ToolResult.success(
+            f"Mudo {'ativado' if ativado else 'desativado'}.",
+            tool_name="definir_mudo_windows",
+        )
     except Exception as erro:
-        return ToolResult.failure(f"Nao consegui alterar o mudo: {erro}", error_code="mute_set_failed", tool_name="definir_mudo_windows")
+        return ToolResult.failure(
+            f"Nao consegui alterar o mudo: {erro}",
+            error_code="mute_set_failed",
+            tool_name="definir_mudo_windows",
+        )
 
+
+def definir_mudo_windows(ativado) -> ToolResult:
+    if os.name != "nt":
+        return ToolResult.failure(
+            "Controle de audio so esta disponivel no Windows.",
+            error_code="windows_only",
+            tool_name="definir_mudo_windows",
+        )
+
+    if not isinstance(ativado, bool):
+        return ToolResult.failure(
+            "O estado do mudo deve ser verdadeiro ou falso.",
+            error_code="mute_state_invalid",
+            tool_name="definir_mudo_windows",
+        )
+
+    leitura = obter_audio_windows()
+    mudo_anterior = None
+    if leitura.ok and isinstance(leitura.data, dict):
+        valor_anterior = leitura.data.get("mudo")
+        if isinstance(valor_anterior, bool):
+            mudo_anterior = valor_anterior
+
+    resultado = _aplicar_mudo_windows(ativado)
+    if resultado.ok and mudo_anterior is not None and mudo_anterior != ativado:
+        from core.undo import push_undo
+        push_undo(
+            f"mudo {'ativado' if ativado else 'desativado'}",
+            lambda anterior=mudo_anterior: _aplicar_mudo_windows(anterior),
+        )
+    return resultado

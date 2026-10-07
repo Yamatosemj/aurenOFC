@@ -175,3 +175,17 @@ def test_visual_compound_prompt_rules_are_present_in_harness():
     estado = harness._montar_estado(objetivo, [])
     assert "capturar_tela_windows pode e deve ser chamada novamente" in estado
     assert "Nunca reutilize coordenadas" in estado
+
+
+def test_undo_request_uses_small_specialized_route():
+    names = names_for("desfaz")
+    assert "desfazer_ultima_acao" in names
+    assert "consultar_memoria_persistente" in names
+    assert "listar_janelas_windows" in names
+    assert "obter_status_windows" in names
+    assert len(names) == 4
+
+
+def test_undo_request_includes_tool_for_voice_variants():
+    for text in ("desfazer", "desfaz a ultima acao", "voltar atrás"):
+        assert "desfazer_ultima_acao" in names_for(text)

@@ -249,6 +249,27 @@ CAPABILITY_DEFINITIONS: tuple[Capability, ...] = (
         ),
     ),
     Capability(
+        id="desfazer_ultima_acao",
+        descricao="Desfazer a ultima acao reversivel registrada pelo Auren.",
+        local=True,
+        deterministica=True,
+        multi_etapa=False,
+        exige_raciocinio=False,
+        parametros_obrigatorios=(),
+        parametros_opcionais=(),
+        politica_confirmacao="never",
+        resolver="undo",
+        tools=("desfazer_ultima_acao",),
+        prioridade=41,
+        padroes_objetivo=(
+            r"\bdesfaz\w*\b",
+            r"\bdesfazer\b",
+            r"\bdesfac(a|a)?\b",
+            r"\bvoltar\s+atr[aá]s\b",
+        ),
+    ),
+
+    Capability(
         id="consultar_status_windows",
         descricao="Consultar hora, data, RAM e tempo desde o boot.",
         local=True,

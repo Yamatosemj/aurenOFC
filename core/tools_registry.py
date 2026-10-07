@@ -514,6 +514,19 @@ tools = [
 
     {
         "type": "function",
+        "name": "desfazer_ultima_acao",
+        "description": "Desfaz a ultima acao reversivel registrada pelo Auren. Se a reversao falhar, a entrada permanece disponivel para nova tentativa.",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+            "additionalProperties": False
+        },
+        "strict": True
+    },
+
+    {
+        "type": "function",
         "name": "controle_midia_windows",
         "description": "Envia um comando global de midia no Windows: play/pause, proxima, anterior ou parar.",
         "parameters": {
