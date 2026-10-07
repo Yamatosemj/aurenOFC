@@ -111,4 +111,4 @@ def test_browser_verification_is_enabled_for_composed_browser_task():
     from core.harness_heuristics import _parece_tarefa_browser_verificavel
 
     assert _parece_tarefa_browser_verificavel("abra o youtube e depois confirme") is True
-    assert _parece_tarefa_browser_verificavel("clique em salvar e verifique o resultado") is True
+    assert _parece_tarefa_browser_verificavel("clique em salvar na pagina do youtube e verifique o resultado") is True
