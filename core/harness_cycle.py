@@ -156,7 +156,15 @@ def executar_ciclo(
             )
             return False, resposta
 
-        browser_verification_state = {"pending": harness._browser_verification_pending}
+        browser_verification_enabled = harness._parece_tarefa_browser_verificavel(objetivo)
+        browser_verification_state = {
+            "pending": harness._browser_verification_pending if browser_verification_enabled else False
+        }
+        browser_state_mutating_tools = (
+            harness.BROWSER_STATE_MUTATING_TOOLS
+            if browser_verification_enabled
+            else set()
+        )
         (
             resultados_rodada,
             ferramentas_executadas,
@@ -174,7 +182,7 @@ def executar_ciclo(
             vision_state_mutating_tools=harness.VISION_STATE_MUTATING_TOOLS,
             vision_reobserve_pending=harness._vision_reobserve_pending,
             browser_verification_state=browser_verification_state,
-            browser_state_mutating_tools=harness.BROWSER_STATE_MUTATING_TOOLS,
+            browser_state_mutating_tools=browser_state_mutating_tools,
             browser_verification_tool=harness.BROWSER_VERIFICATION_TOOL,
             falha_nao_recuperada=falha_nao_recuperada,
             max_tool_result_chars=harness.MAX_TOOL_RESULT_CHARS,
