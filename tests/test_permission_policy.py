@@ -1,5 +1,6 @@
-import pytest
 from __future__ import annotations
+
+import pytest
 
 from core.permission_manager import PermissionLevel, PermissionManager
 
