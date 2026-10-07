@@ -189,7 +189,7 @@ def ler_pagina(foco):
                         chave: limpar(chave, 180),
                         estados,
                         value: valorSeguro,
-                    valor_interno: String(el.value || '') if campoSensivel else null
+                    valor_interno: campoSensivel ? String(el.value || '') : null
                     });
                 }
 
