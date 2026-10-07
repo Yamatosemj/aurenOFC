@@ -393,3 +393,14 @@ def test_browser_safe_key_is_context_sensitive_to_application():
             "_key_context": {"ambiente": "browser", "context_known": True},
         },
     ) == PermissionLevel.AUTO
+
+
+def test_file_mutation_permissions_match_task_policy():
+    manager = PermissionManager()
+    assert manager.nivel("mover_arquivo") == PermissionLevel.AUTO
+    assert manager.nivel("copiar_arquivo") == PermissionLevel.AUTO
+    assert manager.nivel("renomear_arquivo") == PermissionLevel.AUTO
+    assert manager.nivel("criar_pasta") == PermissionLevel.AUTO
+    assert manager.nivel("enviar_para_lixeira") == PermissionLevel.CONFIRM
+    assert manager.conta_para_limite("mover_arquivo") is True
+    assert manager.conta_para_limite("enviar_para_lixeira") is True
