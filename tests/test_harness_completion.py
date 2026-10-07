@@ -186,7 +186,7 @@ def test_retry_resposta_vazia_executa_nova_rodada_e_retorna_continuar():
     assert log_event[1][0] == "MODEL_ROUND_REQUEST"
     assert log_event[2]["rodada"] == 3
     assert log_event[2]["motivo"] == "empty_response_retry"
-    assert response_log[1][-1]["motivo"] == "empty_response_retry"
+    assert response_log[2]["motivo"] == "empty_response_retry"
 
 
 def test_retry_resposta_vazia_cancela_antes_de_esperar_modelo():
