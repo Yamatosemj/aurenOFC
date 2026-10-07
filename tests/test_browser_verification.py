@@ -248,3 +248,104 @@ def test_scroll_to_end_verification_checks_bottom_position():
             "viewport_height": 900,
         },
     ) is True
+
+
+def test_open_new_tab_verification_requires_count_and_destination():
+    dados = _contexto(
+        "Abas abertas: 2\n"
+        "Aba ativa: 2\n"
+        "Aba 1: Inicio | https://example.com\n"
+        "Aba 2: YouTube | https://youtube.com/ [ATIVA]"
+    )
+    acao = {
+        "abas": {
+            "quantidade_antes": 1,
+            "quantidade_depois": 2,
+            "aba_ativa_depois": 2,
+            "url_ativa_depois": "https://youtube.com/",
+            "depois": [],
+        }
+    }
+
+    assert verificar_resultado_navegador(
+        "abrir_nova_aba",
+        '{"url":"youtube.com"}',
+        dados,
+        acao,
+    ) is True
+
+    acao["abas"]["quantidade_depois"] = 3
+    assert verificar_resultado_navegador(
+        "abrir_nova_aba",
+        '{"url":"youtube.com"}',
+        dados,
+        acao,
+    ) is False
+
+
+def test_switch_tab_verification_requires_active_index_and_observed_url():
+    dados = _contexto(
+        "Abas abertas: 3\n"
+        "Aba ativa: 2\n"
+        "Aba 1: Inicio | https://example.com\n"
+        "Aba 2: Editor | https://example.com/editor [ATIVA]\n"
+        "Aba 3: Ajuda | https://example.com/help"
+    )
+    acao = {
+        "abas": {
+            "quantidade_antes": 3,
+            "quantidade_depois": 3,
+            "aba_ativa_depois": 2,
+            "url_ativa_depois": "https://example.com/editor",
+            "depois": [],
+        }
+    }
+
+    assert verificar_resultado_navegador(
+        "trocar_aba",
+        '{"indice":2}',
+        dados,
+        acao,
+    ) is True
+
+    assert verificar_resultado_navegador(
+        "trocar_aba",
+        '{"indice":3}',
+        dados,
+        acao,
+    ) is False
+
+
+def test_close_tab_verification_requires_decrement_and_new_active_tab():
+    dados = _contexto(
+        "Abas abertas: 2\n"
+        "Aba ativa: 1\n"
+        "Aba 1: Inicio | https://example.com [ATIVA]\n"
+        "Aba 2: Ajuda | https://example.com/help"
+    )
+    acao = {
+        "abas": {
+            "quantidade_antes": 3,
+            "quantidade_depois": 2,
+            "aba_fechada": 2,
+            "aba_ativa_depois": 1,
+            "url_ativa_depois": "https://example.com",
+            "depois": [],
+        }
+    }
+
+    assert verificar_resultado_navegador(
+        "fechar_aba",
+        '{"indice":2}',
+        dados,
+        acao,
+    ) is True
+
+    acao["abas"]["quantidade_depois"] = 1
+    assert verificar_resultado_navegador(
+        "fechar_aba",
+        '{"indice":2}',
+        dados,
+        acao,
+    ) is False
+
