@@ -41,7 +41,11 @@ class VoiceConfirmationChannel:
         self._audio_queue = audio_queue
         if gate is None:
             from core.confirmation import DEFAULT_CONFIRMATION_GATE
-            self._gate = DEFAULT_CONFIRMATION_GATE
+            self._gate = (
+                DEFAULT_CONFIRMATION_GATE
+                if float(timeout) == TIMEOUT_SECONDS
+                else ConfirmationGate(timeout_seconds=timeout)
+            )
         else:
             self._gate = gate
         self._token_factory = token_factory or self._novo_token
