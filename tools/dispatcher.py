@@ -181,7 +181,7 @@ TOOL_HANDLERS = {
     "listar_abas": _sem_memoria(browser.listar_abas),
     "abrir_nova_aba": _sem_memoria(browser.abrir_nova_aba, "url", "modo", defaults={"url": "", "modo": "visivel"}),
     "trocar_aba": _sem_memoria(browser.trocar_aba, "indice"),
-    "fechar_aba": _sem_memoria(browser.fechar_aba, "indice"),
+    "fechar_aba": _sem_memoria(browser.fechar_aba, "indice", defaults={"indice": None}),
     "voltar_pagina": _sem_memoria(browser.voltar_pagina),
     "avancar_pagina": _sem_memoria(browser.avancar_pagina),
     "recarregar_pagina": _sem_memoria(browser.recarregar_pagina),
