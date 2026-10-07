@@ -69,12 +69,11 @@ def test_voice_confirmation_accepts_sim_from_shared_audio_queue():
 
     class FakeSTT:
         def transcrever(self, audio):
-            assert audio == "audio-confirmacao"
+            assert isinstance(audio, CapturedAudio)
             return "sim"
 
     audio_queue = Queue()
-    audio_queue.put(("audio", "audio-confirmacao"))
-    tts = FakeTTS()
+    audio_queue.put(("audio", _captured_audio(time.perf_counter())))    tts = FakeTTS()
     channel = VoiceConfirmationChannel(
         tts=tts,
         stt=FakeSTT(),
