@@ -124,6 +124,38 @@ def _extrair_abas_observadas(abas: str) -> tuple[int | None, list[tuple[int, str
     return quantidade, encontradas
 
 
+def _snapshot_tab_active(snapshot: Any) -> tuple[int | None, str | None]:
+    if not isinstance(snapshot, list):
+        return None, None
+    ativos = [item for item in snapshot if isinstance(item, dict) and item.get("ativa") is True]
+    if len(ativos) != 1:
+        return None, None
+    item = ativos[0]
+    try:
+        indice = int(item.get("indice"))
+    except (TypeError, ValueError):
+        return None, None
+    url = str(item.get("url") or "").strip()
+    return indice, url
+
+
+def _snapshot_is_consistent(snapshot: Any, expected_count: int) -> bool:
+    if not isinstance(snapshot, list) or len(snapshot) != expected_count:
+        return False
+    if expected_count == 0:
+        return True
+    indices = []
+    for item in snapshot:
+        if not isinstance(item, dict):
+            return False
+        try:
+            indices.append(int(item.get("indice")))
+        except (TypeError, ValueError):
+            return False
+    if sorted(indices) != list(range(1, expected_count + 1)):
+        return False
+    return _snapshot_tab_active(snapshot)[0] is not None
+
 def _verificar_abas(
     ferramenta: str,
     args: dict[str, Any],
@@ -164,10 +196,19 @@ def _verificar_abas(
 
     antes_snapshot = info.get("antes")
     depois_snapshot = info.get("depois")
-    if isinstance(antes_snapshot, list) and len(antes_snapshot) != quantidade_antes_int:
+    if isinstance(antes_snapshot, list) and not _snapshot_is_consistent(antes_snapshot, quantidade_antes_int):
         return False
-    if isinstance(depois_snapshot, list) and len(depois_snapshot) != quantidade_depois_int:
+    if isinstance(depois_snapshot, list) and not _snapshot_is_consistent(depois_snapshot, quantidade_depois_int):
         return False
+
+    depois_ativo_indice, depois_ativo_url = _snapshot_tab_active(depois_snapshot)
+    if isinstance(depois_snapshot, list) and quantidade_depois_int > 0:
+        if depois_ativo_indice is None:
+            return False
+        if ativa is not None and depois_ativo_indice != ativa[0]:
+            return False
+        if depois_ativo_url and ativa is not None and _normalize_url(depois_ativo_url) != _normalize_url(ativa[2]):
+            return False
 
     if ferramenta == "abrir_nova_aba":
         if quantidade_atual is None or quantidade_atual != quantidade_depois_int:
