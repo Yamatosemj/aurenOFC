@@ -82,8 +82,6 @@ def _user32():
 
 from tools.windows_processes import _nome_executavel_por_pid_windows, encerrar_processo_windows, listar_processos_windows
 
-from tools.windows_processes import _nome_executavel_por_pid_windows, encerrar_processo_windows, listar_processos_windows
-
 def _status_windows():
     if os.name != "nt":
         return None
