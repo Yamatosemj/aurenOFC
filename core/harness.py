@@ -62,7 +62,10 @@ from core.harness_completion import (
     _tentar_retry_resposta_vazia,
 )
 from core.harness_state import _montar_estado
-from core.harness_round_input import _montar_input_da_rodada
+from core.harness_round_input import (
+    _montar_input_da_rodada,
+    _montar_input_e_estado_da_rodada,
+  )
 from core.harness_strategy import _salvar_estrategia_em_background as _salvar_estrategia_em_background_impl
 from core.harness_turn import _registrar_turno as _registrar_turno_impl
 from core.harness_session import (
@@ -853,20 +856,15 @@ class AurenHarness:
                 return False, resposta
 
             # Nova rodada completamente nova: sem previous_response_id.
-            proximo_input = self._montar_input_da_rodada(
+            proximo_input, estado_enviado = _montar_input_e_estado_da_rodada(
                 objetivo,
                 historico,
                 resposta,
                 resultados_rodada,
+                montar_estado=self._montar_estado,
+                preparar_resultado_visual=prepare_vision_result_content,
+                ao_atualizar_geometria=clear_active_vision_geometry,
             )
-
-            estado_enviado = ""
-            if proximo_input and isinstance(proximo_input[0], dict):
-                conteudo = proximo_input[0].get("content", [])
-                if conteudo and isinstance(conteudo, list):
-                    primeiro = conteudo[0]
-                    if isinstance(primeiro, dict):
-                        estado_enviado = str(primeiro.get("text", ""))
 
             if self.task_manager.should_cancel(self._task_id):
                 return self._encerrar_cancelado("cancelado antes da proxima rodada", rodada)
