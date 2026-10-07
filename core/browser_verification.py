@@ -571,7 +571,11 @@ def _verificar_clique(
             depois_acao = int(depois_acao)
         except (TypeError, ValueError):
             return None
-        if antes_acao != int(sinal.get("antes")) or depois_acao != esperado:
+        try:
+            esperado_antes = int(sinal.get("antes"))
+        except (TypeError, ValueError):
+            return None
+        if antes_acao != esperado_antes or depois_acao != esperado:
             return None
         return observado == esperado
 
