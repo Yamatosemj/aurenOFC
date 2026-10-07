@@ -505,7 +505,7 @@ class PermissionManager:
 
         if (
             self._fonte_nao_confiavel_pendente is not None
-            and capacidade in self.COUNTED_CAPABILITIES
+            and self._capability_conta(capacidade)
         ):
             fonte = self._fonte_nao_confiavel_pendente
             return (
