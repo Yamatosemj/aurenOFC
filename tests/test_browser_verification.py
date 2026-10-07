@@ -5,6 +5,63 @@ def _contexto(abas):
     return {"abas": abas, "pagina": "conteudo"}
 
 
+
+def _dados_clique_navegacao(*, url_atual="https://youtube.com/watch?v=123", href="https://youtube.com/watch?v=123", url_anterior="https://google.com"):
+    return {
+        "clique": {
+            "alvo": "resultado",
+            "indice": 1,
+            "tag": "a",
+            "href": href,
+            "url_anterior": url_anterior,
+            "url_atual": url_atual,
+            "navegacao": True,
+            "nova_aba": False,
+        }
+    }
+
+
+def test_click_verification_accepts_matching_navigation_href():
+    assert verificar_resultado_navegador(
+        "clicar_elemento",
+        '{"alvo":"resultado","indice":1}',
+        _contexto(
+            "Abas abertas: 1\n"
+            "Aba ativa: 1\n"
+            "Aba 1: YouTube | https://youtube.com/watch?v=123 [ATIVA]"
+        ),
+        _dados_clique_navegacao(),
+    ) is True
+
+
+def test_click_verification_rejects_wrong_navigation_href():
+    assert verificar_resultado_navegador(
+        "clicar_elemento",
+        '{"alvo":"resultado","indice":1}',
+        _contexto(
+            "Abas abertas: 1\n"
+            "Aba ativa: 1\n"
+            "Aba 1: GitHub | https://github.com [ATIVA]"
+        ),
+        _dados_clique_navegacao(
+            url_atual="https://github.com",
+        ),
+    ) is False
+
+
+def test_non_navigational_click_is_not_claimed_as_verified():
+    dados = _dados_clique_navegacao()
+    dados["clique"]["navegacao"] = False
+    assert verificar_resultado_navegador(
+        "clicar_elemento",
+        '{"alvo":"Menu","indice":1}',
+        _contexto(
+            "Abas abertas: 1\n"
+            "Aba ativa: 1\n"
+            "Aba 1: Site | https://example.com [ATIVA]"
+        ),
+        dados,
+    ) is None
 def test_navigation_verification_accepts_equivalent_normalized_url():
     dados = _contexto(
         "Abas abertas: 1\n"
