@@ -190,7 +190,7 @@ Próxima tarefa:
 
 ---
 
-## 2026-10-07 — Tarefa 4 — Política reversível/irreversível e confirmação com timeout
+## 2026-10-07 — Fechamento final da Tarefa 4 — Política reversível/irreversível e confirmação com timeout
 
 Tarefa concluída: 4 — política reversível/irreversível e confirmação com timeout
 
@@ -205,31 +205,24 @@ Arquivos criados/alterados:
 - docs/NOTAS_DE_PASSAGEM.md
 
 Decisões tomadas (e por quê):
-- A política completa das 28 capabilities foi consolidada em docs/POLITICA_DE_CONFIRMACAO.md.
-- memory.write permanece CONFIRM porque esquecer_memoria_persistente não restaura valor/categoria/timestamp anteriores.
-- windows.clipboard.write permanece AUTO por decisão explícita do usuário, com a limitação documentada de que o clipboard atual não possui snapshot/undo exato.
-- O ConfirmationRequest não carrega token. O token é criado e mantido pela interface e nunca entra nos argumentos do modelo.
-- O gate padrão mantém uma única confirmação pendente por processo e usa timeout de 90 s; expiração, token inválido e resposta atrasada nunca autorizam a ação.
-- Texto e voz usam o mesmo ConfirmationChannel; a voz usa o timeout oficial.
-- Foi adicionada regressão para exigir correspondência exata entre capabilities registradas e CAPABILITY_POLICY, bloqueando entrada silenciosa de capability sem nível explícito.
-- O Mark-LV foi usado somente como referência de arquitetura, risco e casos-limite; nenhum código ou comentário foi copiado.
+- As 28 capabilities do PermissionManager estão documentadas e cada capability registrada precisa possuir nível explícito.
+- memory.write permanece CONFIRM porque não existe restauração exata do estado anterior.
+- windows.clipboard.write permanece AUTO por decisão explícita do usuário e é documentada como exceção deliberada, sem alegar reversibilidade inexistente.
+- Confirmação não-forjável usa token mantido pela interface, uma pendência no gate padrão e timeout de 90 s; expiração e respostas atrasadas não autorizam execução.
+- Texto e voz usam o mesmo ConfirmationChannel.
+- Nenhuma reclassificação silenciosa foi aplicada.
 
 Testes:
-- Baseline imediatamente anterior à Tarefa 4: Linux 622 passed / 6 skipped; Windows 628 passed.
-- CI do head de implementação 8da961772abccac15ec7a6090293128469ae02aa: Linux 624 passed / 6 skipped / 4 failed; Windows 630 passed / 4 failed.
-- CI mais recente do PR #78, merge ref 8ece45161c3c877764740a4f1bda1010111d122a: mantém as mesmas 4 falhas preexistentes da Tarefa 3; static-checks e Playwright smoke permanecem verdes.
-- Os 5 testes adicionados pela Tarefa 4 passaram no full pytest.
-- O runner manual python testes_auren_live.py --rapido continua pendente no Windows real.
+- CI HEAD f4017c9e718b02d6e868c27e520a0ca9845f6112: Linux 628 passed / 6 skipped / 5 warnings; Windows 634 passed / 5 warnings.
+- Focused Linux/Windows: verde.
+- Static checks: verde.
+- Playwright smoke: verde.
+- Os cinco testes novos da Tarefa 4 passaram.
+- As quatro falhas antigas da Tarefa 3 também foram eliminadas antes do HEAD atual.
 
 Ficou pendente / virou backlog:
-- O portão global de validação continua bloqueado pelas quatro falhas preexistentes da Tarefa 3:
-  - test_file_operation_requests_use_specialized_route
-  - test_file_operation_task_specs_resolve_to_local_capabilities
-  - test_principais_ferramentas_do_registry_passam_por_contrato_permissao_e_handler
-  - test_trash_shell_operation_requests_recoverable_delete
-- Essas falhas não foram corrigidas aqui para respeitar a regra de uma tarefa por vez.
-- Runner live real do Windows permanece pendente.
-- A Tarefa 5 fica como próxima tarefa, sem ser iniciada neste fechamento.
+- Nenhum débito técnico específico da Tarefa 4.
+- Runner live permanece como validação operacional futura, não como bloqueio desta tarefa.
 
 Próxima tarefa: 5 — seleção de dispositivos de áudio
 
