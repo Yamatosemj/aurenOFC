@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from core.harness_completion import _finalizar_resposta_sucesso, _tentar_retry_resposta_vazia
+from core.harness_completion import _concluir_tarefa_localmente, _finalizar_resposta_sucesso, _tentar_retry_resposta_vazia
 from core.harness_guards import _tratar_rodada_sem_ferramentas as _tratar_rodada_sem_ferramentas_impl
 from core.harness_model import _executar_rodada_modelo as _executar_rodada_modelo_impl
 from core.harness_round_input import _montar_input_e_estado_da_rodada
