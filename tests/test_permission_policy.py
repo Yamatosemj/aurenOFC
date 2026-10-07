@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from core.permission_manager import PermissionLevel, PermissionManager
+from core.tool_contracts import DEFAULT_TOOL_CONTRACTS
 
 
 class _RecordingConfirmationChannel:
@@ -404,3 +405,15 @@ def test_file_mutation_permissions_match_task_policy():
     assert manager.nivel("enviar_para_lixeira") == PermissionLevel.CONFIRM
     assert manager.conta_para_limite("mover_arquivo") is True
     assert manager.conta_para_limite("enviar_para_lixeira") is True
+
+
+def test_toda_capacidade_registrada_tem_nivel_explicito():
+    capacidades_registradas = set(DEFAULT_TOOL_CONTRACTS.capabilities().values())
+    capacidades_politica = set(PermissionManager.CAPABILITY_POLICY)
+
+    assert "generic" not in capacidades_registradas
+    assert capacidades_registradas == capacidades_politica
+    assert all(
+        isinstance(PermissionManager.CAPABILITY_POLICY[capacidade], PermissionLevel)
+        for capacidade in capacidades_registradas
+    )
