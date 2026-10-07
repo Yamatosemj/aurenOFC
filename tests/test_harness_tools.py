@@ -326,7 +326,7 @@ def test_browser_navigation_verification_keeps_pending_when_target_is_wrong():
         _item("obter_contexto_navegador", "call-browser-context-2", '{"foco":""}'),
     ]
     resultados = iter([
-        ToolResult.success("Naveguei.", tool_name="navegar_navegador"),
+        ToolResult.success("Naveguei.", tool_name="navegar_navegador", data={"navegacao": {"url_depois": "https://www.youtube.com/"}}),
         ToolResult.success(
             "contexto",
             tool_name="obter_contexto_navegador",
