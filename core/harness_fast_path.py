@@ -1,4 +1,4 @@
- """Execucao do fast path do Auren sem envolver o ciclo do agente."""
+"""Execucao do fast path do Auren sem envolver o ciclo do agente."""
 from __future__ import annotations
 
 import time
