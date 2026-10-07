@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 
+from core.tool_result import ToolResult
 from core.utils import normalizar_nome
 
 
@@ -184,17 +185,32 @@ def clicar_elemento(alvo, indice=1):
         url_atual = p.url
         navegacao = "sim" if novas_abas or url_atual != url_anterior else "nao"
 
-        return (
+        return ToolResult.success(
             f"Cliquei em '{alvo}'.\n"
             f"Elemento: tag={tag_elemento} | href={href_elemento}\n"
             f"URL anterior: {url_anterior}\n"
             f"URL atual: {url_atual}\n"
-            f"Navegacao: {navegacao}"
+            f"Navegacao: {navegacao}",
+            data={
+                "clique": {
+                    "alvo": str(alvo),
+                    "indice": int(indice),
+                    "tag": str(tag_elemento),
+                    "href": str(href_elemento),
+                    "url_anterior": str(url_anterior),
+                    "url_atual": str(url_atual),
+                    "navegacao": navegacao == "sim",
+                    "nova_aba": bool(novas_abas),
+                },
+            },
+            tool_name="clicar_elemento",
         )
 
     except Exception as erro:
-        return (
-            f"Nao consegui clicar em '{alvo}': {erro}"
+        return ToolResult.failure(
+            f"Nao consegui clicar em '{alvo}': {erro}",
+            error_code="click_failed",
+            tool_name="clicar_elemento",
         )
 
 def preencher_elemento(alvo, texto, indice=1):
