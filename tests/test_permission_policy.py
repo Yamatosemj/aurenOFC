@@ -195,3 +195,51 @@ def test_untrusted_source_never_overrides_blocked_policy():
     assert permitido is False
     assert "bloqueada" in motivo.lower()
     assert manager.fonte_nao_confiavel_pendente == "ler_pagina"
+
+
+def _browser_click_args(**evidencia):
+    return {
+        "alvo": "Pesquisar",
+        "indice": 1,
+        "_browser_click_preflight_ok": True,
+        "_browser_click_preflight": evidencia,
+    }
+
+
+def test_safe_browser_click_requires_structural_preflight():
+    manager = PermissionManager()
+    nivel, _ = manager.nivel_da_acao(
+        "clicar_elemento",
+        {"alvo": "Pesquisar", "indice": 1},
+    )
+    assert nivel == PermissionLevel.CONFIRM
+
+
+def test_safe_browser_click_allows_plain_button_with_structural_evidence():
+    manager = PermissionManager()
+    nivel, motivo = manager.nivel_da_acao(
+        "clicar_elemento",
+        _browser_click_args(tag="button", role="button", type="button", href=""),
+    )
+    assert nivel == PermissionLevel.AUTO
+    assert "estrutura real" in motivo
+
+
+@pytest.mark.parametrize(
+    "evidencia",
+    [
+        {"tag": "button", "role": "button", "type": "submit", "href": ""},
+        {"tag": "button", "role": "button", "type": "button", "href": "", "onclick": "submit()"},
+        {"tag": "a", "role": "link", "type": "", "href": "javascript:submit()"},
+        {"tag": "a", "role": "link", "type": "", "href": "/checkout", "target": "_blank"},
+        {"tag": "a", "role": "link", "type": "", "href": "/send", "form": {"method": "post", "action": "/send"}},
+        {"tag": "a", "role": "link", "type": "", "href": "/arquivo", "download": True},
+    ],
+)
+def test_safe_click_is_elevated_for_risky_structural_evidence(evidencia):
+    manager = PermissionManager()
+    nivel, _ = manager.nivel_da_acao(
+        "clicar_elemento",
+        _browser_click_args(**evidencia),
+    )
+    assert nivel == PermissionLevel.CONFIRM
