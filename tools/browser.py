@@ -352,6 +352,7 @@ def fechar_aba(indice=None):
                     ),
                     "aba_ativa_depois": novo_indice + 1,
                     "url_ativa_depois": str(pagina.url or "about:blank"),
+                    "antes": snapshot_antes,
                     "depois": snapshot,
                 },
             },
