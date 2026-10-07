@@ -62,11 +62,9 @@ A matriz abaixo descreve todas as 28 capabilities presentes na linha V49, inclui
 
 Nenhuma reclassificação foi aplicada nesta etapa sem aprovação explícita.
 
-### 1. windows.clipboard.write: AUTO → CONFIRM
+### 1. windows.clipboard.write: permanece AUTO
 
-Motivo: a implementação atual substitui o conteúdo anterior do clipboard e não registra uma entrada de undo. Portanto, o Auren não consegue garantir que conseguirá restaurar exatamente o estado anterior.
-
-Esse caso é o exemplo clássico da política: **parece uma alteração simples, mas não é reversível de forma confiável**.
+Decisão explícita do usuário: manter a escrita no clipboard como AUTO. A implementação atual substitui o conteúdo anterior e não registra undo do valor anterior, portanto esta é uma limitação consciente da política atual, e não uma alegação de restauração exata.
 
 ### 2. memory.write: nenhuma promoção para AUTO
 
@@ -97,8 +95,8 @@ A confirmação tem estas regras:
 
 A infraestrutura de timeout, expiração e token já está implementada nesta transição.
 
-A única reclassificação material proposta e ainda pendente de aprovação é:
+A única reclassificação material proposta nesta tarefa foi analisada e **rejeitada**:
 
-windows.clipboard.write: AUTO → CONFIRM
+windows.clipboard.write: AUTO → CONFIRM — rejeitada; permanece AUTO por decisão explícita do usuário.
 
-Enquanto essa aprovação não ocorrer, a política de risco permanece sem alteração no PermissionManager.
+A política de risco fica consolidada sem alteração de nível para essa capability.
