@@ -72,6 +72,8 @@ def executar_ciclo(
                 vision_reobserve_pending=harness._vision_reobserve_pending,
                 vision_guard_attempts=harness._vision_guard_attempts,
                 multitab_guard_attempts=harness._multitab_guard_attempts,
+                browser_verification_pending=harness._browser_verification_pending,
+                browser_verification_attempts=harness._browser_verification_attempts,
                 task_id=harness._task_id,
                 task_manager=harness.task_manager,
                 montar_estado=harness._montar_estado,
@@ -84,6 +86,7 @@ def executar_ciclo(
             )
             harness._vision_guard_attempts = guard.vision_guard_attempts
             harness._multitab_guard_attempts = guard.multitab_guard_attempts
+            harness._browser_verification_attempts = guard.browser_verification_attempts
 
             if guard.acao == "continuar":
                 resposta = guard.resposta
@@ -158,6 +161,7 @@ def executar_ciclo(
             ferramentas_executadas,
             falha_nao_recuperada,
             harness._vision_reobserve_pending,
+            harness._browser_verification_pending,
             cancelado,
         ) = _executar_chamadas_rodada_impl(
             chamadas,
@@ -173,6 +177,8 @@ def executar_ciclo(
             max_tool_result_chars=harness.MAX_TOOL_RESULT_CHARS,
             get_active_vision_geometry=get_active_vision_geometry,
             clear_active_vision_geometry=clear_active_vision_geometry,
+            browser_verification_tools=harness.BROWSER_VERIFICATION_TOOLS,
+            browser_verification_pending=harness._browser_verification_pending,
             write_log=write_log,
         )
         if cancelado:
@@ -188,6 +194,7 @@ def executar_ciclo(
             objetivo,
             resultados_rodada,
             vision_reobserve_pending=harness._vision_reobserve_pending,
+            browser_verification_pending=harness._browser_verification_pending,
         ):
             if harness.task_manager.should_cancel(harness._task_id):
                 return harness._encerrar_cancelado("cancelado antes da conclusao local", rodada)
