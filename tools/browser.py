@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 
 from config import BROWSER_PROFILE_DIR
+from core.tool_result import ToolResult
 
 playwright = None
 browser = None
@@ -161,6 +162,32 @@ def obter_pagina():
     except Exception:
         return reiniciar_navegador(modo_navegador)
 
+def _abas_snapshot() -> list[dict[str, object]]:
+    abas = _paginas_abertas()
+    try:
+        ativa = abas.index(pagina) + 1
+    except ValueError:
+        ativa = None
+
+    snapshot: list[dict[str, object]] = []
+    for indice, aba in enumerate(abas, start=1):
+        try:
+            url = str(aba.url or "about:blank")
+        except Exception:
+            url = ""
+        try:
+            titulo = str(aba.title() or "[sem titulo]")
+        except Exception:
+            titulo = "[sem titulo]"
+        snapshot.append({
+            "indice": indice,
+            "titulo": titulo,
+            "url": url,
+            "ativa": indice == ativa,
+        })
+    return snapshot
+
+
 def listar_abas():
     """Lista as abas abertas e identifica a aba ativa."""
     abas = _paginas_abertas()
@@ -192,11 +219,22 @@ def abrir_nova_aba(url="", modo="visivel"):
 
         abas_atuais = _paginas_abertas()
         numero = abas_atuais.index(pagina) + 1 if pagina in abas_atuais else 1
-        return (
+        snapshot = _abas_snapshot()
+        return ToolResult.success(
             f"Nova aba aberta: {numero}\n"
             f"Titulo: {pagina.title() or '[sem titulo]'}\n"
             f"URL atual: {pagina.url or 'about:blank'}\n"
-            f"{_estado_abas()}"
+            f"{_estado_abas()}",
+            data={
+                "abas": {
+                    "antes": None,
+                    "depois": snapshot,
+                    "quantidade_depois": len(snapshot),
+                    "aba_ativa_depois": numero,
+                    "url_ativa_depois": str(pagina.url or "about:blank"),
+                },
+            },
+            tool_name="abrir_nova_aba",
         )
 
     try:
@@ -222,20 +260,41 @@ def trocar_aba(indice):
     global pagina
 
     abas = _paginas_abertas()
+    quantidade_antes = len(abas)
     try:
         indice = int(indice)
     except (TypeError, ValueError):
-        return "Indice de aba invalido."
+        return ToolResult.failure(
+            "Indice de aba invalido.",
+            error_code="invalid_tab_index",
+            tool_name="trocar_aba",
+        )
 
     if indice < 1 or indice > len(abas):
-        return f"Nao existe a aba {indice}. Existem {len(abas)} abas abertas."
+        return ToolResult.failure(
+            f"Nao existe a aba {indice}. Existem {len(abas)} abas abertas.",
+            error_code="tab_not_found",
+            tool_name="trocar_aba",
+        )
 
     pagina = abas[indice - 1]
-    return (
+    snapshot = _abas_snapshot()
+    return ToolResult.success(
         f"Troquei para a aba {indice}.\n"
         f"Titulo: {pagina.title() or '[sem titulo]'}\n"
         f"URL atual: {pagina.url or 'about:blank'}\n"
-        f"{_estado_abas()}"
+        f"{_estado_abas()}",
+        data={
+            "abas": {
+                "quantidade_antes": quantidade_antes,
+                "quantidade_depois": len(snapshot),
+                "aba_ativa_antes": None,
+                "aba_ativa_depois": indice,
+                "url_ativa_depois": str(pagina.url or "about:blank"),
+                "depois": snapshot,
+            },
+        },
+        tool_name="trocar_aba",
     )
 
 def fechar_aba(indice=None):
