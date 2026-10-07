@@ -3,6 +3,48 @@ from __future__ import annotations
 from core.tool_result import ToolResult
 
 
+def _instalar_probe_historico(p):
+    try:
+        p.evaluate(
+            """() => {
+                const antigo = window.__aurenHistoryProbeCleanup;
+                if (typeof antigo === 'function') antigo();
+                const estado = {popstate: 0, hashchange: 0};
+                const popstate = () => { estado.popstate += 1; };
+                const hashchange = () => { estado.hashchange += 1; };
+                window.addEventListener('popstate', popstate, true);
+                window.addEventListener('hashchange', hashchange, true);
+                window.__aurenHistoryProbe = estado;
+                window.__aurenHistoryProbeCleanup = () => {
+                    window.removeEventListener('popstate', popstate, true);
+                    window.removeEventListener('hashchange', hashchange, true);
+                };
+            }"""
+        )
+        return True
+    except Exception:
+        return False
+
+
+def _ler_probe_historico(p):
+    try:
+        probe = p.evaluate("() => window.__aurenHistoryProbe || {popstate: 0, hashchange: 0}") or {}
+        return isinstance(probe, dict) and (int(probe.get("popstate") or 0) + int(probe.get("hashchange") or 0) > 0)
+    except Exception:
+        return None
+    finally:
+        try:
+            p.evaluate(
+                """() => {
+                    if (typeof window.__aurenHistoryProbeCleanup === 'function') window.__aurenHistoryProbeCleanup();
+                    window.__aurenHistoryProbeCleanup = null;
+                    window.__aurenHistoryProbe = null;
+                }"""
+            )
+        except Exception:
+            pass
+
+
 def _snapshot_pagina(p):
     try:
         return p.evaluate(
