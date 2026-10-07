@@ -367,8 +367,13 @@ def fechar_aba(indice=None):
                 "quantidade_antes": quantidade_antes,
                 "quantidade_depois": 0,
                 "aba_fechada": indice_fechado,
+                "aba_ativa_antes": next(
+                    (item["indice"] for item in snapshot_antes if item.get("ativa")),
+                    None,
+                ),
                 "aba_ativa_depois": None,
                 "url_ativa_depois": None,
+                "antes": snapshot_antes,
                 "depois": [],
             },
         },
