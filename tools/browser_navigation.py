@@ -74,6 +74,13 @@ def recarregar_pagina():
 def rolar_pagina(direcao):
     from tools import browser as _browser
 
+    if direcao not in {"cima", "baixo", "inicio", "fim"}:
+        return ToolResult.failure(
+            "Direcao invalida. Use cima, baixo, inicio ou fim.",
+            error_code="scroll_direction_invalid",
+            tool_name="rolar_pagina",
+        )
+
     try:
         p = _browser.obter_pagina()
         antes = float(p.evaluate("window.scrollY || 0") or 0)
@@ -92,11 +99,6 @@ def rolar_pagina(direcao):
                 "window.scrollTo(0, document.body.scrollHeight)"
             )
 
-        else:
-            return ToolResult.failure(
-                "Direcao invalida. Use cima, baixo, inicio ou fim.",
-                error_code="scroll_direction_invalid",
-            )
 
         depois = float(p.evaluate("window.scrollY || 0") or 0)
         altura_documento = float(
