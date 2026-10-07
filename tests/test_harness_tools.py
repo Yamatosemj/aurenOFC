@@ -278,7 +278,24 @@ def test_browser_navigation_verification_clears_pending_only_when_target_matches
         ToolResult.success(
             "Naveguei.",
             tool_name="navegar_navegador",
-            data={"navegacao": {"url_depois": "https://www.youtube.com/"}},
+            data={
+                "navegacao": {
+                    "url_depois": "https://www.youtube.com/",
+                    "ready_state_depois": "complete",
+                    "estado_antes": {
+                        "dom_fingerprint": "before",
+                        "texto_relevante": "pagina anterior",
+                        "rota_ativa": "home",
+                        "time_origin": 1,
+                    },
+                    "estado_depois": {
+                        "dom_fingerprint": "after",
+                        "texto_relevante": "YouTube",
+                        "rota_ativa": "youtube",
+                        "time_origin": 1,
+                    },
+                }
+            },
         ),
         ToolResult.success(
             "contexto",
