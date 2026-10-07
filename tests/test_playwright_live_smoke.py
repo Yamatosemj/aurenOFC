@@ -20,7 +20,7 @@ with sync_playwright() as playwright:
     page.set_content("""
         <html>
           <body>
-            <button id="menu" aria-expanded="false" onclick="this.setAttribute('aria-expanded', 'true')">Menu</button>
+            <button id="menu" aria-expanded="false" onclick="this.setAttribute('aria-expanded', this.getAttribute('aria-expanded') === 'true' ? 'false' : 'true')">Menu</button>
             <input id="nome" aria-label="Nome" />
             <details id="ajuda"><summary>Ajuda</summary><p>Detalhes</p></details>
           </body>
