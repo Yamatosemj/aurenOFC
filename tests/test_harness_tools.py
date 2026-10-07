@@ -357,3 +357,89 @@ def test_browser_navigation_verification_keeps_pending_when_target_is_wrong():
     )
 
     assert state["pending"] is True
+
+
+
+def test_browser_verification_state_survives_between_tool_rounds():
+    manager = _TaskManager()
+    state = {"pending": False}
+
+    first = _executar_chamadas_rodada(
+        [_item("rolar_pagina", "call-scroll-1", '{"direcao":"baixo"}')],
+        historico=[],
+        task_manager=manager,
+        task_id="task-scroll-rounds",
+        rodada=1,
+        executar_ferramenta=lambda _item: ToolResult.success(
+            "Pagina rolada para 'baixo'.",
+            data={
+                "direcao": "baixo",
+                "scroll_y_antes": 0,
+                "scroll_y_depois": 900,
+                "scroll_height": 3000,
+                "viewport_height": 900,
+            },
+            tool_name="rolar_pagina",
+        ),
+        trace=None,
+        vision_state_mutating_tools=set(),
+        vision_reobserve_pending=False,
+        falha_nao_recuperada=False,
+        max_tool_result_chars=100,
+        get_active_vision_geometry=lambda: None,
+        clear_active_vision_geometry=lambda: None,
+        write_log=lambda *args, **kwargs: None,
+        browser_verification_state=state,
+        browser_state_mutating_tools={"rolar_pagina"},
+        browser_verification_tool="obter_contexto_navegador",
+        browser_verifier=verificar_resultado_navegador,
+    )
+
+    assert first[2] is False
+    assert state["pending"] is True
+    assert state["ferramenta"] == "rolar_pagina"
+    assert state["argumentos"] == '{"direcao":"baixo"}'
+    assert state["dados_acao"]["scroll_y_depois"] == 900
+
+    second = _executar_chamadas_rodada(
+        [_item("obter_contexto_navegador", "call-scroll-2", '{"foco":"comentarios"}')],
+        historico=[],
+        task_manager=manager,
+        task_id="task-scroll-rounds",
+        rodada=2,
+        executar_ferramenta=lambda _item: ToolResult.success(
+            "Contexto atualizado.",
+            data={
+                "abas": (
+                    "Abas abertas: 1\n"
+                    "Aba ativa: 1\n"
+                    "Aba 1: Site | https://example.com [ATIVA]"
+                ),
+                "pagina": "comentarios",
+                "scroll": {
+                    "scroll_y": 900,
+                    "scroll_height": 3000,
+                    "viewport_height": 900,
+                },
+            },
+            tool_name="obter_contexto_navegador",
+        ),
+        trace=None,
+        vision_state_mutating_tools=set(),
+        vision_reobserve_pending=False,
+        falha_nao_recuperada=False,
+        max_tool_result_chars=100,
+        get_active_vision_geometry=lambda: None,
+        clear_active_vision_geometry=lambda: None,
+        write_log=lambda *args, **kwargs: None,
+        browser_verification_state=state,
+        browser_state_mutating_tools={"rolar_pagina"},
+        browser_verification_tool="obter_contexto_navegador",
+        browser_verifier=verificar_resultado_navegador,
+    )
+
+    assert second[2] is False
+    assert state["pending"] is False
+    assert "ferramenta" not in state
+    assert "argumentos" not in state
+    assert "dados_acao" not in state
