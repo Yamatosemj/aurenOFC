@@ -13,6 +13,7 @@ __pycache__/
 .ruff_cache/
 
 # Segredos e configuracao local
+plugins_aprovados.json
 .env
 .env.*
 !.env.example
