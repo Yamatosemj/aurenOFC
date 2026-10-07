@@ -293,7 +293,10 @@ def trocar_aba(indice):
             "abas": {
                 "quantidade_antes": quantidade_antes,
                 "quantidade_depois": len(snapshot),
-                "aba_ativa_antes": None,
+                "aba_ativa_antes": next(
+                    (item["indice"] for item in snapshot_antes if item.get("ativa")),
+                    None,
+                ),
                 "aba_ativa_depois": indice,
                 "url_ativa_depois": str(pagina.url or "about:blank"),
                 "depois": snapshot,
