@@ -654,11 +654,13 @@ def inspect_file(caminho: str, procurar_copias: bool = False, limite_copias: int
     detected_type, type_evidence, mime = _detect_type(path)
     digest = None
     hash_error = None
-    if readable:
+    if readable and (procurar_copias or file_stat.st_size <= MAX_HASH_BYTES):
         try:
             digest = _sha256(path)
         except (OSError, PermissionError) as exc:
             hash_error = str(exc)
+    elif readable:
+        hash_error = f"SHA-256 omitido para arquivo maior que {MAX_HASH_BYTES} bytes."
 
     info = FileInfo(
         nome=path.name,
@@ -703,7 +705,7 @@ def inspect_file(caminho: str, procurar_copias: bool = False, limite_copias: int
         },
     }
     if hash_error:
-        data.setdefault("observacoes", []).append(f"SHA-256 indisponivel: {hash_error}")
+        data.setdefault("observacoes", []).append(str(hash_error))
     if os.name != "nt":
         data.setdefault("observacoes", []).append("Data de criacao do Windows e Zone.Identifier nao estao disponiveis neste ambiente.")
 
