@@ -170,6 +170,9 @@ def _verificar_navegacao_historico(ferramenta: str, abas: str, dados_acao: Any) 
         return False
 
     if ferramenta in {"voltar_pagina", "avancar_pagina"}:
+        # A navegacao de historico pode manter a mesma URL, portanto titulo
+        # divergente e evidencia suficiente de que a observacao nao e do
+        # mesmo estado final alegado pela acao.
         mudou = dados.get("mudou_url")
         if mudou is True:
             return True
