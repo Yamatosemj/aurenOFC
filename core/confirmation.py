@@ -137,7 +137,10 @@ class ConfirmationGate:
         A consulta tambem remove uma pendencia que ja ultrapassou o timeout.
         Custo: O(1).
         """
-        return self.restante(self._pending.token if self._pending else "") > 0
+        with self._lock:
+            pendente = self._pending
+            token = pendente.token if pendente is not None else ""
+        return self.restante(token) > 0
 
     def _esta_expirada(self, agora: float) -> bool:
         if self._pending is None:
@@ -145,19 +148,14 @@ class ConfirmationGate:
         return agora - self._pending.created_at > self._timeout_seconds
 
 
+DEFAULT_CONFIRMATION_GATE = ConfirmationGate()
+
+
 class ConfirmationChannel(Protocol):
     """Canal responsavel por coletar a decisao do usuario."""
 
     def confirmar(self, request: ConfirmationRequest) -> bool:
         ...
-
-
-def _novo_token_de_interface() -> str:
-    """Gera um token opaco que permanece somente no canal de interface.
-    O token nunca faz parte dos argumentos enviados pelo modelo a uma tool.
-    Custo: O(1) para gerar um nonce criptograficamente forte.
-    """
-    return secrets.token_urlsafe(32)
 
 
 class TextConfirmationChannel:
@@ -173,8 +171,8 @@ class TextConfirmationChannel:
     ) -> None:
         self._input_fn = input_fn
         self._output_fn = output_fn
-        self._gate = gate or ConfirmationGate()
-        self._token_factory = token_factory or _novo_token_de_interface
+        self._gate = gate or DEFAULT_CONFIRMATION_GATE
+        self._token_factory = token_factory or (lambda: secrets.token_urlsafe(32))
 
     def confirmar(self, request: ConfirmationRequest) -> bool:
         output = self._output_fn or print
