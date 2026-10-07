@@ -281,9 +281,19 @@ def _origin(path: Path) -> FileOriginEvidence:
         observations.append("Zone.Identifier so pode ser consultado no Windows.")
     if zone_id is None:
         observations.append("Nenhum Zone.Identifier acessivel foi encontrado.")
+        status = "desconhecido"
+    elif zone_id in {3, 4}:
+        observations.append("Zone.Identifier indica origem em zona da Internet/Intranet.")
+        status = "confirmado"
+    else:
+        observations.append(
+            "Zone.Identifier foi encontrado, mas o ZoneId nao corresponde a uma zona "
+            "tratada como origem da Internet/Intranet."
+        )
+        status = "nao_confirmado"
 
     return FileOriginEvidence(
-        status="confirmado" if zone_id is not None else "desconhecido",
+        status=status,
         marcacao_zona_internet=internet_marked,
         zone_id=zone_id,
         url_origem=zone.get("host_url"),
