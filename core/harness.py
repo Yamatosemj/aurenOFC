@@ -197,6 +197,10 @@ class AurenHarness:
         self._multitab_guard_attempts = 0
         self._vision_reobserve_pending = False
         self._vision_guard_attempts = 0
+        self._browser_verification_pending = False
+        self._browser_verification_guard_attempts = 0
+        self._browser_verification_pending = False
+        self._browser_verification_guard_attempts = 0
         # O Ari usa uma fila de prioridade para tarefas de fundo. No Auren ela
         # fica restrita a aprendizado/persistencia pos-tarefa para não atrasar a resposta.
         self._background_queue = AgentTaskQueue(max_workers=1, max_results=100)
@@ -261,6 +265,23 @@ class AurenHarness:
             terminal_result_tools=cls.TERMINAL_RESULT_TOOLS,
             multitab_concluida=cls._multitab_concluida,
         )
+
+    BROWSER_STATE_MUTATING_TOOLS = {
+        "navegar_navegador",
+        "clicar_elemento",
+        "preencher_elemento",
+        "pressionar_tecla",
+        "listar_abas",
+        "abrir_nova_aba",
+        "trocar_aba",
+        "fechar_aba",
+        "voltar_pagina",
+        "avancar_pagina",
+        "recarregar_pagina",
+        "rolar_pagina",
+    }
+
+    BROWSER_VERIFICATION_TOOL = "obter_contexto_navegador"
 
     VISION_STATE_MUTATING_TOOLS = {
         "clicar_mouse_windows",
@@ -333,6 +354,7 @@ class AurenHarness:
             incluir_contexto=incluir_contexto,
             contexto_tarefa=self._contexto_tarefa,
             vision_reobserve_pending=getattr(self, "_vision_reobserve_pending", False),
+            browser_verification_pending=getattr(self, "_browser_verification_pending", False),
             max_history_items=self.DEFAULT_MAX_HISTORY_ITEMS,
             max_state_chars=self.MAX_STATE_CHARS,
             texto_seguro=self._texto_seguro,
