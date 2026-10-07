@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import time
 import unicodedata
 from queue import Empty, Queue
 from typing import Any
 
 from core.confirmation import ConfirmationRequest
+from voice.input import CapturedAudio
 
 
 class VoiceConfirmationChannel:
@@ -24,45 +26,46 @@ class VoiceConfirmationChannel:
         self._timeout = max(0.1, float(timeout))
 
     def confirmar(self, request: ConfirmationRequest) -> bool:
+        self._drenar_fila_pendente()
+
         try:
             self._tts.falar(self._prompt(request))
         except Exception:
             return False
 
-        try:
-            item = self._audio_queue.get(timeout=self._timeout)
-        except Empty:
-            return False
+        pronto_em = time.perf_counter()
+        limite = pronto_em + self._timeout
+        while True:
+            restante = limite - time.perf_counter()
+            if restante <= 0:
+                return False
 
-        audio = self._extrair_audio(item)
-        if audio is None:
-            return False
+            try:
+                item = self._audio_queue.get(timeout=restante)
+            except Empty:
+                return False
 
-        try:
-            resposta = self._stt.transcrever(audio)
-        except Exception:
-            return False
+            audio = self._extrair_audio(item)
+            if audio is None:
+                continue
 
-        return self._normalizar(resposta) in self._AFFIRMATIVE_RESPONSES
+            if audio.captured_at < pronto_em:
+                continue
 
-    @staticmethod
-    def _extrair_audio(item: Any) -> Any | None:
-        """Extrai somente o payload do protocolo real da fila de voz.
+            try:
+                resposta = self._stt.transcrever(audio)
+            except Exception:
+                return False
 
-        O produtor de voz publica ``("audio", audio)``. Outros tipos de
-        mensagem, inclusive ``("erro", exc)``, nunca devem chegar ao ASR.
-        Itens antigos no formato de audio puro tambem sao rejeitados para
-        evitar que um mock/legado mascare uma divergencia do runtime real.
-        """
-        if not isinstance(item, tuple) or len(item) != 2:
-            return None
+            return self._normalizar(resposta) in self._AFFIRMATIVE_RESPONSES
 
-        tipo, payload = item
-        if tipo != "audio" or payload is None:
-            return None
-
-        return payload
-    _AFFIRMATIVE_RESPONSES = frozenset({"s", "sim", "y", "yes", "sim pode", "pode sim"})
+    def _drenar_fila_pendente(self) -> None:
+        while True:
+            try:
+                self._audio_queue.get_nowait()
+            except Empty:
+                return
+    @staticmethod,    def _extrair_audio(item: Any) -> CapturedAudio | None:,        """Extrai somente audio capturado pelo protocolo real da fila.""",        if not isinstance(item, tuple) or len(item) != 2:,            return None,,        tipo, payload = item,        if tipo != "audio" or not isinstance(payload, CapturedAudio):,            return None,,        return payload,    _AFFIRMATIVE_RESPONSES = frozenset({"s", "sim", "y", "yes", "sim pode", "pode sim"})
 
     @staticmethod
     def _prompt(request: ConfirmationRequest) -> str:
