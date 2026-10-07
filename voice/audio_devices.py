@@ -174,11 +174,11 @@ def _usable(idx: int, kind: str, sd: Any) -> bool:
                 callback=lambda *_args: None,
             )
         else:
-            stream = sd.RawOutputStream(
+            stream = sd.OutputStream(
                 samplerate=rate,
                 channels=1,
-                dtype="int16",
-                blocksize=1024,
+                dtype="float32",
+                latency="low",
                 device=idx,
             )
         stream.start()
@@ -228,16 +228,18 @@ def _transport_works(
     stream = None
     try:
         if kind == "output":
-            stream = sd.RawOutputStream(
+            import numpy as np
+
+            stream = sd.OutputStream(
                 samplerate=rate,
                 channels=1,
-                dtype="int16",
-                blocksize=1024,
+                dtype="float32",
+                latency="low",
                 device=idx,
             )
             stream.start()
             started = time.monotonic()
-            stream.write(bytes(int(rate * seconds) * 2))
+            stream.write(np.zeros(int(rate * seconds), dtype=np.float32))
             elapsed = time.monotonic() - started
             ok = elapsed >= seconds * 0.5
             if not ok:
@@ -257,7 +259,7 @@ def _transport_works(
             stream = sd.InputStream(
                 samplerate=rate,
                 channels=1,
-                dtype="int16",
+                dtype="float32",
                 blocksize=1024,
                 device=idx,
                 callback=_callback,
