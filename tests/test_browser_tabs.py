@@ -256,7 +256,8 @@ def test_navegar_navegador_does_not_restart_on_transient_goto_error(monkeypatch)
 
     resultado = browser.navegar_navegador("https://example.com")
 
-    assert "falha transitoria de rede" in resultado
+    assert resultado.ok is False
+    assert "falha transitoria de rede" in resultado.message
 
 
 def test_navegar_navegador_restarts_only_after_confirmed_page_closure(monkeypatch):
@@ -293,4 +294,5 @@ def test_navegar_navegador_restarts_only_after_confirmed_page_closure(monkeypatc
     resultado = browser.navegar_navegador("https://example.com/novo")
 
     assert calls == ["restart"]
-    assert "URL atual: https://example.com/novo" in resultado
+    assert resultado.ok is True
+    assert resultado.data["navegacao"]["url_depois"] == "https://example.com/novo"
