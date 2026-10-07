@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import hashlib
-import os
 import json
+import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -14,7 +14,6 @@ from core.tool_contracts import capability_for_tool, validate_tool_arguments
 from core.tool_result import ToolResult
 import tools.dispatcher as dispatcher
 import tools.file_intelligence as file_intelligence
-import core.permission_manager as permission_manager_module
 from tools.file_intelligence import READ_MAX_CHARS, _history, _parse_zone_identifier, inspect_file, read_file
 
 
@@ -295,21 +294,15 @@ def test_capability_registry_exposes_file_inspection_and_read():
 
 
 
-def test_read_and_inspect_outside_allowlist_require_confirmation(tmp_path: Path):
+def test_read_and_inspect_outside_allowlist_require_confirmation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     allowed = tmp_path / "Desktop"
     allowed.mkdir()
     outside = tmp_path.parent / "arquivo-fora.txt"
     outside.write_text("segredo", encoding="utf-8")
+    monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [allowed.resolve()])
 
-    # A raiz permitida deste teste e deliberadamente mais restrita que o
-    # fixture global para provar a classificacao de um caminho externo.
-    import tools.file_intelligence as module
-    module._read_allowed_roots = lambda: [allowed.resolve()]
-    try:
-        read_result = read_file(str(outside))
-        inspect_result = inspect_file(str(outside))
-    finally:
-        module._read_allowed_roots = lambda: [tmp_path.resolve()]
+    read_result = read_file(str(outside))
+    inspect_result = inspect_file(str(outside))
 
     assert read_result.ok is False
     assert read_result.error_code == "path_confirmation_required"
@@ -352,6 +345,19 @@ def test_symlink_to_outside_is_not_covered_by_allowed_root(tmp_path: Path, monke
     assert result.ok is False
     assert result.error_code == "path_confirmation_required"
     assert result.data["caminho"] == str(target.resolve())
+
+
+def test_browser_profile_folder_is_blocked_even_inside_onedrive_like_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    allowed = tmp_path / "OneDrive"
+    profile = allowed / "Google" / "Chrome" / "User Data" / "Default" / "History"
+    profile.parent.mkdir(parents=True)
+    profile.write_text("historico", encoding="utf-8")
+    monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [allowed.resolve()])
+
+    result = read_file(str(profile))
+
+    assert result.ok is False
+    assert result.error_code == "sensitive_path_blocked"
 
 
 def test_sensitive_folder_is_blocked_even_inside_allowed_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
