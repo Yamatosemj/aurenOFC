@@ -857,6 +857,19 @@ def test_dispatcher_executes_file_move_through_registered_path(tmp_path: Path):
     assert not origem.exists()
 
 
+def test_new_file_operations_have_strict_contract_samples():
+    samples = {
+        "mover_arquivo": {"origem": "C:\\temp\\a.txt", "destino": "C:\\temp\\b.txt"},
+        "copiar_arquivo": {"origem": "C:\\temp\\a.txt", "destino": "C:\\temp\\b.txt"},
+        "renomear_arquivo": {"caminho": "C:\\temp\\a.txt", "novo_nome": "b.txt"},
+        "criar_pasta": {"caminho": "C:\\temp\\nova"},
+        "enviar_para_lixeira": {"caminho": "C:\\temp\\a.txt"},
+    }
+    for nome, argumentos in samples.items():
+        valido, erro = validate_tool_arguments(nome, argumentos)
+        assert valido is True, erro
+
+
 def test_file_operation_permissions_are_auto_except_trash(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [tmp_path.resolve()])
     manager = PermissionManager()
