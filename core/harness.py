@@ -64,6 +64,7 @@ from core.harness_session import (
     _encerrar_sessao_chat as _encerrar_sessao_chat_impl,
     _garantir_sessao_chat as _garantir_sessao_chat_impl,
 )
+from core.harness_model import _log_resposta_modelo as _log_resposta_modelo_impl
 from core.harness_heuristics import (
     _parece_tarefa_visual_composta,
     _parece_tarefa_multietapa_browser,
@@ -1237,24 +1238,15 @@ class AurenHarness:
         metricas_roteamento: dict[str, Any],
         **extra: Any,
     ) -> None:
-        if self._trace is not None:
-            try:
-                self._trace.record_model(
-                    rodada,
-                    latencia_ms,
-                    self._uso_resposta(resposta),
-                )
-            except Exception as exc:
-                _write_log("TRACE_ERROR", task_id=self._task_id, etapa="model", erro=str(exc))
-        _write_log(
-            "MODEL_ROUND_RESPONSE",
+        _log_resposta_modelo_impl(
+            rodada,
+            resposta,
+            latencia_ms,
+            metricas_roteamento,
+            trace=self._trace,
             task_id=self._task_id,
-            rodada=rodada,
-            output_items=len(getattr(resposta, "output", []) or []),
-            output_text=getattr(resposta, "output_text", "") or "",
-            uso=self._uso_resposta(resposta),
-            latencia_ms=round(latencia_ms, 3),
-            router=metricas_roteamento,
+            uso_resposta=self._uso_resposta,
+            write_log=_write_log,
             **extra,
         )
 
