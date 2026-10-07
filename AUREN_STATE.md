@@ -9,35 +9,42 @@ Atualizado em: 2026-10-07
 ## Estado atual
 
 - **Versão estável:** V47
+- **Versão em desenvolvimento:** V48
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** nenhuma
-- **Head da main:** `71ebe7b77826d1673f9abe6926e40eb9fb63d0f2`
-- **CI da implementação mais recente:** pytest, focused Linux e focused Windows verdes
-- **Fase atual:** Browser Intelligence
+- **Branch/PR ativa:** `task-7-audio-devices` / **#80**
+- **Head atual da main:** `0a8304e1b097d458511f017ca1f0d9da19d86726`
+- **CI verificável pelo conector nesta sessão:** sem workflow/status retornado
+- **Fase atual:** áudio/voz
+- **Tarefa ativa:** **Tarefa 7 — Dispositivos de áudio por nome, medidos**
 
-### O que já está concluído nesta fase
+### Tarefa 7 — estado da implementação
 
-- [x] contexto unificado do navegador via `obter_contexto_navegador`
-- [x] contexto disponível no registry, contratos, facade e Dispatcher
-- [x] Router inclui contexto junto do subconjunto de ferramentas do browser
-- [x] conteúdo da página marcado como não confiável
-- [x] tarefas browser compostas com ações relevantes exigem nova verificação antes da conclusão
-- [x] verificação usa `obter_contexto_navegador` pelo fluxo normal do modelo/Dispatcher
-- [x] ações browser simples preservam o comportamento anterior e não ganham uma rodada extra desnecessária
-- [x] navegação e troca de aba têm verificação determinística de URL/aba ativa
-- [x] preenchimento de campos não sensíveis tem verificação determinística do valor observado
-- [x] rolagem expõe métricas estruturadas e possui verificação determinística da posição observada
-- [x] runner live separado possui casos explícitos de verificação pós-ação para navegação e rolagem
+- [x] confirmado que o Auren usa `sounddevice` para captura e TTS
+- [x] escolha por nome em vez de índice/variável de ambiente
+- [x] lista deduplicada por direção
+- [x] filtragem de pseudo-dispositivos
+- [x] seleção de um host API por direção
+- [x] abertura real no sample rate usado pelo Auren antes de aceitar um endpoint
+- [x] sonda opcional de transporte, usando o formato de stream do próprio Auren
+- [x] escolhas persistidas por nome fora do Git
+- [x] dispositivo ausente ou não utilizável volta ao padrão do sistema com warning
+- [x] resolução refeita a cada captura e fala TTS
+- [x] prefetch de enumeração em thread no início da voz
+- [x] `AUREN_LISTAR_MICROFONES.bat` mostra entrada, saída e escolhas atuais
+- [x] testes focados simulando 41 entradas brutas → 4 entradas + 4 saídas
+- [x] testes de nome ausente, endpoint não abrível, sonda muda, persistência e troca sem reinício no código
 
-### Próximo passo da fase
+### Portão de saída da Tarefa 7
 
-**Refinar a verificação por tipo de ação**, mantendo o princípio de não criar novas integrações:
+**Ainda não fechado.**
 
-- navegação: confirmar título/URL efetivos — **parcialmente concluído**; URL já é comparada de forma determinística
-- abas: confirmar quantidade, aba ativa e destino — **parcialmente concluído**; aba ativa já é comparada de forma determinística
-- interação com elemento: confirmar o estado relevante da página ou controle — **parcialmente concluído**; preenchimento não sensível já é comparado pelo valor observado
-- rolagem: posição de rolagem já é verificada deterministicamente; confirmar automaticamente o conteúdo esperado continua como etapa posterior
-- qualquer verificação continua tratando conteúdo da página como dado não confiável, nunca como instrução
+- [x] 12 testes focados novos passaram em ambiente simulado
+- [ ] executar `py -m pytest -q` no checkout completo do Auren
+- [ ] executar `python testes_auren_live.py --rapido` no Windows
+- [ ] trocar headset com o Auren já aberto e confirmar mudança sem reiniciar
+- [ ] confirmar no Windows real que a sonda não rejeita o host API correto nem o dispositivo escolhido
+
+Enquanto esses itens estiverem pendentes, a Tarefa 7 permanece aberta e a V48 não é estável.
 
 ## Segurança e base estrutural concluídas
 
@@ -72,28 +79,28 @@ Atualizado em: 2026-10-07
 - **#66** — verificação determinística de preenchimento de elemento — merged
 - **#69** — verificação determinística de rolagem e persistência da evidência entre rodadas — merged
 - **#72** — cobertura do Browser Intelligence no runner live — merged
+- **#80** — dispositivos de áudio por nome, medidos — em aberto
 
 ## Contratos atuais importantes
 
 - Conteúdo vindo de páginas web é **dado não confiável**
 - Conteúdo não confiável nunca autoriza uma ação por si só
 - Ações continuam passando pelo Router, Dispatcher e PermissionManager normais
-- Não existe caminho paralelo de execução para Browser Intelligence
+- Não existe caminho paralelo de execução para capacidades do runtime
 - A tarefa não deve declarar sucesso quando uma verificação obrigatória ainda estiver pendente
 - Mudanças de escopo devem virar backlog, não execução silenciosa
 
 ## Próximas etapas
 
-A tarefa ativa permanece **Browser Intelligence** até que a verificação por tipo de ação esteja suficientemente robusta e coberta por testes.
-
-Próxima etapa: executar o runner live em Windows e registrar o resultado real das tarefas compostas. O CI atual valida o código do runner, mas não executa a bateria L4/L5 com navegador e modelo reais.
-
-Depois disso, revisar novamente a estabilização e só então abrir novas frentes.
+1. Fechar a validação Windows da Tarefa 7.
+2. Só depois revisar a próxima tarefa de evolução.
+3. A interface visual não entra nesta tarefa; a **Tarefa 6 — UI** foi deliberadamente delegada ao usuário e não deve ser implementada pelo fluxo do Auren.
 
 ## Backlog
 
 Ideias futuras que não fazem parte da tarefa atual:
 
+- Tarefa 6 — interface visual avançada, **delegada ao usuário**
 - memória contextual/semântica mais avançada
 - inteligência geral do Windows
 - multi-device
@@ -101,7 +108,6 @@ Ideias futuras que não fazem parte da tarefa atual:
 - ESP32/Arduino
 - Minecraft
 - wake word
-- interface visual avançada
 
 ## Regra de continuidade
 
