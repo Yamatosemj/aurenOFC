@@ -167,9 +167,12 @@ def test_cooldown_expira_e_modelo_volta_a_ser_elegivel():
 def test_modelo_em_cooldown_e_pulado_sem_nova_chamada():
     relogio = RelogioFake()
     ladder = ModelLadder(("modelo-a", "modelo-b"), clock=relogio)
-    ladder.executar(
-        lambda model: ErroHttp(429) if model == "modelo-a" else "ok"
-    )
+    def primeira_chamada(model: str):
+        if model == "modelo-a":
+            raise ErroHttp(429)
+        return "ok"
+
+    ladder.executar(primeira_chamada)
 
     chamadas: list[str] = []
     modelo, resposta = ladder.executar(
