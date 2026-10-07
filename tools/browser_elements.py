@@ -272,6 +272,7 @@ def clicar_elemento(alvo, indice=1):
             "checked",
             "selected",
             "open",
+            "details-open",
             "data-state",
         ):
             valor_antes = estados_antes.get(atributo)
