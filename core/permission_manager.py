@@ -662,8 +662,8 @@ class PermissionManager:
             )
 
         return (
-            PermissionLevel.AUTO,
-            "Preenchimento sem dado sensivel; nao envia nem publica nada por si so.",
+            PermissionLevel.CONFIRM,
+            "Campo fora da allowlist explicita de consulta/filtro; confirmacao obrigatoria antes de escrever.",
         )
 
     def _classificar_tecla(
