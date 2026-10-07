@@ -166,3 +166,66 @@ def test_obter_pagina_does_not_restart_when_new_page_fails(monkeypatch):
         assert "limite temporario do contexto" in str(erro)
     else:
         raise AssertionError("obter_pagina deveria propagar a falha de new_page")
+
+
+def test_estado_abas_detects_external_real_focus_instead_of_internal_reference(monkeypatch):
+    class _FocusedPage(_FakePage):
+        def __init__(self, url, title, focused):
+            super().__init__(url, title)
+            self.focused = focused
+
+        def evaluate(self, _script):
+            return self.focused
+
+        def bring_to_front(self):
+            self.focused = True
+
+    first = _FocusedPage("https://example.com", "Inicio", False)
+    second = _FocusedPage("https://example.com/editor", "Editor", True)
+    pages = [first, second]
+    monkeypatch.setattr(browser, "_paginas_abertas", lambda: pages)
+    monkeypatch.setattr(browser, "pagina", first)
+
+    estado = browser._estado_abas()
+
+    assert "Aba ativa: 2" in estado
+    assert "Aba 2: Editor | https://example.com/editor [ATIVA]" in estado
+    assert "Aba 1: Inicio | https://example.com" in estado
+
+
+def test_estado_abas_does_not_invent_active_tab_when_focus_is_ambiguous(monkeypatch):
+    class _UnclearPage(_FakePage):
+        def evaluate(self, _script):
+            raise RuntimeError("foco indisponivel")
+
+    first = _UnclearPage("https://example.com", "Inicio")
+    second = _UnclearPage("https://example.com/editor", "Editor")
+    pages = [first, second]
+    monkeypatch.setattr(browser, "_paginas_abertas", lambda: pages)
+    monkeypatch.setattr(browser, "pagina", first)
+
+    estado = browser._estado_abas()
+
+    assert "Aba ativa: ?" in estado
+    assert "[ATIVA]" not in estado
+
+
+def test_trocar_aba_brings_selected_page_to_front(monkeypatch):
+    class _FrontPage(_FakePage):
+        def __init__(self, url, title):
+            super().__init__(url, title)
+            self.brought_to_front = 0
+
+        def bring_to_front(self):
+            self.brought_to_front += 1
+
+    first = _FrontPage("https://example.com", "Inicio")
+    second = _FrontPage("https://example.com/editor", "Editor")
+    monkeypatch.setattr(browser, "_paginas_abertas", lambda: [first, second])
+    monkeypatch.setattr(browser, "pagina", first)
+
+    result = browser.trocar_aba(2)
+
+    assert result.ok is True
+    assert second.brought_to_front == 1
+    assert browser.pagina is second
