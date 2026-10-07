@@ -61,6 +61,7 @@ def verificar_resultado_navegador(
     ferramenta: str,
     argumentos: str,
     dados_contexto: Any,
+    dados_acao: Any = None,
 ) -> bool | None:
     """Retorna True/False quando sabe verificar a acao; None para casos genericos."""
     dados = dados_contexto if isinstance(dados_contexto, dict) else {}
@@ -101,6 +102,13 @@ def verificar_resultado_navegador(
             int(args.get("indice") or 1),
         )
 
+    if ferramenta == "rolar_pagina":
+        return _verificar_rolagem(
+            str(args.get("direcao") or ""),
+            dados.get("scroll"),
+            dados_acao,
+        )
+
     return None
 
 
@@ -134,3 +142,56 @@ def _controle_com_valor(pagina: str, alvo: str, esperado: str, indice: int) -> b
     return len(matches) >= max(1, int(indice or 1))
 
 
+
+
+def _numero_scroll(dados: Any, chave: str) -> float | None:
+    if not isinstance(dados, dict):
+        return None
+    try:
+        return float(dados.get(chave))
+    except (TypeError, ValueError):
+        return None
+
+
+def _verificar_rolagem(
+    direcao: str,
+    scroll_atual: Any,
+    dados_acao: Any,
+) -> bool | None:
+    if not isinstance(scroll_atual, dict) or not isinstance(dados_acao, dict):
+        return None
+
+    atual = _numero_scroll(scroll_atual, "scroll_y")
+    antes = _numero_scroll(dados_acao, "scroll_y_antes")
+    depois = _numero_scroll(dados_acao, "scroll_y_depois")
+    altura = _numero_scroll(dados_acao, "scroll_height")
+    viewport = _numero_scroll(dados_acao, "viewport_height")
+    if None in {atual, antes, depois, altura, viewport}:
+        return None
+
+    tolerancia = 8.0
+    if abs(atual - depois) > tolerancia:
+        return False
+
+    max_scroll = max(0.0, altura - viewport)
+
+    if direcao == "inicio":
+        return atual <= tolerancia
+
+    if direcao == "fim":
+        return abs(atual - max_scroll) <= tolerancia
+
+    if max_scroll <= tolerancia:
+        return None
+
+    if direcao == "baixo":
+        if depois > antes + 1.0:
+            return True
+        return depois >= max_scroll - tolerancia
+
+    if direcao == "cima":
+        if depois < antes - 1.0:
+            return True
+        return depois <= tolerancia
+
+    return None
