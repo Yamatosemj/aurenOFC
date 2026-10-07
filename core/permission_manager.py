@@ -110,7 +110,6 @@ class PermissionManager:
         "navegar_navegador",
         "voltar_pagina",
         "avancar_pagina",
-        "recarregar_pagina",
     })
     AUTO_BROWSER_TAB_CONTROL_TOOLS = frozenset({
         "abrir_nova_aba",
@@ -569,6 +568,11 @@ class PermissionManager:
             )
 
         if capacidade == "browser.navigation":
+            if nome_ferramenta == "recarregar_pagina":
+                return (
+                    PermissionLevel.CONFIRM,
+                    "Recarregar pode repetir uma requisicao ou efeito remoto da pagina; confirmacao obrigatoria.",
+                )
             if nome_ferramenta in self.AUTO_BROWSER_NAVIGATION_TOOLS:
                 return (
                     PermissionLevel.AUTO,
@@ -725,6 +729,12 @@ class PermissionManager:
             argumentos.get("tecla", "")
         ).strip()
         tecla_normalizada = self._normalizar_texto(tecla)
+        if tecla_normalizada in {"control+r", "ctrl+r", "f5"}:
+            return (
+                PermissionLevel.CONFIRM,
+                "Recarregar pode repetir uma requisicao ou efeito remoto da pagina; confirmacao obrigatoria.",
+            )
+
         safe_keys = {self._normalizar_texto(item) for item in self.SAFE_KEYS}
         risky_keys = {self._normalizar_texto(item) for item in self.RISKY_KEYS}
 
