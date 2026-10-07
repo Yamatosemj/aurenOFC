@@ -2,17 +2,17 @@ from __future__ import annotations
 
 from core.permission_manager import PermissionLevel, PermissionManager
 from core.tool_result import ToolResult
-from tools import browser_context
+from tools import browser, browser_context
 
 
 def test_browser_context_combines_tabs_and_active_page(monkeypatch):
     monkeypatch.setattr(
-        browser_context.browser,
+        browser,
         "listar_abas",
         lambda: "Abas abertas: 2\nAba ativa: 2",
     )
     monkeypatch.setattr(
-        browser_context.browser,
+        browser,
         "ler_pagina",
         lambda foco: f"Titulo: YouTube\nFoco da leitura: {foco}",
     )
