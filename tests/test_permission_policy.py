@@ -276,3 +276,18 @@ def test_authorized_auto_and_confirmed_actions_consume_budget_once():
 
     assert manager.autorizar("fechar_aba", {"indice": 2})[0] is True
     assert manager.actions_attempted == 2
+
+
+@pytest.mark.parametrize("nome_ferramenta", ["recarregar_pagina", "pressionar_tecla"])
+def test_browser_reload_requires_confirmation_even_when_named_safe(nome_ferramenta):
+    manager = PermissionManager()
+
+    if nome_ferramenta == "recarregar_pagina":
+        args = {}
+    else:
+        args = {"tecla": "F5"}
+
+    nivel, motivo = manager.nivel_da_acao(nome_ferramenta, args)
+
+    assert nivel == PermissionLevel.CONFIRM
+    assert "repetir" in motivo.lower() or "confirmacao" in motivo.lower()
