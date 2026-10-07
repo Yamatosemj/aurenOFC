@@ -18,6 +18,7 @@ SUPPORTED_READ_EXTENSIONS = frozenset({".txt", ".md", ".json", ".csv"})
 READ_MAX_CHARS = 20_000
 MAX_READ_OFFSET = 1_000_000
 MAX_COPY_SCAN_FILES = 20_000
+MAX_HASH_BYTES = 256 * 1024 * 1024
 COPY_SEARCH_ROOT_NAMES = ("Downloads", "Desktop", "Documents")
 ONEDRIVE_ALLOWED_SUBROOT_NAMES = ("Downloads", "Desktop", "Documents", "Área de Trabalho", "Documentos")
 
@@ -72,6 +73,24 @@ class FileContent:
     truncado: bool
     proximo_inicio: int | None
 
+
+def _same_file_identity(before: os.stat_result, after: os.stat_result) -> bool:
+    before_identity = (
+        getattr(before, "st_dev", None),
+        getattr(before, "st_ino", None),
+        getattr(before, "st_size", None),
+        getattr(before, "st_mtime_ns", None),
+    )
+    after_identity = (
+        getattr(after, "st_dev", None),
+        getattr(after, "st_ino", None),
+        getattr(after, "st_size", None),
+        getattr(after, "st_mtime_ns", None),
+    )
+    if before_identity[:2] != (None, None) and after_identity[:2] != (None, None):
+        if before_identity[:2] != after_identity[:2]:
+            return False
+    return before_identity[2:] == after_identity[2:]
 
 def _human_size(size: int) -> str:
     value = float(max(0, size))
