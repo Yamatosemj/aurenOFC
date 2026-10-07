@@ -164,6 +164,15 @@ def test_read_supported_formats(tmp_path: Path, suffix: str, content: str):
     assert result.data["file_content"]["conteudo"] == content
     assert result.data["file_content"]["truncado"] is False
 
+def test_read_normalizes_windows_crlf(tmp_path: Path):
+    path = tmp_path / "windows.txt"
+    path.write_bytes(b"linha 1\r\nlinha 2\r\n")
+
+    result = read_file(str(path), 0, 200)
+
+    assert result.ok
+    assert result.data["file_content"]["conteudo"] == "linha 1\nlinha 2\n"
+
 
 def test_read_file_marks_content_as_untrusted(tmp_path: Path):
     path = tmp_path / "nao-confiavel.txt"
