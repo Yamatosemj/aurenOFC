@@ -28,6 +28,30 @@ def _paginas_abertas():
     except Exception:
         return []
 
+def _esperar_documento_pronto(p, timeout_ms=5000):
+    """Espera o estado final do documento sem confundir DOMContentLoaded com carga concluida."""
+    try:
+        estado = str(p.evaluate("() => document.readyState") or "")
+    except Exception:
+        return None
+
+    if estado == "complete":
+        return estado
+
+    try:
+        p.wait_for_function(
+            "() => document.readyState === 'complete'",
+            timeout=timeout_ms,
+        )
+    except Exception:
+        pass
+
+    try:
+        return str(p.evaluate("() => document.readyState") or "") or None
+    except Exception:
+        return None
+
+
 def _esperar_titulo(p, timeout_ms=1500):
     """Espera brevemente o titulo apos uma navegacao sem impor uma espera fixa longa."""
     try:
@@ -539,6 +563,7 @@ def navegar_navegador(url, modo="visivel"):
         antes_url = str(getattr(p, "url", "") or "")
         antes_titulo = _esperar_titulo(p)
         p.goto(url, wait_until="domcontentloaded", timeout=30000)
+        ready_state = _esperar_documento_pronto(p)
         depois_url = str(getattr(p, "url", "") or url)
         depois_titulo = _esperar_titulo(p)
         return ToolResult.success(
@@ -551,6 +576,7 @@ def navegar_navegador(url, modo="visivel"):
                     "url_depois": depois_url,
                     "titulo_antes": antes_titulo,
                     "titulo_depois": depois_titulo,
+                    "ready_state_depois": ready_state,
                     "mudou_url": antes_url != depois_url,
                     "modo": modo,
                 }
