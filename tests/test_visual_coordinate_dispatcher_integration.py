@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import builtins
 import json
+import time
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -53,6 +54,7 @@ def _set_geometry(
         "virtual_screen_width": virtual[2],
         "virtual_screen_height": virtual[3],
         "dpi_per_monitor_aware": dpi_per_monitor_aware,
+        "captured_at_monotonic": time.monotonic(),
     }
     geometry = build_vision_geometry(capture, prepared)
     assert geometry is not None
