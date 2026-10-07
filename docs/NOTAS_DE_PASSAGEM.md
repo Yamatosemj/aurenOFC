@@ -34,8 +34,9 @@ Decisões tomadas (e por quê):
 Testes: (comando, nº de testes antes e depois, resultado)
 - Comando exigido: py -m pytest -q
 - Foram adicionados 11 testes específicos de memória/sessão.
-- A contagem total antes e depois depende da execução do CI, pois o repositório não está montado localmente neste ambiente.
-- Resultado final deve ser registrado aqui após o CI verde.
+- Antes: 444 testes coletados.
+- Depois: 455 testes coletados.
+- Resultado final no CI: 449 passed, 6 skipped, 0 failed.
 - Testes novos cobrem: orçamento/índice, intercalamento, consulta por chave/valor, registry/contrato, listagem e data, consumo único de sessão, isolamento de texto do assistente, filtro de credenciais, limite de segurança e preservação do valor persistido.
 - Runner live Windows: não executado, pois nenhuma ferramenta Browser/Windows foi alterada.
 
