@@ -242,6 +242,18 @@ class TaskTrace:
                      success: bool | None = True, metadata: dict[str, Any] | None = None) -> None:
         stage = str(category or name)
         duration = max(0.0, float(duration_ms))
+        if self._finished:
+            if stage in {"asr", "tts"}:
+                try:
+                    self.store.record_late_stage(
+                        task_id=self.task_id,
+                        category=stage,
+                        duration_ms=duration,
+                        metadata=metadata,
+                    )
+                except Exception:
+                    pass
+            return
         self._span(stage, name, duration, success=success, metadata=metadata)
         if stage == "context": self.context_ms += duration
         elif stage == "fast_path": self.fast_path_ms += duration; self.task_type = "fast_path"
