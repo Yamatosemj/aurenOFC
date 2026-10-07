@@ -634,3 +634,28 @@ def test_busca_arquivo_ignora_symlink_para_fora_da_raiz(tmp_path, monkeypatch):
 
     assert "atalho.txt" not in resultado
     assert "privado.txt" not in resultado
+
+
+@pytest.mark.parametrize(
+    ("zone_id", "status", "internet_mark"),
+    [
+        (0, "nao_confirmado", "nao_confirmado"),
+        (2, "nao_confirmado", "nao_confirmado"),
+        (3, "confirmado", "confirmado"),
+        (4, "confirmado", "confirmado"),
+    ],
+)
+def test_origin_status_distinguishes_zone_classes(monkeypatch, tmp_path: Path, zone_id, status, internet_mark):
+    path = tmp_path / "zona.txt"
+    path.write_text("x", encoding="utf-8")
+    monkeypatch.setattr(
+        file_intelligence,
+        "_zone_identifier_text",
+        lambda _path: f"[ZoneTransfer]\nZoneId={zone_id}\nHostUrl=https://example.com/a.txt\n",
+    )
+
+    result = file_intelligence.inspect_file(str(path))
+    assert result.ok
+    origem = result.data["origem"]
+    assert origem["status"] == status
+    assert origem["marcacao_zona_internet"] == internet_mark
