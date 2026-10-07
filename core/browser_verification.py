@@ -127,8 +127,106 @@ def verificar_resultado_navegador(
             dados_acao,
         )
 
+    if ferramenta in {"voltar_pagina", "avancar_pagina", "recarregar_pagina"}:
+        return _verificar_navegacao_historico(ferramenta, abas, dados_acao)
+
+    if ferramenta == "pressionar_tecla":
+        return _verificar_tecla(abas, dados_acao)
     return None
 
+
+def _dados_navegacao_acao(dados_acao: Any) -> dict[str, Any] | None:
+    if not isinstance(dados_acao, dict):
+        return None
+    dados = dados_acao.get("navegacao")
+    return dados if isinstance(dados, dict) else None
+
+def _verificar_navegacao_historico(ferramenta: str, abas: str, dados_acao: Any) -> bool | None:
+    dados = _dados_navegacao_acao(dados_acao)
+    if dados is None:
+        return None
+    ativa = _active_tab(abas)
+    if ativa is None:
+        return None
+    _, _, url_atual = ativa
+    url_depois = str(dados.get("url_depois") or dados.get("url") or "").strip()
+    if not url_depois:
+        return None
+    if _normalize_url(url_atual) != _normalize_url(url_depois):
+        return False
+
+    if ferramenta in {"voltar_pagina", "avancar_pagina"}:
+        mudou = dados.get("mudou_url")
+        if mudou is True:
+            return True
+        if mudou is False:
+            return False
+        return None
+
+    if ferramenta == "recarregar_pagina":
+        observado = dados.get("recarregamento_observado")
+        if observado is True:
+            return True
+        if observado is False:
+            return False
+        return None
+
+    return None
+
+def _verificar_tecla(abas: str, dados_acao: Any) -> bool | None:
+    if not isinstance(dados_acao, dict):
+        return None
+    dados = dados_acao.get("tecla")
+    if not isinstance(dados, dict):
+        return None
+    if dados.get("evento_observado") is not True:
+        return False
+
+    tecla = str(dados.get("tecla") or "").strip().casefold()
+    estado_antes = dados.get("estado_antes")
+    estado_depois = dados.get("estado_depois")
+    if not isinstance(estado_antes, dict) or not isinstance(estado_depois, dict):
+        return None
+
+    if tecla in {"f5", "control+r", "ctrl+r"}:
+        antes = estado_antes.get("time_origin")
+        depois = estado_depois.get("time_origin")
+        if antes is None or depois is None:
+            return None
+        return depois != antes
+
+    if tecla in {"escape", "esc"}:
+        pares = []
+        for chave in ("dialogs", "menus", "listboxes"):
+            antes = estado_antes.get(chave)
+            depois = estado_depois.get(chave)
+            if isinstance(antes, int) and isinstance(depois, int):
+                pares.append((antes, depois))
+        if not pares:
+            return None
+        return any(depois < antes for antes, depois in pares)
+
+    if tecla in {"arrowup", "arrowdown", "home", "end", "pageup", "pagedown"}:
+        antes = estado_antes.get("scroll_y")
+        depois = estado_depois.get("scroll_y")
+        if antes is None or depois is None:
+            return None
+        return float(antes) != float(depois)
+
+    if tecla in {"enter", "control+enter", "ctrl+enter"}:
+        antes = _normalize_url(str(estado_antes.get("url") or ""))
+        depois = _normalize_url(str(estado_depois.get("url") or ""))
+        if not antes or not depois:
+            return None
+        return antes != depois
+
+    if tecla in {"control+w", "ctrl+w"}:
+        quantidade, observadas = _extrair_abas_observadas(abas)
+        if quantidade is None:
+            return None
+        return len(observadas) < quantidade if quantidade > 0 else False
+
+    return None
 
 def _extrair_abas_observadas(abas: str) -> tuple[int | None, list[tuple[int, str, str]]]:
     texto = str(abas or "")
