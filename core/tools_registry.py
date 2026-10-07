@@ -844,10 +844,10 @@ tools = [
             "properties": {
                 "indice": {
                     "type": "integer",
-                    "description": "Numero da aba, comecando em 1. Use 0 para fechar a aba ativa."
+                    "description": "Numero da aba, comecando em 1. Omitir fecha a aba ativa; use 0 tambem para a aba ativa."
                 }
             },
-            "required": ["indice"],
+            "required": [],
             "additionalProperties": False
         },
         "strict": True
