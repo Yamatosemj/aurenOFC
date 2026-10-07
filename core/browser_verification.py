@@ -528,7 +528,7 @@ def _verificar_clique(
             esperado = int(sinal.get("depois"))
         except (TypeError, ValueError):
             return None
-        if alvo not in {"dialogos", "menus", "listboxes"}:
+        if alvo not in {"dialogos", "menus", "listboxes", "popovers", "details_abertos"}:
             return None
 
         marcador = "Elementos flutuantes visiveis:"
