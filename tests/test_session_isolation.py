@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 from core.harness import AurenHarness
 from core.session import SessionContextManager
-from core.memory_context import montar_contexto_memoria
+from core.memory_context import recuperar_memoria
 from memory.store import PersistentMemoryStore
 
 
@@ -38,10 +38,11 @@ def test_memory_context_is_scoped_by_chat_id(tmp_path):
     store = PersistentMemoryStore(tmp_path / "memory.sqlite3")
     store.registrar_conversa("chat-A", "user", "marker-A unique")
     store.registrar_conversa("chat-B", "user", "marker-B unique")
-    context_a = montar_contexto_memoria(store, "marker-A unique", chat_id="chat-A")
-    context_b = montar_contexto_memoria(store, "marker-A unique", chat_id="chat-B")
-    assert "marker-A unique" in context_a
-    assert "marker-A unique" not in context_b
+    context_a = recuperar_memoria(store, "marker-A unique", chat_id="chat-A")
+    context_b = recuperar_memoria(store, "marker-A unique", chat_id="chat-B")
+    assert any("marker-A unique" in item["conteudo"] for item in context_a["conversas"])
+    assert not any("marker-B unique" in item["conteudo"] for item in context_a["conversas"])
+    assert not context_b["conversas"]
 
 
 def test_persistent_memory_without_chat_scope_remains_global(tmp_path):
@@ -57,7 +58,6 @@ def test_strategy_saved_in_chat_a_is_not_visible_in_chat_b(tmp_path):
     snap_b = ctx.build("chat-B", "abrir planilha de orcamento")
     assert snap_b.secao("estrategias") == ""
     assert store.buscar_estrategias("planilha orcamento", chat_id="chat-B")["total"] == 0
-    assert montar_contexto_memoria(store, "abrir planilha de orcamento", chat_id="chat-B") == ""
 
 
 def test_strategy_saved_in_chat_a_stays_available_in_chat_a(tmp_path):
