@@ -84,6 +84,7 @@ from core.harness_runtime import (
     SessionContext,
     _create_chat_session,
     _write_one_log_file,
+    _prepare_log_details,
     _write_log,
     end_chat_session,
     start_chat_session,
