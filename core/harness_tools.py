@@ -96,6 +96,9 @@ def _executar_chamadas_rodada(
                 browser_verification_pending = True
             else:
                 browser_verification_pending = False
+                browser_verification_state.pop("ferramenta", None)
+                browser_verification_state.pop("argumentos", None)
+                browser_verification_state.pop("dados_acao", None)
         if trace is not None:
             try:
                 trace.record_tool(
