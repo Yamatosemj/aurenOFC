@@ -17,6 +17,7 @@ from voice.speech_response import SpeechResponseFormatter  # noqa: E402
 from voice.stt import LocalPortugueseASR  # noqa: E402
 from voice.tts import LocalKokoroTTS  # noqa: E402
 from core.harness import AurenHarness  # noqa: E402
+from core.confirmation import TIMEOUT_SECONDS  # noqa: E402
 
 
 _INPUT_EOF = object()
@@ -204,7 +205,7 @@ def main() -> int:
         tts=tts,
         stt=stt,
         audio_queue=fila_audio,
-        timeout=8.0,
+        timeout=TIMEOUT_SECONDS,
     )
     harness = _novo_harness(confirmation_channel)
 
