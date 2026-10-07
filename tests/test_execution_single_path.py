@@ -183,13 +183,6 @@ from core.tool_result import ToolResult
 
 DEPENDENCIAS = ("core.tool_result",)
 
-TOOL = {{
-    "name": "unico_plugin",
-    "description": "Plugin de caminho unico.",
-    "parameters": {{"type": "object", "properties": {{}}, "required": [], "additionalProperties": False}},
-    "handler": executar,
-}}
-
 CAPABILITY = {{
     "id": "plugin.unico_plugin",
     "descricao": "Teste do caminho unico.",
@@ -203,6 +196,13 @@ CAPABILITY = {{
 def executar(argumentos):
     Path(r"{marker}").write_text("rodou", encoding="utf-8")
     return ToolResult.success("ok", tool_name=TOOL["name"])
+
+TOOL = {{
+    "name": "unico_plugin",
+    "description": "Plugin de caminho unico.",
+    "parameters": {{"type": "object", "properties": {{}}, "required": [], "additionalProperties": False}},
+    "handler": executar,
+}}
 ''',
         encoding="utf-8",
     )
