@@ -183,9 +183,17 @@ def clicar_elemento(alvo, indice=1):
                             'aria-expanded': attr('aria-expanded'),
                             'aria-pressed': attr('aria-pressed'),
                             'aria-selected': attr('aria-selected'),
+                            'aria-checked': attr('aria-checked'),
                             'checked': ('checked' in el) ? Boolean(el.checked) : null,
                             'selected': ('selected' in el) ? Boolean(el.selected) : null,
-                            'open': ('open' in el) ? Boolean(el.open) : null,
+                            'open': ('open' in el)
+                                ? Boolean(el.open)
+                                : (el.tagName === 'SUMMARY' && el.closest('details')
+                                    ? Boolean(el.closest('details').open)
+                                    : null),
+                            'details-open': (el.tagName === 'SUMMARY' && el.closest('details'))
+                                ? Boolean(el.closest('details').open)
+                                : (el.tagName === 'DETAILS' ? Boolean(el.open) : null),
                             'data-state': attr('data-state')
                         }
                     };
@@ -225,9 +233,18 @@ def clicar_elemento(alvo, indice=1):
                     ).filter(visivel).length;
 
                     return {
-                        dialogos: contar('dialog, [role="dialog"]'),
+                        dialogos: contar('dialog, [role="dialog"], [role="alertdialog"]'),
                         menus: contar('[role="menu"]'),
-                        listboxes: contar('[role="listbox"]')
+                        listboxes: contar('[role="listbox"]'),
+                        popovers: (() => {
+                            try {
+                                return Array.from(document.querySelectorAll('[popover]'))
+                                    .filter(el => el.matches(':popover-open') && visivel(el)).length;
+                            } catch (_) {
+                                return 0;
+                            }
+                        })(),
+                        details_abertos: contar('details[open]')
                     };
                 }
                 """
@@ -237,6 +254,8 @@ def clicar_elemento(alvo, indice=1):
                     "dialogos": int(estado.get("dialogos", 0)),
                     "menus": int(estado.get("menus", 0)),
                     "listboxes": int(estado.get("listboxes", 0)),
+                    "popovers": int(estado.get("popovers", 0)),
+                    "details_abertos": int(estado.get("details_abertos", 0)),
                 }
         except Exception:
             pass
@@ -249,6 +268,7 @@ def clicar_elemento(alvo, indice=1):
             "aria-expanded",
             "aria-pressed",
             "aria-selected",
+            "aria-checked",
             "checked",
             "selected",
             "open",
