@@ -100,7 +100,9 @@ def ler_pagina(foco):
                     const cs = getComputedStyle(el);
                     return r.width > 0 && r.height > 0 &&
                            cs.visibility !== 'hidden' &&
-                           cs.display !== 'none';
+                           cs.display !== 'none' &&
+                           cs.opacity !== '0' &&
+                           cs.pointerEvents !== 'none';
                 };
 
                 const limpar = (texto, limite = 180) =>
