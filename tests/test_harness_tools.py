@@ -255,6 +255,7 @@ def test_successful_browser_context_clears_verification_pending():
         browser_verification_state=state,
         browser_state_mutating_tools={"clicar_elemento"},
         browser_verification_tool="obter_contexto_navegador",
+        browser_verifier=lambda *_args: True,
     )
 
     assert results[0]["sucesso"] is True
@@ -443,3 +444,38 @@ def test_browser_verification_state_survives_between_tool_rounds():
     assert "ferramenta" not in state
     assert "argumentos" not in state
     assert "dados_acao" not in state
+
+
+def test_browser_verification_none_keeps_pending():
+    manager = _TaskManager()
+    state = {"pending": True}
+
+    _executar_chamadas_rodada(
+        [_item("obter_contexto_navegador", "call-browser-none")],
+        historico=[],
+        task_manager=manager,
+        task_id="task-browser-none",
+        rodada=2,
+        executar_ferramenta=lambda _item: ToolResult.success(
+            "Contexto atualizado.",
+            tool_name="obter_contexto_navegador",
+            data={
+                "abas": "Abas abertas: 1\nAba ativa: 1\nAba 1: Site | https://example.com [ATIVA]",
+                "pagina": "conteudo",
+            },
+        ),
+        trace=None,
+        vision_state_mutating_tools=set(),
+        vision_reobserve_pending=False,
+        falha_nao_recuperada=False,
+        max_tool_result_chars=100,
+        get_active_vision_geometry=lambda: None,
+        clear_active_vision_geometry=lambda: None,
+        write_log=lambda *args, **kwargs: None,
+        browser_verification_state=state,
+        browser_state_mutating_tools={"clicar_elemento"},
+        browser_verification_tool="obter_contexto_navegador",
+        browser_verifier=lambda *_args: None,
+    )
+
+    assert state["pending"] is True
