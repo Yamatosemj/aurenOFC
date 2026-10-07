@@ -5,7 +5,7 @@ import os
 import pytest
 
 from core.vision import image_point_to_virtual_screen
-from tools import windows
+from tools import windows, windows_input
 
 
 @pytest.mark.skipif(os.name != "nt", reason="arraste global exige Windows")
@@ -31,7 +31,7 @@ def test_arrastar_mouse_windows_executa_gesto_completo(monkeypatch):
             self.events.append(event)
 
     fake = FakeUser32()
-    monkeypatch.setattr(windows, "_user32", lambda: fake)
+    monkeypatch.setattr(windows_input, "_user32", lambda: fake)
 
     result = windows.arrastar_mouse_windows(
         100,
@@ -60,7 +60,7 @@ def test_arrastar_mouse_windows_rejeita_origem_fora_da_area_virtual(monkeypatch)
                 79: 1080,
             }[index]
 
-    monkeypatch.setattr(windows, "_user32", lambda: FakeUser32())
+    monkeypatch.setattr(windows_input, "_user32", lambda: FakeUser32())
 
     result = windows.arrastar_mouse_windows(
         -1,
