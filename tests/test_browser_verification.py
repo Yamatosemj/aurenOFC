@@ -38,6 +38,37 @@ def _dados_clique_navegacao(*, url_atual="https://youtube.com/watch?v=123", href
 def test_normalize_url_preserves_about_blank():
     assert _normalize_url("about:blank") == "about:blank"
 
+def test_navigation_verification_uses_structured_snapshot_for_long_urls():
+    long_query = "x" * 260
+    url = f"https://example.com/search?q={long_query}"
+    texto_truncado = url[:177] + "..."
+    dados = {
+        "abas": (
+            "Abas abertas: 1\n"
+            "Aba ativa: 1\n"
+            f"Aba 1: Site | {texto_truncado} [ATIVA]"
+        ),
+        "abas_snapshot": [
+            {"indice": 1, "titulo": "Site", "url": url, "ativa": True},
+        ],
+        "pagina": "conteudo",
+    }
+    acao = {
+        "navegacao": {
+            "url_depois": url,
+            "estado_antes": {"dom_fingerprint": "a", "time_origin": 1.0},
+            "estado_depois": {"dom_fingerprint": "b", "time_origin": 2.0},
+        },
+    }
+
+    assert verificar_resultado_navegador(
+        "navegar_navegador",
+        '{"url":"https://example.com/search"}',
+        dados,
+        acao,
+    ) is True
+
+
 
 def test_click_verification_accepts_matching_navigation_href():
     assert verificar_resultado_navegador(
