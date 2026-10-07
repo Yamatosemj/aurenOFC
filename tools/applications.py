@@ -244,7 +244,7 @@ def procurar_executavel(programa):
                 text=True,
                 encoding="utf-8",
                 errors="replace",
-                timeout=20,
+                timeout=10,
                 check=False,
             )
 
