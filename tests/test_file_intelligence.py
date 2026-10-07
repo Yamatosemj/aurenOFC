@@ -316,7 +316,7 @@ def test_requested_trusted_root_names_are_recognized(tmp_path: Path, monkeypatch
     real_read_allowed_roots = file_intelligence._read_allowed_roots
     monkeypatch.setattr(file_intelligence, "_read_allowed_roots", real_read_allowed_roots)
 
-    for root_name in ("Downloads", "Desktop", "Documents", "OneDrive"):
+    for root_name in ("Downloads", "Desktop", "Documents"):
         root = profile / root_name
         root.mkdir()
         path = root / "arquivo.txt"
@@ -521,3 +521,22 @@ def test_dispatcher_does_not_bypass_sensitive_path_with_confirmation(tmp_path: P
     assert result.ok is False
     assert result.error_code == "permission_denied"
     assert channel.requests == []
+
+
+def test_one_drive_root_itself_is_not_an_implicit_read_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    profile = tmp_path / "perfil"
+    onedrive = profile / "OneDrive"
+    onedrive.mkdir(parents=True)
+    arquivo = onedrive / "Privado" / "arquivo.txt"
+    arquivo.parent.mkdir()
+    arquivo.write_text("privado", encoding="utf-8")
+
+    monkeypatch.setenv("USERPROFILE", str(profile))
+    monkeypatch.setenv("OneDrive", str(onedrive))
+    monkeypatch.delenv("OneDriveConsumer", raising=False)
+    monkeypatch.delenv("OneDriveCommercial", raising=False)
+
+    result = read_file(str(arquivo))
+
+    assert result.ok is False
+    assert result.error_code == "path_confirmation_required"
