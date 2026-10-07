@@ -3,6 +3,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from core.harness_tools import _executar_chamadas_rodada
+from core.tool_result import ToolResult, from_legacy
 
 
 class _TaskManager:
@@ -58,8 +59,8 @@ def test_executes_calls_and_updates_history_and_results():
         max_tool_result_chars=100,
         get_active_vision_geometry=lambda: None,
         clear_active_vision_geometry=lambda: None,
-        from_legacy=__import__("core.tool_result", fromlist=["from_legacy"]).from_legacy,
-        tool_result_failure=__import__("core.tool_result", fromlist=["ToolResult"]).ToolResult.failure,
+        from_legacy=from_legacy,
+        tool_result_failure=ToolResult.failure,
         write_log=lambda *args, **kwargs: logs.append((args, kwargs)),
     )
 
@@ -106,8 +107,8 @@ def test_tool_exception_becomes_structured_failure_and_marks_step_failed():
         max_tool_result_chars=100,
         get_active_vision_geometry=lambda: None,
         clear_active_vision_geometry=lambda: None,
-        from_legacy=__import__("core.tool_result", fromlist=["from_legacy"]).from_legacy,
-        tool_result_failure=__import__("core.tool_result", fromlist=["ToolResult"]).ToolResult.failure,
+        from_legacy=from_legacy,
+        tool_result_failure=ToolResult.failure,
         write_log=lambda *args, **kwargs: logs.append((args, kwargs)),
     )
 
@@ -147,8 +148,8 @@ def test_successful_visual_mutation_invalidates_active_geometry():
             state.__setitem__("geometry", None),
             state.__setitem__("cleared", state["cleared"] + 1),
         ),
-        from_legacy=__import__("core.tool_result", fromlist=["from_legacy"]).from_legacy,
-        tool_result_failure=__import__("core.tool_result", fromlist=["ToolResult"]).ToolResult.failure,
+        from_legacy=from_legacy,
+        tool_result_failure=ToolResult.failure,
         write_log=lambda *args, **kwargs: None,
     )
 
@@ -181,8 +182,8 @@ def test_cancellation_before_execution_preserves_previous_failure_state():
         max_tool_result_chars=100,
         get_active_vision_geometry=lambda: None,
         clear_active_vision_geometry=lambda: None,
-        from_legacy=__import__("core.tool_result", fromlist=["from_legacy"]).from_legacy,
-        tool_result_failure=__import__("core.tool_result", fromlist=["ToolResult"]).ToolResult.failure,
+        from_legacy=from_legacy,
+        tool_result_failure=ToolResult.failure,
         write_log=lambda *args, **kwargs: None,
     )
 
