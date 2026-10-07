@@ -692,6 +692,22 @@ def inspect_file(caminho: str, procurar_copias: bool = False, limite_copias: int
         )
     )
 
+    try:
+        current_stat = path.stat()
+    except OSError as exc:
+        return ToolResult.failure(
+            f"Nao foi possivel confirmar a estabilidade do arquivo: {exc}",
+            error_code="path_changed_during_inspect",
+            data={"caminho": str(path)},
+            tool_name=tool_name,
+        )
+    if not _same_file_identity(file_stat, current_stat):
+        return ToolResult.failure(
+            "O arquivo mudou durante a inspeção e o resultado foi descartado.",
+            error_code="path_changed_during_inspect",
+            data={"caminho": str(path)},
+            tool_name=tool_name,
+        )
     data = {
         "file_info": asdict(info),
         "origem": asdict(origin),
