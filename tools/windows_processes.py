@@ -105,6 +105,28 @@ def listar_processos_windows(filtro=""):
     except Exception as erro:
         return f"Nao consegui listar os processos: {erro}"
 
+def _pids_por_nome_windows(nome: str) -> list[int]:
+    resultado = subprocess.run(
+        ["tasklist", "/FI", f"IMAGENAME eq {nome}", "/FO", "CSV", "/NH"],
+        capture_output=True,
+        text=True,
+        encoding="mbcs",
+        errors="replace",
+        timeout=8,
+        check=False,
+    )
+    if resultado.returncode != 0:
+        return []
+    pids: list[int] = []
+    for linha in csv.reader(io.StringIO(resultado.stdout)):
+        if len(linha) < 2:
+            continue
+        try:
+            pids.append(int(linha[1]))
+        except (TypeError, ValueError):
+            continue
+    return sorted(set(pids))
+
 def encerrar_processo_windows(pid=None, nome=""):
     if os.name != "nt":
         return "Controle de processos so esta disponivel no Windows."
@@ -152,7 +174,18 @@ def encerrar_processo_windows(pid=None, nome=""):
         if pedido_pid is not None:
             comando = ["taskkill", "/PID", str(pedido_pid)]
         else:
-            comando = ["taskkill", "/IM", alvo]
+            candidatos = _pids_por_nome_windows(alvo)
+            if not candidatos:
+                return f"Nenhum processo chamado '{alvo}' esta em execucao."
+            if len(candidatos) > 1:
+                return ToolResult.failure(
+                    f"O nome '{alvo}' corresponde a {len(candidatos)} processos (PIDs: {', '.join(map(str, candidatos[:8]))}). "
+                    "Informe um PID especifico para evitar encerrar varias instancias.",
+                    error_code="process_name_ambiguous",
+                    data={"pids": candidatos},
+                    tool_name="encerrar_processo_windows",
+                )
+            comando = ["taskkill", "/PID", str(candidatos[0])]
         resultado = subprocess.run(
             comando,
             capture_output=True,
