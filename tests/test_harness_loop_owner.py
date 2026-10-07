@@ -9,6 +9,7 @@ import inspect
 from types import SimpleNamespace
 
 import core.harness as harness_module
+import core.harness_cycle as harness_cycle
 from core.harness import AurenHarness
 from core.task_manager import TaskManager, TaskState
 from core.tool_result import ToolResult
@@ -388,12 +389,12 @@ def test_agent_planner_verifier_reflection_nao_controlam_o_ciclo():
 
 
 def test_ciclo_tem_um_unico_ponto_de_chamada_ao_modelo_e_nao_toca_no_agent():
-    fonte = inspect.getsource(AurenHarness._executar_ciclo)
+    fonte = inspect.getsource(harness_cycle.executar_ciclo)
     assert "_chamar_modelo_medido" not in fonte
-    assert "self.criar_resposta" not in fonte
-    assert "self.agent" not in fonte
-    assert "self._pedir_modelo(" in fonte
-    assert "self._limite_de_rodadas(" in fonte
+    assert "harness.criar_resposta" not in fonte
+    assert "harness.agent" not in fonte
+    assert "harness._pedir_modelo(" in fonte
+    assert "harness._limite_de_rodadas(" in fonte
     assert "range(1, limite_rodadas + 1)" in fonte  # um unico `for` de rodadas
     assert fonte.count("for rodada in") == 1
 
