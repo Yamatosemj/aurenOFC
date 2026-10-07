@@ -7,7 +7,9 @@ from core.utils import normalizar_nome
 
 
 def encontrar_elemento(alvo, indice=1, preferir_campo=False):
-    p = obter_pagina()
+    from tools import browser as _browser
+
+    p = _browser.obter_pagina()
     alvo = (alvo or "").strip()
 
     if not alvo:
