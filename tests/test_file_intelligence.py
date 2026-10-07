@@ -12,6 +12,7 @@ from core.capabilities import CAPABILITY_REGISTRY
 from core.permission_manager import PermissionLevel, PermissionManager
 from core.tool_contracts import capability_for_tool, validate_tool_arguments
 from core.tool_result import ToolResult
+from core.undo import clear as clear_undo
 from core.undo import undo_last
 import tools.dispatcher as dispatcher
 import tools.file_intelligence as file_intelligence
@@ -21,6 +22,13 @@ from tools.file_intelligence import READ_MAX_CHARS, _history, _parse_zone_identi
 
 def _args(path: Path) -> dict:
     return {"caminho": str(path), "procurar_copias": False, "limite_copias": 5}
+
+@pytest.fixture(autouse=True)
+def _clear_undo_stack():
+    clear_undo()
+    yield
+    clear_undo()
+
 
 @pytest.fixture(autouse=True)
 def _allowed_test_root(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
