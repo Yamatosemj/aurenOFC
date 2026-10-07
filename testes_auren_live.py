@@ -891,14 +891,16 @@ def run_smoke_tests() -> None:
 
     try:
         status = auren.obter_status_windows()
-        status_text = _tool_message(status)\n        ok = all(token in status_text for token in ("Hora local:", "Data local:", "RAM:", "Tempo ligado:"))
+        status_text = _tool_message(status)
+        ok = all(token in status_text for token in ("Hora local:", "Data local:", "RAM:", "Tempo ligado:"))
         record("Status do Windows", ok, status_text.replace("\n", " | ")[:260])
     except Exception as exc:
         record("Status do Windows", False, repr(exc))
 
     try:
         janelas = auren.listar_janelas_windows()
-        janelas_text = _tool_message(janelas)\n        ok = not janelas_text.lower().startswith("nao consegui") and "Janelas visiveis" in janelas_text
+        janelas_text = _tool_message(janelas)
+        ok = not janelas_text.lower().startswith("nao consegui") and "Janelas visiveis" in janelas_text
         record("Listagem de janelas", ok, janelas_text.splitlines()[0] if janelas_text else "")
     except Exception as exc:
         record("Listagem de janelas", False, repr(exc))
@@ -906,13 +908,15 @@ def run_smoke_tests() -> None:
     original_clipboard = None
     try:
         original = auren.ler_area_transferencia_windows()
-        original_text = _tool_message(original)\n        if not original_text.lower().startswith("nao consegui") and not original_text.lower().startswith("a area de transferencia nao contem"):
+        original_text = _tool_message(original)
+        if not original_text.lower().startswith("nao consegui") and not original_text.lower().startswith("a area de transferencia nao contem"):
             original_clipboard = original
 
         marker = "AUREN_TESTE_AUTOMATICO_20260920"
         auren.definir_area_transferencia_windows(marker)
         read_result = auren.ler_area_transferencia_windows()
-        read_text = _tool_message(read_result)\n        ok = read_text == marker
+        read_text = _tool_message(read_result)
+        ok = read_text == marker
         record("Clipboard: escrever e ler", ok, read_text if ok else f"esperado={marker!r}, recebido={read_text!r}")
     except Exception as exc:
         record("Clipboard: escrever e ler", False, repr(exc))
@@ -927,7 +931,8 @@ def run_smoke_tests() -> None:
 
     try:
         processos = auren.listar_processos_windows()
-        processos_text = _tool_message(processos)\n        ok = "Processos encontrados:" in processos_text or "Nenhum processo" not in processos_text
+        processos_text = _tool_message(processos)
+        ok = "Processos encontrados:" in processos_text or "Nenhum processo" not in processos_text
         record("Listagem de processos", ok, processos_text.splitlines()[0] if processos_text else "")
     except Exception as exc:
         record("Listagem de processos", False, repr(exc))
@@ -989,7 +994,8 @@ def run_smoke_tests() -> None:
             record("Redimensionar Notepad", "janela redimensionada" in _tool_message(resized).lower(), resized)
 
             geometry = auren.obter_geometria_janela_windows(titulo_teste)
-            geometry_text = _tool_message(geometry)\n            geometry_ok = all(token in geometry_text for token in ("Posicao:", "Tamanho:", "800x500"))
+            geometry_text = _tool_message(geometry)
+            geometry_ok = all(token in geometry_text for token in ("Posicao:", "Tamanho:", "800x500"))
             record("Geometria do Notepad", geometry_ok, geometry_text.replace("\n", " | "))
 
             minimized = auren.minimizar_janela_windows(titulo_teste)
