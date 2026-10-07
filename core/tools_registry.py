@@ -909,6 +909,10 @@ tools = [
                         "inicio",
                         "fim"
                     ]
+                },
+                "alvo": {
+                    "type": "string",
+                    "description": "Texto ou titulo que deve estar visivel apos a rolagem. Opcional."
                 }
             },
             "required": ["direcao"],
