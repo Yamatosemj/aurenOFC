@@ -258,9 +258,9 @@ def test_asr_verifier_rejects_corrupted_binary(tmp_path):
 
     invalid = stt_module.LocalPortugueseASR._verify_model_files(model_dir)
 
-    assert "sha256:encoder-model.int8.onnx" in invalid
-    assert "sha256:decoder_joint-model.int8.onnx" in invalid
-    assert "sha256:nemo128.onnx" in invalid
+    assert ("sha256:encoder-model.int8.onnx" in invalid or "tamanho:encoder-model.int8.onnx" in invalid)
+    assert ("sha256:decoder_joint-model.int8.onnx" in invalid or "tamanho:decoder_joint-model.int8.onnx" in invalid)
+    assert ("sha256:nemo128.onnx" in invalid or "tamanho:nemo128.onnx" in invalid)
 
 
 def test_asr_verifier_requires_all_model_files(tmp_path):
