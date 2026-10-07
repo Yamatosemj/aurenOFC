@@ -792,8 +792,8 @@ def test_dom_only_click_verification_rejects_unchanged_fingerprint():
 
 def test_navigation_verification_keeps_pending_when_document_is_not_ready():
     contexto = _contexto(
-        "Abas abertas: 1\\n"
-        "Aba ativa: 1\\n"
+        "Abas abertas: 1\n"
+        "Aba ativa: 1\n"
         "Aba 1: Site | https://example.com/dashboard [ATIVA]"
     )
     acao = {
@@ -815,8 +815,8 @@ def test_navigation_verification_keeps_pending_when_document_is_not_ready():
 
 def test_navigation_verification_rejects_inconsistent_final_title():
     contexto = _contexto(
-        "Abas abertas: 1\\n"
-        "Aba ativa: 1\\n"
+        "Abas abertas: 1\n"
+        "Aba ativa: 1\n"
         "Aba 1: Site correto | https://example.com/dashboard [ATIVA]"
     )
     acao = {
