@@ -144,6 +144,64 @@ def _finalizar_resposta_sucesso(
     return resposta
 
 
+
+def _concluir_tarefa_localmente(
+    objetivo: str,
+    historico: list[dict[str, str]],
+    mensagem_final: str,
+    *,
+    rodada: int,
+    ferramenta_final: str,
+    task_id: str,
+    apos_tarefa: Callable[[str, list[dict[str, str]]], Any] | None,
+    salvar_estrategia: Callable[[str, list[dict[str, str]], str, bool], None],
+    task_manager: Any,
+    registrar_turno: Callable[[str, str], None],
+    write_log: Callable[..., None],
+    criar_resposta: Callable[[str], Any],
+) -> Any:
+    write_log(
+        "TASK_LOCAL_COMPLETION",
+        task_id=task_id,
+        rodada=rodada,
+        ferramenta=ferramenta_final,
+        objetivo=objetivo,
+    )
+    write_log(
+        "TASK_END",
+        task_id=task_id,
+        status="local_completion",
+        rodada=rodada,
+    )
+
+    extra = None
+    if apos_tarefa is not None:
+        try:
+            extra = apos_tarefa(objetivo, historico)
+        except Exception as erro:
+            write_log(
+                "MEMORY_ERROR",
+                task_id=task_id,
+                erro=str(erro),
+            )
+
+    if extra:
+        mensagem_final += str(extra)
+
+    salvar_estrategia(
+        objetivo,
+        historico,
+        mensagem_final,
+        True,
+    )
+    task_manager.complete(
+        mensagem_final,
+        task_id=task_id,
+    )
+    registrar_turno("assistant", mensagem_final)
+    return criar_resposta(mensagem_final)
+
+
 def _mensagem_conclusao_local(
     objetivo: str,
     ferramenta: str,

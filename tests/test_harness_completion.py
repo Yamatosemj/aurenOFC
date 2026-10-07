@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from core.harness_completion import _finalizar_resposta_sucesso
+from core.harness_completion import (
+    _concluir_tarefa_localmente,
+    _finalizar_resposta_sucesso,
+)
 
 
 class _TaskManager:
@@ -264,3 +267,96 @@ def test_retry_resposta_vazia_exaurido_nao_chama_modelo():
     assert result.empty_response_retries == 1
     assert result.failure_code == "empty_response"
     assert result.failure_message == "Nao consegui produzir uma resposta final."
+
+
+
+def test_concluir_tarefa_localmente_preserva_ordem_e_finaliza():
+    eventos = []
+    resposta_factory = lambda texto: SimpleNamespace(output_text=texto, output=[])
+    manager = _TaskManager(SimpleNamespace(state=SimpleNamespace(value="completed")))
+
+    result = _concluir_tarefa_localmente(
+        "abra o navegador",
+        [{"ferramenta": "abrir", "resultado": "ok"}],
+        "Concluido.",
+        rodada=3,
+        ferramenta_final="abrir_navegador",
+        task_id="task-local-1",
+        apos_tarefa=lambda objetivo, historico: (
+            eventos.append(("apos_tarefa", objetivo, historico)) or " Memoria salva."
+        ),
+        salvar_estrategia=lambda *args: eventos.append(("salvar", args)),
+        task_manager=manager,
+        registrar_turno=lambda *args: eventos.append(("turno", args)),
+        write_log=lambda *args, **kwargs: eventos.append(("log", args, kwargs)),
+        criar_resposta=resposta_factory,
+    )
+
+    assert result.output_text == "Concluido. Memoria salva."
+    assert [evento[0] for evento in eventos] == [
+        "log",
+        "log",
+        "apos_tarefa",
+        "salvar",
+        "turno",
+    ]
+    assert eventos[0][1][0] == "TASK_LOCAL_COMPLETION"
+    assert eventos[0][2]["rodada"] == 3
+    assert eventos[0][2]["ferramenta"] == "abrir_navegador"
+    assert eventos[1][1][0] == "TASK_END"
+    assert manager.completed == [("Concluido. Memoria salva.", "task-local-1")]
+    assert eventos[-1] == ("turno", ("assistant", "Concluido. Memoria salva."))
+
+
+def test_concluir_tarefa_localmente_chama_apos_tarefa_mesmo_com_historico_vazio():
+    calls = []
+    manager = _TaskManager(None)
+
+    result = _concluir_tarefa_localmente(
+        "objetivo",
+        [],
+        "Concluido.",
+        rodada=1,
+        ferramenta_final="clicar_elemento",
+        task_id="task-local-2",
+        apos_tarefa=lambda objetivo, historico: (
+            calls.append((objetivo, historico)) or None
+        ),
+        salvar_estrategia=lambda *args: None,
+        task_manager=manager,
+        registrar_turno=lambda *args: None,
+        write_log=lambda *args, **kwargs: None,
+        criar_resposta=lambda texto: texto,
+    )
+
+    assert calls == [("objetivo", [])]
+    assert result == "Concluido."
+
+
+def test_concluir_tarefa_localmente_registra_erro_da_memoria_e_continua():
+    logs = []
+    manager = _TaskManager(None)
+
+    def falhar(*_args):
+        raise RuntimeError("memoria falhou")
+
+    result = _concluir_tarefa_localmente(
+        "objetivo",
+        [],
+        "Concluido.",
+        rodada=2,
+        ferramenta_final="clicar_elemento",
+        task_id="task-local-3",
+        apos_tarefa=falhar,
+        salvar_estrategia=lambda *args: None,
+        task_manager=manager,
+        registrar_turno=lambda *args: None,
+        write_log=lambda *args, **kwargs: logs.append((args, kwargs)),
+        criar_resposta=lambda texto: texto,
+    )
+
+    assert result == "Concluido."
+    assert any(
+        args[0] == "MEMORY_ERROR" and kwargs["erro"] == "memoria falhou"
+        for args, kwargs in logs
+    )
