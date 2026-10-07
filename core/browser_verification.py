@@ -200,6 +200,17 @@ def _verificar_abas(
         if quantidade_depois_int != quantidade_antes_int - 1:
             return False
 
+        indice_solicitado = args.get("indice")
+        indice_fechado = info.get("aba_fechada")
+        if indice_solicitado is not None:
+            try:
+                solicitado = int(indice_solicitado)
+                fechado = int(indice_fechado)
+            except (TypeError, ValueError):
+                return False
+            if solicitado != 0 and fechado != solicitado:
+                return False
+
         if quantidade_depois_int == 0:
             return quantidade_atual in {None, 0, 1}
 
