@@ -206,6 +206,8 @@ def abrir_nova_aba(url="", modo="visivel"):
     if browser_context is None or modo != modo_navegador:
         reiniciar_navegador(modo)
 
+    quantidade_antes = len(_paginas_abertas())
+
     def _navegar_e_responder(aba):
         global pagina
         pagina = aba
@@ -220,16 +222,16 @@ def abrir_nova_aba(url="", modo="visivel"):
         abas_atuais = _paginas_abertas()
         numero = abas_atuais.index(pagina) + 1 if pagina in abas_atuais else 1
         snapshot = _abas_snapshot()
-        return ToolResult.success(
+        return ToolResult.success
             f"Nova aba aberta: {numero}\n"
             f"Titulo: {pagina.title() or '[sem titulo]'}\n"
             f"URL atual: {pagina.url or 'about:blank'}\n"
             f"{_estado_abas()}",
             data={
                 "abas": {
-                    "antes": None,
-                    "depois": snapshot,
+                    "quantidade_antes": quantidade_antes,
                     "quantidade_depois": len(snapshot),
+                    "depois": snapshot,
                     "aba_ativa_depois": numero,
                     "url_ativa_depois": str(pagina.url or "about:blank"),
                 },
@@ -320,19 +322,46 @@ def fechar_aba(indice=None):
             alvo = abas[indice - 1]
 
     posicao = abas.index(alvo)
+    indice_fechado = posicao + 1
+    quantidade_antes = len(abas)
     alvo.close()
 
     restantes = _paginas_abertas()
     if restantes:
         novo_indice = min(posicao, len(restantes) - 1)
         pagina = restantes[novo_indice]
-        return (
-            f"Fechei a aba {posicao + 1}.\n"
-            f"{_estado_abas()}"
+        snapshot = _abas_snapshot()
+        return ToolResult.success(
+            f"Fechei a aba {indice_fechado}.\n"
+            f"{_estado_abas()}",
+            data={
+                "abas": {
+                    "quantidade_antes": quantidade_antes,
+                    "quantidade_depois": len(snapshot),
+                    "aba_fechada": indice_fechado,
+                    "aba_ativa_depois": novo_indice + 1,
+                    "url_ativa_depois": str(pagina.url or "about:blank"),
+                    "depois": snapshot,
+                },
+            },
+            tool_name="fechar_aba",
         )
 
     pagina = None
-    return "Fechei a ultima aba. O navegador continua aberto sem abas."
+    return ToolResult.success(
+        "Fechei a ultima aba. O navegador continua aberto sem abas.",
+        data={
+            "abas": {
+                "quantidade_antes": quantidade_antes,
+                "quantidade_depois": 0,
+                "aba_fechada": indice_fechado,
+                "aba_ativa_depois": None,
+                "url_ativa_depois": None,
+                "depois": [],
+            },
+        },
+        tool_name="fechar_aba",
+    )
 
 def fechar_navegador():
     global playwright, browser, browser_context, pagina
