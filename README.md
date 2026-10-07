@@ -123,7 +123,7 @@ A captura de tela informa a área de trabalho virtual do Windows, incluindo orig
 
 ## Estado importante
 
-- **49 tools** no registry/contratos atuais
+- **50 tools** no registry/contratos atuais
 - memória persistente em SQLite
 - browser e automação Windows integrados
 - visão pode observar a tela, executar clique ou arraste global do mouse com confirmação, manter a geometria da captura e da imagem entregue ao modelo e verificar o estado final em tarefas visuais compostas
