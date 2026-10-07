@@ -1,6 +1,6 @@
 # Auren
 
-Assistente desktop/voz para Windows, versão técnica **V47**, usando o modelo configurado em `config.py` (snapshot atual: `gpt-5.6-luna`).
+Assistente desktop/voz para Windows, versão técnica **V48**, usando o modelo configurado em `config.py` (snapshot atual: `gpt-5.6-luna`).
 
 > **Estado atual do projeto:** consulte [AUREN_STATE.md](AUREN_STATE.md) antes de iniciar ou continuar trabalho no Auren. O estado oficial registra a tarefa ativa, PRs em andamento, CI, próxima fase e backlog.
 
@@ -81,7 +81,7 @@ Os resultados gerados por `testes_auren_live.py` ficam em:
 logs/testes/RESULTADO_TESTE_AUREN.txt
 ```
 
-## Inteligência de Arquivos (V47)
+## Inteligência de Arquivos (V48)
 
 A capacidade de arquivos mantém `buscar_arquivo` como busca existente e adiciona duas tools pelo mesmo Dispatcher, contratos e permissões:
 
@@ -89,6 +89,14 @@ A capacidade de arquivos mantém `buscar_arquivo` como busca existente e adicion
 - `ler_arquivo`: leitura controlada de `.txt`, `.md`, `.json` e `.csv`, com encoding detectado e continuação por trechos.
 
 Origem e histórico são tratados como evidência: Zone.Identifier/URL só são reportados quando acessíveis; relação entre cópias é confirmada por SHA-256; trajetória completa permanece desconhecida. PDF pode ser identificado por assinatura, mas leitura de conteúdo ainda não está implementada. DOCX, XLSX e OCR continuam fora do escopo desta etapa.
+
+## Memória Persistente (V48)
+
+A memória local continua em SQLite e agora separa o orçamento de armazenamento do orçamento do prompt. O contexto envia um núcleo de fatos e um índice compacto das chaves que ficaram fora dele, intercalando categorias para que uma categoria grande não esconda as demais.
+
+A tool `listar_memoria` expõe a memória para o painel com filtros de chave, categoria e data. O resumo pendente da sessão anterior é gravado como uma única linha, entra no primeiro contexto da sessão seguinte e é consumido uma única vez.
+
+A memória persistente tem um limite de segurança explícito. Ao atingir o teto, novas chaves são rejeitadas e um aviso é escrito no log; entradas existentes não são apagadas silenciosamente.
 
 ## Arquitetura atual
 
@@ -115,7 +123,7 @@ A captura de tela informa a área de trabalho virtual do Windows, incluindo orig
 
 ## Estado importante
 
-- **48 tools** no registry/contratos atuais
+- **49 tools** no registry/contratos atuais
 - memória persistente em SQLite
 - browser e automação Windows integrados
 - visão pode observar a tela, executar clique ou arraste global do mouse com confirmação, manter a geometria da captura e da imagem entregue ao modelo e verificar o estado final em tarefas visuais compostas
