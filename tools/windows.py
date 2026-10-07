@@ -2,11 +2,8 @@ from __future__ import annotations
 
 import ctypes
 from ctypes import wintypes
-import csv
-import io
 import os
 from pathlib import Path
-import re
 from datetime import datetime
 
 from core.tool_result import ToolResult
