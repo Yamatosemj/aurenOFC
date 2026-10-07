@@ -361,6 +361,8 @@ class AurenHarness:
         *,
         vision_reobserve_pending: bool = False,
     ) -> bool:
+        # O critério visível de sucesso continua sendo `item.get("sucesso")`,
+        # conforme o contrato de ToolResult preservado pelo wrapper.
         return _pode_encerrar_localmente_impl(
             objetivo,
             resultados_rodada,
