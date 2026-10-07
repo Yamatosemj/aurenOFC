@@ -112,8 +112,9 @@ def verificar_resultado_navegador(
         )
 
     if ferramenta == "clicar_elemento":
+        clique = dados_acao.get("clique") if isinstance(dados_acao, dict) else dados.get("clique")
         return _verificar_clique(
-            dados.get("clique"),
+            clique,
             indice_atual,
             url_atual,
             str(dados.get("pagina") or ""),
