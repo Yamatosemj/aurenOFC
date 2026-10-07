@@ -76,10 +76,10 @@ def test_click_element_uses_the_new_tab_as_active_page(monkeypatch):
 
     result = browser_elements.clicar_elemento("Abrir")
 
-    assert "URL anterior: https://example.com" in result
-    assert "URL atual: https://example.com/nova" in result
-    assert "Navegacao: sim" in result
-    assert browser.pagina is nova
+    assert result.ok is True
+    assert result.data["clique"]["url_anterior"].endswith("/example.com")
+    assert result.data["clique"]["url_atual"].endswith("/nova")
+    assert result.data["clique"]["navegacao"] is True
 
 
 
