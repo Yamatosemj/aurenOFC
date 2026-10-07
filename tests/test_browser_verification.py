@@ -1,4 +1,4 @@
-from core.browser_verification import verificar_resultado_navegador
+from core.browser_verification import _normalize_url, verificar_resultado_navegador
 
 
 def _contexto(abas):
@@ -33,6 +33,10 @@ def _dados_clique_navegacao(*, url_atual="https://youtube.com/watch?v=123", href
             },
         }
     }
+
+
+def test_normalize_url_preserves_about_blank():
+    assert _normalize_url("about:blank") == "about:blank"
 
 
 def test_click_verification_accepts_matching_navigation_href():
