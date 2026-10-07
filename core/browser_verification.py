@@ -30,7 +30,12 @@ def _normalize_url(value: str) -> str:
     except ValueError:
         return url.rstrip("/")
     scheme = parsed.scheme.lower()
-    netloc = parsed.netloc.lower()
+    hostname = (parsed.hostname or "").lower().removeprefix("www.")
+    port = parsed.port
+    default_port = (scheme == "https" and port == 443) or (scheme == "http" and port == 80)
+    netloc = hostname
+    if port is not None and not default_port:
+        netloc = f"{netloc}:{port}"
     path = parsed.path.rstrip("/") or "/"
     return f"{scheme}://{netloc}{path}" + (f"?{parsed.query}" if parsed.query else "")
 
