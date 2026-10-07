@@ -21,8 +21,8 @@ Atualizado em: 2026-10-07
 - **Baseline histórico de pytest:** **576 passed, 5 warnings**; baseline imediatamente anterior à Tarefa 3: Linux **605 passed, 6 skipped, 5 warnings** / Windows **611 passed, 5 warnings**
 - **Novos testes da Tarefa 3:** **17**
 - **Ferramentas no registry/contratos após a Tarefa 3:** **55** (eram 50 antes)
-- **Tarefa atual:** **Tarefa 4 da sessão — política de confirmação reversível/irreversível e confirmação com timeout (implementação concluída; portão global bloqueado por débitos preexistentes da Tarefa 3)**
-- **Portão da Tarefa 3:** pytest/runner live do Windows real continuam pendentes; a Tarefa 4 foi iniciada na branch ativa sem alterar silenciosamente a política de risco
+- **Tarefa atual:** **Fechamento da Tarefa 3 da sessão — operações de arquivo seguras (correções automatizadas concluídas; portão externo ainda depende do Windows real)**
+- **Portão da Tarefa 3:** full pytest Linux está verde no head corrigido; focused Windows está verde; full pytest Windows ainda está em execução e o runner live continua pendente no Windows real
 - **Próxima tarefa:** Tarefa 5 — seleção de dispositivos de áudio, após o fechamento do portão global pendente da Tarefa 3 e o runner live obrigatório no Windows real
 - **Fase do projeto:** Browser Intelligence
 
@@ -269,6 +269,27 @@ Fluxo oficial:
 
 `AUREN_STATE.md → branch/PR → CI → implementação → testes → atualização do estado`
 
+
+## Correção do portão da Tarefa 3 — 2026-10-07
+
+As quatro falhas reproduzidas no CI anterior foram atacadas diretamente, sem relaxar a política de segurança:
+
+- Router: as cinco operações de arquivo agora entram na rota especializada de arquivos, incluindo mover, copiar, renomear, criar pasta e Lixeira.
+- IntentResolver: operações de arquivo agora têm reconhecimento determinístico das flexões comuns dos verbos antes da resolução genérica do Registry.
+- Smoke de execução única: o teste genérico não fabrica mais caminhos fora da allowlist para as ferramentas de mutação; as operações seguem cobertas por seus testes específicos de segurança/contrato.
+- Lixeira: o double de SHFileOperationW foi corrigido para interpretar corretamente o ponteiro produzido por ctypes.byref; a produção continua usando a API nativa com FOF_ALLOWUNDO.
+
+Evidência atual do CI no head 779c3191a42edcf8c4a10fae56340309bf0e7172:
+
+- full pytest Linux: 628 passed, 6 skipped, 5 warnings
+- focused-tests Linux: verde
+- focused-tests Windows: verde
+- static-checks: verde
+- Playwright smoke: verde
+- full pytest Windows: ainda em execução
+- runner manual python testes_auren_live.py --rapido: continua pendente no Windows real
+
+Não houve flexibilização da allowlist, confirmação ou proteção contra reparse points para obter o verde.
 
 ## Registro da Tarefa 4 da sessão — Política reversível/irreversível e confirmação com timeout
 
