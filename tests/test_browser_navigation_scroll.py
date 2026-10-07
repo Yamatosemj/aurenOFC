@@ -34,13 +34,13 @@ def test_scroll_returns_structured_before_and_after_state(monkeypatch):
 
     assert result.ok is True
     assert result.tool_name == "rolar_pagina"
-    assert result.data == {
-        "direcao": "baixo",
-        "scroll_y_antes": 0.0,
-        "scroll_y_depois": 900.0,
-        "scroll_height": 3000.0,
-        "viewport_height": 900.0,
-    }
+    assert result.data["direcao"] == "baixo"
+    assert result.data["scroll_y_antes"] == 0.0
+    assert result.data["scroll_y_depois"] == 900.0
+    assert result.data["scroll_height"] == 3000.0
+    assert result.data["viewport_height"] == 900.0
+    assert result.data["alvo"] == ""
+    assert result.data["alvo_encontrado"] is None
     assert page.mouse.calls == [(0, 900)]
 
 

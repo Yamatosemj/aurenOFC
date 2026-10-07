@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
+import re
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
@@ -9,6 +10,9 @@ from typing import Any
 
 class PersistentMemoryStore:
     """Memoria persistente local em SQLite, com bloqueio de credenciais."""
+
+    SCHEMA_VERSION = 2
+    _SCHEMA_LOCK = threading.RLock()
 
     BLOCKED_TERMS = {
         "senha", "password", "passcode", "token", "api key", "api_key",
@@ -24,53 +28,104 @@ class PersistentMemoryStore:
         self._inicializar()
 
     def _conexao(self) -> sqlite3.Connection:
-        con = sqlite3.connect(self.path)
+        con = sqlite3.connect(self.path, timeout=5.0)
         con.row_factory = sqlite3.Row
+        con.execute("PRAGMA busy_timeout=5000")
+        con.execute("PRAGMA journal_mode=WAL")
         return con
 
+    @staticmethod
+    def _parece_segredo_estrutural(texto: str) -> bool:
+        padroes = (
+            r"\bAKIA[0-9A-Z]{16}\b",
+            r"\bgh[pousr]_[A-Za-z0-9]{20,}\b",
+            r"\bxox[baprs]-[A-Za-z0-9-]{20,}\b",
+            r"\bAIza[0-9A-Za-z_-]{30,}\b",
+            r"\bsk-[A-Za-z0-9_-]{20,}\b",
+            r"\b(?:eyJ[A-Za-z0-9_-]{10,}\.){2}[A-Za-z0-9_-]{10,}\b",
+            r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----",
+        )
+        return any(re.search(padrao, texto, flags=re.IGNORECASE) for padrao in padroes)
+
     def _inicializar(self) -> None:
-        with self._lock, self._conexao() as con:
+        # A inicializacao e migracao precisam ser serializadas entre instancias
+        # do store no mesmo processo; cada instancia possui seu proprio _lock.
+        with self._SCHEMA_LOCK, self._lock, self._conexao() as con:
             con.execute(
                 """CREATE TABLE IF NOT EXISTS memorias (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    chave TEXT NOT NULL UNIQUE,
-                    valor TEXT NOT NULL,
-                    categoria TEXT NOT NULL DEFAULT 'geral',
-                    criado_em TEXT NOT NULL,
-                    atualizado_em TEXT NOT NULL
+                    id INTEGER PRIMARY KEY AUTOINCREMENT, chave TEXT NOT NULL UNIQUE,
+                    valor TEXT NOT NULL, categoria TEXT NOT NULL DEFAULT 'geral',
+                    criado_em TEXT NOT NULL, atualizado_em TEXT NOT NULL
                 )"""
             )
             con.execute(
                 """CREATE TABLE IF NOT EXISTS conversas (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    chat_id TEXT NOT NULL,
-                    papel TEXT NOT NULL,
-                    conteudo TEXT NOT NULL,
-                    criado_em TEXT NOT NULL
+                    id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id TEXT NOT NULL,
+                    papel TEXT NOT NULL, conteudo TEXT NOT NULL, criado_em TEXT NOT NULL
                 )"""
             )
             con.execute(
                 """CREATE TABLE IF NOT EXISTS estrategias (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    objetivo TEXT NOT NULL,
-                    passos TEXT NOT NULL,
-                    resultado TEXT NOT NULL DEFAULT '',
-                    sucesso INTEGER NOT NULL DEFAULT 0,
-                    criado_em TEXT NOT NULL,
+                    id INTEGER PRIMARY KEY AUTOINCREMENT, objetivo TEXT NOT NULL,
+                    passos TEXT NOT NULL, resultado TEXT NOT NULL DEFAULT '',
+                    sucesso INTEGER NOT NULL DEFAULT 0, criado_em TEXT NOT NULL,
                     atualizado_em TEXT NOT NULL
                 )"""
             )
-            # Isolamento por chat: bancos criados antes desta coluna sao migrados.
-            # Linhas antigas ficam com chat_id NULL e nao aparecem em buscas escopadas.
-            colunas = {row["name"] for row in con.execute("PRAGMA table_info(estrategias)")}
-            if "chat_id" not in colunas:
-                con.execute("ALTER TABLE estrategias ADD COLUMN chat_id TEXT")
+
+            version = int(con.execute("PRAGMA user_version").fetchone()[0])
+            if version > self.SCHEMA_VERSION:
+                raise RuntimeError(
+                    f"Schema de memoria {version} e mais nova que a suportada ({self.SCHEMA_VERSION})."
+                )
+
+            # Versao 1 e o esquema historico sem escopo de chat em estrategias.
+            # Toda base nova tambem passa por esta versao antes da migracao
+            # seguinte, mantendo as alteracoes de schema explicitamente
+            # versionadas e reproduziveis.
+            if version == 0:
+                con.execute("PRAGMA user_version = 1")
+                version = 1
+
+            while version < self.SCHEMA_VERSION:
+                proxima_versao = version + 1
+                if proxima_versao == 2:
+                    colunas = {
+                        row["name"]
+                        for row in con.execute("PRAGMA table_info(estrategias)")
+                    }
+                    if "chat_id" not in colunas:
+                        try:
+                            con.execute(
+                                "ALTER TABLE estrategias ADD COLUMN chat_id TEXT"
+                            )
+                        except sqlite3.OperationalError as exc:
+                            # Outra instancia pode concluir a mesma migracao
+                            # entre o PRAGMA e o ALTER. A coluna ja existe,
+                            # entao a migracao continua de forma idempotente.
+                            if "duplicate column name" not in str(exc).casefold():
+                                raise
+
+                    con.execute(
+                        "CREATE INDEX IF NOT EXISTS idx_conversas_chat_id "
+                        "ON conversas(chat_id, id)"
+                    )
+                    con.execute(
+                        "CREATE INDEX IF NOT EXISTS idx_estrategias_chat_id "
+                        "ON estrategias(chat_id, id)"
+                    )
+
+                con.execute(f"PRAGMA user_version = {proxima_versao}")
+                version = proxima_versao
+
             con.commit()
 
     @classmethod
     def _contem_credencial(cls, *valores: Any) -> bool:
         texto = " ".join(str(v or "").strip().lower() for v in valores)
-        return any(termo in texto for termo in cls.BLOCKED_TERMS)
+        if any(termo in texto for termo in cls.BLOCKED_TERMS):
+            return True
+        return cls._parece_segredo_estrutural(texto)
 
     @staticmethod
     def _agora() -> str:

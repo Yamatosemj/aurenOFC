@@ -302,13 +302,13 @@ def _encontrar_janela_windows(alvo):
         _WINDOW_TARGET_CACHE[pedido] = (hwnd, processo)
     return encontrado
 
-def listar_janelas_windows():
+def listar_janelas_windows() -> ToolResult:
     if os.name != "nt":
-        return "Controle de janelas do Windows so esta disponivel no Windows."
+        return ToolResult.failure("Controle de janelas do Windows so esta disponivel no Windows.", error_code="windows_only", tool_name="listar_janelas_windows")
 
     janelas = _enumerar_janelas_windows()
     if not janelas:
-        return "Nenhuma janela visivel com titulo foi encontrada."
+        return ToolResult.failure("Nenhuma janela visivel com titulo foi encontrada.", error_code="windows_not_found", tool_name="listar_janelas_windows")
 
     user32 = _user32()
     ativa = user32.GetForegroundWindow() if user32 else 0
@@ -318,15 +318,15 @@ def listar_janelas_windows():
         marcador = " [ATIVA]" if hwnd == ativa else ""
         linhas.append(f"{indice}. {titulo}{marcador}")
 
-    return "\n".join(linhas)
+    return ToolResult.success("\n".join(linhas), tool_name="listar_janelas_windows")
 
-def focar_janela_windows(alvo):
+def focar_janela_windows(alvo) -> ToolResult:
     if os.name != "nt":
-        return "Controle de janelas do Windows so esta disponivel no Windows."
+        return ToolResult.failure("Controle de janelas do Windows so esta disponivel no Windows.", error_code="windows_only", tool_name="focar_janela_windows")
 
     encontrado = _encontrar_janela_windows(alvo)
     if not encontrado:
-        return f"Nao encontrei uma janela correspondente a '{alvo}'."
+        return ToolResult.failure(f"Nao encontrei uma janela correspondente a '{alvo}'.", error_code="window_not_found", tool_name="focar_janela_windows")
 
     hwnd, titulo = encontrado
     user32 = _user32()
@@ -335,18 +335,18 @@ def focar_janela_windows(alvo):
         SW_RESTORE = 9
         user32.ShowWindow(hwnd, SW_RESTORE)
         if not user32.SetForegroundWindow(hwnd):
-            return f"Encontrei '{titulo}', mas o Windows nao permitiu coloca-la em primeiro plano."
-        return f"Janela ativada: {titulo}"
+            return ToolResult.failure(f"Encontrei '{titulo}', mas o Windows nao permitiu coloca-la em primeiro plano.", error_code="window_focus_failed", tool_name="focar_janela_windows")
+        return ToolResult.success(f"Janela ativada: {titulo}", tool_name="focar_janela_windows")
     except Exception as erro:
-        return f"Nao consegui ativar '{titulo}': {erro}"
+        return ToolResult.failure(f"Nao consegui ativar '{titulo}': {erro}", error_code="window_focus_failed", tool_name="focar_janela_windows")
 
-def minimizar_janela_windows(alvo):
+def minimizar_janela_windows(alvo) -> ToolResult:
     if os.name != "nt":
-        return "Controle de janelas do Windows so esta disponivel no Windows."
+        return ToolResult.failure("Controle de janelas do Windows so esta disponivel no Windows.", error_code="windows_only", tool_name="minimizar_janela_windows")
 
     encontrado = _encontrar_janela_windows(alvo)
     if not encontrado:
-        return f"Nao encontrei uma janela correspondente a '{alvo}'."
+        return ToolResult.failure(f"Nao encontrei uma janela correspondente a '{alvo}'.", error_code="window_not_found", tool_name="minimizar_janela_windows")
 
     hwnd, titulo = encontrado
     user32 = _user32()
@@ -354,17 +354,17 @@ def minimizar_janela_windows(alvo):
     try:
         SW_MINIMIZE = 6
         user32.ShowWindow(hwnd, SW_MINIMIZE)
-        return f"Janela minimizada: {titulo}"
+        return ToolResult.success(f"Janela minimizada: {titulo}", tool_name="minimizar_janela_windows")
     except Exception as erro:
-        return f"Nao consegui minimizar '{titulo}': {erro}"
+        return ToolResult.failure(f"Nao consegui minimizar '{titulo}': {erro}", error_code="window_minimize_failed", tool_name="minimizar_janela_windows")
 
-def maximizar_janela_windows(alvo):
+def maximizar_janela_windows(alvo) -> ToolResult:
     if os.name != "nt":
-        return "Controle de janelas do Windows so esta disponivel no Windows."
+        return ToolResult.failure("Controle de janelas do Windows so esta disponivel no Windows.", error_code="windows_only", tool_name="maximizar_janela_windows")
 
     encontrado = _encontrar_janela_windows(alvo)
     if not encontrado:
-        return f"Nao encontrei uma janela correspondente a '{alvo}'."
+        return ToolResult.failure(f"Nao encontrei uma janela correspondente a '{alvo}'.", error_code="window_not_found", tool_name="maximizar_janela_windows")
 
     hwnd, titulo = encontrado
     user32 = _user32()
@@ -372,9 +372,9 @@ def maximizar_janela_windows(alvo):
     try:
         SW_MAXIMIZE = 3
         user32.ShowWindow(hwnd, SW_MAXIMIZE)
-        return f"Janela maximizada: {titulo}"
+        return ToolResult.success(f"Janela maximizada: {titulo}", tool_name="maximizar_janela_windows")
     except Exception as erro:
-        return f"Nao consegui maximizar '{titulo}': {erro}"
+        return ToolResult.failure(f"Nao consegui maximizar '{titulo}': {erro}", error_code="window_maximize_failed", tool_name="maximizar_janela_windows")
 
 def _configurar_set_window_pos(user32):
     """Configura assinatura Win64 para SetWindowPos e GetWindowRect."""
@@ -418,30 +418,31 @@ def _estado_janela_windows(user32, hwnd):
         pass
     return "normal"
 
-def obter_geometria_janela_windows(alvo):
+def obter_geometria_janela_windows(alvo) -> ToolResult:
     """Retorna posicao, tamanho e estado de uma janela do Windows."""
     if os.name != "nt":
-        return "Controle de janelas do Windows so esta disponivel no Windows."
+        return ToolResult.failure("Controle de janelas do Windows so esta disponivel no Windows.", error_code="windows_only", tool_name="obter_geometria_janela_windows")
 
     encontrado = _encontrar_janela_windows(alvo)
     if not encontrado:
-        return f"Nao encontrei uma janela correspondente a '{alvo}'."
+        return ToolResult.failure(f"Nao encontrei uma janela correspondente a '{alvo}'.", error_code="window_not_found", tool_name="obter_geometria_janela_windows")
 
     hwnd, titulo = encontrado
     user32 = _user32()
     rect = _obter_rect_janela_windows(hwnd)
     if rect is None:
-        return f"Nao consegui obter a geometria da janela: {titulo}."
+        return ToolResult.failure(f"Nao consegui obter a geometria da janela: {titulo}.", error_code="window_geometry_failed", tool_name="obter_geometria_janela_windows")
 
     left, top, right, bottom = rect
     largura = max(0, right - left)
     altura = max(0, bottom - top)
     estado = _estado_janela_windows(user32, hwnd)
-    return (
+    return ToolResult.success(
         f"Janela: {titulo}\n"
         f"Posicao: x={left}, y={top}\n"
         f"Tamanho: {largura}x{altura}\n"
-        f"Estado: {estado}"
+        f"Estado: {estado}",
+        tool_name="obter_geometria_janela_windows",
     )
 
 def _validar_posicao_janela_windows(x, y):
@@ -460,20 +461,20 @@ def _validar_posicao_janela_windows(x, y):
         pass
     return True
 
-def mover_janela_windows(alvo, x, y):
+def mover_janela_windows(alvo, x, y) -> ToolResult:
     """Move uma janela para uma posicao absoluta da area de trabalho."""
     if os.name != "nt":
-        return "Controle de janelas do Windows so esta disponivel no Windows."
+        return ToolResult.failure("Controle de janelas do Windows so esta disponivel no Windows.", error_code="windows_only", tool_name="mover_janela_windows")
 
     encontrado = _encontrar_janela_windows(alvo)
     if not encontrado:
-        return f"Nao encontrei uma janela correspondente a '{alvo}'."
+        return ToolResult.failure(f"Nao encontrei uma janela correspondente a '{alvo}'.", error_code="window_not_found", tool_name="mover_janela_windows")
 
     try:
         x = int(x)
         y = int(y)
         if not _validar_posicao_janela_windows(x, y):
-            return f"Posicao fora da area de trabalho virtual: ({x}, {y})."
+            return ToolResult.failure(f"Posicao fora da area de trabalho virtual: ({x}, {y}).", error_code="window_position_invalid", tool_name="mover_janela_windows")
 
         hwnd, titulo = encontrado
         user32 = _user32()
@@ -484,19 +485,19 @@ def mover_janela_windows(alvo, x, y):
         SWP_NOACTIVATE = 0x0010
         ok = user32.SetWindowPos(hwnd, 0, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE)
         if not ok:
-            return f"Nao consegui mover a janela: {titulo}."
-        return f"Janela movida: {titulo} para ({x}, {y})."
+            return ToolResult.failure(f"Nao consegui mover a janela: {titulo}.", error_code="window_move_failed", tool_name="mover_janela_windows")
+        return ToolResult.success(f"Janela movida: {titulo} para ({x}, {y}).", tool_name="mover_janela_windows")
     except Exception as erro:
-        return f"Nao consegui mover '{alvo}': {erro}"
+        return ToolResult.failure(f"Nao consegui mover '{alvo}': {erro}", error_code="window_move_failed", tool_name="mover_janela_windows")
 
-def redimensionar_janela_windows(alvo, largura, altura):
+def redimensionar_janela_windows(alvo, largura, altura) -> ToolResult:
     """Redimensiona uma janela sem alterar sua posicao atual."""
     if os.name != "nt":
-        return "Controle de janelas do Windows so esta disponivel no Windows."
+        return ToolResult.failure("Controle de janelas do Windows so esta disponivel no Windows.", error_code="windows_only", tool_name="redimensionar_janela_windows")
 
     encontrado = _encontrar_janela_windows(alvo)
     if not encontrado:
-        return f"Nao encontrei uma janela correspondente a '{alvo}'."
+        return ToolResult.failure(f"Nao encontrei uma janela correspondente a '{alvo}'.", error_code="window_not_found", tool_name="redimensionar_janela_windows")
 
     try:
         largura = int(largura)
@@ -505,11 +506,13 @@ def redimensionar_janela_windows(alvo, largura, altura):
             return ToolResult.failure(
                 "Tamanho muito pequeno. Use pelo menos 120x80 pixels.",
                 error_code="window_size_too_small",
+                tool_name="redimensionar_janela_windows",
             )
         if largura > 10000 or altura > 10000:
             return ToolResult.failure(
                 "Tamanho muito grande. Use no maximo 10000x10000 pixels.",
                 error_code="window_size_too_large",
+                tool_name="redimensionar_janela_windows",
             )
 
         hwnd, titulo = encontrado
@@ -521,19 +524,19 @@ def redimensionar_janela_windows(alvo, largura, altura):
         SWP_NOACTIVATE = 0x0010
         ok = user32.SetWindowPos(hwnd, 0, 0, 0, largura, altura, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE)
         if not ok:
-            return f"Nao consegui redimensionar a janela: {titulo}."
-        return f"Janela redimensionada: {titulo} para {largura}x{altura}."
+            return ToolResult.failure(f"Nao consegui redimensionar a janela: {titulo}.", error_code="window_resize_failed", tool_name="redimensionar_janela_windows")
+        return ToolResult.success(f"Janela redimensionada: {titulo} para {largura}x{altura}.", tool_name="redimensionar_janela_windows")
     except Exception as erro:
-        return f"Nao consegui redimensionar '{alvo}': {erro}"
+        return ToolResult.failure(f"Nao consegui redimensionar '{alvo}': {erro}", error_code="window_resize_failed", tool_name="redimensionar_janela_windows")
 
-def restaurar_janela_windows(alvo):
+def restaurar_janela_windows(alvo) -> ToolResult:
     """Restaura uma janela minimizada ou maximizada ao estado normal."""
     if os.name != "nt":
-        return "Controle de janelas do Windows so esta disponivel no Windows."
+        return ToolResult.failure("Controle de janelas do Windows so esta disponivel no Windows.", error_code="windows_only", tool_name="restaurar_janela_windows")
 
     encontrado = _encontrar_janela_windows(alvo)
     if not encontrado:
-        return f"Nao encontrei uma janela correspondente a '{alvo}'."
+        return ToolResult.failure(f"Nao encontrei uma janela correspondente a '{alvo}'.", error_code="window_not_found", tool_name="restaurar_janela_windows")
 
     hwnd, titulo = encontrado
     user32 = _user32()
@@ -542,17 +545,17 @@ def restaurar_janela_windows(alvo):
             # ShowWindow pode retornar False quando o estado anterior era normal;
             # isso nao significa necessariamente falha.
             pass
-        return f"Janela restaurada: {titulo}"
+        return ToolResult.success(f"Janela restaurada: {titulo}", tool_name="restaurar_janela_windows")
     except Exception as erro:
-        return f"Nao consegui restaurar '{titulo}': {erro}"
+        return ToolResult.failure(f"Nao consegui restaurar '{titulo}': {erro}", error_code="window_restore_failed", tool_name="restaurar_janela_windows")
 
-def fechar_janela_windows(alvo):
+def fechar_janela_windows(alvo) -> ToolResult:
     if os.name != "nt":
-        return "Controle de janelas do Windows so esta disponivel no Windows."
+        return ToolResult.failure("Controle de janelas do Windows so esta disponivel no Windows.", error_code="windows_only", tool_name="fechar_janela_windows")
 
     encontrado = _encontrar_janela_windows(alvo)
     if not encontrado:
-        return f"Nao encontrei uma janela correspondente a '{alvo}'."
+        return ToolResult.failure(f"Nao encontrei uma janela correspondente a '{alvo}'.", error_code="window_not_found", tool_name="fechar_janela_windows")
 
     hwnd, titulo = encontrado
     user32 = _user32()
@@ -561,8 +564,8 @@ def fechar_janela_windows(alvo):
         WM_CLOSE = 0x0010
         resultado = user32.PostMessageW(hwnd, WM_CLOSE, 0, 0)
         if not resultado:
-            return f"Encontrei '{titulo}', mas nao consegui solicitar o fechamento."
-        return f"Solicitei o fechamento da janela: {titulo}"
+            return ToolResult.failure(f"Encontrei '{titulo}', mas nao consegui solicitar o fechamento.", error_code="window_close_failed", tool_name="fechar_janela_windows")
+        return ToolResult.success(f"Solicitei o fechamento da janela: {titulo}", tool_name="fechar_janela_windows")
     except Exception as erro:
-        return f"Nao consegui fechar '{titulo}': {erro}"
+        return ToolResult.failure(f"Nao consegui fechar '{titulo}': {erro}", error_code="window_close_failed", tool_name="fechar_janela_windows")
 

@@ -514,6 +514,19 @@ tools = [
 
     {
         "type": "function",
+        "name": "desfazer_ultima_acao",
+        "description": "Desfaz a ultima acao reversivel registrada pelo Auren. Se a reversao falhar, a entrada permanece disponivel para nova tentativa.",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+            "additionalProperties": False
+        },
+        "strict": True
+    },
+
+    {
+        "type": "function",
         "name": "controle_midia_windows",
         "description": "Envia um comando global de midia no Windows: play/pause, proxima, anterior ou parar.",
         "parameters": {
@@ -838,13 +851,13 @@ tools = [
     {
         "type": "function",
         "name": "fechar_aba",
-        "description": "Fecha uma aba existente. Se o indice nao for informado, fecha a aba ativa.",
+        "description": "Fecha uma aba existente. Use o indice da aba; use 0 para fechar a aba ativa.",
         "parameters": {
             "type": "object",
             "properties": {
                 "indice": {
                     "type": "integer",
-                    "description": "Numero da aba, comecando em 1. Use 0 para fechar a aba ativa."
+                    "description": "Numero da aba, comecando em 1. Use 0 para a aba ativa."
                 }
             },
             "required": ["indice"],
@@ -909,6 +922,10 @@ tools = [
                         "inicio",
                         "fim"
                     ]
+                },
+                "alvo": {
+                    "type": "string",
+                    "description": "Texto ou titulo que deve estar visivel apos a rolagem. Opcional."
                 }
             },
             "required": ["direcao"],

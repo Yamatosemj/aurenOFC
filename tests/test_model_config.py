@@ -45,3 +45,41 @@ def test_provider_uses_configured_model(monkeypatch):
         monkeypatch.delenv("AUREN_MODEL", raising=False)
         importlib.reload(config)
         importlib.reload(provider_module)
+
+
+def test_model_ladder_keeps_auren_model_as_first_rung(monkeypatch):
+    monkeypatch.setenv("AUREN_MODEL", "gpt-5.6-terra")
+    monkeypatch.setenv(
+        "AUREN_MODEL_LADDER",
+        "gpt-5.6-luna, gpt-5.6-mini, gpt-5.6-luna",
+    )
+    loaded = _reload_config()
+
+    assert loaded.AUREN_MODEL_LADDER == (
+        "gpt-5.6-luna",
+        "gpt-5.6-mini",
+    )
+    assert loaded.MODEL_LADDER == (
+        "gpt-5.6-terra",
+        "gpt-5.6-luna",
+        "gpt-5.6-mini",
+    )
+
+
+def test_model_ladder_without_environment_has_only_primary_model(monkeypatch):
+    monkeypatch.delenv("AUREN_MODEL", raising=False)
+    monkeypatch.delenv("AUREN_MODEL_LADDER", raising=False)
+    loaded = _reload_config()
+    assert loaded.MODEL_LADDER == (loaded.DEFAULT_MODEL,)
+
+
+def test_request_timeout_is_configurable_and_positive(monkeypatch):
+    monkeypatch.setenv("AUREN_REQUEST_TIMEOUT_S", "17.5")
+    loaded = _reload_config()
+    assert loaded.AUREN_REQUEST_TIMEOUT_S == 17.5
+
+
+def test_invalid_request_timeout_uses_safe_default(monkeypatch):
+    monkeypatch.setenv("AUREN_REQUEST_TIMEOUT_S", "0")
+    loaded = _reload_config()
+    assert loaded.AUREN_REQUEST_TIMEOUT_S == 30.0

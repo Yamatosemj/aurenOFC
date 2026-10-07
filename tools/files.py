@@ -1,10 +1,16 @@
 from __future__ import annotations
 
 import os
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
 from core.utils import normalizar_nome
+from core.tool_result import ToolResult
+from tools.file_intelligence import _classify_read_path, _is_reparse_point
+
+MAX_SEARCH_FILES = 10_000
+MAX_SEARCH_SECONDS = 5.0
 
 
 def interpretar_periodo(consulta):
@@ -66,7 +72,7 @@ def interpretar_periodo(consulta):
 
     return None, None, None
 
-def buscar_arquivo(consulta):
+def buscar_arquivo(consulta) -> ToolResult:
     pedido = normalizar_nome(consulta)
 
     inicio, fim, descricao = interpretar_periodo(
@@ -237,69 +243,88 @@ def buscar_arquivo(consulta):
     ]
 
     candidatos = []
+    arquivos_inspecionados = 0
+    inicio_scan = time.monotonic()
+    scan_interrompido = False
 
     for pasta in pastas:
         if not pasta.exists():
             continue
 
         try:
-            for arquivo in pasta.rglob("*"):
-                if not arquivo.is_file():
-                    continue
+            for current, directories, filenames in os.walk(pasta, followlinks=False):
+                current_path = Path(current)
+                directories[:] = [
+                    nome for nome in directories
+                    if not _is_reparse_point(current_path / nome)
+                ]
 
-                try:
-                    estatisticas = arquivo.stat()
-                except OSError:
-                    continue
+                for filename in filenames:
+                    if (pelos_menos := arquivos_inspecionados) >= MAX_SEARCH_FILES or time.monotonic() - inicio_scan >= MAX_SEARCH_SECONDS:
+                        scan_interrompido = True
+                        break
+                    arquivos_inspecionados = pelos_menos + 1
+                    arquivo = current_path / filename
+                    if _is_reparse_point(arquivo):
+                        continue
+                    if not arquivo.is_file():
+                        continue
 
-                modificacao = datetime.fromtimestamp(
-                    estatisticas.st_mtime
-                )
+                    try:
+                        resolvido = arquivo.resolve(strict=True)
+                        politica = _classify_read_path(resolvido)
+                        if politica.status != "allowed":
+                            continue
+                        estatisticas = resolvido.stat()
+                    except OSError:
+                        continue
 
-                data_arquivo = modificacao.date()
+                    modificacao = datetime.fromtimestamp(
+                        estatisticas.st_mtime
+                    )
+                    data_arquivo = modificacao.date()
 
-                if inicio is not None:
-                    if (
+                    if inicio is not None and (
                         data_arquivo < inicio
                         or data_arquivo > fim
                     ):
                         continue
 
-                if extensoes:
-                    if arquivo.suffix.lower() not in extensoes:
+                    if extensoes and resolvido.suffix.lower() not in extensoes:
                         continue
 
-                nome_normalizado = normalizar_nome(
-                    arquivo.name
-                )
-
-                pontuacao = sum(
-                    3
-                    for termo in termos
-                    if termo in nome_normalizado
-                )
-
-                candidatos.append(
-                    (
-                        pontuacao,
-                        estatisticas.st_mtime,
-                        arquivo
+                    nome_normalizado = normalizar_nome(resolvido.name)
+                    pontuacao = sum(
+                        3
+                        for termo in termos
+                        if termo in nome_normalizado
                     )
-                )
 
+                    candidatos.append(
+                        (
+                            pontuacao,
+                            estatisticas.st_mtime,
+                            resolvido,
+                        )
+                    )
+                if scan_interrompido:
+                    break
         except OSError:
             continue
-
     if not candidatos:
         if descricao:
-            return (
+            return ToolResult.failure(
                 f"Nao encontrei arquivos em "
-                f"{descricao}."
+                f"{descricao}.",
+                error_code="files_not_found",
+                tool_name="buscar_arquivo",
             )
 
-        return (
+        return ToolResult.failure(
             "Nao encontrei arquivos "
-            "correspondentes."
+            "correspondentes.",
+            error_code="files_not_found",
+            tool_name="buscar_arquivo",
         )
 
     candidatos.sort(
@@ -319,6 +344,11 @@ def buscar_arquivo(consulta):
     else:
         linhas.append(
             "Arquivos encontrados:"
+        )
+
+    if scan_interrompido:
+        linhas.append(
+            f"Busca interrompida pelo limite de seguranca ({MAX_SEARCH_FILES} arquivos ou {MAX_SEARCH_SECONDS:.1f}s)."
         )
 
     linhas.append(
@@ -346,4 +376,7 @@ def buscar_arquivo(consulta):
             f"{arquivo}"
         )
 
-    return "\n".join(linhas)
+    return ToolResult.success(
+        "\n".join(linhas),
+        tool_name="buscar_arquivo",
+    )

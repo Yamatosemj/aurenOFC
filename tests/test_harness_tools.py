@@ -255,6 +255,7 @@ def test_successful_browser_context_clears_verification_pending():
         browser_verification_state=state,
         browser_state_mutating_tools={"clicar_elemento"},
         browser_verification_tool="obter_contexto_navegador",
+        browser_verifier=lambda *_args: True,
     )
 
     assert results[0]["sucesso"] is True
@@ -263,6 +264,7 @@ def test_successful_browser_context_clears_verification_pending():
     assert vision_pending is False
     assert cancelled is False
     assert state["pending"] is False
+    assert results[0]["verificacao_browser"] is True
 
 
 def test_browser_navigation_verification_clears_pending_only_when_target_matches():
@@ -273,7 +275,28 @@ def test_browser_navigation_verification_clears_pending_only_when_target_matches
         _item("obter_contexto_navegador", "call-browser-context", '{"foco":""}'),
     ]
     resultados = iter([
-        ToolResult.success("Naveguei.", tool_name="navegar_navegador"),
+        ToolResult.success(
+            "Naveguei.",
+            tool_name="navegar_navegador",
+            data={
+                "navegacao": {
+                    "url_depois": "https://www.youtube.com/",
+                    "ready_state_depois": "complete",
+                    "estado_antes": {
+                        "dom_fingerprint": "before",
+                        "texto_relevante": "pagina anterior",
+                        "rota_ativa": "home",
+                        "time_origin": 1,
+                    },
+                    "estado_depois": {
+                        "dom_fingerprint": "after",
+                        "texto_relevante": "YouTube",
+                        "rota_ativa": "youtube",
+                        "time_origin": 1,
+                    },
+                }
+            },
+        ),
         ToolResult.success(
             "contexto",
             tool_name="obter_contexto_navegador",
@@ -320,7 +343,7 @@ def test_browser_navigation_verification_keeps_pending_when_target_is_wrong():
         _item("obter_contexto_navegador", "call-browser-context-2", '{"foco":""}'),
     ]
     resultados = iter([
-        ToolResult.success("Naveguei.", tool_name="navegar_navegador"),
+        ToolResult.success("Naveguei.", tool_name="navegar_navegador", data={"navegacao": {"url_depois": "https://www.youtube.com/"}}),
         ToolResult.success(
             "contexto",
             tool_name="obter_contexto_navegador",
@@ -335,7 +358,7 @@ def test_browser_navigation_verification_keeps_pending_when_target_is_wrong():
         ),
     ])
 
-    _executar_chamadas_rodada(
+    resultado = _executar_chamadas_rodada(
         chamadas,
         historico=[],
         task_manager=manager,
@@ -357,6 +380,7 @@ def test_browser_navigation_verification_keeps_pending_when_target_is_wrong():
     )
 
     assert state["pending"] is True
+    assert resultado[0][1]["verificacao_browser"] is False
 
 
 
@@ -443,3 +467,59 @@ def test_browser_verification_state_survives_between_tool_rounds():
     assert "ferramenta" not in state
     assert "argumentos" not in state
     assert "dados_acao" not in state
+
+
+def test_browser_verification_none_keeps_pending():
+    manager = _TaskManager()
+    state = {"pending": True}
+
+    _executar_chamadas_rodada(
+        [_item("obter_contexto_navegador", "call-browser-none")],
+        historico=[],
+        task_manager=manager,
+        task_id="task-browser-none",
+        rodada=2,
+        executar_ferramenta=lambda _item: ToolResult.success(
+            "Contexto atualizado.",
+            tool_name="obter_contexto_navegador",
+            data={
+                "abas": "Abas abertas: 1\nAba ativa: 1\nAba 1: Site | https://example.com [ATIVA]",
+                "pagina": "conteudo",
+            },
+        ),
+        trace=None,
+        vision_state_mutating_tools=set(),
+        vision_reobserve_pending=False,
+        falha_nao_recuperada=False,
+        max_tool_result_chars=100,
+        get_active_vision_geometry=lambda: None,
+        clear_active_vision_geometry=lambda: None,
+        write_log=lambda *args, **kwargs: None,
+        browser_verification_state=state,
+        browser_state_mutating_tools={"clicar_elemento"},
+        browser_verification_tool="obter_contexto_navegador",
+        browser_verifier=lambda *_args: None,
+    )
+
+    assert state["pending"] is True
+
+
+def test_browser_verification_none_is_recorded_as_inconclusive():
+    manager = _TaskManager()
+    state = {"pending": True}
+    results, *_ = _executar_chamadas_rodada(
+        [_item("obter_contexto_navegador", "call-browser-none-2")],
+        historico=[], task_manager=manager, task_id="task-browser-none-2", rodada=2,
+        executar_ferramenta=lambda _item: ToolResult.success(
+            "contexto", tool_name="obter_contexto_navegador",
+            data={"abas": "Abas abertas: 1\nAba ativa: 1\nAba 1: Site | https://example.com [ATIVA]", "pagina": "conteudo"},
+        ),
+        trace=None, vision_state_mutating_tools=set(), vision_reobserve_pending=False,
+        falha_nao_recuperada=False, max_tool_result_chars=100,
+        get_active_vision_geometry=lambda: None, clear_active_vision_geometry=lambda: None,
+        write_log=lambda *args, **kwargs: None, browser_verification_state=state,
+        browser_state_mutating_tools={"clicar_elemento"}, browser_verification_tool="obter_contexto_navegador",
+        browser_verifier=lambda *_args: None,
+    )
+    assert results[0]["verificacao_browser"] is None
+    assert state["pending"] is True

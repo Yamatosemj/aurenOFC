@@ -43,7 +43,7 @@ def test_arrastar_mouse_windows_executa_gesto_completo(monkeypatch):
         descricao="item de teste",
     )
 
-    assert "Arraste global executado" in result
+    assert "Arraste global executado" in result.message
     assert fake.positions[0] == (100, 100)
     assert fake.positions[-1] == (120, 110)
     assert fake.events == [0x0002, 0x0004]

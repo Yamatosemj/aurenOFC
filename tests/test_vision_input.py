@@ -417,3 +417,27 @@ def test_harness_nao_muda_o_contrato_de_imagem_sem_geometria(tmp_path):
         and any(part.get("type") == "input_image" for part in item["content"] if isinstance(part, dict))
         for item in entrada
     )
+
+
+def test_vision_coordinate_transform_rejects_stale_snapshot(monkeypatch):
+    import core.vision as vision
+
+    geometry = {
+        "vision_snapshot_id": "screen-1",
+        "transformacao_segura": True,
+        "captured_at_monotonic": 100.0,
+        "imagem_enviada_ao_modelo": {"width": 1000, "height": 500},
+        "area_de_trabalho_virtual_windows": {"x": 0, "y": 0, "width": 2000, "height": 1000},
+    }
+    monkeypatch.setattr(vision.time, "monotonic", lambda: 111.0)
+    vision.set_active_vision_geometry(geometry)
+    try:
+        _, _, error = vision.transform_visual_tool_arguments(
+            "clicar_mouse_windows",
+            {"x": 500, "y": 250, "coordinate_space": "vision_image", "vision_snapshot_id": "screen-1"},
+        )
+    finally:
+        vision.clear_active_vision_geometry()
+
+    assert error is not None
+    assert "desatualizado" in error.lower()

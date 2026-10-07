@@ -14,6 +14,7 @@ from core.tool_contracts import capability_for_tool, validate_tool_arguments
 from core.tool_result import ToolResult
 import tools.dispatcher as dispatcher
 import tools.file_intelligence as file_intelligence
+import tools.files as files
 from tools.file_intelligence import READ_MAX_CHARS, _history, _parse_zone_identifier, inspect_file, read_file
 
 
@@ -24,6 +25,20 @@ def _args(path: Path) -> dict:
 def _allowed_test_root(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     """Mantem os testes existentes dentro de uma raiz permitida ficticia."""
     monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [tmp_path.resolve()])
+    original_sensitive = file_intelligence._has_sensitive_path_component
+
+    def ignore_runner_appdata(path: Path) -> bool:
+        try:
+            relativo = Path(path).resolve().relative_to(tmp_path.resolve())
+        except ValueError:
+            relativo = Path(path)
+        return original_sensitive(relativo)
+
+    monkeypatch.setattr(
+        file_intelligence,
+        "_has_sensitive_path_component",
+        ignore_runner_appdata,
+    )
 
 
 def test_inspect_existing_file_metadata_and_hash(tmp_path: Path):
@@ -163,6 +178,16 @@ def test_read_supported_formats(tmp_path: Path, suffix: str, content: str):
     assert result.ok
     assert result.data["file_content"]["conteudo"] == content
     assert result.data["file_content"]["truncado"] is False
+
+
+def test_read_normalizes_windows_crlf(tmp_path: Path):
+    path = tmp_path / "windows.txt"
+    path.write_bytes(b"linha 1\r\nlinha 2\r\n")
+
+    result = read_file(str(path), 0, 200)
+
+    assert result.ok
+    assert result.data["file_content"]["conteudo"] == "linha 1\nlinha 2\n"
 
 
 def test_read_file_marks_content_as_untrusted(tmp_path: Path):
@@ -316,7 +341,7 @@ def test_requested_trusted_root_names_are_recognized(tmp_path: Path, monkeypatch
     real_read_allowed_roots = file_intelligence._read_allowed_roots
     monkeypatch.setattr(file_intelligence, "_read_allowed_roots", real_read_allowed_roots)
 
-    for root_name in ("Downloads", "Desktop", "Documents", "OneDrive"):
+    for root_name in ("Downloads", "Desktop", "Documents"):
         root = profile / root_name
         root.mkdir()
         path = root / "arquivo.txt"
@@ -331,6 +356,7 @@ def test_read_and_inspect_outside_allowlist_require_confirmation(tmp_path: Path,
     outside = tmp_path.parent / "arquivo-fora.txt"
     outside.write_text("segredo", encoding="utf-8")
     monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [allowed.resolve()])
+    monkeypatch.setattr(file_intelligence, "_has_sensitive_path_component", lambda _path: False)
 
     read_result = read_file(str(outside))
     inspect_result = inspect_file(str(outside))
@@ -423,6 +449,7 @@ def test_permission_manager_confirms_file_path_outside_allowlist(tmp_path: Path,
     outside = tmp_path.parent / "fora-permissao.txt"
     outside.write_text("x", encoding="utf-8")
     monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [allowed.resolve()])
+    monkeypatch.setattr(file_intelligence, "_has_sensitive_path_component", lambda _path: False)
 
     channel = _RecordingConfirmationChannel(True)
     manager = PermissionManager(confirmation_channel=channel)
@@ -444,6 +471,7 @@ def test_permission_manager_denies_outside_allowlist_when_user_rejects(tmp_path:
     outside = tmp_path.parent / "fora-negada.txt"
     outside.write_text("nao ler", encoding="utf-8")
     monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [allowed.resolve()])
+    monkeypatch.setattr(file_intelligence, "_has_sensitive_path_component", lambda _path: False)
 
     channel = _RecordingConfirmationChannel(False)
     manager = PermissionManager(confirmation_channel=channel)
@@ -483,6 +511,7 @@ def test_dispatcher_confirmed_path_is_really_read(tmp_path: Path, monkeypatch: p
     outside = tmp_path.parent / "fora-dispatcher.txt"
     outside.write_text("conteudo confirmado", encoding="utf-8")
     monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [allowed.resolve()])
+    monkeypatch.setattr(file_intelligence, "_has_sensitive_path_component", lambda _path: False)
 
     channel = _RecordingConfirmationChannel(True)
     manager = PermissionManager(confirmation_channel=channel)
@@ -521,3 +550,126 @@ def test_dispatcher_does_not_bypass_sensitive_path_with_confirmation(tmp_path: P
     assert result.ok is False
     assert result.error_code == "permission_denied"
     assert channel.requests == []
+
+
+def test_one_drive_root_itself_is_not_an_implicit_read_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    profile = tmp_path / "perfil"
+    onedrive = profile / "OneDrive"
+    onedrive.mkdir(parents=True)
+    arquivo = onedrive / "Privado" / "arquivo.txt"
+    arquivo.parent.mkdir()
+    arquivo.write_text("privado", encoding="utf-8")
+
+    monkeypatch.setenv("USERPROFILE", str(profile))
+    monkeypatch.setenv("OneDrive", str(onedrive))
+    monkeypatch.delenv("OneDriveConsumer", raising=False)
+    monkeypatch.delenv("OneDriveCommercial", raising=False)
+
+    result = read_file(str(arquivo))
+
+    assert result.ok is False
+    assert result.error_code == "path_confirmation_required"
+
+
+def test_same_file_identity_detects_metadata_change(tmp_path: Path):
+    path = tmp_path / "arquivo.txt"
+    path.write_text("abc", encoding="utf-8")
+    before = path.stat()
+    path.write_text("abcd", encoding="utf-8")
+    after = path.stat()
+
+    assert file_intelligence._same_file_identity(before, after) is False
+
+
+def test_inspect_large_file_skips_sha256_by_default(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    allowed = tmp_path / "Desktop"
+    allowed.mkdir()
+    path = allowed / "grande.txt"
+    with path.open("wb") as handle:
+        handle.truncate(file_intelligence.MAX_HASH_BYTES + 1)
+
+    monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [allowed.resolve()])
+
+    def fail_sha256(_path):
+        raise AssertionError("SHA-256 nao deveria ser calculado para arquivo gigante sem procurar copias.")
+
+    monkeypatch.setattr(file_intelligence, "_sha256", fail_sha256)
+
+    result = inspect_file(str(path), procurar_copias=False)
+
+    assert result.ok is True
+    assert result.data["file_info"]["sha256"] is None
+    assert "SHA-256 omitido" in " ".join(result.data.get("observacoes", []))
+
+
+def test_inspect_rejects_changed_file_identity(monkeypatch, tmp_path: Path):
+    allowed = tmp_path / "Desktop"
+    allowed.mkdir()
+    path = allowed / "mutavel.txt"
+    path.write_text("abc", encoding="utf-8")
+
+    monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [allowed.resolve()])
+    monkeypatch.setattr(file_intelligence, "_same_file_identity", lambda _before, _after: False)
+
+    result = inspect_file(str(path), procurar_copias=False)
+
+    assert result.ok is False
+    assert result.error_code == "path_changed_during_inspect"
+
+
+def test_read_rejects_changed_file_identity(monkeypatch, tmp_path: Path):
+    allowed = tmp_path / "Desktop"
+    allowed.mkdir()
+    path = allowed / "mutavel.txt"
+    path.write_text("conteudo", encoding="utf-8")
+
+    monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [allowed.resolve()])
+    monkeypatch.setattr(file_intelligence, "_same_file_identity", lambda _before, _after: False)
+
+    result = read_file(str(path), 0, 100)
+
+    assert result.ok is False
+    assert result.error_code == "path_changed_during_read"
+
+
+def test_busca_arquivo_ignora_symlink_para_fora_da_raiz(tmp_path, monkeypatch):
+    allowed = tmp_path / "Desktop"
+    allowed.mkdir()
+    outside = tmp_path / "privado.txt"
+    outside.write_text("segredo fora", encoding="utf-8")
+    link = allowed / "atalho.txt"
+    try:
+        link.symlink_to(outside)
+    except (OSError, NotImplementedError):
+        pytest.skip("symlink nao disponivel neste ambiente")
+
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    resultado = files.buscar_arquivo("atalho")
+
+    assert "atalho.txt" not in resultado.message
+    assert "privado.txt" not in resultado.message
+
+
+@pytest.mark.parametrize(
+    ("zone_id", "status", "internet_mark"),
+    [
+        (0, "nao_confirmado", "nao_confirmado"),
+        (2, "nao_confirmado", "nao_confirmado"),
+        (3, "confirmado", "confirmado"),
+        (4, "confirmado", "confirmado"),
+    ],
+)
+def test_origin_status_distinguishes_zone_classes(monkeypatch, tmp_path: Path, zone_id, status, internet_mark):
+    path = tmp_path / "zona.txt"
+    path.write_text("x", encoding="utf-8")
+    monkeypatch.setattr(
+        file_intelligence,
+        "_zone_identifier_text",
+        lambda _path: f"[ZoneTransfer]\nZoneId={zone_id}\nHostUrl=https://example.com/a.txt\n",
+    )
+
+    result = file_intelligence.inspect_file(str(path))
+    assert result.ok
+    origem = result.data["origem"]
+    assert origem["status"] == status
+    assert origem["marcacao_zona_internet"] == internet_mark

@@ -56,6 +56,7 @@ class PermissionManager:
         "windows.input": PermissionLevel.AUTO,
         "windows.audio.read": PermissionLevel.AUTO,
         "windows.audio.control": PermissionLevel.AUTO,
+        "undo.control": PermissionLevel.AUTO,
         "windows.ui.read": PermissionLevel.AUTO,
         "windows.ui.control": PermissionLevel.AUTO,
         "browser.navigation": PermissionLevel.AUTO,
@@ -86,6 +87,7 @@ class PermissionManager:
         "windows.input": "Somente mover o mouse e teclas explicitamente seguras sao AUTO; cliques/arrastes/atalhos destrutivos exigem CONFIRM.",
         "windows.audio.read": "Consulta audio sem alterar estado.",
         "windows.audio.control": "Volume, mudo e midia sao controles locais e reversiveis.",
+        "undo.control": "Desfazer reaplica o estado anterior capturado por uma acao reversivel ja autorizada.",
         "windows.ui.read": "Inspecao UIA e somente leitura.",
         "windows.ui.control": "Somente preenchimento nao sensivel de campos explicitamente seguros e AUTO; demais controles exigem CONFIRM.",
         "browser.navigation": "Navegacao, voltar, avancar e recarregar sao reversiveis e nao submetem formulario por si so.",
@@ -110,7 +112,6 @@ class PermissionManager:
         "navegar_navegador",
         "voltar_pagina",
         "avancar_pagina",
-        "recarregar_pagina",
     })
     AUTO_BROWSER_TAB_CONTROL_TOOLS = frozenset({
         "abrir_nova_aba",
@@ -127,6 +128,7 @@ class PermissionManager:
         "windows.window.control",
         "windows.input",
         "windows.audio.control",
+        "undo.control",
         "windows.ui.control",
     }
 
@@ -135,6 +137,11 @@ class PermissionManager:
     # para evitar bloquear repetições legitimas de cliques/preenchimentos.
     NO_PROGRESS_GUARD_TOOLS = {
         "navegar_navegador",
+        "clicar_elemento",
+        "pressionar_tecla",
+        "clicar_elemento_windows",
+        "alternar_elemento_windows",
+        "selecionar_elemento_windows",
     }
 
     # Alvos explicitamente reconhecidos como consulta/navegacao local.
@@ -451,10 +458,8 @@ class PermissionManager:
                 ),
             )
 
-        if conta_para_limite:
-            self.actions_attempted += 1
-
         nivel, motivo = self.nivel_da_acao(
+
             nome_ferramenta,
             argumentos,
         )
@@ -466,18 +471,30 @@ class PermissionManager:
             )
 
         if nivel == PermissionLevel.AUTO:
+            if conta_para_limite:
+                self.actions_attempted += 1
             self.last_authorized_action_signature = assinatura_atual
             self.last_authorized_action_tool = nome_ferramenta
             return True, motivo
 
         if nivel == PermissionLevel.CONFIRM:
-            aprovado = self._pedir_confirmacao(
-                nome_ferramenta,
-                argumentos,
-                motivo,
+            consumo_fonte = (
+                self._fonte_nao_confiavel_pendente is not None
+                and conta_para_limite
             )
+            try:
+                aprovado = self._pedir_confirmacao(
+                    nome_ferramenta,
+                    argumentos,
+                    motivo,
+                )
+            finally:
+                if consumo_fonte:
+                    self._fonte_nao_confiavel_pendente = None
 
             if aprovado:
+                if conta_para_limite:
+                    self.actions_attempted += 1
                 self.last_authorized_action_signature = assinatura_atual
                 self.last_authorized_action_tool = nome_ferramenta
                 return True, "Usuario confirmou a acao."
@@ -496,6 +513,14 @@ class PermissionManager:
         capacidade = self._capability(nome_ferramenta)
         nivel_base = self.nivel(nome_ferramenta)
 
+        if nivel_base == PermissionLevel.BLOCKED:
+            return (
+                PermissionLevel.BLOCKED,
+                (
+                    f"A ferramenta '{nome_ferramenta}' "
+                    "esta bloqueada pela politica de permissoes."
+                ),
+            )
         if (
             self._fonte_nao_confiavel_pendente is not None
             and capacidade in self.COUNTED_CAPABILITIES
@@ -507,15 +532,6 @@ class PermissionManager:
                     "Esta acao foi solicitada apos a leitura de conteudo nao confiavel "
                     f"(fonte: {fonte}). Conteudo externo nunca e uma instrucao do usuario; "
                     "confirmacao explicita e obrigatoria antes de qualquer acao com efeito externo."
-                ),
-            )
-
-        if nivel_base == PermissionLevel.BLOCKED:
-            return (
-                PermissionLevel.BLOCKED,
-                (
-                    f"A ferramenta '{nome_ferramenta}' "
-                    "esta bloqueada pela politica de permissoes."
                 ),
             )
         if capacidade in {"file.read", "file.inspect"}:
@@ -560,6 +576,16 @@ class PermissionManager:
             )
 
         if capacidade == "browser.navigation":
+            if nome_ferramenta == "recarregar_pagina":
+                return (
+                    PermissionLevel.CONFIRM,
+                    "Recarregar pode repetir uma requisicao ou efeito remoto da pagina; confirmacao obrigatoria.",
+                )
+            if nome_ferramenta == "navegar_navegador" and self._url_navegacao_requer_confirmacao(argumentos.get("url")):
+                return (
+                    PermissionLevel.CONFIRM,
+                    "O destino da navegacao possui indicios de acao remota com efeito persistente; confirmacao obrigatoria.",
+                )
             if nome_ferramenta in self.AUTO_BROWSER_NAVIGATION_TOOLS:
                 return (
                     PermissionLevel.AUTO,
@@ -571,6 +597,14 @@ class PermissionManager:
             )
 
         if capacidade == "browser.tabs.control":
+            if (
+                nome_ferramenta == "abrir_nova_aba"
+                and self._url_navegacao_requer_confirmacao(argumentos.get("url"))
+            ):
+                return (
+                    PermissionLevel.CONFIRM,
+                    "O destino da nova aba possui indicios de acao remota com efeito persistente; confirmacao obrigatoria.",
+                )
             if nome_ferramenta in self.AUTO_BROWSER_TAB_CONTROL_TOOLS:
                 return (
                     PermissionLevel.AUTO,
@@ -581,7 +615,10 @@ class PermissionManager:
                 "Controle de abas fora da allowlist segura; fechamento exige confirmacao.",
             )
 
-        if capacidade in {"browser.input", "windows.ui.control"} and nome_ferramenta in {"clicar_elemento", "clicar_elemento_windows", "alternar_elemento_windows", "selecionar_elemento_windows"}:
+        if capacidade == "browser.input" and nome_ferramenta == "clicar_elemento":
+            return self._classificar_clique(argumentos)
+
+        if capacidade == "windows.ui.control" and nome_ferramenta in {"clicar_elemento_windows", "alternar_elemento_windows", "selecionar_elemento_windows"}:
             return self._classificar_clique({"alvo": argumentos.get("alvo", "")})
 
         if capacidade == "browser.input" and nome_ferramenta in {"preencher_elemento"}:
@@ -589,6 +626,12 @@ class PermissionManager:
 
         if nome_ferramenta == "pressionar_tecla":
             return self._classificar_tecla(argumentos)
+
+        if capacidade == "undo.control":
+            return (
+                PermissionLevel.AUTO,
+                "Desfazer usa somente a reversao registrada pela propria acao anterior e nao inventa estado.",
+            )
 
         if capacidade == "windows.process.control":
             return (
@@ -614,9 +657,7 @@ class PermissionManager:
         self,
         argumentos: dict[str, Any],
     ) -> tuple[PermissionLevel, str]:
-        alvo = self._normalizar_texto(
-            argumentos.get("alvo", "")
-        )
+        alvo = self._normalizar_texto(argumentos.get("alvo", ""))
 
         if not alvo:
             return (
@@ -624,15 +665,66 @@ class PermissionManager:
                 "Clique sem um alvo textual claro: confirmacao obrigatoria.",
             )
 
-        if alvo in self.SAFE_CLICK_TARGETS:
+        if alvo not in {self._normalizar_texto(item) for item in self.SAFE_CLICK_TARGETS}:
             return (
-                PermissionLevel.AUTO,
-                "Clique corresponde a um alvo explicitamente autorizado para consulta/navegacao.",
+                PermissionLevel.CONFIRM,
+                "Alvo de clique fora da allowlist segura; confirmacao obrigatoria.",
             )
 
+        if argumentos.get("_browser_click_preflight_ok") is not True:
+            return (
+                PermissionLevel.CONFIRM,
+                "A estrutura real do elemento clicado nao foi confirmada; confirmacao obrigatoria.",
+            )
+
+        evidencia = argumentos.get("_browser_click_preflight")
+        if not isinstance(evidencia, dict):
+            return PermissionLevel.CONFIRM, "Evidencia estrutural ausente; confirmacao obrigatoria."
+
+        tag = self._normalizar_texto(evidencia.get("tag", ""))
+        tipo = self._normalizar_texto(evidencia.get("type", ""))
+        href = str(evidencia.get("href", "") or "").strip().casefold()
+        target = self._normalizar_texto(evidencia.get("target", ""))
+        form = evidencia.get("form") if isinstance(evidencia.get("form"), dict) else None
+        metodo_form = self._normalizar_texto(form.get("method", "get")) if form else ""
+
+        if bool(evidencia.get("disabled")):
+            return PermissionLevel.AUTO, "Elemento desabilitado: o clique nao deve produzir efeito."
+
+        if bool(evidencia.get("download")):
+            return PermissionLevel.CONFIRM, "O elemento declara download; confirmacao obrigatoria."
+
+        if evidencia.get("onclick"):
+            return PermissionLevel.CONFIRM, "O elemento possui handler onclick; efeito real nao e determinado pela etiqueta."
+
+        if tipo in {"submit", "reset"}:
+            return PermissionLevel.CONFIRM, "Botao de formulario pode submeter ou alterar estado; confirmacao obrigatoria."
+
+        if metodo_form in {"post", "put", "patch", "delete"}:
+            return PermissionLevel.CONFIRM, "Clique dentro de formulario nao-GET; confirmacao obrigatoria."
+
+        if href.startswith(("javascript:", "data:", "vbscript:")):
+            return PermissionLevel.CONFIRM, "Destino executavel do link; confirmacao obrigatoria."
+
+        if href and self._url_navegacao_requer_confirmacao(href):
+            return (
+                PermissionLevel.CONFIRM,
+                "O destino do clique possui indicios de acao remota com efeito persistente; confirmacao obrigatoria.",
+            )
+
+        if target == "_blank":
+            return PermissionLevel.CONFIRM, "O link abre nova aba; confirmacao obrigatoria para efeito externo ambiguo."
+
+        # Somente links HTML com destino explicito passam pela allowlist AUTO.
+        # Botoes, divs, summaries e outros elementos podem ter listeners JavaScript
+        # registrados fora do atributo onclick, e o DOM nao fornece uma prova
+        # confiavel de que esses listeners sao inofensivos.
+        if tag != "a" or not href:
+            return PermissionLevel.CONFIRM, "Elemento acionavel pode possuir comportamento JavaScript nao observavel; confirmacao obrigatoria."
+
         return (
-            PermissionLevel.CONFIRM,
-            "Alvo de clique fora da allowlist segura; confirmacao obrigatoria.",
+            PermissionLevel.AUTO,
+            "Link HTML com destino explicito e sem sinais estruturais de efeito persistente.",
         )
 
     def _classificar_preenchimento(
@@ -674,25 +766,65 @@ class PermissionManager:
             argumentos.get("tecla", "")
         ).strip()
         tecla_normalizada = self._normalizar_texto(tecla)
-        safe_keys = {self._normalizar_texto(item) for item in self.SAFE_KEYS}
-        risky_keys = {self._normalizar_texto(item) for item in self.RISKY_KEYS}
 
-        if tecla_normalizada in safe_keys:
+        context_ok = argumentos.get("_key_context_ok") is True
+        context = argumentos.get("_key_context")
+        contexto = context if isinstance(context, dict) else {}
+        ambiente = self._normalizar_texto(contexto.get("ambiente", ""))
+
+        if tecla_normalizada in {"control+r", "ctrl+r", "f5"}:
             return (
-                PermissionLevel.AUTO,
-                "Tecla classificada como navegacao/controle local seguro.",
+                PermissionLevel.CONFIRM,
+                "Recarregar pode repetir uma requisicao ou efeito remoto da pagina; confirmacao obrigatoria.",
             )
 
+        risky_keys = {self._normalizar_texto(item) for item in self.RISKY_KEYS}
         if tecla_normalizada in risky_keys:
             return (
                 PermissionLevel.CONFIRM,
                 "Tecla pode submeter, apagar ou fechar algo dependendo do contexto.",
             )
 
+        safe_keys = {self._normalizar_texto(item) for item in self.SAFE_KEYS}
+        if tecla_normalizada not in safe_keys:
+            return (
+                PermissionLevel.CONFIRM,
+                "Tecla desconhecida ou potencialmente acionavel: confirmacao obrigatoria.",
+            )
+
+        if not context_ok or contexto.get("context_known") is not True:
+            return (
+                PermissionLevel.CONFIRM,
+                "O contexto de foco/aplicacao da tecla nao foi verificado; confirmacao obrigatoria.",
+            )
+
+        if tecla_normalizada in {"control+l", "ctrl+l", "alt+left", "alt+right"}:
+            if ambiente != "browser":
+                return (
+                    PermissionLevel.CONFIRM,
+                    "Este atalho depende do aplicativo em foco; sem contexto de navegador, confirmacao obrigatoria.",
+                )
+
         return (
-            PermissionLevel.CONFIRM,
-            "Tecla desconhecida ou potencialmente acionavel: confirmacao obrigatoria.",
+            PermissionLevel.AUTO,
+            "Tecla e alvo conhecidos em contexto observado; a acao permanece restrita a navegacao/controle local reversivel.",
         )
+
+    @staticmethod
+    def _url_navegacao_requer_confirmacao(url: Any) -> bool:
+        texto = str(url or "").strip().casefold()
+        if not texto:
+            return False
+        if texto.startswith(("javascript:", "data:", "vbscript:")):
+            return True
+        caminho = texto.split("?", 1)[0].split("#", 1)[0]
+        termos = (
+            "/logout", "/signout", "/delete", "/remove", "/unsubscribe",
+            "/checkout", "/purchase", "/buy", "/send", "/transfer",
+            "/payment", "/pay", "/confirm", "/cancel-subscription",
+        )
+        return any(termo in caminho for termo in termos)
+
 
     def _classificar_programa(
         self,
@@ -735,6 +867,9 @@ class PermissionManager:
         argumentos: dict[str, Any],
     ) -> str:
         capacidade = self._capability(nome_ferramenta)
+
+        if nome_ferramenta == "desfazer_ultima_acao":
+            return "desfazer a ultima acao reversivel"
 
         if nome_ferramenta == "clicar_elemento":
             alvo = argumentos.get("alvo", "")

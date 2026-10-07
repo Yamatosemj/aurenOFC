@@ -40,6 +40,7 @@ def _executar_chamadas_rodada(
     browser_state_mutating_tools = browser_state_mutating_tools or set()
 
     for item in chamadas:
+        verificado_browser: bool | None = None
         if task_manager.should_cancel(task_id):
             cancelado = True
             break
@@ -62,14 +63,23 @@ def _executar_chamadas_rodada(
         )
 
         tool_started_perf = time.perf_counter()
-        try:
-            resultado_bruto = executar_ferramenta(item)
-        except Exception as erro:
+        if browser_verification_pending and nome in browser_state_mutating_tools:
             resultado_bruto = ToolResult.failure(
-                f"Falha inesperada no harness: {erro}",
-                error_code="harness_exception",
+                "Uma mutacao anterior do navegador ainda nao foi verificada. "
+                "Obtenha o contexto do navegador e aguarde evidencia positiva antes "
+                "de executar outra mutacao.",
+                error_code="browser_verification_required",
                 tool_name=nome,
             )
+        else:
+            try:
+                resultado_bruto = executar_ferramenta(item)
+            except Exception as erro:
+                resultado_bruto = ToolResult.failure(
+                    f"Falha inesperada no harness: {erro}",
+                    error_code="harness_exception",
+                    tool_name=nome,
+                )
 
         resultado_estruturado = from_legacy(
             resultado_bruto,
@@ -84,9 +94,8 @@ def _executar_chamadas_rodada(
                 browser_verification_state["argumentos"] = argumentos
                 browser_verification_state["dados_acao"] = dict(resultado_estruturado.data or {})
         elif ferramenta_sucesso and nome == browser_verification_tool:
-            verificado = None
             if browser_verifier is not None and browser_verification_state is not None:
-                verificado = browser_verifier(
+                verificado_browser = browser_verifier(
                     str(browser_verification_state.get("ferramenta") or ""),
                     str(browser_verification_state.get("argumentos") or "{}"),
                     resultado_estruturado.data or {},
@@ -97,9 +106,12 @@ def _executar_chamadas_rodada(
                 task_id=task_id,
                 rodada=rodada,
                 ferramenta=str(browser_verification_state.get("ferramenta") or ""),
-                verificado=verificado,
+                verificado=verificado_browser,
             )
-            if verificado is False:
+            if verificado_browser is not True:
+                # Verificacao obrigatoria so termina com evidencia deterministica
+                # explicita. `None` significa que o verificador nao conseguiu
+                # provar o resultado e, portanto, a tarefa continua pendente.
                 browser_verification_pending = True
             else:
                 browser_verification_pending = False
@@ -174,6 +186,7 @@ def _executar_chamadas_rodada(
                 "sucesso": ferramenta_sucesso,
                 "image_path": str(imagem_path) if imagem_path else "",
                 "dados": dict(resultado_estruturado.data or {}),
+                "verificacao_browser": verificado_browser,
             }
         )
 

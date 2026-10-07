@@ -1,14 +1,25 @@
 from __future__ import annotations
 
+import time
 import unicodedata
 from queue import Empty, Queue
 from typing import Any
 
 from core.confirmation import ConfirmationRequest
+from voice.input import CapturedAudio
 
 
 class VoiceConfirmationChannel:
-    """Coleta a confirmacao por voz usando o mesmo pipeline de captura do modo voz."""
+    """Coleta confirmacao por voz usando o protocolo real da fila de voz."""
+
+    _AFFIRMATIVE_RESPONSES = frozenset({
+        "s",
+        "sim",
+        "y",
+        "yes",
+        "sim pode",
+        "pode sim",
+    })
 
     def __init__(
         self,
@@ -24,25 +35,62 @@ class VoiceConfirmationChannel:
         self._timeout = max(0.1, float(timeout))
 
     def confirmar(self, request: ConfirmationRequest) -> bool:
+        # Descarta tudo que chegou antes do início desta janela de confirmação.
+        self._drenar_fila_pendente()
+        janela_inicio = time.perf_counter()
+
         try:
             self._tts.falar(self._prompt(request))
         except Exception:
             return False
 
-        try:
-            audio = self._audio_queue.get(timeout=self._timeout)
-        except Empty:
-            return False
+        pronto_em = janela_inicio
+        limite = pronto_em + self._timeout
+        while True:
+            restante = limite - time.perf_counter()
+            if restante <= 0:
+                return False
 
-        if audio is None:
-            return False
+            try:
+                item = self._audio_queue.get(timeout=restante)
+            except Empty:
+                return False
 
-        try:
-            resposta = self._stt.transcrever(audio)
-        except Exception:
-            return False
+            if isinstance(item, tuple) and len(item) == 2 and item[0] == "erro":
+                return False
 
-        return self._normalizar(resposta) in {"s", "sim", "y", "yes"}
+            audio = self._extrair_audio(item)
+            if audio is None:
+                continue
+
+            if audio.captured_at < pronto_em:
+                continue
+
+            try:
+                resposta = self._stt.transcrever(audio)
+            except Exception:
+                return False
+
+            return self._normalizar(resposta) in self._AFFIRMATIVE_RESPONSES
+
+    def _drenar_fila_pendente(self) -> None:
+        while True:
+            try:
+                self._audio_queue.get_nowait()
+            except Empty:
+                return
+
+    @staticmethod
+    def _extrair_audio(item: Any) -> CapturedAudio | None:
+        """Extrai somente audio capturado pelo produtor oficial da fila."""
+        if not isinstance(item, tuple) or len(item) != 2:
+            return None
+
+        tipo, payload = item
+        if tipo != "audio" or not isinstance(payload, CapturedAudio):
+            return None
+
+        return payload
 
     @staticmethod
     def _prompt(request: ConfirmationRequest) -> str:
@@ -59,4 +107,8 @@ class VoiceConfirmationChannel:
             for caractere in bruto
             if not unicodedata.combining(caractere)
         )
-        return " ".join(sem_acentos.split())
+        sem_pontuacao = "".join(
+            " " if unicodedata.category(caractere).startswith("P") else caractere
+            for caractere in sem_acentos
+        )
+        return " ".join(sem_pontuacao.split())

@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 
 from config import BROWSER_PROFILE_DIR
+from core.tool_result import ToolResult
 
 playwright = None
 browser = None
@@ -26,6 +27,30 @@ def _paginas_abertas():
         ]
     except Exception:
         return []
+
+def _esperar_documento_pronto(p, timeout_ms=5000):
+    """Espera o estado final do documento sem confundir DOMContentLoaded com carga concluida."""
+    try:
+        estado = str(p.evaluate("() => document.readyState") or "")
+    except Exception:
+        return None
+
+    if estado == "complete":
+        return estado
+
+    try:
+        p.wait_for_function(
+            "() => document.readyState === 'complete'",
+            timeout=timeout_ms,
+        )
+    except Exception:
+        pass
+
+    try:
+        return str(p.evaluate("() => document.readyState") or "") or None
+    except Exception:
+        return None
+
 
 def _esperar_titulo(p, timeout_ms=1500):
     """Espera brevemente o titulo apos uma navegacao sem impor uma espera fixa longa."""
@@ -63,27 +88,43 @@ def _descricao_aba(p, indice=None):
 
     return f"{numero}: {titulo or '[sem titulo]'} | {url}"
 
+def _pagina_com_foco_real():
+    """Retorna a unica pagina que o DOM identifica como focada.
+
+    Com varias abas, se o navegador nao nos der uma resposta inequivoca,
+    devolvemos None em vez de fingir que a referencia interna e a aba visual.
+    """
+    abas = _paginas_abertas()
+    if len(abas) == 1:
+        return abas[0]
+    if len(abas) < 2:
+        return None
+
+    focadas = []
+    for aba in abas:
+        try:
+            if bool(aba.evaluate("() => document.hasFocus()")):
+                focadas.append(aba)
+        except Exception:
+            continue
+
+    return focadas[0] if len(focadas) == 1 else None
 def _estado_abas():
     abas = _paginas_abertas()
     if not abas:
         return "Nenhuma aba aberta."
 
-    try:
-        indice_atual = abas.index(pagina) + 1
-    except ValueError:
-        indice_atual = None
-
+    pagina_focada = _pagina_com_foco_real()
     linhas = [
         f"Abas abertas: {len(abas)}",
-        f"Aba ativa: {indice_atual or '?'}",
+        f"Aba ativa: {abas.index(pagina_focada) + 1 if pagina_focada in abas else '?'}",
     ]
 
     for indice, aba in enumerate(abas, start=1):
-        marcador = " [ATIVA]" if aba is pagina else ""
+        marcador = " [ATIVA]" if aba is pagina_focada else ""
         linhas.append(_descricao_aba(aba, indice) + marcador)
 
     return "\n".join(linhas)
-
 def _abrir_contexto(modo):
     global playwright, browser, browser_context, pagina, modo_navegador
 
@@ -144,29 +185,82 @@ def reiniciar_navegador(modo=None):
 def obter_pagina():
     global playwright, browser, browser_context, pagina, modo_navegador
 
+    if playwright is None or browser_context is None:
+        return _abrir_contexto(modo_navegador)
+
+    # Recriar a sessao so e justificavel quando o contexto informou
+    # explicitamente que foi encerrado. Excecoes de leitura/operacao
+    # nao devem destruir abas, formularios ou estado persistente.
     try:
-        if playwright is None or browser_context is None:
-            return _abrir_contexto(modo_navegador)
+        if hasattr(browser_context, "is_closed") and browser_context.is_closed():
+            return reiniciar_navegador(modo_navegador)
+    except Exception as erro:
+        raise RuntimeError(f"Nao consegui determinar o estado do contexto do navegador: {erro}") from erro
 
-        abas = _paginas_abertas()
-        if not abas:
+    try:
+        abas = [
+            p
+            for p in browser_context.pages
+            if not p.is_closed()
+        ]
+    except Exception as erro:
+        raise RuntimeError(f"Nao consegui consultar as abas abertas: {erro}") from erro
+
+    if not abas:
+        try:
             pagina = browser_context.new_page()
-            return pagina
-
-        if pagina is not None and not pagina.is_closed() and pagina in abas:
-            return pagina
-
-        pagina = abas[-1]
+        except Exception as erro:
+            raise RuntimeError(f"Nao consegui criar uma nova aba no contexto existente: {erro}") from erro
         return pagina
-    except Exception:
-        return reiniciar_navegador(modo_navegador)
+
+    if pagina is not None:
+        try:
+            if not pagina.is_closed() and pagina in abas:
+                return pagina
+        except Exception:
+            # Nao destrua a sessao por uma falha de consulta da referencia
+            # interna; abaixo escolhemos uma aba que sabemos estar aberta.
+            pass
+
+    pagina = abas[-1]
+    return pagina
+
+def _abas_snapshot() -> list[dict[str, object]]:
+    abas = _paginas_abertas()
+    pagina_focada = _pagina_com_foco_real()
+    try:
+        ativa = abas.index(pagina_focada) + 1
+    except ValueError:
+        ativa = None
+
+    snapshot: list[dict[str, object]] = []
+    for indice, aba in enumerate(abas, start=1):
+        try:
+            url = str(aba.url or "about:blank")
+        except Exception:
+            url = ""
+        try:
+            titulo = str(aba.title() or "[sem titulo]")
+        except Exception:
+            titulo = "[sem titulo]"
+        snapshot.append({
+            "indice": indice,
+            "titulo": titulo,
+            "url": url,
+            "ativa": indice == ativa,
+        })
+    return snapshot
+
 
 def listar_abas():
     """Lista as abas abertas e identifica a aba ativa."""
     abas = _paginas_abertas()
-    if not abas:
-        return "Nenhuma aba aberta no navegador."
-    return _estado_abas()
+    snapshot = _abas_snapshot()
+    return ToolResult.success(
+        _estado_abas() if abas else "Nenhuma aba aberta no navegador.",
+        data={"abas": snapshot},
+        tool_name="listar_abas",
+    )
 
 def abrir_nova_aba(url="", modo="visivel"):
     """Abre uma nova aba e recupera a sessao se o contexto tiver sido encerrado."""
@@ -179,6 +273,9 @@ def abrir_nova_aba(url="", modo="visivel"):
     if browser_context is None or modo != modo_navegador:
         reiniciar_navegador(modo)
 
+    quantidade_antes = len(_paginas_abertas())
+    snapshot_antes = _abas_snapshot()
+
     def _navegar_e_responder(aba):
         global pagina
         pagina = aba
@@ -190,13 +287,30 @@ def abrir_nova_aba(url="", modo="visivel"):
             pagina.goto(destino, wait_until="domcontentloaded", timeout=30000)
             _esperar_titulo(pagina)
 
+        try:
+            pagina.bring_to_front()
+        except Exception:
+            pass
+
         abas_atuais = _paginas_abertas()
         numero = abas_atuais.index(pagina) + 1 if pagina in abas_atuais else 1
-        return (
+        snapshot = _abas_snapshot()
+        return ToolResult.success(
             f"Nova aba aberta: {numero}\n"
             f"Titulo: {pagina.title() or '[sem titulo]'}\n"
             f"URL atual: {pagina.url or 'about:blank'}\n"
-            f"{_estado_abas()}"
+            f"{_estado_abas()}",
+            data={
+                "abas": {
+                    "quantidade_antes": quantidade_antes,
+                    "quantidade_depois": len(snapshot),
+                    "antes": snapshot_antes,
+                    "depois": snapshot,
+                    "aba_ativa_depois": numero,
+                    "url_ativa_depois": str(pagina.url or "about:blank"),
+                },
+            },
+            tool_name="abrir_nova_aba",
         )
 
     try:
@@ -212,9 +326,10 @@ def abrir_nova_aba(url="", modo="visivel"):
                 pagina = obter_pagina()
             return _navegar_e_responder(pagina)
         except Exception as segundo_erro:
-            return (
-                "Nao consegui abrir nova aba: "
-                f"{segundo_erro}. Erro original: {erro}"
+            return ToolResult.failure(
+                f"Nao consegui abrir nova aba: {segundo_erro}. Erro original: {erro}",
+                error_code="open_tab_failed",
+                tool_name="abrir_nova_aba",
             )
 
 def trocar_aba(indice):
@@ -222,20 +337,61 @@ def trocar_aba(indice):
     global pagina
 
     abas = _paginas_abertas()
+    quantidade_antes = len(abas)
+    snapshot_antes = _abas_snapshot()
     try:
         indice = int(indice)
     except (TypeError, ValueError):
-        return "Indice de aba invalido."
+        return ToolResult.failure(
+            "Indice de aba invalido.",
+            error_code="invalid_tab_index",
+            tool_name="trocar_aba",
+        )
 
     if indice < 1 or indice > len(abas):
-        return f"Nao existe a aba {indice}. Existem {len(abas)} abas abertas."
+        return ToolResult.failure(
+            f"Nao existe a aba {indice}. Existem {len(abas)} abas abertas.",
+            error_code="tab_not_found",
+            tool_name="trocar_aba",
+        )
 
     pagina = abas[indice - 1]
-    return (
+    try:
+        pagina.bring_to_front()
+    except Exception as erro:
+        return ToolResult.failure(
+            f"Nao consegui tornar a aba {indice} visualmente ativa: {erro}",
+            error_code="tab_focus_failed",
+            tool_name="trocar_aba",
+            data={
+                "abas": {
+                    "quantidade_antes": quantidade_antes,
+                    "quantidade_depois": quantidade_antes,
+                    "aba_ativa_desejada": indice,
+                    "antes": snapshot_antes,
+                }
+            },
+        )
+    snapshot = _abas_snapshot()
+    return ToolResult.success(
         f"Troquei para a aba {indice}.\n"
         f"Titulo: {pagina.title() or '[sem titulo]'}\n"
         f"URL atual: {pagina.url or 'about:blank'}\n"
-        f"{_estado_abas()}"
+        f"{_estado_abas()}",
+        data={
+            "abas": {
+                "quantidade_antes": quantidade_antes,
+                "quantidade_depois": len(snapshot),
+                "aba_ativa_antes": next(
+                    (item["indice"] for item in snapshot_antes if item.get("ativa")),
+                    None,
+                ),
+                "aba_ativa_depois": indice,
+                "url_ativa_depois": str(pagina.url or "about:blank"),
+                "depois": snapshot,
+            },
+        },
+        tool_name="trocar_aba",
     )
 
 def fechar_aba(indice=None):
@@ -244,7 +400,12 @@ def fechar_aba(indice=None):
 
     abas = _paginas_abertas()
     if not abas:
-        return "Nenhuma aba aberta no navegador."
+        return ToolResult.failure(
+            "Nenhuma aba aberta no navegador.",
+            error_code="no_open_tabs",
+            data={"abas": []},
+            tool_name="fechar_aba",
+        )
 
     if indice is None:
         alvo = pagina if pagina in abas else abas[-1]
@@ -252,28 +413,89 @@ def fechar_aba(indice=None):
         try:
             indice = int(indice)
         except (TypeError, ValueError):
-            return "Indice de aba invalido."
+            return ToolResult.failure(
+                "Indice de aba invalido.",
+                error_code="invalid_tab_index",
+                tool_name="fechar_aba",
+            )
         if indice == 0:
             alvo = pagina if pagina in abas else abas[-1]
         else:
             if indice < 1 or indice > len(abas):
-                return f"Nao existe a aba {indice}. Existem {len(abas)} abas abertas."
+                return ToolResult.failure(
+                    f"Nao existe a aba {indice}. Existem {len(abas)} abas abertas.",
+                    error_code="tab_not_found",
+                    tool_name="fechar_aba",
+                )
             alvo = abas[indice - 1]
 
     posicao = abas.index(alvo)
+    indice_fechado = posicao + 1
+    quantidade_antes = len(abas)
+    snapshot_antes = _abas_snapshot()
     alvo.close()
 
     restantes = _paginas_abertas()
     if restantes:
         novo_indice = min(posicao, len(restantes) - 1)
         pagina = restantes[novo_indice]
-        return (
-            f"Fechei a aba {posicao + 1}.\n"
-            f"{_estado_abas()}"
+        try:
+            pagina.bring_to_front()
+        except Exception as erro:
+            return ToolResult.failure(
+                f"Aba fechada, mas nao consegui tornar a aba {novo_indice + 1} visualmente ativa: {erro}",
+                error_code="tab_focus_failed",
+                tool_name="fechar_aba",
+                data={
+                    "abas": {
+                        "quantidade_antes": quantidade_antes,
+                        "quantidade_depois": len(restantes),
+                        "aba_fechada": indice_fechado,
+                    }
+                },
+            )
+        snapshot = _abas_snapshot()
+        return ToolResult.success(
+            f"Fechei a aba {indice_fechado}.\n"
+            f"{_estado_abas()}",
+            data={
+                "abas": {
+                    "quantidade_antes": quantidade_antes,
+                    "quantidade_depois": len(snapshot),
+                    "aba_fechada": indice_fechado,
+                    "aba_ativa_antes": next(
+                        (item["indice"] for item in snapshot_antes if item.get("ativa")),
+                        None,
+                    ),
+                    "aba_ativa_depois": novo_indice + 1,
+                    "url_ativa_depois": str(pagina.url or "about:blank"),
+                    "antes": snapshot_antes,
+                    "depois": snapshot,
+                },
+            },
+            tool_name="fechar_aba",
         )
 
     pagina = None
-    return "Fechei a ultima aba. O navegador continua aberto sem abas."
+    return ToolResult.success(
+        "Fechei a ultima aba. O navegador continua aberto sem abas.",
+        data={
+            "abas": {
+                "quantidade_antes": quantidade_antes,
+                "quantidade_depois": 0,
+                "aba_fechada": indice_fechado,
+                "aba_ativa_antes": next(
+                    (item["indice"] for item in snapshot_antes if item.get("ativa")),
+                    None,
+                ),
+                "aba_ativa_depois": None,
+                "url_ativa_depois": None,
+                "antes": snapshot_antes,
+                "depois": [],
+            },
+        },
+        tool_name="fechar_aba",
+    )
 
 def fechar_navegador():
     global playwright, browser, browser_context, pagina
@@ -302,57 +524,121 @@ def fechar_navegador():
     playwright = None
 
 def navegar_navegador(url, modo="visivel"):
-    url = url.strip()
+    from tools.browser_navigation import _snapshot_pagina
+    url = str(url or "").strip()
     modo = str(modo or "visivel").strip().lower()
     if modo not in {"visivel", "oculto"}:
-        modo = "visivel"
+        return ToolResult.failure(
+            "Modo de navegador invalido. Use 'visivel' ou 'oculto'.",
+            error_code="browser_mode_invalid",
+            tool_name="navegar_navegador",
+        )
 
-    # O modo e decidido no primeiro passo da navegacao. Se o navegador atual
-    # estiver em outro modo, recriamos a sessao antes de abrir a URL.
     global modo_navegador, browser_context
-    if modo != modo_navegador or browser_context is None:
-        try:
-            p = reiniciar_navegador(modo)
-        except Exception:
-            p = None
-    else:
-        p = None
+    if not url:
+        return ToolResult.failure(
+            "URL vazia.",
+            error_code="browser_url_empty",
+            tool_name="navegar_navegador",
+        )
 
     if not re.match(r"^https?://", url, re.IGNORECASE):
         url = "https://" + url
 
-    ultimo_erro = None
-
-    for tentativa in range(2):
+    if modo != modo_navegador or browser_context is None:
         try:
-            if p is None:
-                p = obter_pagina()
-            p.goto(
-                url,
-                # DOMContentLoaded oferece um ponto seguro para ler o titulo
-                # sem aguardar recursos pesados da pagina inteira.
-                wait_until="domcontentloaded",
-                timeout=30000
-            )
-            titulo = _esperar_titulo(p)
-            return (
-                f"Naveguei para: {titulo or '[sem titulo]'}\n"
-                f"URL atual: {p.url}\n"
-                f"Modo do navegador: {modo}"
-            )
+            p = reiniciar_navegador(modo)
         except Exception as erro:
-            ultimo_erro = erro
-            if tentativa == 0:
-                try:
-                    # A primeira falha pode ser apenas uma referencia para uma
-                    # pagina/browser que foi fechado manualmente. Recria e troca
-                    # explicitamente a referencia usada na segunda tentativa.
-                    p = reiniciar_navegador(modo)
-                except Exception as reinicio_erro:
-                    ultimo_erro = reinicio_erro
-                    break
+            return ToolResult.failure(
+                f"Nao consegui preparar o navegador: {erro}",
+                error_code="browser_init_failed",
+                tool_name="navegar_navegador",
+            )
+    else:
+        p = None
 
-    return f"Nao consegui navegar para '{url}': {ultimo_erro}"
+    tentativa_restart = False
+    try:
+        if p is None:
+            p = obter_pagina()
+        estado_antes = _snapshot_pagina(p)
+        antes_url = str(getattr(p, "url", "") or "")
+        antes_titulo = _esperar_titulo(p)
+        p.goto(url, wait_until="domcontentloaded", timeout=30000)
+        ready_state = _esperar_documento_pronto(p)
+        depois_url = str(getattr(p, "url", "") or url)
+        depois_titulo = _esperar_titulo(p)
+        estado_depois = _snapshot_pagina(p)
+        return ToolResult.success(
+            f"Naveguei para: {depois_titulo or '[sem titulo]'}\nURL atual: {depois_url}\nModo do navegador: {modo}",
+            data={
+                "navegacao": {
+                    "operacao": "navegar",
+                    "url_solicitada": url,
+                    "url_antes": antes_url,
+                    "url_depois": depois_url,
+                    "titulo_antes": antes_titulo,
+                    "titulo_depois": depois_titulo,
+                    "ready_state_depois": ready_state,
+                    "mudou_url": antes_url != depois_url,
+                    "estado_antes": estado_antes,
+                    "estado_depois": estado_depois,
+                    "modo": modo,
+                }
+            },
+            tool_name="navegar_navegador",
+            conteudo_nao_confiavel=False,
+        )
+    except Exception as erro:
+        pagina_fechada = False
+        contexto_fechado = False
+        try:
+            pagina_fechada = bool(p.is_closed()) if p is not None else False
+        except Exception:
+            pass
+        try:
+            contexto_fechado = bool(browser_context is not None and browser_context.is_closed())
+        except Exception:
+            pass
+
+        if pagina_fechada or contexto_fechado:
+            try:
+                p = reiniciar_navegador(modo)
+                tentativa_restart = True
+                estado_antes_retry = _snapshot_pagina(p)
+                try:
+                    p.goto(url, wait_until="domcontentloaded", timeout=30000)
+                    depois_url = str(getattr(p, "url", "") or url)
+                    depois_titulo = _esperar_titulo(p)
+                    estado_depois_retry = _snapshot_pagina(p)
+                    return ToolResult.success(
+                        f"Naveguei para: {depois_titulo or '[sem titulo]'}\nURL atual: {depois_url}\nModo do navegador: {modo}",
+                        data={
+                            "navegacao": {
+                                "operacao": "navegar",
+                                "url_solicitada": url,
+                                "url_antes": antes_url if 'antes_url' in locals() else None,
+                                "url_depois": depois_url,
+                                "titulo_depois": depois_titulo,
+                                "mudou_url": True,
+                                "estado_antes": estado_antes_retry,
+                                "estado_depois": estado_depois_retry,
+                                "modo": modo,
+                                "sessao_recriada": True,
+                            }
+                        },
+                        tool_name="navegar_navegador",
+                    )
+                except Exception as erro_retry:
+                    erro = erro_retry
+            except Exception as erro_restart:
+                erro = erro_restart
+
+        return ToolResult.failure(
+            f"Nao consegui navegar para '{url}': {erro}",
+            error_code="browser_navigation_failed" if not tentativa_restart else "browser_navigation_retry_failed",
+            tool_name="navegar_navegador",
+        )
 
 from tools.browser_reading import ler_pagina
 

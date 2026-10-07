@@ -5,6 +5,8 @@ import os
 from datetime import datetime
 from ctypes import wintypes
 
+from core.tool_result import ToolResult
+
 
 def _status_windows():
     if os.name != "nt":
@@ -67,13 +69,13 @@ def _status_windows():
     resultado["windows_tick_count_64"] = uptime_ms
     return resultado
 
-def obter_status_windows():
+def obter_status_windows() -> ToolResult:
     if os.name != "nt":
-        return "Informacoes do sistema estao disponiveis somente no Windows."
+        return ToolResult.failure("Informacoes do sistema estao disponiveis somente no Windows.", error_code="windows_only", tool_name="obter_status_windows")
 
     dados = _status_windows()
     if not dados:
-        return "Nao consegui obter o estado atual do Windows."
+        return ToolResult.failure("Nao consegui obter o estado atual do Windows.", error_code="windows_status_unavailable", tool_name="obter_status_windows")
 
     linhas = [
         f"Hora local: {dados['hora']}",
@@ -89,6 +91,6 @@ def obter_status_windows():
         linhas.append("RAM: nao foi possivel obter os dados.")
 
     linhas.append(f"Tempo ligado: {dados['uptime_formatado']}")
-    return "\n".join(linhas)
+    return ToolResult.success("\n".join(linhas), tool_name="obter_status_windows")
 
 

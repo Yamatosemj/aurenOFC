@@ -130,3 +130,17 @@ def test_harness_records_real_task_trace(tmp_path: Path) -> None:
     assert sum(span["category"] == "model" for span in spans) == 2
     assert any(span["category"] == "tool" and span["name"] == "abrir_programa" for span in spans)
 
+
+
+def test_late_tts_stage_updates_finished_task_metric_and_span(tmp_path):
+    store = TaskTraceStore(tmp_path / "trace.sqlite3")
+    trace = store.start_task(task_id="voice-late", chat_id=None, objective="teste")
+    trace.finish(status="completed", total_ms=10.0)
+
+    trace.record_stage("tts", 42.5, category="tts")
+
+    task = store.get_task("voice-late")
+    spans = store.get_spans("voice-late")
+
+    assert task["tts_ms"] == 42.5
+    assert any(span["category"] == "tts" and span["duration_ms"] == 42.5 for span in spans)

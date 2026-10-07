@@ -4,9 +4,15 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import time
 import shutil
 
 from core.utils import normalizar_nome
+from core.tool_result import ToolResult
+
+MAX_SHORTCUT_SCAN_FILES = 5000
+MAX_SHORTCUT_SCAN_SECONDS = 4.0
+MAX_EXECUTABLE_SCAN_SECONDS = 8.0
 
 
 def buscar_aplicativos_do_windows():
@@ -68,6 +74,7 @@ def encontrar_aplicativo(nome):
 
     melhor = None
     melhor_pontuacao = 0
+    melhores: list[dict] = []
 
     for aplicativo in aplicativos:
         nome_app = normalizar_nome(
@@ -92,6 +99,12 @@ def encontrar_aplicativo(nome):
         if pontuacao > melhor_pontuacao:
             melhor_pontuacao = pontuacao
             melhor = aplicativo
+            melhores = [aplicativo]
+        elif pontuacao == melhor_pontuacao and pontuacao > 0:
+            melhores.append(aplicativo)
+
+    if melhor_pontuacao <= 0 or len(melhores) != 1:
+        return None
 
     return melhor
 
@@ -126,6 +139,9 @@ def procurar_atalho(nome):
 
     melhor = None
     melhor_pontuacao = 0
+    empates = []
+    inicio_scan = time.monotonic()
+    vistos = 0
 
     for pasta in locais:
         if not pasta.exists():
@@ -133,6 +149,9 @@ def procurar_atalho(nome):
 
         try:
             for arquivo in pasta.rglob("*.lnk"):
+                if vistos >= MAX_SHORTCUT_SCAN_FILES or time.monotonic() - inicio_scan >= MAX_SHORTCUT_SCAN_SECONDS:
+                    break
+                vistos += 1
                 nome_atalho = normalizar_nome(
                     arquivo.stem
                 )
@@ -158,10 +177,15 @@ def procurar_atalho(nome):
                 if pontuacao > melhor_pontuacao:
                     melhor_pontuacao = pontuacao
                     melhor = arquivo
+                    empates = [arquivo]
+                elif pontuacao == melhor_pontuacao and pontuacao > 0:
+                    empates.append(arquivo)
 
         except OSError:
             continue
 
+    if len(empates) > 1 and melhor_pontuacao < 100:
+        return None
     return melhor
 
 def _powershell_literal(valor):
@@ -198,11 +222,15 @@ def procurar_executavel(programa):
         )
     ]
 
+    inicio_scan = time.monotonic()
+
     for pasta in pastas:
         if not pasta.exists():
             continue
 
         for candidato in candidatos:
+            if time.monotonic() - inicio_scan >= MAX_EXECUTABLE_SCAN_SECONDS:
+                return None
             comando = [
                 "powershell",
                 "-NoProfile",
@@ -224,7 +252,7 @@ def procurar_executavel(programa):
                 text=True,
                 encoding="utf-8",
                 errors="replace",
-                timeout=20,
+                timeout=10,
                 check=False,
             )
 
@@ -263,107 +291,89 @@ def _nome_programa_ambiguo(programa):
     )
     return any(frase in texto for frase in frases_ambiguous)
 
-def abrir_programa(programa):
+def abrir_programa(programa) -> ToolResult:
+    tool_name = "abrir_programa"
     if _nome_programa_ambiguo(programa):
-        return (
+        return ToolResult.failure(
             "ACAO NAO EXECUTADA: nome do programa nao foi identificado "
             "com clareza. Use o nome do programa ou uma referencia resolvida "
-            "pelo contexto recente."
+            "pelo contexto recente.",
+            error_code="ambiguous_program_name",
+            tool_name=tool_name,
         )
 
     aplicativo = encontrar_aplicativo(programa)
 
     if aplicativo:
-        nome = aplicativo.get(
-            "Name",
-            programa
-        )
-
-        app_id = aplicativo.get(
-            "AppID",
-            ""
-        )
-
+        nome = aplicativo.get("Name", programa)
+        app_id = aplicativo.get("AppID", "")
         if app_id:
             try:
                 subprocess.Popen(
-                    [
-                        "explorer.exe",
-                        f"shell:AppsFolder\\{app_id}"
-                    ],
+                    ["explorer.exe", f"shell:AppsFolder\\{app_id}"],
                     stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL
+                    stderr=subprocess.DEVNULL,
                 )
-
-                return f"{nome} foi aberto."
-
+                return ToolResult.success(f"{nome} foi aberto.", tool_name=tool_name)
             except Exception as erro:
-                return (
-                    f"Nao consegui abrir "
-                    f"{nome}: {erro}"
+                return ToolResult.failure(
+                    f"Nao consegui abrir {nome}: {erro}",
+                    error_code="open_application_failed",
+                    tool_name=tool_name,
                 )
 
     atalho = procurar_atalho(programa)
-
     if atalho:
         try:
             os.startfile(str(atalho))
-            return f"{atalho.stem} foi aberto."
-
+            return ToolResult.success(f"{atalho.stem} foi aberto.", tool_name=tool_name)
         except Exception as erro:
-            return (
-                f"Encontrei o atalho de "
-                f"{programa}, mas nao consegui "
-                f"abri-lo: {erro}"
+            return ToolResult.failure(
+                f"Encontrei o atalho de {programa}, mas nao consegui abri-lo: {erro}",
+                error_code="open_shortcut_failed",
+                tool_name=tool_name,
             )
 
     executavel = procurar_executavel(programa)
-
     if executavel:
         try:
             subprocess.Popen(
                 [executavel],
                 stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
+                stderr=subprocess.DEVNULL,
             )
-
-            return (
-                f"{Path(executavel).stem} foi aberto."
+            return ToolResult.success(
+                f"{Path(executavel).stem} foi aberto.",
+                tool_name=tool_name,
             )
-
         except Exception as erro:
-            return (
-                f"Nao consegui abrir "
-                f"{programa}: {erro}"
+            return ToolResult.failure(
+                f"Nao consegui abrir {programa}: {erro}",
+                error_code="open_executable_failed",
+                tool_name=tool_name,
             )
 
     caminho = shutil.which(programa)
-
-    if (
-        not caminho
-        and not programa.lower().endswith(".exe")
-    ):
-        caminho = shutil.which(
-            programa + ".exe"
-        )
+    if not caminho and not programa.lower().endswith(".exe"):
+        caminho = shutil.which(programa + ".exe")
 
     if caminho:
         try:
             subprocess.Popen(
                 [caminho],
                 stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
+                stderr=subprocess.DEVNULL,
             )
-
-            return f"{programa} foi aberto."
-
+            return ToolResult.success(f"{programa} foi aberto.", tool_name=tool_name)
         except Exception as erro:
-            return (
-                f"Nao consegui abrir "
-                f"{programa}: {erro}"
+            return ToolResult.failure(
+                f"Nao consegui abrir {programa}: {erro}",
+                error_code="open_path_failed",
+                tool_name=tool_name,
             )
 
-    return (
-        f"Nao encontrei o programa "
-        f"'{programa}' no Windows."
+    return ToolResult.failure(
+        f"Nao encontrei o programa '{programa}' no Windows.",
+        error_code="application_not_found",
+        tool_name=tool_name,
     )

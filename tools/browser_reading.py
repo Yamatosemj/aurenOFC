@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import re
 
+from core.browser_verification import _compromisso_preenchimento_sensivel
+from core.tool_result import ToolResult
 from core.utils import normalizar_nome
 
 
-def ler_pagina(foco):
+def ler_pagina(foco) -> ToolResult:
     from tools import browser as _browser
 
     try:
@@ -74,8 +76,23 @@ def ler_pagina(foco):
 
         url = p.url
 
+        def anexar_compromissos_sensiveis(dados):
+            if not isinstance(dados, dict):
+                return {}
+            controles = dados.get("controles")
+            if not isinstance(controles, list):
+                return dados
+            for controle in controles:
+                if not isinstance(controle, dict):
+                    continue
+                valor_interno = controle.pop("valor_interno", None)
+                if valor_interno is None:
+                    continue
+                controle["compromisso"] = _compromisso_preenchimento_sensivel(str(valor_interno))
+            return dados
+
         def avaliar_dom():
-            return p.evaluate(
+            dados = p.evaluate(
             """
             ({foco, focoPalavras, focoOperacional, maxSnippets, maxContexto,
               maxControles, maxLinks}) => {
@@ -84,7 +101,9 @@ def ler_pagina(foco):
                     const cs = getComputedStyle(el);
                     return r.width > 0 && r.height > 0 &&
                            cs.visibility !== 'hidden' &&
-                           cs.display !== 'none';
+                           cs.display !== 'none' &&
+                           cs.opacity !== '0' &&
+                           cs.pointerEvents !== 'none';
                 };
 
                 const limpar = (texto, limite = 180) =>
@@ -112,16 +131,49 @@ def ler_pagina(foco):
 
                 const controles = [];
                 for (const el of document.querySelectorAll(
-                    "input, textarea, select, button, [role='button'], [role='textbox'], [role='searchbox'], [role='combobox']"
+                    "input, textarea, select, button, summary, details > summary, [role='button'], [role='textbox'], [role='searchbox'], [role='combobox'], [role='tab'], [role='menuitem'], [role='checkbox'], [role='radio']"
                 )) {
                     if (!visivel(el)) continue;
-                    const nome = nomeDoElemento(el);
-                    const placeholder = el.getAttribute('placeholder') || '';
+                    const nome = el.tagName === 'SUMMARY' && el.closest('details')
+                        ? (nomeDoElemento(el) || el.closest('details').getAttribute('aria-label') || '')
+                        : nomeDoElemento(el);                    const placeholder = el.getAttribute('placeholder') || '';
                     const nameAttr = el.getAttribute('name') || '';
                     const idAttr = el.getAttribute('id') || '';
                     const tipo = (el.getAttribute('type') || '').toLowerCase();
                     const autocomplete = (el.getAttribute('autocomplete') || '').toLowerCase();
+                    const ariaExpanded = el.getAttribute('aria-expanded');
+                    const ariaPressed = el.getAttribute('aria-pressed');
+                    const ariaSelected = el.getAttribute('aria-selected');
+                    const ariaChecked = el.getAttribute('aria-checked');
+                    const dataState = el.getAttribute('data-state');
+                    const checked = ('checked' in el) ? Boolean(el.checked) : null;
+                    const selected = ('selected' in el) ? Boolean(el.selected) : null;
+                    const open = ('open' in el)
+                        ? Boolean(el.open)
+                        : (el.tagName === 'SUMMARY' && el.closest('details')
+                            ? Boolean(el.closest('details').open)
+                            : null);
+                    const detailsOpen = (el.tagName === 'SUMMARY' && el.closest('details'))
+                        ? Boolean(el.closest('details').open)
+                        : (el.tagName === 'DETAILS' ? Boolean(el.open) : null);
                     if (!nome && !placeholder && !nameAttr && !idAttr) continue;
+
+                    let chave = '';
+                    if (idAttr) chave = 'id:' + idAttr;
+                    else if (nameAttr) chave = 'name:' + nameAttr;
+                    else if (nome) chave = 'aria:' + nome;
+                    else if (placeholder) chave = 'placeholder:' + placeholder;
+
+                    const estados = {};
+                    if (ariaExpanded !== null) estados['aria-expanded'] = ariaExpanded;
+                    if (ariaPressed !== null) estados['aria-pressed'] = ariaPressed;
+                    if (ariaSelected !== null) estados['aria-selected'] = ariaSelected;
+                    if (ariaChecked !== null) estados['aria-checked'] = ariaChecked;
+                    if (checked !== null) estados.checked = checked;
+                    if (selected !== null) estados.selected = selected;
+                    if (open !== null) estados.open = open;
+                    if (detailsOpen !== null) estados['details-open'] = detailsOpen;
+                    if (dataState !== null) estados['data-state'] = dataState;
 
                     const textoSensivel = [
                         nome, placeholder, nameAttr, idAttr, autocomplete, tipo
@@ -137,6 +189,15 @@ def ler_pagina(foco):
                         nome, placeholder, nameAttr, idAttr,
                         el.getAttribute('role') || '', el.tagName
                     ].join(' ');
+                    const fingerprintAlvo = el.parentElement || el;
+                    const fingerprintHtml = String(fingerprintAlvo.outerHTML || '')
+                        .replace(/\s+/g, ' ').slice(0, 12000);
+                    let fingerprintHash = 1469598103934665603n;
+                    for (let i = 0; i < fingerprintHtml.length; i += 1) {
+                        fingerprintHash ^= BigInt(fingerprintHtml.charCodeAt(i));
+                        fingerprintHash = BigInt.asUintN(64, fingerprintHash * 1099511628211n);
+                    }
+                    const domFingerprint = fingerprintHash.toString(16).padStart(16, '0');
                     const score = pontuar(textoBusca, 5);
 
                     controles.push({
@@ -148,13 +209,43 @@ def ler_pagina(foco):
                         nameAttr: limpar(nameAttr, 80),
                         id: limpar(idAttr, 80),
                         placeholder: limpar(placeholder, 80),
-                        value: valorSeguro
+                        chave: limpar(chave, 180),
+                        textoInterno: limpar(el.innerText || '', 120),
+                        estados,
+                        value: valorSeguro,
+                        valor_interno: campoSensivel ? String(el.value || '') : null,
+                        domFingerprint,
                     });
                 }
 
                 controles.sort((a, b) =>
                     (b.score - a.score) || (a.ordem - b.ordem)
                 );
+
+                // O controle procurado pelo foco tem prioridade de contexto.
+                // Isso evita que um ranking global esconda o elemento clicado.
+                const controlesDoFoco = controles.filter(item => {
+                    const texto = [
+                        item.nome, item.nameAttr, item.id,
+                        item.placeholder, item.role, item.tag
+                    ].join(' ').toLowerCase();
+                    return palavras.length > 0 && palavras.some(palavra => texto.includes(palavra));
+                });
+                const controlesPrioritarios = [];
+                const chavesPrioritarias = new Set();
+                for (const item of controlesDoFoco) {
+                    const chave = String(item.chave || (item.tag + ':' + item.ordem));
+                    if (chavesPrioritarias.has(chave)) continue;
+                    chavesPrioritarias.add(chave);
+                    controlesPrioritarios.push(item);
+                    if (controlesPrioritarios.length >= 3) break;
+                }
+                for (const item of controles) {
+                    const chave = String(item.chave || (item.tag + ':' + item.ordem));
+                    if (chavesPrioritarias.has(chave)) continue;
+                    controlesPrioritarios.push(item);
+                    if (controlesPrioritarios.length >= Number(maxControles || 10)) break;
+                }
 
                 const links = [];
                 for (const el of document.querySelectorAll('a')) {
@@ -475,8 +566,49 @@ def ler_pagina(foco):
                     );
                 }
 
+                const detalhes = Array.from(document.querySelectorAll('details[open]'))
+                    .filter(visivel);
+
+                const detalhesAbertos = detalhes.map((detail, indice) => {
+                    const summary = detail.querySelector('summary');
+                    if (!summary || !visivel(summary)) return null;
+                    const id = summary.getAttribute('id') || '';
+                    const name = summary.getAttribute('name') || '';
+                    const aria = summary.getAttribute('aria-label') || '';
+                    const texto = limpar(summary.innerText || summary.textContent || '', 100);
+                    const chave = id ? 'id:' + id : name ? 'name:' + name : aria ? 'aria:' + aria : texto ? 'texto:' + texto : 'details:' + indice;
+                    return {
+                        chave,
+                        id,
+                        nameAttr: name,
+                        nome: texto || aria,
+                        tag: 'summary',
+                        role: summary.getAttribute('role') || '',
+                        detailsOpen: true,
+                    };
+                }).filter(Boolean);
+                const elementosFlutuantes = {
+                    dialogos: Array.from(document.querySelectorAll('dialog, [role="dialog"], [role="alertdialog"]'))
+                        .filter(visivel).length,
+                    menus: Array.from(document.querySelectorAll('[role="menu"]'))
+                        .filter(visivel).length,
+                    listboxes: Array.from(document.querySelectorAll('[role="listbox"]'))
+                        .filter(visivel).length,
+                    popovers: (() => {
+                        try {
+                            return Array.from(document.querySelectorAll('[popover]'))
+                                .filter(el => el.matches(':popover-open') && visivel(el)).length;
+                        } catch (_) {
+                            return 0;
+                        }
+                    })(),
+                    details_abertos: detalhes.length,
+                    detalhes_abertos: detalhesAbertos
+                };
+
                 return {
-                    controles: controles.slice(0, Number(maxControles || 10)),
+                    controles: controlesPrioritarios.slice(0, Number(maxControles || 10)),
+                    elementosFlutuantes,
                     links: links.slice(0, Number(maxLinks || 10)),
                     candidatosOrdem,
                     resultadosEstruturados: resultadosEstruturados.slice(0, 12),
@@ -494,6 +626,7 @@ def ler_pagina(foco):
                 "maxLinks": max_links,
             },
         )
+            return anexar_compromissos_sensiveis(dados)
 
 
         foco_resultados = any(
@@ -612,7 +745,49 @@ def ler_pagina(foco):
             for item in snippets:
                 linhas.append(f"- {item.get('texto', '')}")
 
+        flutuantes = dados.get("elementosFlutuantes", {})
+        linhas.append(
+            "Elementos flutuantes visiveis: "
+            f"dialogos={flutuantes.get('dialogos', 0)} | "
+            f"menus={flutuantes.get('menus', 0)} | "
+            f"listboxes={flutuantes.get('listboxes', 0)} | "
+            f"popovers={flutuantes.get('popovers', 0)} | "
+            f"details_abertos={flutuantes.get('details_abertos', 0)}"
+        )
         linhas.extend(["", "Campos e controles visiveis:"])
+        detalhes_abertos = flutuantes.get("detalhes_abertos", [])
+        if isinstance(detalhes_abertos, list):
+            for detalhe in detalhes_abertos:
+                if not isinstance(detalhe, dict):
+                    continue
+                nome_detalhe = str(detalhe.get("nome") or "")
+                chave_detalhe = str(detalhe.get("chave") or "")
+                if chave_detalhe and any(f"chave={chave_detalhe}" in linha for linha in linhas):
+                    continue
+                linhas.append(
+                    "- tag=summary | nome=" + nome_detalhe
+                    + " | chave=" + chave_detalhe
+                    + " | estado=details-open=true"
+                )
+
+        def _estado_controle_texto(estados):
+            partes = []
+            if not isinstance(estados, dict):
+                return ""
+            for chave in (
+                "aria-expanded",
+                "aria-pressed",
+                "aria-selected",
+                "aria-checked",
+                "checked",
+                "selected",
+                "open",
+                "details-open",
+                "data-state"
+            ):
+                if chave in estados:
+                    partes.append(f"{chave}={estados[chave]}")
+            return ";".join(partes)
 
         for item in dados.get("controles", []):
             partes = [f"tag={item.get('tag', '')}"]
@@ -626,6 +801,17 @@ def ler_pagina(foco):
                 partes.append(f"id={item['id']}")
             if item.get("placeholder"):
                 partes.append(f"placeholder={item['placeholder']}")
+            if item.get("chave"):
+                partes.append(f"chave={item['chave']}")
+            if item.get("textoInterno"):
+                partes.append(f"texto={item['textoInterno']}")
+            if item.get("domFingerprint"):
+                partes.append(f"dom-fingerprint={item['domFingerprint']}")
+            estado_texto = _estado_controle_texto(item.get("estados", {}))
+            if estado_texto:
+                partes.append(f"estado={estado_texto}")
+            if item.get("compromisso"):
+                partes.append(f"compromisso={item['compromisso']}")
             if item.get("value"):
                 partes.append(f"valor={item['value']}")
             linhas.append("- " + " | ".join(partes))
@@ -658,8 +844,8 @@ def ler_pagina(foco):
         if len(resultado) > limite_final:
             resultado = resultado[:limite_final] + "\n[resultado truncado]"
 
-        return resultado
+        return ToolResult.success(resultado, tool_name="ler_pagina", conteudo_nao_confiavel=True)
 
     except Exception as erro:
-        return f"Nao consegui ler a pagina: {erro}"
+        return ToolResult.failure(f"Nao consegui ler a pagina: {erro}", error_code="browser_page_read_failed", tool_name="ler_pagina")
 

@@ -18,7 +18,9 @@ SUPPORTED_READ_EXTENSIONS = frozenset({".txt", ".md", ".json", ".csv"})
 READ_MAX_CHARS = 20_000
 MAX_READ_OFFSET = 1_000_000
 MAX_COPY_SCAN_FILES = 20_000
+MAX_HASH_BYTES = 256 * 1024 * 1024
 COPY_SEARCH_ROOT_NAMES = ("Downloads", "Desktop", "Documents")
+ONEDRIVE_ALLOWED_SUBROOT_NAMES = ("Downloads", "Desktop", "Documents", "Área de Trabalho", "Documentos")
 
 
 @dataclass(frozen=True)
@@ -71,6 +73,24 @@ class FileContent:
     truncado: bool
     proximo_inicio: int | None
 
+
+def _same_file_identity(before: os.stat_result, after: os.stat_result) -> bool:
+    before_identity = (
+        getattr(before, "st_dev", None),
+        getattr(before, "st_ino", None),
+        getattr(before, "st_size", None),
+        getattr(before, "st_mtime_ns", None),
+    )
+    after_identity = (
+        getattr(after, "st_dev", None),
+        getattr(after, "st_ino", None),
+        getattr(after, "st_size", None),
+        getattr(after, "st_mtime_ns", None),
+    )
+    if before_identity[:2] != (None, None) and after_identity[:2] != (None, None):
+        if before_identity[:2] != after_identity[:2]:
+            return False
+    return before_identity[2:] == after_identity[2:]
 
 def _human_size(size: int) -> str:
     value = float(max(0, size))
@@ -261,9 +281,19 @@ def _origin(path: Path) -> FileOriginEvidence:
         observations.append("Zone.Identifier so pode ser consultado no Windows.")
     if zone_id is None:
         observations.append("Nenhum Zone.Identifier acessivel foi encontrado.")
+        status = "desconhecido"
+    elif zone_id in {3, 4}:
+        observations.append("Zone.Identifier indica origem em zona da Internet/Intranet.")
+        status = "confirmado"
+    else:
+        observations.append(
+            "Zone.Identifier foi encontrado, mas o ZoneId nao corresponde a uma zona "
+            "tratada como origem da Internet/Intranet."
+        )
+        status = "nao_confirmado"
 
     return FileOriginEvidence(
-        status="confirmado" if zone_id is not None else "desconhecido",
+        status=status,
         marcacao_zona_internet=internet_marked,
         zone_id=zone_id,
         url_origem=zone.get("host_url"),
@@ -429,6 +459,17 @@ class FileReadPathPolicy:
     raiz_permitida: str | None
 
 
+def _is_reparse_point(path: Path) -> bool:
+    try:
+        file_stat = path.lstat()
+    except OSError:
+        return True
+    if path.is_symlink():
+        return True
+    atributos = int(getattr(file_stat, "st_file_attributes", 0) or 0)
+    flag = int(getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400))
+    return bool(atributos & flag)
+
 def _read_allowed_roots() -> list[Path]:
     roots: list[Path] = []
     profile_value = os.environ.get("USERPROFILE", "").strip()
@@ -450,11 +491,13 @@ def _read_allowed_roots() -> list[Path]:
     ]
     for value in onedrive_values:
         if value:
-            roots.append(Path(value).expanduser())
+            raiz = Path(value).expanduser()
+            roots.extend(raiz / nome for nome in ONEDRIVE_ALLOWED_SUBROOT_NAMES)
 
     # Em instalações comuns do Windows, o OneDrive pode existir mesmo quando
     # a variável de ambiente não foi propagada ao processo.
-    roots.append(profile / "OneDrive")
+    raiz_padrao = profile / "OneDrive"
+    roots.extend(raiz_padrao / nome for nome in ONEDRIVE_ALLOWED_SUBROOT_NAMES)
 
     unique: list[Path] = []
     seen: set[str] = set()
@@ -490,6 +533,24 @@ def _has_sensitive_path_component(path: Path) -> bool:
     return False
 
 
+def _onedrive_roots() -> list[Path]:
+    roots: list[Path] = []
+    profile_value = os.environ.get("USERPROFILE", "").strip()
+    profile = Path(profile_value).expanduser() if profile_value else Path.home()
+    for env_name in ("OneDrive", "OneDriveConsumer", "OneDriveCommercial"):
+        value = os.environ.get(env_name, "").strip()
+        if value:
+            roots.append(Path(value).expanduser().resolve(strict=False))
+    roots.append((profile / "OneDrive").resolve(strict=False))
+    unique: list[Path] = []
+    seen: set[str] = set()
+    for root in roots:
+        key = str(root).casefold()
+        if key not in seen:
+            seen.add(key)
+            unique.append(root)
+    return unique
+
 def _classify_read_path(path: Path) -> FileReadPathPolicy:
     """Classifica o caminho ja resolvido antes de qualquer leitura de conteudo."""
     if _has_sensitive_path_component(path):
@@ -500,6 +561,20 @@ def _classify_read_path(path: Path) -> FileReadPathPolicy:
             raiz_permitida=None,
         )
 
+    for onedrive_root in _onedrive_roots():
+        if not _path_is_relative_to(path, onedrive_root):
+            continue
+        allowed_one_drive_subroots = [
+            onedrive_root / nome
+            for nome in ONEDRIVE_ALLOWED_SUBROOT_NAMES
+        ]
+        if not any(_path_is_relative_to(path, subroot) for subroot in allowed_one_drive_subroots):
+            return FileReadPathPolicy(
+                status="confirm",
+                motivo="O caminho esta dentro da raiz OneDrive, mas fora das subpastas explicitamente permitidas.",
+                caminho_resolvido=str(path),
+                raiz_permitida=None,
+            )
     for root in _read_allowed_roots():
         if _path_is_relative_to(path, root):
             return FileReadPathPolicy(
@@ -589,11 +664,13 @@ def inspect_file(caminho: str, procurar_copias: bool = False, limite_copias: int
     detected_type, type_evidence, mime = _detect_type(path)
     digest = None
     hash_error = None
-    if readable:
+    if readable and (procurar_copias or file_stat.st_size <= MAX_HASH_BYTES):
         try:
             digest = _sha256(path)
         except (OSError, PermissionError) as exc:
             hash_error = str(exc)
+    elif readable:
+        hash_error = f"SHA-256 omitido para arquivo maior que {MAX_HASH_BYTES} bytes."
 
     info = FileInfo(
         nome=path.name,
@@ -625,6 +702,22 @@ def inspect_file(caminho: str, procurar_copias: bool = False, limite_copias: int
         )
     )
 
+    try:
+        current_stat = path.stat()
+    except OSError as exc:
+        return ToolResult.failure(
+            f"Nao foi possivel confirmar a estabilidade do arquivo: {exc}",
+            error_code="path_changed_during_inspect",
+            data={"caminho": str(path)},
+            tool_name=tool_name,
+        )
+    if not _same_file_identity(file_stat, current_stat):
+        return ToolResult.failure(
+            "O arquivo mudou durante a inspeção e o resultado foi descartado.",
+            error_code="path_changed_during_inspect",
+            data={"caminho": str(path)},
+            tool_name=tool_name,
+        )
     data = {
         "file_info": asdict(info),
         "origem": asdict(origin),
@@ -638,7 +731,7 @@ def inspect_file(caminho: str, procurar_copias: bool = False, limite_copias: int
         },
     }
     if hash_error:
-        data.setdefault("observacoes", []).append(f"SHA-256 indisponivel: {hash_error}")
+        data.setdefault("observacoes", []).append(str(hash_error))
     if os.name != "nt":
         data.setdefault("observacoes", []).append("Data de criacao do Windows e Zone.Identifier nao estao disponiveis neste ambiente.")
 
@@ -646,7 +739,7 @@ def inspect_file(caminho: str, procurar_copias: bool = False, limite_copias: int
 
 
 def _read_text_range(path: Path, encoding: str, start: int, limit: int) -> tuple[str, bool]:
-    with path.open("r", encoding=encoding, errors="strict", newline="") as handle:
+    with path.open("r", encoding=encoding, errors="strict", newline=None) as handle:
         remaining = start
         while remaining > 0:
             chunk = handle.read(min(64 * 1024, remaining))
@@ -743,6 +836,22 @@ def read_file(caminho: str, inicio: int = 0, limite_caracteres: int = 12_000, *,
             tool_name=tool_name,
         )
 
+    try:
+        current_stat = path.stat()
+    except OSError as exc:
+        return ToolResult.failure(
+            f"Nao foi possivel confirmar a estabilidade do arquivo apos a leitura: {exc}",
+            error_code="path_changed_during_read",
+            data={"caminho": str(path)},
+            tool_name=tool_name,
+        )
+    if not _same_file_identity(path_stat, current_stat):
+        return ToolResult.failure(
+            "O arquivo mudou durante a leitura e o resultado foi descartado.",
+            error_code="path_changed_during_read",
+            data={"caminho": str(path)},
+            tool_name=tool_name,
+        )
     result = FileContent(
         formato=extension.lstrip("."),
         encoding=encoding or "unknown",

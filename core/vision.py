@@ -6,7 +6,10 @@ import io
 from dataclasses import asdict, dataclass
 from pathlib import Path
 import json
+import time
 
+
+VISION_SNAPSHOT_MAX_AGE_SECONDS = 10.0
 
 _ACTIVE_VISION_GEOMETRY: contextvars.ContextVar[dict | None] = contextvars.ContextVar(
     "auren_active_vision_geometry",
@@ -365,6 +368,7 @@ def build_vision_geometry(
         "imagem_redimensionada": prepared.resized,
         "imagem_comprimida": prepared.compressed,
         "mime_type_enviado": prepared.mime_type,
+        "captured_at_monotonic": capture_data.get("captured_at_monotonic"),
     }
 
 
@@ -458,6 +462,27 @@ def transform_visual_tool_arguments(
             None,
             "A geometria da visao nao foi validada para conversao segura. "
             "Capture a tela novamente ou use um controle exposto por UI Automation.",
+        )
+
+    try:
+        captured_at = float(geometry.get("captured_at_monotonic"))
+    except (TypeError, ValueError):
+        captured_at = None
+
+    if captured_at is None:
+        return (
+            dict(arguments),
+            None,
+            "O snapshot visual nao possui timestamp de captura; capture a tela novamente antes de clicar.",
+        )
+
+    idade = time.monotonic() - captured_at
+    if idade < 0 or idade > VISION_SNAPSHOT_MAX_AGE_SECONDS:
+        return (
+            dict(arguments),
+            None,
+            "O snapshot visual esta desatualizado para coordenadas seguras. "
+            "Capture a tela novamente antes de usar a coordenada.",
         )
 
     try:
