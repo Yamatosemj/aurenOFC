@@ -675,3 +675,41 @@ def test_non_navigational_click_verification_accepts_alertdialog_and_popover_eff
         pagina,
         dados,
     ) is True
+
+
+def test_browser_navigation_verification_accepts_final_url_after_redirect():
+    contexto = _contexto(
+        "Abas abertas: 1\n"
+        "Aba ativa: 1\n"
+        "Aba 1: Login | https://example.com/dashboard [ATIVA]"
+    )
+    acao = {
+        "navegacao": {
+            "operacao": "navegar",
+            "url_solicitada": "https://example.com",
+            "url_antes": "about:blank",
+            "url_depois": "https://example.com/dashboard",
+            "mudou_url": True,
+        }
+    }
+
+    assert verificar_resultado_navegador(
+        "navegar_navegador",
+        '{"url":"https://example.com","modo":"visivel"}',
+        contexto,
+        acao,
+    ) is True
+
+
+def test_browser_navigation_verification_stays_inconclusive_without_structured_evidence():
+    contexto = _contexto(
+        "Abas abertas: 1\n"
+        "Aba ativa: 1\n"
+        "Aba 1: Site | https://example.com [ATIVA]"
+    )
+    assert verificar_resultado_navegador(
+        "navegar_navegador",
+        '{"url":"https://example.com","modo":"visivel"}',
+        contexto,
+        None,
+    ) is None
