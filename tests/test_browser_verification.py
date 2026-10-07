@@ -788,3 +788,53 @@ def test_dom_only_click_verification_rejects_unchanged_fingerprint():
         contexto,
         acao,
     ) is False
+
+
+def test_navigation_verification_keeps_pending_when_document_is_not_ready():
+    contexto = _contexto(
+        "Abas abertas: 1
+"
+        "Aba ativa: 1
+"
+        "Aba 1: Site | https://example.com/dashboard [ATIVA]"
+    )
+    acao = {
+        "navegacao": {
+            "url_depois": "https://example.com/dashboard",
+            "titulo_depois": "Site",
+            "ready_state_depois": "interactive",
+            "mudou_url": True,
+        }
+    }
+
+    assert verificar_resultado_navegador(
+        "voltar_pagina",
+        "{}",
+        contexto,
+        acao,
+    ) is None
+
+
+def test_navigation_verification_rejects_inconsistent_final_title():
+    contexto = _contexto(
+        "Abas abertas: 1
+"
+        "Aba ativa: 1
+"
+        "Aba 1: Site correto | https://example.com/dashboard [ATIVA]"
+    )
+    acao = {
+        "navegacao": {
+            "url_depois": "https://example.com/dashboard",
+            "titulo_depois": "Site incorreto",
+            "ready_state_depois": "complete",
+            "mudou_url": True,
+        }
+    }
+
+    assert verificar_resultado_navegador(
+        "voltar_pagina",
+        "{}",
+        contexto,
+        acao,
+    ) is False
