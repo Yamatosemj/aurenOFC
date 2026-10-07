@@ -69,6 +69,7 @@ from core.harness_session import (
     _encerrar_sessao_chat as _encerrar_sessao_chat_impl,
     _garantir_sessao_chat as _garantir_sessao_chat_impl,
 )
+from core.harness_fast_path import _executar_fast_path as _executar_fast_path_impl
 from core.harness_model import (
     _executar_rodada_modelo as _executar_rodada_modelo_impl,
     _log_resposta_modelo as _log_resposta_modelo_impl,
@@ -619,59 +620,20 @@ class AurenHarness:
         )
         self._registrar_turno("user", objetivo_log)
 
-        fast_started_perf = time.perf_counter()
-        tratado, resposta_rapida = self.comando_rapido(mensagem)
-        fast_path_ms = (time.perf_counter() - fast_started_perf) * 1000.0
-        if self._trace is not None:
-            try:
-                self._trace.record_stage(
-                    "fast_path",
-                    fast_path_ms,
-                    category="fast_path",
-                    success=bool(tratado),
-                )
-            except Exception as exc:
-                _write_log("TRACE_ERROR", task_id=self._task_id, etapa="fast_path", erro=str(exc))
-        if tratado:
-            resposta_texto = str(resposta_rapida or "").strip()
-            sucesso_fast = resposta_texto and not any(
-                marker in resposta_texto.lower()
-                for marker in ("acao nao executada", "ação não executada", "nao consegui", "não consegui")
-            )
-            self.task_manager.begin_step(
-                "fast_path",
-                str(mensagem or ""),
-                task_id=self._task_id,
-                step=1,
-            )
-            self.task_manager.finish_step(
-                success=bool(sucesso_fast),
-                result=self._texto_seguro(resposta_texto, self.MAX_TOOL_RESULT_CHARS),
-                error="" if sucesso_fast else self._texto_seguro(resposta_texto, self.MAX_TOOL_RESULT_CHARS),
-                task_id=self._task_id,
-            )
-            _write_log(
-                "TASK_FAST_PATH",
-                task_id=self._task_id,
-                resultado=resposta_rapida,
-                sucesso=bool(sucesso_fast),
-            )
-            self._registrar_turno("assistant", resposta_texto)
-            if not sucesso_fast:
-                self.task_manager.fail("fast_path_failed", task_id=self._task_id)
-                _write_log("TASK_END", task_id=self._task_id, status="failed", motivo="fast_path_failed")
-                return True, _RespostaWrapper(resposta_texto or "Nao foi possivel concluir o comando.")
-            if self.task_manager.should_cancel(self._task_id):
-                self.task_manager.cancel(task_id=self._task_id, reason="cancelado antes da conclusao do fast path")
-                _write_log("TASK_END", task_id=self._task_id, status="cancelled", motivo="fast_path")
-                return True, _RespostaWrapper("Tarefa cancelada.")
-            if not resposta_texto:
-                self.task_manager.fail("empty_response", task_id=self._task_id)
-                _write_log("TASK_END", task_id=self._task_id, status="failed", motivo="empty_response")
-                return True, _RespostaWrapper("Nao foi possivel produzir uma resposta.")
-            self.task_manager.complete(resposta_texto, task_id=self._task_id)
-            _write_log("TASK_END", task_id=self._task_id, status="fast_path")
-            return True, resposta_rapida
+        fast_path = _executar_fast_path_impl(
+            mensagem,
+            comando_rapido=self.comando_rapido,
+            task_manager=self.task_manager,
+            task_id=self._task_id,
+            trace=self._trace,
+            max_tool_result_chars=self.MAX_TOOL_RESULT_CHARS,
+            texto_seguro=self._texto_seguro,
+            registrar_turno=self._registrar_turno,
+            write_log=_write_log,
+            resposta_wrapper=_RespostaWrapper,
+        )
+        if fast_path is not None:
+            return fast_path
 
         return self._executar_ciclo(mensagem.strip())
 
