@@ -708,14 +708,15 @@ public static class AurenUiWin32 {
         } else {
             throw "Operacao UI Automation desconhecida: $($payload.operacao)"
         }
+    }    return $resultado
+    } catch {
+        return [pscustomobject]@{
+            ok=$false
+            erro=(Safe-String $_.Exception.Message)
+            tipo=(Safe-String $_.Exception.GetType().FullName)
+        }
     }
-    $json = $resultado | ConvertTo-Json -Compress -Depth 7
-    Write-Output ([string]$json)
-} catch {
-    $erroJson = [pscustomobject]@{ ok=$false; erro=(Safe-String $_.Exception.Message); tipo=(Safe-String $_.Exception.GetType().FullName) } | ConvertTo-Json -Compress -Depth 5
-    Write-Output ([string]$erroJson)
-    Write-Error $_
-    exit 1
+}
 
 while ($true) {
     $linha = [Console]::ReadLine()
