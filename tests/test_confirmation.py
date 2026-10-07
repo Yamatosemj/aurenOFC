@@ -68,7 +68,7 @@ def test_voice_confirmation_accepts_sim_from_shared_audio_queue():
             return "sim"
 
     audio_queue = Queue()
-    audio_queue.put("audio-confirmacao")
+    audio_queue.put(("audio", "audio-confirmacao"))
     tts = FakeTTS()
     channel = VoiceConfirmationChannel(
         tts=tts,
@@ -94,6 +94,27 @@ def test_voice_confirmation_denies_on_timeout():
         tts=FakeTTS(),
         stt=FakeSTT(),
         audio_queue=Queue(),
+        timeout=0.1,
+    )
+
+    assert channel.confirmar(_request()) is False
+
+
+def test_voice_confirmation_rejects_legacy_raw_queue_item():
+    class FakeTTS:
+        def falar(self, _texto):
+            pass
+
+    class FakeSTT:
+        def transcrever(self, _audio):
+            raise AssertionError("Item fora do protocolo da fila nao pode chegar ao ASR.")
+
+    audio_queue = Queue()
+    audio_queue.put("audio-confirmacao")
+    channel = VoiceConfirmationChannel(
+        tts=FakeTTS(),
+        stt=FakeSTT(),
+        audio_queue=audio_queue,
         timeout=0.1,
     )
 
