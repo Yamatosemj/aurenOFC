@@ -36,6 +36,53 @@ def _parece_tarefa_visual_composta(objetivo: str) -> bool:
     return tem_visao and tem_acao_visual and tem_continuacao
 
 
+def _orientacao_verificacao_navegador(ferramenta: str) -> str:
+    """Retorna a evidencia que deve ser conferida para cada tipo de acao browser."""
+    ferramenta = str(ferramenta or "").strip()
+
+    navegacao = {
+        "navegar_navegador",
+        "voltar_pagina",
+        "avancar_pagina",
+        "recarregar_pagina",
+    }
+    abas = {
+        "abrir_nova_aba",
+        "trocar_aba",
+        "fechar_aba",
+    }
+    interacao = {
+        "clicar_elemento",
+        "preencher_elemento",
+        "pressionar_tecla",
+    }
+
+    if ferramenta in navegacao:
+        return (
+            "Verifique o titulo e a URL efetivos da pagina ativa e confirme que "
+            "correspondem ao destino ou navegacao solicitada."
+        )
+    if ferramenta in abas:
+        return (
+            "Verifique a quantidade de abas, a aba ativa e os titulos/URLs das "
+            "abas afetadas, confirmando o estado pedido."
+        )
+    if ferramenta in interacao:
+        return (
+            "Verifique o estado relevante do elemento ou da pagina afetada: texto, "
+            "valor, selecao ou outro efeito observavel da acao solicitada."
+        )
+    if ferramenta == "rolar_pagina":
+        return (
+            "Verifique que o conteudo esperado pela tarefa ficou disponivel ou visivel "
+            "na pagina atual."
+        )
+    return (
+        "Verifique o estado atual da pagina e das abas e confirme o efeito observavel "
+        "da ultima acao."
+    )
+
+
 def _parece_tarefa_browser_verificavel(objetivo: str) -> bool:
     """Ativa verificacao automatica apenas em tarefas browser compostas."""
     texto = str(objetivo or "").strip().lower()
