@@ -231,7 +231,10 @@ def _runtime_tools_registry() -> list[dict[str, Any]]:
 def _approval_path(path: str | Path | None = None) -> Path:
     if path is not None:
         return Path(path)
-    return Path(os.getenv(_APPROVAL_ENV, "").strip() or _DEFAULT_APPROVAL_FILE).resolve()
+    configured = os.getenv(_APPROVAL_ENV, "").strip()
+    if configured:
+        return Path(configured).resolve()
+    return Path(__file__).resolve().parents[1] / _DEFAULT_APPROVAL_FILE
 
 
 def _approval_status(path: Path, name: str) -> tuple[bool, bool]:
