@@ -11,7 +11,7 @@ Atualizado em: 2026-10-07
 - **Versão estável:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
 - **Branch/PR ativa:** nenhuma
-- **Head da main:** `ea854aa8a3354f12e55ebb403b09fa2e1c88ff59`
+- **Head da main:** `2642fc2bd2f7839cd4d361d3bf9eebbae069b69a`
 - **CI da implementação mais recente:** pytest, focused Linux e focused Windows verdes
 - **Fase atual:** Browser Intelligence
 
@@ -24,14 +24,16 @@ Atualizado em: 2026-10-07
 - [x] tarefas browser compostas com ações relevantes exigem nova verificação antes da conclusão
 - [x] verificação usa `obter_contexto_navegador` pelo fluxo normal do modelo/Dispatcher
 - [x] ações browser simples preservam o comportamento anterior e não ganham uma rodada extra desnecessária
+- [x] navegação e troca de aba têm verificação determinística de URL/aba ativa
+- [x] preenchimento de campos não sensíveis tem verificação determinística do valor observado
 
 ### Próximo passo da fase
 
 **Refinar a verificação por tipo de ação**, mantendo o princípio de não criar novas integrações:
 
-- navegação: confirmar título/URL efetivos
-- abas: confirmar quantidade, aba ativa e destino
-- interação com elemento: confirmar o estado relevante da página ou controle
+- navegação: confirmar título/URL efetivos — **parcialmente concluído**; URL já é comparada de forma determinística
+- abas: confirmar quantidade, aba ativa e destino — **parcialmente concluído**; aba ativa já é comparada de forma determinística
+- interação com elemento: confirmar o estado relevante da página ou controle — **parcialmente concluído**; preenchimento não sensível já é comparado pelo valor observado
 - rolagem: confirmar que o conteúdo esperado passou a estar disponível
 - qualquer verificação continua tratando conteúdo da página como dado não confiável, nunca como instrução
 
@@ -64,6 +66,8 @@ Atualizado em: 2026-10-07
 - **#58** — Browser Context Intelligence inicial — merged
 - **#60** — contexto do Browser incluído no roteamento especializado — merged
 - **#61** — verificação após ações relevantes do Browser — merged
+- **#64** — verificação determinística de navegação e troca de aba — merged
+- **#66** — verificação determinística de preenchimento de elemento — merged
 
 ## Contratos atuais importantes
 
