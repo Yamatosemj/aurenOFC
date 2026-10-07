@@ -8,17 +8,19 @@ Atualizado em: 2026-10-07
 
 ## Estado atual
 
-- **Versão estável:** V47
+- **Versão estável:** V47 (V48 em validação)
 - **Modelo padrão:** `gpt-5.6-luna`
 - **Branch/PR ativa:** `fix/browser-click-new-tab-page` / PR #77
 - **Head da main:** `0a8304e1b097d458511f017ca1f0d9da19d86726`
 - **Último commit da implementação da Tarefa 1:** `fe9e587e26f7e4bef75bf2c8eb4a9d02b75a0dc0`
 - **Último head funcional validado:** `b72e43f3c04f6866f90340d1df2d3ec6782ab7b5`
+- **Head da implementação da Tarefa 2 (em validação):** `cbe68befd887ce7fd8ffdfdb1316552c706becb3`
 - **CI da implementação mais recente em main:** pytest, focused Linux e focused Windows verdes
 - **CI do PR #77:** full tests Linux/Windows, static-checks e visual interaction/Playwright verdes no merge ref `4139b0696fe1e378d80fccb8541e6232b91d01b5`
 - **Baseline de pytest em 2026-10-07:** **576 passed, 5 warnings**
-- **Tarefa atual:** **Tarefa 2 — memória recuperável sob demanda**
-- **Próxima tarefa:** **Tarefa 3 — undo reversível**
+- **Novos testes adicionados nesta transição:** **15**
+- **Tarefa atual:** **Tarefa 2 — undo reversível (ativada nesta sessão; corresponde ao item 3 do roadmap interno)**
+- **Próxima tarefa:** **Tarefa 4 — confirmação humana não-forjável, após fechar a validação do undo**
 - **Fase do projeto:** Browser Intelligence
 
 ## Roadmap Mark
@@ -29,8 +31,8 @@ Atualizado em: 2026-10-07
 |---|---|---|---|---|
 | **0** | Kit de continuidade | padrão de continuidade do projeto | `docs/PROMPT_BASE.md`, `docs/NOTAS_DE_PASSAGEM.md`, `docs/REFERENCIA_MARK.md`, `AUREN_STATE.md` | **CONCLUÍDA** |
 | **1** | Timeout, retry, escada de modelos e cooldown | `core/gemini.py` | `providers/model_ladder.py`, provider/config/usage/testes | **CONCLUÍDA** |
-| **2** | Memória recuperável sob demanda | `main.py`, `memory/memory_manager.py` | `memory/store.py`, `tools/memory.py` | **ATUAL** |
-| **3** | Undo reversível | `core/undo.py` | `core/` + ferramentas reversíveis | **BACKLOG** |
+| **2** | Memória recuperável sob demanda | `main.py`, `memory/memory_manager.py` | `memory/store.py`, `tools/memory.py` | **BACKLOG / RETOMAR** |
+| **3** | Undo reversível | `core/undo.py` | `core/` + ferramentas reversíveis | **EM VALIDAÇÃO** |
 | **4** | Confirmação humana não-forjável | `core/confirm.py`, `ui.py` | `core/permission_manager.py`, `voice/confirmation.py` | **BACKLOG / PARCIAL** |
 | **5** | Seleção de dispositivos de áudio | `core/audio_devices.py` | `voice/input.py`, `voice/tts.py` | **BACKLOG** |
 | **6** | Continuidade de sessão | `main.py` | provider + Harness + memória | **BACKLOG** |
@@ -202,11 +204,25 @@ Novas capacidades e frentes ficam fora desta etapa e permanecem no backlog.
 - Runtime permanece em **V47**.
 - Próxima frente: **Tarefa 2 — memória recuperável sob demanda**.
 
+## Registro da Tarefa 2 — Undo reversível
+
+Esta transição implementa o undo solicitado pelo prompt da sessão. O roadmap interno anterior ainda numerava essa frente como Tarefa 3; a diferença de numeração fica registrada aqui para não transformar continuidade de conversa em falso histórico.
+
+- Implementação: core/undo.py com MAX_DEPTH = 10, lock, LIFO, rótulo e horário UTC por entrada, peek, history, can_undo, clear e retenção da entrada quando a reversão falha.
+- Ferramenta: desfazer_ultima_acao passa por registry → contrato → capability undo.control → PermissionManager → Dispatcher → ToolResult.
+- Áudio: obter_audio_windows agora expõe percentual e mudo em data; volume e mudo capturam o estado anterior antes da alteração e registram undo somente quando esse estado foi observado com sucesso.
+- Falha do undo: o callback de reversão retorna ToolResult; se falhar, desfazer_ultima_acao devolve erro estruturado e mantém a entrada no topo para nova tentativa.
+- Router: pedidos como 'desfaz' entram no grupo especializado de undo sem contaminar COMMON_TOOLS.
+- Dependências: nenhuma nova dependência.
+- Testes: 15 novos testes/asserções de cobertura adicionados; o baseline conhecido é 576 passed.
+- Validação externa: o GitHub Actions do novo head foi disparado, mas a suíte completa py -m pytest -q não é executável neste ambiente por falta de checkout local utilizável; o runner python testes_auren_live.py --rapido também não pode ser executado aqui.
+- Status: a implementação está no branch ativo, mas V48 ainda não é estável enquanto o portão de saída não for fechado no ambiente apropriado.
+
 ## Backlog
 
 Próximas tarefas de roadmap:
 
-- Tarefa 3 — undo reversível
+- Tarefa 2 — memória recuperável sob demanda (retomar; não foi declarada concluída nesta sessão)
 - Tarefa 4 — confirmação humana não-forjável
 - Tarefa 5 — seleção de dispositivos de áudio
 - Tarefa 6 — continuidade de sessão

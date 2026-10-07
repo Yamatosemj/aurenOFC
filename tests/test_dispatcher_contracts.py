@@ -36,7 +36,7 @@ def test_unknown_tool_is_classified_before_contract_lookup():
 def test_all_current_tools_have_handlers_and_contracts():
     from core.tools_registry import tools
     names = {item["name"] for item in tools}
-    assert len(names) == 49
+    assert len(names) == 50
     assert names == set(dispatcher.TOOL_HANDLERS)
     assert dispatcher.validar_registry_handlers() == (True, "")
 

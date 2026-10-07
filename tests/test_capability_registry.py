@@ -47,6 +47,7 @@ def test_registry_contains_real_v44_capabilities_only():
         "analisar_tela",
         "inspecionar_arquivo",
         "ler_arquivo",
+        "desfazer_ultima_acao",
     }
     assert set(CAPABILITY_REGISTRY.ids()) == expected
 
@@ -286,3 +287,10 @@ def test_spotify_prefix_request_resolves():
     assert result.capability_id == "tocar_musica_spotify"
     assert result.route == "luna"
     assert result.params["consulta"] == "Evidencias"
+
+
+def test_undo_capability_is_registered_and_backed():
+    capability = CAPABILITY_REGISTRY.get("desfazer_ultima_acao")
+    assert capability is not None
+    assert capability.tools == ("desfazer_ultima_acao",)
+    assert capability.politica_confirmacao == "never"

@@ -243,3 +243,15 @@ def test_registry_handlers_still_validate():
     ok, motivo = dispatcher.validar_registry_handlers()
     assert ok is True
     assert motivo == ""
+
+
+def test_undo_uses_registered_capability_and_auto_permission():
+    manager = PermissionManager(max_actions=2)
+    assert manager.capability("desfazer_ultima_acao") == "undo.control"
+
+    nivel, _ = manager.nivel_da_acao("desfazer_ultima_acao", {})
+    assert nivel.value == "auto"
+
+    permitido, _ = manager.autorizar("desfazer_ultima_acao", {})
+    assert permitido is True
+    assert manager.actions_attempted == 1
