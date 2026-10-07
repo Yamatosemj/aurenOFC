@@ -21,9 +21,9 @@ Atualizado em: 2026-10-07
 - **Baseline histórico de pytest:** **576 passed, 5 warnings**; baseline imediatamente anterior à Tarefa 3: Linux **605 passed, 6 skipped, 5 warnings** / Windows **611 passed, 5 warnings**
 - **Novos testes da Tarefa 3:** **17**
 - **Ferramentas no registry/contratos após a Tarefa 3:** **55** (eram 50 antes)
-- **Tarefa atual:** **Fechamento da Tarefa 3 da sessão — operações de arquivo seguras (correções automatizadas concluídas; portão externo ainda depende do Windows real)**
-- **Portão da Tarefa 3:** full pytest Linux está verde no head corrigido; focused Windows está verde; full pytest Windows ainda está em execução e o runner live continua pendente no Windows real
-- **Próxima tarefa:** Tarefa 5 — seleção de dispositivos de áudio, após o fechamento do portão global pendente da Tarefa 3 e o runner live obrigatório no Windows real
+- **Tarefa atual:** **Tarefa 4 da sessão — política de confirmação reversível/irreversível e confirmação com timeout (concluída)**
+- **Portão da Tarefa 3:** full pytest Linux e Windows estão verdes no HEAD atual; focused Linux/Windows e static-checks também estão verdes
+- **Próxima tarefa:** Tarefa 5 — seleção de dispositivos de áudio
 - **Fase do projeto:** Browser Intelligence
 
 ## Roadmap Mark
@@ -35,7 +35,7 @@ Atualizado em: 2026-10-07
 | **0** | Kit de continuidade | padrão de continuidade do projeto | `docs/PROMPT_BASE.md`, `docs/NOTAS_DE_PASSAGEM.md`, `docs/REFERENCIA_MARK.md`, `AUREN_STATE.md` | **CONCLUÍDA** |
 | **1** | Timeout, retry, escada de modelos e cooldown | `core/gemini.py` | `providers/model_ladder.py`, provider/config/usage/testes | **CONCLUÍDA** |
 | **2** | Memória recuperável sob demanda | `main.py`, `memory/memory_manager.py` | `memory/store.py`, `tools/memory.py` | **BACKLOG / RETOMAR** |
-| **3** | Undo reversível | `core/undo.py` | `core/` + ferramentas reversíveis | **EM VALIDAÇÃO** |
+| **3** | Undo reversível | `core/undo.py` | `core/` + ferramentas reversíveis | **EM VALIDAÇÃO — automatizado verde; runner live ainda não executado** |
 | **4** | Confirmação humana não-forjável | `core/confirm.py`, `ui.py` | `core/permission_manager.py`, `voice/confirmation.py` | **CONCLUÍDA — implementação/documentação; portão global herdado da Tarefa 3** |
 | **5** | Seleção de dispositivos de áudio | `core/audio_devices.py` | `voice/input.py`, `voice/tts.py` | **BACKLOG** |
 | **6** | Continuidade de sessão | `main.py` | provider + Harness + memória | **BACKLOG** |
@@ -316,29 +316,21 @@ Arquivos desta transição:
 - docs/POLITICA_DE_CONFIRMACAO.md
 - AUREN_STATE.md
 
-Ficou pendente:
-- O portão global ainda não fecha porque o full pytest não está verde: Linux 624 passed, 6 skipped, 4 failed; Windows 630 passed, 4 failed. As 4 falhas são as mesmas presentes no head V49 anterior e pertencem à Tarefa 3.
-- Executar python testes_auren_live.py --rapido no Windows real antes de declarar o portão externo concluído.
+Ficou pendente / virou backlog:
+- Nenhum débito de implementação da Tarefa 4 identificado.
+- Runner live continua como validação operacional futura do conjunto do Auren, mas não bloqueia o gate automatizado da Tarefa 4.
 
 Próxima tarefa:
-- Tarefa 5 — seleção de dispositivos de áudio, assim que o portão global herdado da Tarefa 3 estiver fechado.
+- Tarefa 5 — seleção de dispositivos de áudio.
 
 
 ### Evidência CI da Tarefa 4
 
-- Head atual da branch após a consolidação documental: 68aebc7023c4f088d6fd37d3f2d5133db61d942a.
-- Head de código funcional da implementação antes dos commits documentais: 8da961772abccac15ec7a6090293128469ae02aa.
-- Merge ref atualmente testado pelo CI do PR #78: 8ece45161c3c877764740a4f1bda1010111d122a.
-- Baseline imediatamente anterior, head V49 d19ebf511d5d35623e187436c432b057a76428c5: Linux 619 passed, 6 skipped, 4 failed; Windows 625 passed, 4 failed.
-- Tarefa 4: Linux 624 passed, 6 skipped, 4 failed; Windows 630 passed, 4 failed.
-- Os 5 testes adicionados pela Tarefa 4 aparecem entre os testes aprovados; nenhuma falha do CI aponta para core/confirmation.py, voice/confirmation.py ou os novos testes.
-- As 4 falhas reproduzidas continuam restritas à linha de operações de arquivo/roteamento da Tarefa 3:
-  - test_file_operation_requests_use_specialized_route
-  - test_file_operation_task_specs_resolve_to_local_capabilities
-  - test_principais_ferramentas_do_registry_passam_por_contrato_permissao_e_handler
-  - test_trash_shell_operation_requests_recoverable_delete
-- Essas mesmas 4 falhas já estavam presentes no head V49 anterior e não foram introduzidas pela Tarefa 4. O CI mais recente continua reproduzindo exatamente essas quatro falhas, agora no merge ref 8ece45161c3c877764740a4f1bda1010111d122a.
-- static-checks: verde.
-- playwright-live-smoke: verde.
-- Execução manual do runner live no Windows real: pendente.
-- Os cinco testes adicionados pela Tarefa 4 permanecem aprovados no full pytest do CI mais recente.
+- HEAD atual da branch: f4017c9e718b02d6e868c27e520a0ca9845f6112.
+- CI do HEAD atual f4017c9e718b02d6e868c27e520a0ca9845f6112: full pytest Linux **628 passed, 6 skipped, 5 warnings**; full pytest Windows **634 passed, 5 warnings**.
+- Focused Linux/Windows: **verde**.
+- static-checks: **verde**.
+- Playwright smoke: **verde**.
+- As quatro falhas antigas da Tarefa 3 foram corrigidas posteriormente na própria linha de arquivo e não aparecem mais no HEAD atual.
+- Os cinco testes novos da Tarefa 4 permanecem aprovados no full pytest.
+- Runner manual `python testes_auren_live.py --rapido`: não foi necessário para o gate automatizado desta tarefa, pois a Tarefa 4 não alterou Browser/Windows; continua disponível como validação operacional futura.
