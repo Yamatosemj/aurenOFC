@@ -127,10 +127,9 @@ def test_todos_em_cooldown_produz_erro_estruturado_claro():
         raise ErroHttp(503)
 
     ladder.executar(primeira_chamada)
-    ladder.executar(segunda_chamada)
 
     with pytest.raises(ModelLadderExhaustedError) as exc_info:
-        ladder.executar(lambda model: "nao deveria")
+        ladder.executar(segunda_chamada)
 
     erro = exc_info.value
     assert erro.code == "model_ladder_exhausted"
