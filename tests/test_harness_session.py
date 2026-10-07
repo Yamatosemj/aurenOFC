@@ -169,6 +169,7 @@ def test_browser_mutation_is_blocked_while_verification_is_pending():
                 arguments='{"alvo":"Outro","indice":1}',
             )
         ],
+        task_manager=TaskManager(),
         executar_ferramenta=lambda item: called.append(item) or ToolResult.success("executado"),
         task_id="chat",
         rodada=2,
