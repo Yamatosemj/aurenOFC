@@ -138,7 +138,7 @@ def test_clique_no_navegador_usa_allowlist_e_evidencia_estrutural():
     assert _nivel("clicar_elemento", {"alvo": "Pesquisar", "indice": 1}) == PermissionLevel.CONFIRM
     assert _nivel("clicar_elemento", {"alvo": "Pesquisar videos", "indice": 1}) == PermissionLevel.CONFIRM
     assert _nivel("clicar_elemento", {"alvo": "Comprar", "indice": 1}) == PermissionLevel.CONFIRM
-    assert _nivel("clicar_elemento", _browser_click_args(tag="button", role="button", type="button")) == PermissionLevel.AUTO
+    assert _nivel("clicar_elemento", _browser_click_args(tag="a", role="link", type="", href="/docs")) == PermissionLevel.AUTO
     assert _nivel(
         "clicar_elemento",
         _browser_click_args(
@@ -253,14 +253,22 @@ def test_safe_browser_click_requires_structural_preflight():
     assert nivel == PermissionLevel.CONFIRM
 
 
-def test_safe_browser_click_allows_plain_button_with_structural_evidence():
+def test_safe_browser_click_allows_plain_anchor_with_structural_evidence():
     manager = PermissionManager()
     nivel, motivo = manager.nivel_da_acao(
         "clicar_elemento",
-        _browser_click_args(tag="button", role="button", type="button", href=""),
+        _browser_click_args(tag="a", role="link", type="", href="/docs"),
     )
     assert nivel == PermissionLevel.AUTO
-    assert "estrutura real" in motivo
+    assert "Link HTML" in motivo
+
+def test_browser_button_requires_confirmation_even_without_inline_handler():
+    manager = PermissionManager()
+    nivel, _ = manager.nivel_da_acao(
+        "clicar_elemento",
+        _browser_click_args(tag="button", role="button", type="button", href=""),
+    )
+    assert nivel == PermissionLevel.CONFIRM
 
 
 @pytest.mark.parametrize(
