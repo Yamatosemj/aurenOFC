@@ -4,14 +4,15 @@
 > Antes de iniciar uma nova tarefa, consulte este arquivo e compare com a branch/PR e o CI do GitHub.
 > Não trate roadmap antigo, memória da conversa ou documentos arquivados como estado atual.
 
-Atualizado em: 2026-10-07 (estabilização pós-V47 encerrada)
+Atualizado em: 2026-10-07 (Browser Intelligence — PR #58 em execução)
 
 ## Estado agora
 
 - **Base estável (main):** V47
 - **Trabalho ativo:** Estabilização e limpeza pós-V47
-- **Branch/PR ativa:** nenhuma
+- **Branch/PR ativa:** `feat/browser-context` / PR #58
 - **Head da main:** 709dcf01771849d5711a31ed65ccbc6e02fc33ad
+- **Head da PR #58:** 8769e5c2788a86d506172bcad3891b951cf3baed
 - **Status da PR #6:** merged
 - **Status da PR #9:** merged — item 1 da revisão geral
 - **Status da PR #11:** merged — item 3 da revisão geral
