@@ -118,10 +118,16 @@ def test_todos_em_cooldown_produz_erro_estruturado_claro():
     relogio = RelogioFake()
     ladder = ModelLadder(("modelo-a", "modelo-b"), clock=relogio)
 
-    ladder.executar(
-        lambda model: ErroHttp(429) if model == "modelo-a" else "ok"
-    )
-    ladder.executar(lambda model: ErroHttp(503))
+    def primeira_chamada(model: str):
+        if model == "modelo-a":
+            raise ErroHttp(429)
+        return "ok"
+
+    def segunda_chamada(_model: str):
+        raise ErroHttp(503)
+
+    ladder.executar(primeira_chamada)
+    ladder.executar(segunda_chamada)
 
     with pytest.raises(ModelLadderExhaustedError) as exc_info:
         ladder.executar(lambda model: "nao deveria")
@@ -138,9 +144,12 @@ def test_cooldown_expira_e_modelo_volta_a_ser_elegivel():
     relogio = RelogioFake()
     ladder = ModelLadder(("modelo-a", "modelo-b"), clock=relogio)
 
-    ladder.executar(
-        lambda model: ErroHttp(429) if model == "modelo-a" else "ok"
-    )
+    def primeira_chamada(model: str):
+        if model == "modelo-a":
+            raise ErroHttp(429)
+        return "ok"
+
+    ladder.executar(primeira_chamada)
     relogio.value += COOLDOWN_QUOTA_SECONDS - 1
     assert ladder.esta_em_cooldown("modelo-a")
     relogio.value += 1
@@ -176,11 +185,12 @@ def test_timeout_e_classificado_como_indisponivel():
     relogio = RelogioFake()
     ladder = ModelLadder(("modelo-a", "modelo-b"), clock=relogio)
 
-    modelo, resposta = ladder.executar(
-        lambda model: TimeoutError("request timed out")
-        if model == "modelo-a"
-        else "ok"
-    )
+    def chamar(model: str):
+        if model == "modelo-a":
+            raise TimeoutError("request timed out")
+        return "ok"
+
+    modelo, resposta = ladder.executar(chamar)
 
     assert modelo == "modelo-b"
     assert resposta == "ok"
@@ -200,9 +210,12 @@ def test_log_informa_modelo_esfriado_e_proximo():
     logger = LoggerFake()
     ladder = ModelLadder(("modelo-a", "modelo-b"), logger=logger)
 
-    ladder.executar(
-        lambda model: ErroHttp(503) if model == "modelo-a" else "ok"
-    )
+    def primeira_chamada(model: str):
+        if model == "modelo-a":
+            raise ErroHttp(503)
+        return "ok"
+
+    ladder.executar(primeira_chamada)
 
     assert logger.messages == [
         "modelo modelo-a em cooldown por 30 min, usando modelo-b"
