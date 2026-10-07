@@ -79,10 +79,7 @@ def _falar_interrompivel(
     texto: str,
     texto_recebido_em: float | None = None,
 ) -> tuple[bool, bool, float | None, float]:
-    """Fala em segundo plano para permitir ESC ou F8 interromper a fala.
-
-    Retorna (foi_interrompido_por_f8, pediu_saida_por_esc, latencia_texto_voz).
-    """
+    """Fala em segundo plano e retorna estado, latência inicial e duração total do TTS."""
     cancel_event = Event()
     erro: list[BaseException] = []
     inicio_voz: list[float | None] = [None]
@@ -177,7 +174,7 @@ def _processar_e_falar(
         )
     except RuntimeError as exc:
         print(f"Auren voz: TTS indisponível: {exc}")
-        interrompido, sair, latencia = False, False, None
+        interrompido, sair, latencia, tts_ms = False, False, None, 0.0
 
     harness.registrar_etapa_voz("tts", tts_ms)
     if latencia is not None:
