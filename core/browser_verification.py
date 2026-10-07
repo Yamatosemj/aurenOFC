@@ -14,7 +14,16 @@ from typing import Any
 from urllib.parse import urljoin, urlsplit
 
 
-\n_SENSITIVE_FILL_KEY = secrets.token_bytes(32)\n\n\ndef _compromisso_preenchimento_sensivel(valor: str) -> str:\n    return hmac.new(\n        _SENSITIVE_FILL_KEY,\n        str(valor).encode("utf-8"),\n        hashlib.sha256,\n    ).hexdigest()\n\ndef _parse_args(arguments: str) -> dict[str, Any] | None:
+
+_SENSITIVE_FILL_KEY = secrets.token_bytes(32)
+
+
+def _compromisso_preenchimento_sensivel(valor: str) -> str:
+    return hmac.new(
+        _SENSITIVE_FILL_KEY,
+        str(valor).encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()\ndef _parse_args(arguments: str) -> dict[str, Any] | None:
     try:
         value = json.loads(str(arguments or "{}"))
     except (TypeError, ValueError, json.JSONDecodeError):
