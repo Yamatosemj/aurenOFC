@@ -95,14 +95,14 @@ class ConfirmationGate:
             if pendente is None:
                 return False
 
-            self._pending = None
-
             if agora - pendente.created_at > self._timeout_seconds:
+                self._pending = None
                 return False
 
             if str(token or "") != pendente.token:
                 return False
 
+            self._pending = None
             return bool(aprovado)
 
     def cancelar(self, token: str) -> None:
