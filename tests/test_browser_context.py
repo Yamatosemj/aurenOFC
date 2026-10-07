@@ -26,6 +26,8 @@ def test_browser_context_combines_tabs_and_active_page(monkeypatch):
         lambda foco: f"Titulo: YouTube\nFoco da leitura: {foco}",
     )
 
+    monkeypatch.setattr(browser, "obter_pagina", lambda: _FakePage())
+
     result = browser_context.obter_contexto_navegador("video de teste")
 
     assert result.ok is True
