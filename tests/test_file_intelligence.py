@@ -302,10 +302,12 @@ def test_requested_trusted_root_names_are_recognized(tmp_path: Path, monkeypatch
     monkeypatch.delenv("OneDriveConsumer", raising=False)
     monkeypatch.delenv("OneDriveCommercial", raising=False)
 
+    real_read_allowed_roots = file_intelligence._read_allowed_roots
+    monkeypatch.setattr(file_intelligence, "_read_allowed_roots", real_read_allowed_roots)
+
     for root_name in ("Downloads", "Desktop", "Documents", "OneDrive"):
         root = profile / root_name
         root.mkdir()
-        monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda root=root: [root.resolve()])
         path = root / "arquivo.txt"
         path.write_text("ok", encoding="utf-8")
         result = read_file(str(path))
