@@ -36,12 +36,12 @@ def test_two_harnesses_have_distinct_sessions(tmp_path, monkeypatch):
 
 def test_memory_context_is_scoped_by_chat_id(tmp_path):
     store = PersistentMemoryStore(tmp_path / "memory.sqlite3")
-    store.registrar_conversa("chat-A", "user", "marker-A unique")
-    store.registrar_conversa("chat-B", "user", "marker-B unique")
-    context_a = recuperar_memoria(store, "marker-A unique", chat_id="chat-A")
-    context_b = recuperar_memoria(store, "marker-A unique", chat_id="chat-B")
-    assert any("marker-A unique" in item["conteudo"] for item in context_a["conversas"])
-    assert not any("marker-B unique" in item["conteudo"] for item in context_a["conversas"])
+    store.registrar_conversa("chat-A", "user", "marker-A-exclusive")
+    store.registrar_conversa("chat-B", "user", "marker-B-other")
+    context_a = recuperar_memoria(store, "marker-A-exclusive", chat_id="chat-A")
+    context_b = recuperar_memoria(store, "marker-A-exclusive", chat_id="chat-B")
+    assert any("marker-A-exclusive" in item["conteudo"] for item in context_a["conversas"])
+    assert not any("marker-B-other" in item["conteudo"] for item in context_a["conversas"])
     assert not context_b["conversas"]
 
 
