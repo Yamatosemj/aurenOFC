@@ -208,3 +208,24 @@ def test_voice_confirmation_discards_stale_audio_and_accepts_fresh_capture():
 
     assert channel.confirmar(_request()) is True
     assert transcribed == [fresh_audio]
+
+
+def test_voice_confirmation_stops_on_real_capture_error_without_calling_asr():
+    class FakeTTS:
+        def falar(self, _texto):
+            pass
+
+    class FakeSTT:
+        def transcrever(self, _audio):
+            raise AssertionError("Erro de captura nao pode chegar ao ASR.")
+
+    audio_queue = Queue()
+    audio_queue.put(("erro", RuntimeError("microfone indisponivel")))
+    channel = VoiceConfirmationChannel(
+        tts=FakeTTS(),
+        stt=FakeSTT(),
+        audio_queue=audio_queue,
+        timeout=0.1,
+    )
+
+    assert channel.confirmar(_request()) is False
