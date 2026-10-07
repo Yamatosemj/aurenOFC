@@ -189,3 +189,14 @@ def test_undo_request_uses_small_specialized_route():
 def test_undo_request_includes_tool_for_voice_variants():
     for text in ("desfazer", "desfaz a ultima acao", "voltar atrás"):
         assert "desfazer_ultima_acao" in names_for(text)
+
+
+def test_file_operation_requests_use_specialized_route():
+    for objective, expected in (
+        ("mova o arquivo origem.txt para a pasta Desktop", "mover_arquivo"),
+        ("copie o arquivo origem.txt para Desktop/copia.txt", "copiar_arquivo"),
+        ("renomeie o arquivo origem.txt para novo.txt", "renomear_arquivo"),
+        ("crie a pasta Desktop/Nova Pasta", "criar_pasta"),
+        ("envie o arquivo origem.txt para a lixeira", "enviar_para_lixeira"),
+    ):
+        assert expected in names_for(objective)
