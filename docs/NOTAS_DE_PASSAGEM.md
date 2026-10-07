@@ -153,7 +153,7 @@ Próxima tarefa: 4 — confirmação humana não-forjável, após o portão da T
 
 ## 2026-10-07 — Tarefa 4 — Política reversível/irreversível e confirmação com timeout
 
-Tarefa concluída: implementação da infraestrutura de confirmação; política de risco aguardando aprovação explícita
+Tarefa concluída: implementação da infraestrutura de confirmação; política de risco aprovada sem reclassificação de clipboard
 
 Arquivos criados/alterados:
 - core/confirmation.py
@@ -168,7 +168,7 @@ Arquivos criados/alterados:
 Decisões tomadas (e por quê):
 - O Undo existente da linha V49 foi auditado antes de qualquer promoção para AUTO. Arquivos e volume/mudo possuem restauração condicionada ao estado observado; memória e clipboard não possuem restauração exata.
 - memory.write permanece CONFIRM porque esquecer uma memória atualizada não recupera o valor/categoria/timestamp anteriores.
-- windows.clipboard.write foi classificado como irreversível na política e recebeu proposta AUTO → CONFIRM, mas a alteração no PermissionManager não foi aplicada sem aprovação.
+- windows.clipboard.write recebeu proposta AUTO → CONFIRM, mas o usuário decidiu explicitamente manter AUTO. O PermissionManager já estava em AUTO e não sofreu reclassificação.
 - ConfirmationRequest não carrega token. O token é criado e mantido pela interface, fica fora dos argumentos do modelo e é aceito pelo gate apenas durante a janela válida.
 - Há uma única confirmação pendente por processo nos canais padrão; tokens atrasados ou inválidos não cancelam uma confirmação nova.
 - Timeout padrão: 90 s. Expiração sempre significa negativa e não executa a ação.
@@ -185,12 +185,12 @@ Testes:
 - Runner manual python testes_auren_live.py --rapido: pendente no Windows real, porque esta tarefa altera a confirmação usada pelo canal de voz e o ambiente atual não é o computador do Auren.
 
 Ficou pendente / virou backlog:
-- Aprovação explícita de windows.clipboard.write: AUTO → CONFIRM.
+- Registrar a decisão: windows.clipboard.write permanece AUTO por escolha explícita do usuário.
 - Registrar que o portão geral não fecha enquanto as 4 falhas preexistentes da V49 permanecerem. Elas já existiam no head V49 anterior, que tinha Linux = 619 passed, 6 skipped, 4 failed e Windows = 625 passed, 4 failed.
 - Executar o runner live no Windows real antes de considerar o portão externo encerrado.
 
 Próxima tarefa:
-- Aplicar somente a reclassificação aprovada e então concluir o portão da Tarefa 4.
+- Concluir o fechamento documental da Tarefa 4 sem reclassificação de clipboard e seguir para o próximo passo somente após o portão.
 
 
 Atualização do fechamento da evidência:
