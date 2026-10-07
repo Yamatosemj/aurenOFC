@@ -99,11 +99,13 @@ def verificar_resultado_navegador(
         return _normalize_url(url_atual) == esperado
 
     if ferramenta == "preencher_elemento":
+        preenchimento = dados_acao.get("preenchimento") if isinstance(dados_acao, dict) else None
         return _controle_com_valor(
             str(dados.get("pagina") or ""),
             str(args.get("alvo") or ""),
             str(args.get("texto") or ""),
             int(args.get("indice") or 1),
+            preenchimento,
         )
 
     if ferramenta == "clicar_elemento":
@@ -455,7 +457,13 @@ def _verificar_clique(
 
 
 
-def _controle_com_valor(pagina: str, alvo: str, esperado: str, indice: int) -> bool | None:
+def _controle_com_valor(
+    pagina: str,
+    alvo: str,
+    esperado: str,
+    indice: int,
+    evidencia_acao: Any = None,
+) -> bool | None:
     alvo_normalizado = str(alvo or "").strip().casefold()
     if not alvo_normalizado:
         return None
@@ -472,20 +480,31 @@ def _controle_com_valor(pagina: str, alvo: str, esperado: str, indice: int) -> b
     if not candidatas:
         return None
 
-    # Campos sensiveis sao mascarados pelo leitor da pagina. Nao tentamos
-    # inferir o segredo nem tratamos o mascaramento como falha.
-    esperado_texto = str(esperado or "")
+    if isinstance(evidencia_acao, dict) and bool(evidencia_acao.get("sensivel")):
+        compromisso = str(evidencia_acao.get("compromisso") or "").strip()
+        if not compromisso:
+            return None
+        encontradas = []
+        for linha in candidatas:
+            marcador = "compromisso="
+            if marcador not in linha:
+                continue
+            encontradas.append(linha.split(marcador, 1)[1].split(" |", 1)[0].strip())
+        if not encontradas or len(encontradas) > 1:
+            return None
+        if indice != 1:
+            return None
+        return hmac.compare_digest(encontradas[0], compromisso)
+
     if "[REDACTED]" in " ".join(candidatas):
         return None
 
+    esperado_texto = str(esperado or "")
     matches = [
         linha for linha in candidatas
         if f"valor={esperado_texto}" in linha
     ]
     return len(matches) >= max(1, int(indice or 1))
-
-
-
 
 def _numero_scroll(dados: Any, chave: str) -> float | None:
     if not isinstance(dados, dict):
