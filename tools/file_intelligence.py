@@ -429,6 +429,17 @@ class FileReadPathPolicy:
     raiz_permitida: str | None
 
 
+def _is_reparse_point(path: Path) -> bool:
+    try:
+        file_stat = path.lstat()
+    except OSError:
+        return True
+    if path.is_symlink():
+        return True
+    atributos = int(getattr(file_stat, "st_file_attributes", 0) or 0)
+    flag = int(getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400))
+    return bool(atributos & flag)
+
 def _read_allowed_roots() -> list[Path]:
     roots: list[Path] = []
     profile_value = os.environ.get("USERPROFILE", "").strip()
