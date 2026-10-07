@@ -19,6 +19,9 @@ class _FakePage:
         del wait_until, timeout
         self.url = url
 
+    def bring_to_front(self):
+        pass
+
     def close(self):
         self.closed = True
 
