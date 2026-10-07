@@ -6,8 +6,8 @@ from types import SimpleNamespace
 
 from voice.input import AudioCaptureConfig, CapturedAudio, PushToTalkRecorder
 from voice.speech_response import SpeechResponseFormatter
-from voice.stt import LocalPortugueseASR
-from voice.tts import LocalKokoroTTS
+from voice.stt import ASR_EXPECTED, ASR_REVISION, LocalPortugueseASR
+from voice.tts import MODEL_PATH, TTS_EXPECTED, VOICES_PATH, LocalKokoroTTS
 
 
 def test_voice_v3_components_are_lazy_and_constructible():
@@ -217,3 +217,41 @@ def test_tts_is_safe_when_called_from_an_existing_event_loop():
     assert erro == []
     assert model.calls == 1
     assert len(sd.streams) == 1
+
+
+def test_voice_model_manifests_pin_immutable_sources_and_known_artifacts():
+    assert ASR_REVISION == "f5f837ee9e385781e60748cb9824a9c65487be36"
+    assert set(ASR_EXPECTED) == {
+        "encoder-model.int8.onnx",
+        "decoder_joint-model.int8.onnx",
+        "nemo128.onnx",
+    }
+    assert set(TTS_EXPECTED) == {
+        MODEL_PATH.name,
+        VOICES_PATH.name,
+    }
+
+
+def test_tts_rejects_wrong_checksum_without_loading_model(tmp_path, monkeypatch):
+    import voice.tts as tts_module
+
+    model_path = tmp_path / MODEL_PATH.name
+    model_path.write_bytes(b"corrompido")
+    expected_hash, expected_size = TTS_EXPECTED[MODEL_PATH.name]
+    monkeypatch.setattr(tts_module.LocalKokoroTTS, "_sha256", staticmethod(lambda _path: "0" * 64))
+
+    try:
+        tts_module.LocalKokoroTTS._verify_file(model_path)
+    except RuntimeError as exc:
+        assert "SHA-256 invalido" in str(exc)
+    else:
+        raise AssertionError("checksum invalido deveria ser rejeitado")
+    assert not model_path.exists()
+
+
+def test_tts_accepts_manifest_hash_and_size(tmp_path, monkeypatch):
+    import voice.tts as tts_module
+
+    model_path = tmp_path / MODEL_PATH.name
+    expected_hash, expected_size = TTS_EXPECTED[MODEL_PATH.name]
+    monkeypatch.setattr(model_path, "stat", lambda: SimpleNamespace(st_size=expected_size))
