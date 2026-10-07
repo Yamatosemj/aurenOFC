@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import os
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
 from core.utils import normalizar_nome
 from tools.file_intelligence import _classify_read_path, _is_reparse_point
+
+MAX_SEARCH_FILES = 10_000
+MAX_SEARCH_SECONDS = 5.0
 
 
 def interpretar_periodo(consulta):
@@ -238,6 +242,9 @@ def buscar_arquivo(consulta):
     ]
 
     candidatos = []
+    arquivos_inspecionados = 0
+    inicio_scan = time.monotonic()
+    scan_interrompido = False
 
     for pasta in pastas:
         if not pasta.exists():
@@ -252,6 +259,10 @@ def buscar_arquivo(consulta):
                 ]
 
                 for filename in filenames:
+                    if (pelos_menos := arquivos_inspecionados) >= MAX_SEARCH_FILES or time.monotonic() - inicio_scan >= MAX_SEARCH_SECONDS:
+                        scan_interrompido = True
+                        break
+                    arquivos_inspecionados = pelos_menos + 1
                     arquivo = current_path / filename
                     if _is_reparse_point(arquivo):
                         continue
@@ -295,6 +306,8 @@ def buscar_arquivo(consulta):
                             resolvido,
                         )
                     )
+                if scan_interrompido:
+                    break
         except OSError:
             continue
     if not candidatos:
@@ -326,6 +339,11 @@ def buscar_arquivo(consulta):
     else:
         linhas.append(
             "Arquivos encontrados:"
+        )
+
+    if scan_interrompido:
+        linhas.append(
+            f"Busca interrompida pelo limite de seguranca ({MAX_SEARCH_FILES} arquivos ou {MAX_SEARCH_SECONDS:.1f}s)."
         )
 
     linhas.append(
