@@ -2068,9 +2068,17 @@ def main() -> int:
     if not compatible:
         print("\nTeste interrompido antes dos testes funcionais para evitar falsos FAILs.")
     else:
+        smoke_ok = True
         if layer_enabled("L1") or layer_enabled("L2"):
             run_smoke_tests()
-        if layer_enabled("L4") or layer_enabled("L5"):
+            smoke_ok = not any(
+                not resultado.ok
+                for resultado in RESULTS
+                if resultado.layer in {"L1", "L2"}
+            )
+            if not smoke_ok:
+                print("\nTeste integrado nao executado porque L1/L2 registraram falhas.")
+        if smoke_ok and (layer_enabled("L4") or layer_enabled("L5")):
             run_model_suite()
 
     passed = sum(1 for r in RESULTS if r.ok)
