@@ -204,4 +204,4 @@ def test_browser_reader_exposes_commitment_but_never_sensitive_value(monkeypatch
 
     assert compromisso in resultado.message
     assert "[REDACTED]" in resultado.message
-    assert "segredo-super-secreto" not in resultado
+    assert "segredo-super-secreto" not in resultado.message
