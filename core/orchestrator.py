@@ -76,7 +76,7 @@ class AurenOrchestrator:
             system_prompt=instrucoes,
             personality=ARCHITECTURE_NAME,
             scenario=requested_brain or "auto",
-            history_instruction="Auren V46 safe response cache",
+            history_instruction="Auren V48 memory core index safe response cache",
             include_context=True,
         )
 
