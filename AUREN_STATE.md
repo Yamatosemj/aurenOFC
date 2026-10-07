@@ -12,10 +12,22 @@ Atualizado em: 2026-10-07
 - **Modelo padrão:** `gpt-5.6-luna`
 - **Branch/PR ativa:** `fix/browser-click-new-tab-page` / PR #77
 - **Head da main:** `0a8304e1b097d458511f017ca1f0d9da19d86726`
-- **Head da branch ativa:** `48fde963142f849252df9ee13beac1f6c69b6db1`
+- **Head da branch ativa:** `c8b5d45ec1e06eb91bafbacab4f91f68e2aea881`
 - **CI da implementação mais recente em main:** pytest, focused Linux e focused Windows verdes
-- **CI do PR #77:** execução do head atual em andamento; heads anteriores tiveram falhas de testes que estão sendo corrigidas incrementalmente
+- **CI do PR #77:** head `c8b5d45ec1e06eb91bafbacab4f91f68e2aea881` com focused Linux e focused Windows verdes; full CI deste head ainda deve ser rechecado após novas correções
 - **Fase atual:** Browser Intelligence
+
+- [x] confirmação de voz consome o protocolo real da fila e rejeita itens stale/erro/legado
+- [x] contexto de navegador propaga falhas internas sem mascarar sucesso
+- [x] guard de Browser Verification só é resetado após `True` do verifier
+- [x] preenchimento sensível usa evidência protegida sem expor o segredo
+- [x] recuperação do navegador não reinicia a sessão por exceções transitórias
+- [x] foco de aba é separado da referência interna `pagina`
+- [x] busca de arquivos respeita a mesma política de caminhos e evita reparse traversal
+- [x] screenshots possuem retenção e limites de armazenamento
+- [x] encerramento por nome de processo evita `taskkill /IM` ambíguo
+- [x] UI Automation não usa arquivo temporário de saída nem `ExecutionPolicy Bypass`
+- [x] Kokoro e Parakeet possuem manifestos de integridade/revisão
 
 ### O que já está concluído nesta fase
 
