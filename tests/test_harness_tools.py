@@ -43,7 +43,7 @@ def test_executes_calls_and_updates_history_and_results():
     history = []
     calls = []
 
-    results, count, failed, pending, cancelled = _executar_chamadas_rodada(
+    results, count, failed, pending, browser_pending, cancelled = _executar_chamadas_rodada(
         [_item("obter_status_windows", "call-1", '{"modo":"rapido"}')],
         historico=history,
         task_manager=manager,
@@ -68,6 +68,7 @@ def test_executes_calls_and_updates_history_and_results():
     assert count == 1
     assert failed is False
     assert pending is False
+    assert browser_pending is False
     assert cancelled is False
     assert history == [
         {
@@ -85,13 +86,118 @@ def test_executes_calls_and_updates_history_and_results():
     assert logs[1][0] == ("TOOL_RESULT",)
 
 
+def test_successful_browser_mutation_sets_verification_pending():
+    manager = _TaskManager()
+    history = []
+
+    results, count, failed, visual_pending, browser_pending, cancelled = _executar_chamadas_rodada(
+        [_item("clicar_elemento", "call-browser-1", '{"alvo":"Comprar","indice":1}')],
+        historico=history,
+        task_manager=manager,
+        task_id="task-browser-1",
+        rodada=1,
+        executar_ferramenta=lambda _: ToolResult.success("Clique executado."),
+        trace=None,
+        vision_state_mutating_tools=set(),
+        vision_reobserve_pending=False,
+        max_tool_result_chars=100,
+        get_active_vision_geometry=lambda: None,
+        clear_active_vision_geometry=lambda: None,
+        browser_verification_tools={"clicar_elemento"},
+        browser_verification_pending=False,
+        write_log=lambda *args, **kwargs: None,
+    )
+
+    assert results[0]["sucesso"] is True
+    assert count == 1
+    assert failed is False
+    assert visual_pending is False
+    assert browser_pending is True
+    assert cancelled is False
+
+
+def test_successful_browser_context_clears_pending_verification():
+    manager = _TaskManager()
+    history = []
+
+    results, count, failed, visual_pending, browser_pending, cancelled = _executar_chamadas_rodada(
+        [_item("obter_contexto_navegador", "call-browser-2", '{"foco":"Comprar"}')],
+        historico=history,
+        task_manager=manager,
+        task_id="task-browser-2",
+        rodada=2,
+        executar_ferramenta=lambda _: ToolResult.success(
+            "CONTEXTO DO NAVEGADOR",
+            tool_name="obter_contexto_navegador",
+            conteudo_nao_confiavel=True,
+        ),
+        trace=None,
+        vision_state_mutating_tools=set(),
+        vision_reobserve_pending=False,
+        max_tool_result_chars=100,
+        get_active_vision_geometry=lambda: None,
+        clear_active_vision_geometry=lambda: None,
+        browser_verification_tools={"clicar_elemento"},
+        browser_verification_pending=True,
+        write_log=lambda *args, **kwargs: None,
+    )
+
+    assert results[0]["sucesso"] is True
+    assert count == 1
+    assert failed is False
+    assert visual_pending is False
+    assert browser_pending is False
+    assert cancelled is False
+
+
+def test_browser_mutation_followed_by_context_in_same_round_ends_verified():
+    manager = _TaskManager()
+    history = []
+
+    sequence = [
+        _item("clicar_elemento", "call-browser-3", '{"alvo":"Comprar","indice":1}'),
+        _item("obter_contexto_navegador", "call-browser-4", '{"foco":"resultado"}'),
+    ]
+    results, count, failed, visual_pending, browser_pending, cancelled = _executar_chamadas_rodada(
+        sequence,
+        historico=history,
+        task_manager=manager,
+        task_id="task-browser-3",
+        rodada=3,
+        executar_ferramenta=lambda item: ToolResult.success(
+            "Clique executado." if item.name == "clicar_elemento" else "Contexto atualizado.",
+            tool_name=item.name,
+            conteudo_nao_confiavel=item.name == "obter_contexto_navegador",
+        ),
+        trace=None,
+        vision_state_mutating_tools=set(),
+        vision_reobserve_pending=False,
+        max_tool_result_chars=100,
+        get_active_vision_geometry=lambda: None,
+        clear_active_vision_geometry=lambda: None,
+        browser_verification_tools={"clicar_elemento"},
+        browser_verification_pending=False,
+        write_log=lambda *args, **kwargs: None,
+    )
+
+    assert [item["ferramenta"] for item in results] == [
+        "clicar_elemento",
+        "obter_contexto_navegador",
+    ]
+    assert count == 2
+    assert failed is False
+    assert visual_pending is False
+    assert browser_pending is False
+    assert cancelled is False
+
+
 def test_tool_exception_becomes_structured_failure_and_marks_step_failed():
     manager = _TaskManager()
     history = []
     logs = []
     trace = _Trace()
 
-    results, count, failed, pending, cancelled = _executar_chamadas_rodada(
+    results, count, failed, pending, browser_pending, cancelled = _executar_chamadas_rodada(
         [_item("ferramenta_teste", "call-2")],
         historico=history,
         task_manager=manager,
@@ -115,6 +221,7 @@ def test_tool_exception_becomes_structured_failure_and_marks_step_failed():
     assert count == 1
     assert failed is True
     assert pending is False
+    assert browser_pending is False
     assert cancelled is False
     assert results[0]["sucesso"] is False
     assert "Falha inesperada no harness: boom" in results[0]["resultado"]
@@ -129,7 +236,7 @@ def test_successful_visual_mutation_invalidates_active_geometry():
     history = []
     state = {"geometry": object(), "cleared": 0}
 
-    results, count, failed, pending, cancelled = _executar_chamadas_rodada(
+    results, count, failed, pending, browser_pending, cancelled = _executar_chamadas_rodada(
         [_item("clicar_mouse_windows", "call-3")],
         historico=history,
         task_manager=manager,
@@ -166,7 +273,7 @@ def test_cancellation_before_execution_preserves_previous_failure_state():
     manager = _TaskManager(cancel_sequence=[True])
     history = []
 
-    results, count, failed, pending, cancelled = _executar_chamadas_rodada(
+    results, count, failed, pending, browser_pending, cancelled = _executar_chamadas_rodada(
         [_item("ferramenta_teste", "call-4")],
         historico=history,
         task_manager=manager,
