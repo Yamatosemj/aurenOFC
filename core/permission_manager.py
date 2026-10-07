@@ -471,11 +471,19 @@ class PermissionManager:
             return True, motivo
 
         if nivel == PermissionLevel.CONFIRM:
-            aprovado = self._pedir_confirmacao(
-                nome_ferramenta,
-                argumentos,
-                motivo,
+            consumo_fonte = (
+                self._fonte_nao_confiavel_pendente is not None
+                and conta_para_limite
             )
+            try:
+                aprovado = self._pedir_confirmacao(
+                    nome_ferramenta,
+                    argumentos,
+                    motivo,
+                )
+            finally:
+                if consumo_fonte:
+                    self._fonte_nao_confiavel_pendente = None
 
             if aprovado:
                 self.last_authorized_action_signature = assinatura_atual
@@ -496,6 +504,14 @@ class PermissionManager:
         capacidade = self._capability(nome_ferramenta)
         nivel_base = self.nivel(nome_ferramenta)
 
+        if nivel_base == PermissionLevel.BLOCKED:
+            return (
+                PermissionLevel.BLOCKED,
+                (
+                    f"A ferramenta '{nome_ferramenta}' "
+                    "esta bloqueada pela politica de permissoes."
+                ),
+            )
         if (
             self._fonte_nao_confiavel_pendente is not None
             and capacidade in self.COUNTED_CAPABILITIES
@@ -507,15 +523,6 @@ class PermissionManager:
                     "Esta acao foi solicitada apos a leitura de conteudo nao confiavel "
                     f"(fonte: {fonte}). Conteudo externo nunca e uma instrucao do usuario; "
                     "confirmacao explicita e obrigatoria antes de qualquer acao com efeito externo."
-                ),
-            )
-
-        if nivel_base == PermissionLevel.BLOCKED:
-            return (
-                PermissionLevel.BLOCKED,
-                (
-                    f"A ferramenta '{nome_ferramenta}' "
-                    "esta bloqueada pela politica de permissoes."
                 ),
             )
         if capacidade in {"file.read", "file.inspect"}:
