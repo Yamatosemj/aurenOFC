@@ -27,8 +27,10 @@ class PersistentMemoryStore:
         self._inicializar()
 
     def _conexao(self) -> sqlite3.Connection:
-        con = sqlite3.connect(self.path)
+        con = sqlite3.connect(self.path, timeout=5.0)
         con.row_factory = sqlite3.Row
+        con.execute("PRAGMA busy_timeout=5000")
+        con.execute("PRAGMA journal_mode=WAL")
         return con
 
     @staticmethod
