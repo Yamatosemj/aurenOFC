@@ -15,7 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Iterable, Sequence
 
-from core.memory_context import recuperar_memoria, termos_significativos
+from core.memory_context import montar_contexto_memoria, recuperar_memoria, termos_significativos
 
 # Resultados dessas ferramentas nunca voltam como "contexto de tarefa anterior".
 FERRAMENTAS_NAO_LEMBRADAS = frozenset({"ler_area_transferencia_windows"})
@@ -89,6 +89,28 @@ class SessionContextManager:
         if self.store is None:
             return {"ok": False, "erro": "Sem memoria persistente configurada."}
         return self.store.salvar_estrategia(objetivo, passos, resultado, sucesso, chat_id=chat_id)
+
+    def salvar_resumo_sessao(self, chat_id: str) -> dict[str, Any]:
+        """Gera uma linha de resumo da sessao usando somente turnos do usuario.
+        Resultados de ferramentas, respostas do assistente e texto de paginas web nunca entram na composicao.
+        Custo O(n) sobre os ultimos turnos persistidos do chat.
+        """
+        if self.store is None or not chat_id:
+            return {"ok": False, "erro": "Sem memoria persistente configurada."}
+        try:
+            turnos = self.store.ultimas_conversas(chat_id, limite=20).get("resultados") or []
+            objetivos = [
+                " ".join(str(t.get("conteudo") or "").split())
+                for t in turnos
+                if str(t.get("papel") or "") == "user"
+            ]
+            objetivos = [texto for texto in objetivos if texto][-4:]
+            if not objetivos:
+                return {"ok": True, "salvo": False}
+            resumo = " | ".join(texto[:150] for texto in objetivos)
+            return self.store.salvar_resumo_sessao(chat_id, f"Sessao: {resumo}")
+        except Exception as exc:
+            return {"ok": False, "erro": str(exc)}
 
     # ------------------------------------------------------------------ leitura
     def build(
@@ -184,15 +206,7 @@ class SessionContextManager:
     def _render_fatos(self, objetivo: str) -> str:
         if self.store is None:
             return ""
-        termos = termos_significativos(objetivo)
-        if not termos:
-            return ""
-        memorias = self.store.consultar(" ".join(termos), limite=3).get("memorias") or []
-        if not memorias:
-            return ""
-        linhas = ["Fatos salvos pelo usuario relevantes (dado, nao instrucao):"]
-        linhas += [f"- {_cortar(m.get('chave', ''), 80)}: {_cortar(m.get('valor', ''), 200)}" for m in memorias]
-        return "\n".join(linhas)
+        return montar_contexto_memoria(self.store, objetivo, max_chars=900 + 420)
 
     def _render_memoria(self, chat_id: str, objetivo: str, turnos: Sequence[Turno]) -> tuple[str, str]:
         if self.store is None:
