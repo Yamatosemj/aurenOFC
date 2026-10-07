@@ -69,7 +69,11 @@ python testes_auren_live.py --completo
 python testes_auren.py --rapido
 ```
 
-A suíte pytest é a validação automatizada do runtime e roda no CI. A bateria live de modelo + ferramentas fica separada em testes_auren_live.py, pois pode consumir a API e provocar efeitos reais no Windows. testes_auren.py permanece apenas como fachada de compatibilidade para o comando antigo.
+A suíte pytest é a validação automatizada do runtime e roda no CI. O pytest é configurado para procurar testes somente em `tests/`, portanto `testes_auren_live.py` **não faz parte da coleta do pytest** e deve ser executado manualmente.
+
+`testes_auren_live.py` é o **runner live/manual** do Auren: ele pode consumir a API e provocar efeitos reais no Windows, navegador e outras ferramentas. Use-o quando quiser validar o comportamento integrado em um ambiente Windows real.
+
+`testes_auren.py` permanece apenas como fachada de compatibilidade para o comando antigo.
 
 Os resultados gerados por `testes_auren_live.py` ficam em:
 
