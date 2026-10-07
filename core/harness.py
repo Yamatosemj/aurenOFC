@@ -200,6 +200,7 @@ class AurenHarness:
         self._vision_guard_attempts = 0
         self._browser_verification_pending = False
         self._browser_verification_guard_attempts = 0
+        self._browser_verification_action = ""
         # O Ari usa uma fila de prioridade para tarefas de fundo. No Auren ela
         # fica restrita a aprendizado/persistencia pos-tarefa para não atrasar a resposta.
         self._background_queue = AgentTaskQueue(max_workers=1, max_results=100)
@@ -360,6 +361,7 @@ class AurenHarness:
             contexto_tarefa=self._contexto_tarefa,
             vision_reobserve_pending=getattr(self, "_vision_reobserve_pending", False),
             browser_verification_pending=getattr(self, "_browser_verification_pending", False),
+            browser_verification_action=getattr(self, "_browser_verification_action", ""),
             max_history_items=self.DEFAULT_MAX_HISTORY_ITEMS,
             max_state_chars=self.MAX_STATE_CHARS,
             texto_seguro=self._texto_seguro,
