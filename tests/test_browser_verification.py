@@ -611,6 +611,9 @@ def test_non_navigational_click_verification_accepts_aria_checked():
         },
     }
     pagina = _contexto(
+        "Abas abertas: 1\nAba ativa: 1\nAba 1: Site | https://example.com [ATIVA]"
+    )
+    pagina["pagina"] = (
         "Campos e controles visiveis:\n"
         "- tag=button | nome=Opcao | id=check | chave=id:check | estado=aria-checked=true"
     )
@@ -635,6 +638,9 @@ def test_non_navigational_click_verification_accepts_native_details_open_state()
         },
     }
     pagina = _contexto(
+        "Abas abertas: 1\nAba ativa: 1\nAba 1: Site | https://example.com [ATIVA]"
+    )
+    pagina["pagina"] = (
         "Campos e controles visiveis:\n"
         "- tag=summary | nome=Ajuda | chave=tag:summary:ajuda | estado=details-open=true"
     )
@@ -654,6 +660,9 @@ def test_non_navigational_click_verification_accepts_alertdialog_and_popover_eff
         "sinal": {"tipo": "pagina", "alvo": "popovers", "antes": 0, "depois": 1},
     }
     pagina = _contexto(
+        "Abas abertas: 1\nAba ativa: 1\nAba 1: Site | https://example.com [ATIVA]"
+    )
+    pagina["pagina"] = (
         "Elementos flutuantes visiveis: dialogos=1 | menus=0 | listboxes=0 | popovers=1 | details_abertos=0"
     )
     assert verificar_resultado_navegador(
