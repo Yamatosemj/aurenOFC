@@ -690,6 +690,12 @@ def _verificar_rolagem(
             return True
         return depois >= max_scroll - tolerancia
 
+    alvo = str(dados_acao.get("alvo") or "").strip()
+    if alvo:
+        encontrado = dados_acao.get("alvo_encontrado")
+        if encontrado is not True:
+            return False if encontrado is False else None
+
     if direcao == "cima":
         if depois < antes - 1.0:
             return True
