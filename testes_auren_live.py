@@ -139,6 +139,11 @@ def _ui_preenchimento_confirmado(resultado: str, automation_id: str) -> bool:
     return "Preenchimento concluido" in texto and bool(re.search(rf"automation_id=[\"']?{re.escape(automation_id)}", texto))
 
 
+def _tool_message(value) -> str:
+    """Extrai a mensagem textual de ToolResult sem quebrar compatibilidade legada."""
+    return str(getattr(value, "message", value) or "")
+
+
 def _normalize_detail(detail: str) -> str:
     return re.sub(r"\s+", " ", str(detail or "")).strip()
 
@@ -549,7 +554,15 @@ def run_smoke_tests() -> None:
     try:
         source_text = (ROOT / "auren.py").read_text(encoding="utf-8", errors="replace")
         windows_source_text = (ROOT / "tools" / "windows.py").read_text(encoding="utf-8", errors="replace")
-        uia_source_text = source_text + "\n" + windows_source_text
+        uia_source_text = (
+            source_text
+            + "\n"
+            + windows_source_text
+            + "\n"
+            + (ROOT / "tools" / "windows_uia.py").read_text(encoding="utf-8", errors="replace")
+            + "\n"
+            + (ROOT / "tools" / "windows_uia_worker.ps1").read_text(encoding="utf-8", errors="replace")
+        )
         pm = auren.PermissionManager(max_actions=10)
         pm.iniciar_tarefa()
         protected_level, protected_reason = pm.nivel_da_acao(
@@ -736,7 +749,7 @@ def run_smoke_tests() -> None:
         set_layer("L2")
         try:
             guard = auren.encerrar_processo_windows(pid=os.getpid(), nome="")
-            ok = "proprio processo do auren" in guard.lower()
+            ok = "proprio processo do auren" in _tool_message(guard).lower()
             record("Protecao contra encerrar o proprio Auren por PID", ok, guard, layer="L2")
         except Exception as exc:
             record("Protecao contra encerrar o proprio Auren por PID", False, repr(exc), layer="L2")
@@ -806,7 +819,7 @@ def run_smoke_tests() -> None:
             all(valor == "auto" for valor in politica_uia.values())
             and classificacoes == {
                 "inspecao": "auto",
-                "clique_normal": "auto",
+                "clique_normal": "confirm",
                 "clique_sensivel": "confirm",
                 "preenchimento_sensivel": "confirm",
             }
@@ -849,8 +862,8 @@ def run_smoke_tests() -> None:
                 restore = auren.definir_mudo_windows(original_mute)
                 final_audio = auren.obter_audio_windows()
                 expected_word = "ativado" if original_mute else "desativado"
-                mute_ok = expected_word in final_audio.lower()
-                record("Audio: mudo reversivel", "Mudo" in opposite and "Mudo" in restore and mute_ok, f"original={'ativado' if original_mute else 'desativado'}; final={final_audio}")
+                mute_ok = expected_word in _tool_message(final_audio).lower()
+                record("Audio: mudo reversivel", "Mudo" in _tool_message(opposite) and "Mudo" in _tool_message(restore) and mute_ok, f"original={'ativado' if original_mute else 'desativado'}; final={_tool_message(final_audio)}")
     except Exception as exc:
         record("Audio: leitura e reversibilidade", False, repr(exc))
 
@@ -878,29 +891,29 @@ def run_smoke_tests() -> None:
 
     try:
         status = auren.obter_status_windows()
-        ok = all(token in status for token in ("Hora local:", "Data local:", "RAM:", "Tempo ligado:"))
-        record("Status do Windows", ok, status.replace("\n", " | ")[:260])
+        status_text = _tool_message(status)\n        ok = all(token in status_text for token in ("Hora local:", "Data local:", "RAM:", "Tempo ligado:"))
+        record("Status do Windows", ok, status_text.replace("\n", " | ")[:260])
     except Exception as exc:
         record("Status do Windows", False, repr(exc))
 
     try:
         janelas = auren.listar_janelas_windows()
-        ok = not janelas.lower().startswith("nao consegui") and "Janelas visiveis" in janelas
-        record("Listagem de janelas", ok, janelas.splitlines()[0] if janelas else "")
+        janelas_text = _tool_message(janelas)\n        ok = not janelas_text.lower().startswith("nao consegui") and "Janelas visiveis" in janelas_text
+        record("Listagem de janelas", ok, janelas_text.splitlines()[0] if janelas_text else "")
     except Exception as exc:
         record("Listagem de janelas", False, repr(exc))
 
     original_clipboard = None
     try:
         original = auren.ler_area_transferencia_windows()
-        if not original.lower().startswith("nao consegui") and not original.lower().startswith("a area de transferencia nao contem"):
+        original_text = _tool_message(original)\n        if not original_text.lower().startswith("nao consegui") and not original_text.lower().startswith("a area de transferencia nao contem"):
             original_clipboard = original
 
         marker = "AUREN_TESTE_AUTOMATICO_20260920"
         auren.definir_area_transferencia_windows(marker)
         read_result = auren.ler_area_transferencia_windows()
-        ok = read_result == marker
-        record("Clipboard: escrever e ler", ok, read_result if ok else f"esperado={marker!r}, recebido={read_result!r}")
+        read_text = _tool_message(read_result)\n        ok = read_text == marker
+        record("Clipboard: escrever e ler", ok, read_text if ok else f"esperado={marker!r}, recebido={read_text!r}")
     except Exception as exc:
         record("Clipboard: escrever e ler", False, repr(exc))
     finally:
@@ -914,8 +927,8 @@ def run_smoke_tests() -> None:
 
     try:
         processos = auren.listar_processos_windows()
-        ok = "Processos encontrados:" in processos or "Nenhum processo" not in processos
-        record("Listagem de processos", ok, processos.splitlines()[0] if processos else "")
+        processos_text = _tool_message(processos)\n        ok = "Processos encontrados:" in processos_text or "Nenhum processo" not in processos_text
+        record("Listagem de processos", ok, processos_text.splitlines()[0] if processos_text else "")
     except Exception as exc:
         record("Listagem de processos", False, repr(exc))
 
@@ -923,14 +936,14 @@ def run_smoke_tests() -> None:
         set_layer("L2")
         try:
             guard = auren.encerrar_processo_windows(nome="explorer.exe")
-            ok = "protegido" in guard.lower()
+            ok = "protegido" in _tool_message(guard).lower()
             record("Protecao contra encerrar Explorer", ok, guard, layer="L2")
         except Exception as exc:
             record("Protecao contra encerrar Explorer", False, repr(exc), layer="L2")
 
         try:
             guard = auren.encerrar_processo_windows(nome="*")
-            ok = "curingas" in guard.lower()
+            ok = "curingas" in _tool_message(guard).lower()
             record("Protecao contra curingas em taskkill", ok, guard, layer="L2")
         except Exception as exc:
             record("Protecao contra curingas em taskkill", False, repr(exc), layer="L2")
@@ -942,13 +955,13 @@ def run_smoke_tests() -> None:
         x = user32.GetSystemMetrics(0) // 2
         y = user32.GetSystemMetrics(1) // 2
         moved = auren.mover_mouse_windows(x, y)
-        record("Mouse global: mover", "movido" in moved.lower(), moved)
+        record("Mouse global: mover", "movido" in _tool_message(moved).lower(), moved)
     except Exception as exc:
         record("Mouse global: mover", False, repr(exc))
 
     try:
         pressed = auren.pressionar_tecla_windows("escape")
-        record("Teclado global: Escape", "pression" in pressed.lower(), pressed)
+        record("Teclado global: Escape", "pression" in _tool_message(pressed).lower(), pressed)
     except Exception as exc:
         record("Teclado global: Escape", False, repr(exc))
 
@@ -957,7 +970,7 @@ def run_smoke_tests() -> None:
         before_hwnds = {hwnd for hwnd, _ in before}
 
         opened = auren.abrir_programa("notepad.exe")
-        record("Abrir Notepad", "aberto" in opened.lower(), opened)
+        record("Abrir Notepad", "aberto" in _tool_message(opened).lower(), opened)
         janela_teste = _find_new_notepad_window(auren, before_hwnds)
 
         if not janela_teste:
@@ -967,17 +980,17 @@ def run_smoke_tests() -> None:
             record("Janela Notepad isolada", True, titulo_teste)
 
             focused = auren.focar_janela_windows(titulo_teste)
-            record("Focar Notepad", "janela ativada" in focused.lower(), focused)
+            record("Focar Notepad", "janela ativada" in _tool_message(focused).lower(), focused)
 
             moved = auren.mover_janela_windows(titulo_teste, 120, 140)
-            record("Mover Notepad", "janela movida" in moved.lower(), moved)
+            record("Mover Notepad", "janela movida" in _tool_message(moved).lower(), moved)
 
             resized = auren.redimensionar_janela_windows(titulo_teste, 800, 500)
-            record("Redimensionar Notepad", "janela redimensionada" in resized.lower(), resized)
+            record("Redimensionar Notepad", "janela redimensionada" in _tool_message(resized).lower(), resized)
 
             geometry = auren.obter_geometria_janela_windows(titulo_teste)
-            geometry_ok = all(token in geometry for token in ("Posicao:", "Tamanho:", "800x500"))
-            record("Geometria do Notepad", geometry_ok, geometry.replace("\n", " | "))
+            geometry_text = _tool_message(geometry)\n            geometry_ok = all(token in geometry_text for token in ("Posicao:", "Tamanho:", "800x500"))
+            record("Geometria do Notepad", geometry_ok, geometry_text.replace("\n", " | "))
 
             minimized = auren.minimizar_janela_windows(titulo_teste)
             record("Minimizar Notepad", "minimizada" in minimized.lower(), minimized)
@@ -1002,14 +1015,14 @@ def run_smoke_tests() -> None:
                     cx = (rect.left + rect.right) // 2
                     cy = (rect.top + rect.bottom) // 2
                     clicked = auren.clicar_mouse_windows(cx, cy, "esquerdo", "area vazia da janela isolada criada pelo teste")
-                    record("Mouse global: clique seguro", "clique global executado" in clicked.lower(), clicked)
+                    record("Mouse global: clique seguro", "clique global executado" in _tool_message(clicked).lower(), clicked)
                 else:
                     record("Mouse global: clique seguro", False, "Nao consegui obter o retangulo do Notepad isolado")
             else:
                 record("Mouse global: clique seguro", False, "Nao encontrei a janela isolada do Notepad")
 
             closed = auren.fechar_janela_windows(titulo_teste)
-            record("Fechar Notepad", "solicitei o fechamento" in closed.lower(), closed)
+            record("Fechar Notepad", "solicitei o fechamento" in _tool_message(closed).lower(), closed)
     except Exception as exc:
         record("Ciclo de janela controlada", False, repr(exc))
 
@@ -1146,16 +1159,16 @@ def _testar_ui_automation_local(auren):
         if not janela:
             return
 
-        inspecao = auren.inspecionar_interface_windows(titulo, '', 60)
+        inspecao = _tool_message(auren.inspecionar_interface_windows(titulo, '', 60))
         if inspecao.startswith('Nao consegui inspecionar a interface'):
             record('UIA: smoke test do bridge', False, inspecao[:1600])
             return
         record('UIA: smoke test do bridge', True, 'Bridge retornou a arvore inicial da janela.')
         ok = all(x in inspecao for x in ('Campo de Teste','Senha de Teste','Botao Auren Teste','Check Auren Teste','Opcao Um','Opcao Dois'))
         record('UIA: inspecionar controles', ok, inspecao[:1200])
-        foco_botao = auren.inspecionar_interface_windows(titulo, 'botao Botao Auren Teste', 5)
+        foco_botao = _tool_message(auren.inspecionar_interface_windows(titulo, 'botao Botao Auren Teste', 5))
         record('UIA: busca semantica por tipo e nome', 'Botao Auren Teste' in foco_botao and 'tipo=Button' in foco_botao, foco_botao[:500])
-        foco_tipo = auren.inspecionar_interface_windows(titulo, 'botao', 10)
+        foco_tipo = _tool_message(auren.inspecionar_interface_windows(titulo, 'botao', 10))
         record('UIA: filtro por tipo', 'tipo=Button' in foco_tipo and 'tipo=Edit' not in foco_tipo, foco_tipo[:700])
         senha_segura = ('SEGREDO_UIA_TESTE' not in inspecao) and ('protegido=True' in inspecao)
         record('UIA: protege conteudo de senha', senha_segura, 'Conteudo secreto nao foi exposto pelo inspetor.' if senha_segura else inspecao[:1400])
@@ -1167,28 +1180,28 @@ def _testar_ui_automation_local(auren):
         # entrada efetiva em um campo de senha.
         r = auren.preencher_elemento_windows(titulo, 'Campo de Teste', 'AUREN_V42_UIA', 1)
         record('UIA: preencher campo', _ui_preenchimento_confirmado(r, 'Campo'), r)
-        r2 = auren.inspecionar_interface_windows(titulo, 'Campo de Teste', 5)
+        r2 = _tool_message(auren.inspecionar_interface_windows(titulo, 'Campo de Teste', 5))
         record('UIA: confirmar valor preenchido', 'AUREN_V42_UIA' in r2, r2[:600])
 
-        r = auren.clicar_elemento_windows(titulo, 'Botao Auren Teste', 1)
+        r = _tool_message(auren.clicar_elemento_windows(titulo, 'Botao Auren Teste', 1))
         record('UIA: clicar botao', 'Clique executado' in r, r)
-        r2 = auren.inspecionar_interface_windows(titulo, 'BOTAO_CLICADO', 5)
+        r2 = _tool_message(auren.inspecionar_interface_windows(titulo, 'BOTAO_CLICADO', 5))
         record('UIA: confirmar clique', _ui_inspecao_confirmou_texto(r2, 'BOTAO_CLICADO'), r2[:400])
 
-        r = auren.alternar_elemento_windows(titulo, 'Check Auren Teste', 1)
+        r = _tool_message(auren.alternar_elemento_windows(titulo, 'Check Auren Teste', 1))
         record('UIA: alternar checkbox', 'Estado alternado' in r and 'On' in r, r)
-        r2 = auren.inspecionar_interface_windows(titulo, 'Check Auren Teste', 5)
+        r2 = _tool_message(auren.inspecionar_interface_windows(titulo, 'Check Auren Teste', 5))
         record('UIA: confirmar checkbox', 'toggle=On' in r2, r2[:400])
 
-        r = auren.selecionar_elemento_windows(titulo, 'Opcao Dois', 1)
+        r = _tool_message(auren.selecionar_elemento_windows(titulo, 'Opcao Dois', 1))
         record('UIA: selecionar item', 'Elemento selecionado' in r, r)
-        r2 = auren.inspecionar_interface_windows(titulo, 'Opcao Dois', 5)
+        r2 = _tool_message(auren.inspecionar_interface_windows(titulo, 'Opcao Dois', 5))
         record('UIA: confirmar selecao', 'selected=True' in r2, r2[:400])
-        r = auren.clicar_elemento_windows(titulo, 'Opcao Dois', 1)
+        r = _tool_message(auren.clicar_elemento_windows(titulo, 'Opcao Dois', 1))
         ambiguidade_ou_escolha = ('Alvo ambiguo' in r) or ('Clique executado' in r and 'Opcao Dois' in r)
         record('UIA: empate de controles e tratado', ambiguidade_ou_escolha, r)
 
-        r = auren.clicar_elemento_windows(titulo, 'Controle Que Nao Existe AUREN', 1)
+        r = _tool_message(auren.clicar_elemento_windows(titulo, 'Controle Que Nao Existe AUREN', 1))
         record('UIA: recusar alvo inexistente', 'Nao consegui clicar' in r and 'Nao encontrei' in r, r)
     except Exception as exc:
         record('UI Automation local', False, repr(exc))
