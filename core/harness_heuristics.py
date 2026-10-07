@@ -36,6 +36,41 @@ def _parece_tarefa_visual_composta(objetivo: str) -> bool:
     return tem_visao and tem_acao_visual and tem_continuacao
 
 
+def _parece_tarefa_browser_verificavel(objetivo: str) -> bool:
+    """Ativa verificacao automatica apenas em tarefas browser compostas."""
+    texto = str(objetivo or "").strip().lower()
+    if not texto:
+        return False
+
+    tem_browser = bool(re.search(
+        r"\b(?:aba|abas|navegador|p[aá]gina|site|url|chrome|edge|youtube|discord|link|formul[aá]rio)\b",
+        texto,
+        flags=re.IGNORECASE,
+    ))
+    if not tem_browser:
+        return False
+
+    tem_acao = bool(re.search(
+        r"\b(?:abra|abrir|navegue|navegar|clique|clicar|preencha|preencher|digite|digitar|pressione|pressionar|feche|fechar|role|rolar|volte|voltar|avance|avancar|recarregue|recarregar|selecione|selecionar)\b",
+        texto,
+        flags=re.IGNORECASE,
+    ))
+    if not tem_acao:
+        return False
+
+    tem_verificacao_explicita = bool(re.search(
+        r"\b(?:confirme|confirmar|confirma|verifique|verificar|verifica|certifique|certificar|garanta|garantir)\b",
+        texto,
+        flags=re.IGNORECASE,
+    ))
+    tem_continuacao = bool(re.search(
+        r"\b(?:depois|em seguida|ent[aã]o|ap[oó]s|posteriormente)\b|\be\s+(?:abra|abrir|navegue|navegar|clique|clicar|preencha|preencher|digite|digitar|pressione|pressionar|feche|fechar|role|rolar|volte|voltar|avance|avancar|recarregue|recarregar|leia|ler|inspecione|inspecionar)\b",
+        texto,
+        flags=re.IGNORECASE,
+    ))
+    return tem_verificacao_explicita or tem_continuacao
+
+
 def _parece_tarefa_multietapa_browser(objetivo: str) -> bool:
     """Detecta pedidos explicitamente multi-etapa de abas do navegador.
 
