@@ -92,6 +92,13 @@ def _executar_chamadas_rodada(
                     resultado_estruturado.data or {},
                     browser_verification_state.get("dados_acao"),
                 )
+            write_log(
+                "TASK_BROWSER_VERIFICATION",
+                task_id=task_id,
+                rodada=rodada,
+                ferramenta=str(browser_verification_state.get("ferramenta") or ""),
+                verificado=verificado,
+            )
             if verificado is False:
                 browser_verification_pending = True
             else:
