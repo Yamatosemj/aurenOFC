@@ -268,7 +268,9 @@ def clicar_elemento(alvo, indice=1):
                         const cs = getComputedStyle(el);
                         return rect.width > 0 && rect.height > 0 &&
                                cs.visibility !== 'hidden' &&
-                               cs.display !== 'none';
+                               cs.display !== 'none' &&
+                               cs.opacity !== '0' &&
+                               cs.pointerEvents !== 'none';
                     };
 
                     const contar = seletores => Array.from(
