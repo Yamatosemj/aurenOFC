@@ -58,10 +58,10 @@ def test_entrada_global_tem_allowlist_de_acoes_e_teclas():
     ):
         assert _nivel(nome, argumentos) == PermissionLevel.CONFIRM
 
-    for tecla in ("Tab", "Escape", "Control+L", "F5", "Alt+Left"):
+    for tecla in ("Tab", "Escape", "Control+L", "Alt+Left"):
         assert _nivel("pressionar_tecla_windows", {"tecla": tecla}) == PermissionLevel.AUTO
 
-    for tecla in ("Delete", "Control+W", "Ctrl+W", "Alt+F4", "Enter"):
+    for tecla in ("Delete", "Control+W", "Ctrl+W", "Alt+F4", "Enter", "F5"):
         assert _nivel("pressionar_tecla_windows", {"tecla": tecla}) == PermissionLevel.CONFIRM
 
 
@@ -134,7 +134,7 @@ def test_navegacao_do_navegador_e_allowlistada():
     ) == PermissionLevel.AUTO
     assert _nivel("voltar_pagina") == PermissionLevel.AUTO
     assert _nivel("avancar_pagina") == PermissionLevel.AUTO
-    assert _nivel("recarregar_pagina") == PermissionLevel.AUTO
+    assert _nivel("recarregar_pagina") == PermissionLevel.CONFIRM
 
 
 def test_controle_de_abas_trata_fechamento_como_acao_de_risco():
