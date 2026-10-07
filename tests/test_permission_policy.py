@@ -109,10 +109,11 @@ def test_controle_ui_exige_confirmacao_salvo_preenchimento_seguro():
         ) == PermissionLevel.CONFIRM
 
 
-def test_clique_no_navegador_usa_allowlist_exata():
-    assert _nivel("clicar_elemento", {"alvo": "Pesquisar", "indice": 1}) == PermissionLevel.AUTO
+def test_clique_no_navegador_usa_allowlist_e_evidencia_estrutural():
+    assert _nivel("clicar_elemento", {"alvo": "Pesquisar", "indice": 1}) == PermissionLevel.CONFIRM
     assert _nivel("clicar_elemento", {"alvo": "Pesquisar videos", "indice": 1}) == PermissionLevel.CONFIRM
     assert _nivel("clicar_elemento", {"alvo": "Comprar", "indice": 1}) == PermissionLevel.CONFIRM
+    assert _nivel("clicar_elemento", _browser_click_args(tag="button", role="button", type="button")) == PermissionLevel.AUTO
 
 
 def test_navegacao_do_navegador_e_allowlistada():
@@ -243,3 +244,24 @@ def test_safe_click_is_elevated_for_risky_structural_evidence(evidencia):
         _browser_click_args(**evidencia),
     )
     assert nivel == PermissionLevel.CONFIRM
+
+
+def test_denied_or_blocked_counted_actions_do_not_consume_budget():
+    channel = _RecordingConfirmationChannel(False)
+    manager = PermissionManager(max_actions=2, confirmation_channel=channel)
+    assert manager.autorizar("fechar_aba", {"indice": 2})[0] is False
+    assert manager.actions_attempted == 0
+
+    manager.policy["memory.write"] = PermissionLevel.BLOCKED
+    assert manager.autorizar("salvar_memoria_persistente", {"chave": "x", "valor": "y"})[0] is False
+    assert manager.actions_attempted == 0
+
+
+def test_authorized_auto_and_confirmed_actions_consume_budget_once():
+    manager = PermissionManager(max_actions=2, confirmation_channel=_RecordingConfirmationChannel(True))
+
+    assert manager.autorizar("navegar_navegador", {"url": "https://example.com", "modo": "visivel"})[0] is True
+    assert manager.actions_attempted == 1
+
+    assert manager.autorizar("fechar_aba", {"indice": 2})[0] is True
+    assert manager.actions_attempted == 2
