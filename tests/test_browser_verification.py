@@ -684,7 +684,7 @@ def test_non_navigational_click_verification_accepts_alertdialog_and_popover_eff
     dados["clique"]["efeito"] = {
         "controle": {
             "chave": "id:abrir",
-            "aria_haspopup": "true",
+            "aria_controls": "ajuda",
         },
         "pagina_antes": {"popovers": 0},
         "pagina_depois": {"popovers": 1},
@@ -693,8 +693,8 @@ def test_non_navigational_click_verification_accepts_alertdialog_and_popover_eff
             "alvo": "popovers",
             "antes": 0,
             "depois": 1,
-            "causalidade": "aria-haspopup",
-            "relacao": {"tipo": "aria-haspopup", "valor": "true"},
+            "causalidade": "aria-controls",
+            "relacao": {"tipo": "aria-controls", "valor": "ajuda"},
             "novos": [{"id": "ajuda", "role": "dialog", "texto": "Ajuda"}],
         },
     }
@@ -999,3 +999,69 @@ def test_composite_dom_evidence_without_text_change_remains_inconclusive():
         contexto,
         acao,
     ) is None
+
+
+def test_overlay_verification_rejects_generic_true_as_dialog_causality():
+    dados = _dados_clique_navegacao()
+    dados["clique"]["navegacao"] = False
+    dados["clique"]["efeito"] = {
+        "controle": {"chave": "id:abrir", "aria_haspopup": "true"},
+        "pagina_antes": {"dialogos": 0},
+        "pagina_depois": {"dialogos": 1},
+        "sinal": {
+            "tipo": "pagina",
+            "alvo": "dialogos",
+            "antes": 0,
+            "depois": 1,
+            "causalidade": "aria-haspopup",
+            "relacao": {"tipo": "aria-haspopup", "valor": "true"},
+            "novos": [{"id": "alerta", "role": "alertdialog", "texto": "Alerta"}],
+        },
+    }
+    pagina = _contexto(
+        "Abas abertas: 1\nAba ativa: 1\nAba 1: Site | https://example.com [ATIVA]"
+    )
+    pagina["pagina"] = (
+        "Campos e controles visiveis:\n"
+        "- tag=button | role=button | nome=Abrir | id=abrir | chave=id:abrir\n"
+        "Elementos flutuantes visiveis: dialogos=1 | menus=0 | listboxes=0 | popovers=0 | details_abertos=0"
+    )
+    assert verificar_resultado_navegador(
+        "clicar_elemento",
+        '{"alvo":"Abrir","indice":1}',
+        pagina,
+        dados,
+    ) is None
+
+
+def test_overlay_verification_accepts_native_popover_target_causality():
+    dados = _dados_clique_navegacao()
+    dados["clique"]["navegacao"] = False
+    dados["clique"]["efeito"] = {
+        "controle": {"chave": "id:abrir", "popover_target": "ajuda"},
+        "pagina_antes": {"popovers": 0},
+        "pagina_depois": {"popovers": 1},
+        "sinal": {
+            "tipo": "pagina",
+            "alvo": "popovers",
+            "antes": 0,
+            "depois": 1,
+            "causalidade": "popover-target",
+            "relacao": {"tipo": "popover-target", "valor": "ajuda"},
+            "novos": [{"id": "ajuda", "role": "tooltip", "texto": "Ajuda"}],
+        },
+    }
+    pagina = _contexto(
+        "Abas abertas: 1\nAba ativa: 1\nAba 1: Site | https://example.com [ATIVA]"
+    )
+    pagina["pagina"] = (
+        "Campos e controles visiveis:\n"
+        "- tag=button | role=button | nome=Abrir | id=abrir | chave=id:abrir\n"
+        "Elementos flutuantes visiveis: dialogos=0 | menus=0 | listboxes=0 | popovers=1 | details_abertos=0"
+    )
+    assert verificar_resultado_navegador(
+        "clicar_elemento",
+        '{"alvo":"Abrir","indice":1}',
+        pagina,
+        dados,
+    ) is True

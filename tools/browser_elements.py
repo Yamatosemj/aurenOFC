@@ -158,6 +158,7 @@ def obter_evidencia_risco_clique(alvo, indice=1):
                     target: attr('target').toLowerCase(),
                     aria_controls: attr('aria-controls'),
                     aria_haspopup: attr('aria-haspopup').toLowerCase(),
+                    popover_target: attr('popovertarget'),
                     download: el.hasAttribute('download'),
                     onclick: attr('onclick'),
                     disabled: Boolean(el.disabled),
@@ -195,6 +196,7 @@ def clicar_elemento(alvo, indice=1):
                     const role = attr('role') || '';
                     const ariaControls = attr('aria-controls') || '';
                     const ariaHaspopup = attr('aria-haspopup') || '';
+                    const popoverTarget = attr('popovertarget') || '';
                     const texto = String(
                         el.innerText || el.textContent || ''
                     ).replace(/\s+/g, ' ').trim().slice(0, 240);
@@ -227,6 +229,7 @@ def clicar_elemento(alvo, indice=1):
                         texto: texto.slice(0, 240),
                         ariaControls: ariaControls.slice(0, 240),
                         ariaHaspopup: ariaHaspopup.slice(0, 80),
+                        popoverTarget: popoverTarget.slice(0, 240),
                         tag: String(el.tagName || '').toLowerCase(),
                         domFingerprint: fingerprintTexto,
                         estados: {
@@ -264,6 +267,7 @@ def clicar_elemento(alvo, indice=1):
             "texto": "",
             "ariaControls": "",
             "ariaHaspopup": "",
+            "popoverTarget": "",
             "tag": "",
             "estados": {},
         }
@@ -406,12 +410,14 @@ def clicar_elemento(alvo, indice=1):
         aria_haspopup = str(
             controle.get("aria_haspopup") or controle.get("ariaHaspopup") or ""
         ).strip().casefold()
+        popover_target = str(
+            controle.get("popover_target") or controle.get("popoverTarget") or ""
+        ).strip()
 
         tipos = (
-            ("dialogos", {"dialog", "true"}),
+            ("dialogos", {"dialog"}),
             ("menus", {"menu", "true"}),
             ("listboxes", {"listbox"}),
-            ("popovers", {"true"}),
         )
 
         def identidade(item):
@@ -448,6 +454,20 @@ def clicar_elemento(alvo, indice=1):
                             "depois": len(depois_itens),
                             "causalidade": "aria-controls",
                             "relacao": {"tipo": "aria-controls", "valor": item_id},
+                            "novos": [item],
+                        }
+
+            if alvo == "popovers" and popover_target:
+                for item in novos:
+                    item_id = str(item.get("id") or "").strip()
+                    if item_id and item_id == popover_target:
+                        return {
+                            "tipo": "pagina",
+                            "alvo": alvo,
+                            "antes": len(antes_itens),
+                            "depois": len(depois_itens),
+                            "causalidade": "popover-target",
+                            "relacao": {"tipo": "popover-target", "valor": item_id},
                             "novos": [item],
                         }
 
@@ -586,6 +606,7 @@ def clicar_elemento(alvo, indice=1):
                 "texto": estado_controle_antes.get("texto", ""),
                 "aria_controls": estado_controle_antes.get("ariaControls", ""),
                 "aria_haspopup": estado_controle_antes.get("ariaHaspopup", ""),
+                "popover_target": estado_controle_antes.get("popoverTarget", ""),
                 "tag": tag_elemento,
                 "dom_fingerprint": estado_controle_antes.get("domFingerprint", ""),
             },

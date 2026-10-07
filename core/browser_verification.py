@@ -656,18 +656,18 @@ def _verificar_clique(
 
         aria_controls = str(controle.get("aria_controls") or "").strip().split()
         aria_haspopup = str(controle.get("aria_haspopup") or "").strip().casefold()
+        popover_target = str(controle.get("popover_target") or "").strip()
         if causalidade == "aria-controls":
             if valor_relacao not in aria_controls:
+                return None
+        elif causalidade == "popover-target":
+            if alvo != "popovers" or valor_relacao != popover_target:
                 return None
         else:
             if alvo == "menus":
                 permitidos = {"menu", "true"}
             elif alvo == "listboxes":
                 permitidos = {"listbox"}
-            elif alvo == "dialogos":
-                permitidos = {"dialog", "true"}
-            elif alvo == "popovers":
-                permitidos = {"true"}
             else:
                 return None
             if aria_haspopup not in permitidos:
