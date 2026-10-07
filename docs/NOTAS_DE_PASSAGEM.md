@@ -151,6 +151,45 @@ Próxima tarefa: 4 — confirmação humana não-forjável, após o portão da T
 
 ---
 
+## 2026-10-07 — Correção do portão da Tarefa 3 — Operações de arquivo
+
+Tarefa concluída: correções das quatro falhas do CI anterior; portão externo ainda aberto somente pelo full pytest Windows em execução e pelo runner live no Windows real
+
+Arquivos criados/alterados:
+- core/router.py
+- core/intent_resolver.py
+- tests/test_execution_single_path.py
+- tests/test_file_intelligence.py
+- AUREN_STATE.md
+- docs/NOTAS_DE_PASSAGEM.md
+
+Decisões tomadas (e por quê):
+- As ferramentas de mutação de arquivo foram incluídas explicitamente na rota especializada de arquivos do Router, sem ampliar a rota de Windows para pedidos ambíguos.
+- O IntentResolver ganhou uma detecção determinística específica para flexões de mover/copiar/renomear/criar e para Lixeira, mantendo os caminhos estruturados como fonte dos parâmetros.
+- O smoke genérico de Dispatcher deixou de usar argumentos fictícios fora da allowlist para as ferramentas de mutação; isso não reduz a cobertura de segurança, porque os testes específicos continuam exercitando bloqueio de path e contrato.
+- O mock de SHFileOperationW foi corrigido para converter o CArgObject retornado por byref em ponteiro da estrutura correta.
+- Nenhuma regra de allowlist, proteção contra reparse point ou política de confirmação foi afrouxada.
+
+Testes:
+- Full pytest Linux no head corrigido: 628 passed, 6 skipped, 5 warnings
+- Focused-tests Linux: verde
+- Focused-tests Windows: verde
+- Static checks: verde
+- Playwright smoke: verde
+- Full pytest Windows: ainda em execução no momento desta atualização
+- Runner manual python testes_auren_live.py --rapido: não executado; exige o Windows real do Auren
+
+Ficou pendente / virou backlog:
+- Nenhum novo débito de implementação identificado nesta correção.
+- Fechar o full pytest Windows no CI.
+- Executar o runner live no Windows real antes de declarar o portão externo completamente concluído.
+- Undo da Lixeira continua fora desta tarefa porque restauração confiável não foi implementada.
+
+Próxima tarefa:
+- Permanecer na Tarefa 3 até o portão externo ser fechado; não iniciar nova capacidade neste intervalo.
+
+---
+
 ## 2026-10-07 — Tarefa 4 — Política reversível/irreversível e confirmação com timeout
 
 Tarefa concluída: 4 — política reversível/irreversível e confirmação com timeout
