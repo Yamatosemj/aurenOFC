@@ -66,6 +66,7 @@ from core.harness_session import (
 )
 from core.harness_model import _log_resposta_modelo as _log_resposta_modelo_impl
 from core.harness_tools import _executar_chamadas_rodada as _executar_chamadas_rodada_impl
+from core.harness_guards import _tratar_rodada_sem_ferramentas as _tratar_rodada_sem_ferramentas_impl
 from core.harness_heuristics import (
     _parece_tarefa_visual_composta,
     _parece_tarefa_multietapa_browser,
@@ -779,124 +780,42 @@ class AurenHarness:
                 return self._encerrar_cancelado("cancelado durante a tarefa", rodada)
 
             if not chamadas:
-                if exigir_ferramenta and rodada == 1:
-                    estado_retry = self._montar_estado(
-                        objetivo,
-                        historico,
-                        [{
-                            "ferramenta": "nenhuma",
-                            "argumentos": "{}",
-                            "resultado": (
-                                "A primeira rodada nao executou nenhuma ferramenta. "
-                                "Use uma ferramenta agora para iniciar a tarefa."
-                            ),
-                        }],
-                    )
-                    _write_log(
-                        "MODEL_ROUND_REQUEST",
-                        task_id=self._task_id,
-                        rodada=2,
-                        input_items=1,
-                        estado_chars=len(estado_retry),
-                        tool_choice="required",
-                        motivo="primeira_rodada_sem_ferramenta",
-                    )
-                    chamada = self._pedir_modelo(estado_retry, "required")
-                    if chamada is None:
-                        return False, _RespostaWrapper(self.MSG_ERRO_PROVIDER)
-                    resposta, latencia_ms, metricas_roteamento = chamada
-                    self._log_resposta_modelo(2, resposta, latencia_ms, metricas_roteamento)
+                guard = _tratar_rodada_sem_ferramentas_impl(
+                    objetivo=objetivo,
+                    historico=historico,
+                    rodada=rodada,
+                    exigir_ferramenta=exigir_ferramenta,
+                    ferramentas_executadas=ferramentas_executadas,
+                    resposta=resposta,
+                    vision_reobserve_pending=self._vision_reobserve_pending,
+                    vision_guard_attempts=self._vision_guard_attempts,
+                    multitab_guard_attempts=self._multitab_guard_attempts,
+                    task_id=self._task_id,
+                    task_manager=self.task_manager,
+                    montar_estado=self._montar_estado,
+                    pedir_modelo=self._pedir_modelo,
+                    log_resposta_modelo=self._log_resposta_modelo,
+                    parece_tarefa_multietapa_browser=self._parece_tarefa_multietapa_browser,
+                    extrair_destinos_abas=self._extrair_destinos_abas,
+                    multitab_concluida=self._multitab_concluida,
+                    write_log=_write_log,
+                )
+                self._vision_guard_attempts = guard.vision_guard_attempts
+                self._multitab_guard_attempts = guard.multitab_guard_attempts
+
+                if guard.acao == "continuar":
+                    resposta = guard.resposta
                     continue
 
-                if exigir_ferramenta and ferramentas_executadas == 0:
+                if guard.acao == "retornar":
+                    return False, _RespostaWrapper(str(guard.resposta))
+
+                if guard.acao == "falhar":
                     return self._encerrar_falha(
-                        "action_not_executed",
-                        "Nao consegui executar a acao solicitada.",
+                        guard.failure_code or "guard_failure",
+                        guard.failure_message or "A tarefa nao foi concluida.",
                         rodada,
                     )
-
-                if self._vision_reobserve_pending:
-                    if self._vision_guard_attempts < 2:
-                        self._vision_guard_attempts += 1
-                        estado_retry = self._montar_estado(
-                            objetivo,
-                            historico,
-                            [{
-                                "ferramenta": "guard_visual_verificacao",
-                                "argumentos": "{}",
-                                "resultado": (
-                                    "A ultima acao visual alterou a interface, mas o resultado final ainda nao foi "
-                                    "verificado. Capture a tela novamente ou consulte um estado confiavel antes de concluir."
-                                ),
-                            }],
-                        )
-                        _write_log(
-                            "TASK_VISUAL_GUARD",
-                            task_id=self._task_id,
-                            rodada=rodada,
-                            tentativa=self._vision_guard_attempts,
-                        )
-                        self.task_manager.wait_for_model(self._task_id)
-                        chamada = self._pedir_modelo(estado_retry, "required")
-                        if chamada is None:
-                            return False, _RespostaWrapper(self.MSG_ERRO_PROVIDER)
-                        resposta, latencia_ms, metricas_roteamento = chamada
-                        self._log_resposta_modelo(
-                            rodada + 1,
-                            resposta,
-                            latencia_ms,
-                            metricas_roteamento,
-                            motivo="visual_verification_required",
-                        )
-                        self.task_manager.resume(self._task_id)
-                        continue
-
-                    return self._encerrar_falha(
-                        "visual_verification_missing",
-                        "A tarefa visual nao foi concluida porque a mudanca da interface nao foi verificada.",
-                        rodada,
-                    )
-
-                if (
-                    self._parece_tarefa_multietapa_browser(objetivo)
-                    and self._extrair_destinos_abas(objetivo)
-                    and not self._multitab_concluida(objetivo, historico)
-                    and self._multitab_guard_attempts < 2
-                ):
-                    self._multitab_guard_attempts += 1
-                    estado_retry = self._montar_estado(
-                        objetivo,
-                        historico,
-                        [{
-                            "ferramenta": "guard_multitab",
-                            "argumentos": "{}",
-                            "resultado": (
-                                "A tarefa de abas numeradas ainda nao foi comprovadamente concluida. "
-                                "Consulte o estado atual com listar_abas e continue executando os destinos pedidos. "
-                                "Nao responda como concluido ate que cada aba numerada corresponda ao destino solicitado."
-                            ),
-                        }],
-                    )
-                    _write_log(
-                        "TASK_MULTITAB_GUARD",
-                        task_id=self._task_id,
-                        rodada=rodada,
-                        tentativa=self._multitab_guard_attempts,
-                    )
-                    self.task_manager.wait_for_model(self._task_id)
-                    chamada = self._pedir_modelo(estado_retry, "required")
-                    if chamada is None:
-                        return False, _RespostaWrapper(self.MSG_ERRO_PROVIDER)
-                    resposta, latencia_ms, metricas_roteamento = chamada
-                    self._log_resposta_modelo(
-                        rodada + 1,
-                        resposta,
-                        latencia_ms,
-                        metricas_roteamento,
-                        motivo="multitab_incompleta",
-                    )
-                    self.task_manager.resume(self._task_id)
-                    continue
 
                 final_texto = str(getattr(resposta, "output_text", "") or "").strip()
                 if falha_nao_recuperada:
