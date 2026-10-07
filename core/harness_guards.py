@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable, Literal
 
+from core.harness_heuristics import _orientacao_verificacao_navegador
+
 
 @dataclass(frozen=True)
 class _ResultadoGuardSemFerramentas:
@@ -37,6 +39,7 @@ def _tratar_rodada_sem_ferramentas(
     write_log: Callable[..., Any],
     browser_verification_pending: bool = False,
     browser_verification_guard_attempts: int = 0,
+    browser_verification_action: str = "",
 ) -> _ResultadoGuardSemFerramentas:
     """Decide retries e falhas específicos para rodadas sem chamadas de ferramenta."""
     if exigir_ferramenta and rodada == 1:
@@ -158,9 +161,8 @@ def _tratar_rodada_sem_ferramentas(
                     "ferramenta": "guard_browser_verificacao",
                     "argumentos": "{}",
                     "resultado": (
-                        "A ultima acao do navegador alterou a pagina, abas ou conteudo visivel, "
-                        "mas o estado novo ainda nao foi verificado. "
-                        "Use obter_contexto_navegador antes de concluir a tarefa."
+                        f"A ultima acao do navegador foi '{browser_verification_action or 'desconhecida'}' e ainda nao foi verificada. "
+                        f"Use obter_contexto_navegador antes de concluir a tarefa. {_orientacao_verificacao_navegador(browser_verification_action)}"
                     ),
                 }],
             )
