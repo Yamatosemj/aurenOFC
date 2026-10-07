@@ -145,22 +145,45 @@ def reiniciar_navegador(modo=None):
 def obter_pagina():
     global playwright, browser, browser_context, pagina, modo_navegador
 
+    if playwright is None or browser_context is None:
+        return _abrir_contexto(modo_navegador)
+
+    # Recriar a sessao so e justificavel quando o contexto informou
+    # explicitamente que foi encerrado. Excecoes de leitura/operacao
+    # nao devem destruir abas, formularios ou estado persistente.
     try:
-        if playwright is None or browser_context is None:
-            return _abrir_contexto(modo_navegador)
+        if hasattr(browser_context, "is_closed") and browser_context.is_closed():
+            return reiniciar_navegador(modo_navegador)
+    except Exception as erro:
+        raise RuntimeError(f"Nao consegui determinar o estado do contexto do navegador: {erro}") from erro
 
-        abas = _paginas_abertas()
-        if not abas:
+    try:
+        abas = [
+            p
+            for p in browser_context.pages
+            if not p.is_closed()
+        ]
+    except Exception as erro:
+        raise RuntimeError(f"Nao consegui consultar as abas abertas: {erro}") from erro
+
+    if not abas:
+        try:
             pagina = browser_context.new_page()
-            return pagina
-
-        if pagina is not None and not pagina.is_closed() and pagina in abas:
-            return pagina
-
-        pagina = abas[-1]
+        except Exception as erro:
+            raise RuntimeError(f"Nao consegui criar uma nova aba no contexto existente: {erro}") from erro
         return pagina
-    except Exception:
-        return reiniciar_navegador(modo_navegador)
+
+    if pagina is not None:
+        try:
+            if not pagina.is_closed() and pagina in abas:
+                return pagina
+        except Exception:
+            # Nao destrua a sessao por uma falha de consulta da referencia
+            # interna; abaixo escolhemos uma aba que sabemos estar aberta.
+            pass
+
+    pagina = abas[-1]
+    return pagina
 
 def _abas_snapshot() -> list[dict[str, object]]:
     abas = _paginas_abertas()
