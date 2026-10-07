@@ -170,6 +170,7 @@ def from_legacy(value: Any, *, tool_name: str | None = None) -> ToolResult:
             data=value,
             error_code=(str(value.get("codigo_erro")) if value.get("codigo_erro") else None),
             tool_name=tool_name,
+            conteudo_nao_confiavel=bool(value.get("conteudo_nao_confiavel")),
         )
 
     if isinstance(value, dict):
