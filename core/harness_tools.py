@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Callable
+import time
 
 
 def _executar_chamadas_rodada(
@@ -16,6 +17,7 @@ def _executar_chamadas_rodada(
     trace: Any,
     vision_state_mutating_tools: set[str],
     vision_reobserve_pending: bool,
+    falha_nao_recuperada: bool,
     max_tool_result_chars: int,
     get_active_vision_geometry: Callable[[], Any],
     clear_active_vision_geometry: Callable[[], Any],
@@ -50,7 +52,7 @@ def _executar_chamadas_rodada(
             argumentos=argumentos,
         )
 
-        tool_started_perf = __import__("time").perf_counter()
+        tool_started_perf = time.perf_counter()
         try:
             resultado_bruto = executar_ferramenta(item)
         except Exception as erro:
@@ -69,7 +71,7 @@ def _executar_chamadas_rodada(
             try:
                 trace.record_tool(
                     nome,
-                    (__import__("time").perf_counter() - tool_started_perf) * 1000.0,
+                    (time.perf_counter() - tool_started_perf) * 1000.0,
                     success=ferramenta_sucesso,
                 )
             except Exception as exc:
@@ -136,13 +138,10 @@ def _executar_chamadas_rodada(
             }
         )
 
-    else:
-        falha_nao_recuperada = False if not chamadas else falha_nao_recuperada
-
     return (
         resultados_rodada,
         ferramentas_executadas,
-        falha_nao_recuperada if chamadas else False,
+        falha_nao_recuperada,
         vision_reobserve_pending,
         cancelado,
     )
