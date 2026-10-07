@@ -30,10 +30,11 @@ class VoiceConfirmationChannel:
             return False
 
         try:
-            audio = self._audio_queue.get(timeout=self._timeout)
+            item = self._audio_queue.get(timeout=self._timeout)
         except Empty:
             return False
 
+        audio = self._extrair_audio(item)
         if audio is None:
             return False
 
@@ -44,6 +45,23 @@ class VoiceConfirmationChannel:
 
         return self._normalizar(resposta) in {"s", "sim", "y", "yes"}
 
+    @staticmethod
+    def _extrair_audio(item: Any) -> Any | None:
+        """Extrai somente o payload do protocolo real da fila de voz.
+
+        O produtor de voz publica ``("audio", audio)``. Outros tipos de
+        mensagem, inclusive ``("erro", exc)``, nunca devem chegar ao ASR.
+        Itens antigos no formato de audio puro tambem sao rejeitados para
+        evitar que um mock/legado mascare uma divergencia do runtime real.
+        """
+        if not isinstance(item, tuple) or len(item) != 2:
+            return None
+
+        tipo, payload = item
+        if tipo != "audio" or payload is None:
+            return None
+
+        return payload
     @staticmethod
     def _prompt(request: ConfirmationRequest) -> str:
         return (
