@@ -207,6 +207,7 @@ def abrir_nova_aba(url="", modo="visivel"):
         reiniciar_navegador(modo)
 
     quantidade_antes = len(_paginas_abertas())
+    snapshot_antes = _abas_snapshot()
 
     def _navegar_e_responder(aba):
         global pagina
