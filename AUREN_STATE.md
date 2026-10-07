@@ -8,12 +8,12 @@ Atualizado em: 2026-10-07
 
 ## Estado atual
 
-- **Versão estável:** V47
+- **Versão estável:** V48
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** nenhuma
-- **Head da main:** `71ebe7b77826d1673f9abe6926e40eb9fb63d0f2`
+- **Branch/PR ativa:** task-5-memory-v48
+- **Head da main:** `0a8304e1b097d458511f017ca1f0d9da19d86726`
 - **CI da implementação mais recente:** pytest, focused Linux e focused Windows verdes
-- **Fase atual:** Browser Intelligence
+- **Fase atual:** Memória Persistente
 
 ### O que já está concluído nesta fase
 
@@ -82,18 +82,28 @@ Atualizado em: 2026-10-07
 - A tarefa não deve declarar sucesso quando uma verificação obrigatória ainda estiver pendente
 - Mudanças de escopo devem virar backlog, não execução silenciosa
 
+## Tarefa atual — Tarefa 5: Memória: núcleo no prompt, índice de chaves, painel e resumo de sessão
+
+- [x] núcleo de memória com orçamento de 900 caracteres
+- [x] índice de chaves com orçamento de 420 caracteres
+- [x] categorias intercaladas no núcleo e no índice
+- [x] consulta persistente por chave e valor
+- [x] `listar_memoria` integrado ao registry, contrato, Router, Dispatcher e ToolResult
+- [x] resumo de sessão salvo no encerramento e consumido uma vez na sessão seguinte
+- [x] filtro de credenciais na escrita, leitura, listagem e resumo
+- [x] limite de segurança explícito sem exclusão silenciosa
+
 ## Próximas etapas
 
-A tarefa ativa permanece **Browser Intelligence** até que a verificação por tipo de ação esteja suficientemente robusta e coberta por testes.
+A tarefa ativa é **Tarefa 5 — Memória**. O portão de saída exige `py -m pytest -q` verde com mais testes do que antes e cobertura dos casos de orçamento, índice, consulta, listagem, sessão e limite.
 
-Próxima etapa: executar o runner live em Windows e registrar o resultado real das tarefas compostas. O CI atual valida o código do runner, mas não executa a bateria L4/L5 com navegador e modelo reais.
-
-Depois disso, revisar novamente a estabilização e só então abrir novas frentes.
+A validação live do Browser/Windows não faz parte desta tarefa, pois nenhuma capacidade Browser/Windows foi modificada; a pendência anterior permanece no backlog.
 
 ## Backlog
 
 Ideias futuras que não fazem parte da tarefa atual:
 
+- validar o runner live final do Browser Intelligence no Windows
 - memória contextual/semântica mais avançada
 - inteligência geral do Windows
 - multi-device
