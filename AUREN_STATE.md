@@ -23,7 +23,7 @@ Atualizado em: 2026-10-07
 - **Ferramentas no registry/contratos após a Tarefa 3:** **55** (eram 50 antes)
 - **Tarefa atual:** **Tarefa 4 da sessão — política de confirmação reversível/irreversível e confirmação com timeout**
 - **Portão da Tarefa 3:** pytest/runner live do Windows real continuam pendentes; a Tarefa 4 foi iniciada na branch ativa sem alterar silenciosamente a política de risco
-- **Próxima tarefa:** aprovação explícita da reclassificação proposta em windows.clipboard.write e fechamento do portão da Tarefa 4
+- **Próxima tarefa:** fechar o portão da Tarefa 4 após a decisão de política já tomada e as validações disponíveis
 - **Fase do projeto:** Browser Intelligence
 
 ## Roadmap Mark
@@ -277,7 +277,7 @@ Estado: **EM IMPLEMENTAÇÃO / AGUARDANDO APROVAÇÃO DA POLÍTICA**
 - A auditoria confirmou que o Undo real da linha V49 existe em core/undo.py, com LIFO, limite 10 e preservação da entrada quando a reversão falha.
 - Mover/copiar/renomear/criar pasta registram undo condicionado ao estado observado; volume e mudo também capturam o estado anterior antes de registrar reversão.
 - memory.write permanece CONFIRM: esquecer_memoria_persistente não restaura o valor/categoria/timestamp anterior de uma atualização.
-- windows.clipboard.write foi identificado como alteração atualmente não reversível pelo Auren: não há snapshot/undo do clipboard. A proposta é AUTO → CONFIRM, mas nenhuma reclassificação foi aplicada sem aprovação.
+- windows.clipboard.write foi identificado como alteração atualmente sem snapshot/undo do clipboard. O usuário decidiu explicitamente manter AUTO; essa limitação fica documentada e não é tratada como restauração exata.
 - As 28 capabilities atuais do PermissionManager foram classificadas e a matriz completa foi registrada em docs/POLITICA_DE_CONFIRMACAO.md.
 - A confirmação ganhou gate de uma pendência por canal, token opaco mantido na interface, timeout padrão de 90 s, expiração como negativa e descarte de token/resposta atrasados.
 - O token não faz parte de ConfirmationRequest nem dos argumentos enviados pelo modelo.
@@ -296,12 +296,12 @@ Arquivos desta transição:
 - AUREN_STATE.md
 
 Ficou pendente:
-- Aprovar ou rejeitar explicitamente windows.clipboard.write: AUTO → CONFIRM.
+- Decisão registrada: windows.clipboard.write permanece AUTO por escolha explícita do usuário.
 - O portão final ainda não fecha porque o full pytest não está verde: Linux 624 passed, 6 skipped, 4 failed; Windows 630 passed, 4 failed. As 4 falhas são as mesmas presentes no head V49 anterior.
 - Executar python testes_auren_live.py --rapido no Windows real antes de declarar o portão externo concluído.
 
 Próxima tarefa:
-- Depois da aprovação e do portão: consolidar a política no PermissionManager somente para as reclassificações aprovadas.
+- Consolidar o fechamento da Tarefa 4 sem reclassificação de clipboard e seguir somente após o portão de validação.
 
 
 ### Evidência CI da Tarefa 4
