@@ -54,5 +54,5 @@ def test_windows_uia_uses_stdin_stdout_without_execution_policy_bypass(monkeypat
     args, kwargs = calls[0]
     assert "-ExecutionPolicy" not in args
     assert "-File" not in args
-    assert args[-2:] == ("-Command", "-")
+    assert args[0][-2:] == ["-Command", "-"]
     assert "__PAYLOAD__" not in kwargs["input"]
