@@ -18,6 +18,9 @@ def _executar_chamadas_rodada(
     trace: Any,
     vision_state_mutating_tools: set[str],
     vision_reobserve_pending: bool,
+    browser_verification_pending: bool,
+    browser_state_mutating_tools: set[str],
+    browser_verification_tool: str,
     falha_nao_recuperada: bool,
     max_tool_result_chars: int,
     get_active_vision_geometry: Callable[[], Any],
@@ -66,6 +69,11 @@ def _executar_chamadas_rodada(
             tool_name=nome,
         )
         ferramenta_sucesso = resultado_estruturado.ok
+
+        if ferramenta_sucesso and nome in browser_state_mutating_tools:
+            browser_verification_pending = True
+        elif ferramenta_sucesso and nome == browser_verification_tool:
+            browser_verification_pending = False
         if trace is not None:
             try:
                 trace.record_tool(
@@ -142,5 +150,6 @@ def _executar_chamadas_rodada(
         ferramentas_executadas,
         falha_nao_recuperada,
         vision_reobserve_pending,
+        browser_verification_pending,
         cancelado,
     )
