@@ -5,6 +5,15 @@ import pytest
 from core.permission_manager import PermissionLevel, PermissionManager
 
 
+class _RecordingConfirmationChannel:
+    def __init__(self, answer: bool):
+        self.answer = answer
+        self.requests = []
+
+    def confirmar(self, request):
+        self.requests.append(request)
+        return self.answer
+
 def _nivel(nome: str, argumentos: dict | None = None):
     manager = PermissionManager()
     return manager.nivel_da_acao(nome, argumentos or {})[0]
