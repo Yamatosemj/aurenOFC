@@ -4,9 +4,14 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import time
 import shutil
 
 from core.utils import normalizar_nome
+
+MAX_SHORTCUT_SCAN_FILES = 5000
+MAX_SHORTCUT_SCAN_SECONDS = 4.0
+MAX_EXECUTABLE_SCAN_SECONDS = 8.0
 
 
 def buscar_aplicativos_do_windows():
@@ -126,6 +131,9 @@ def procurar_atalho(nome):
 
     melhor = None
     melhor_pontuacao = 0
+    empates = []
+    inicio_scan = time.monotonic()
+    vistos = 0
 
     for pasta in locais:
         if not pasta.exists():
@@ -133,6 +141,9 @@ def procurar_atalho(nome):
 
         try:
             for arquivo in pasta.rglob("*.lnk"):
+                if vistos >= MAX_SHORTCUT_SCAN_FILES or time.monotonic() - inicio_scan >= MAX_SHORTCUT_SCAN_SECONDS:
+                    break
+                vistos += 1
                 nome_atalho = normalizar_nome(
                     arquivo.stem
                 )
