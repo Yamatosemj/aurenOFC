@@ -241,6 +241,19 @@ def test_fast_paths_nao_toca_ferramentas_nem_permissoes_diretamente():
     assert ".autorizar(" not in codigo and ".registrar_resultado(" not in codigo
 
 
+def test_caminhos_criticos_nao_usam_except_exception_generico():
+    for rel in ("core/permission_manager.py", "tools/dispatcher.py"):
+        arvore = ast.parse((ROOT / rel).read_text(encoding="utf-8"))
+        genericos = [
+            no
+            for no in ast.walk(arvore)
+            if isinstance(no, ast.ExceptHandler)
+            and isinstance(no.type, ast.Name)
+            and no.type.id == "Exception"
+        ]
+        assert not genericos, rel
+
+
 def test_so_o_dispatcher_importa_os_modulos_de_ferramenta_no_runtime():
     """Fora de tools/ (e dos facades de compatibilidade), ninguem importa as ferramentas para executa-las."""
     permitidos = {"auren.py", "core/facade.py"}  # re-export de compatibilidade V43, nao e caminho de execucao
