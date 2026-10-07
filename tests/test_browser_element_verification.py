@@ -202,6 +202,6 @@ def test_browser_reader_exposes_commitment_but_never_sensitive_value(monkeypatch
     resultado = browser_reading.ler_pagina("senha")
     compromisso = _compromisso_preenchimento_sensivel("segredo-super-secreto")
 
-    assert compromisso in resultado
-    assert "[REDACTED]" in resultado
+    assert compromisso in resultado.message
+    assert "[REDACTED]" in resultado.message
     assert "segredo-super-secreto" not in resultado

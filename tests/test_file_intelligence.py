@@ -636,8 +636,8 @@ def test_busca_arquivo_ignora_symlink_para_fora_da_raiz(tmp_path, monkeypatch):
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
     resultado = files.buscar_arquivo("atalho")
 
-    assert "atalho.txt" not in resultado
-    assert "privado.txt" not in resultado
+    assert "atalho.txt" not in resultado.message
+    assert "privado.txt" not in resultado.message
 
 
 @pytest.mark.parametrize(
