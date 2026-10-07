@@ -4,15 +4,15 @@
 > Antes de iniciar uma nova tarefa, consulte este arquivo e compare com a branch/PR e o CI do GitHub.
 > Não trate roadmap antigo, memória da conversa ou documentos arquivados como estado atual.
 
-Atualizado em: 2026-10-07 (Browser Intelligence — PR #58 em execução)
+Atualizado em: 2026-10-07 (Browser Intelligence — contexto inicial concluído)
 
 ## Estado agora
 
 - **Base estável (main):** V47
 - **Trabalho ativo:** Estabilização e limpeza pós-V47
-- **Branch/PR ativa:** `feat/browser-context` / PR #58
+- **Branch/PR ativa:** nenhuma
 - **Head da main:** 709dcf01771849d5711a31ed65ccbc6e02fc33ad
-- **Head da PR #58:** 8769e5c2788a86d506172bcad3891b951cf3baed
+- **Head da main:** 1027dca640da9d17817c6b56bcb802cc60075482
 - **Status da PR #6:** merged
 - **Status da PR #9:** merged — item 1 da revisão geral
 - **Status da PR #11:** merged — item 3 da revisão geral
@@ -78,8 +78,8 @@ A V47 de geometria/coordenadas foi incorporada à main pelo merge commit c0994db
 **Iniciar Browser Intelligence:**
 
 1. manter o comportamento atual do browser intacto
-2. definir o primeiro corte/capacidade de contexto de navegador com escopo pequeno
-3. validar abas, página ativa e conteúdo relevante usando as ferramentas existentes
+2. usar o contexto de navegador para orientar ações existentes
+3. exigir verificação do resultado depois de ações relevantes
 4. não iniciar novas integrações fora do navegador
 
 ## Revisão geral concluída
