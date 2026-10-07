@@ -196,7 +196,9 @@ def voltar_pagina():
     try:
         p = _browser.obter_pagina()
         antes = _snapshot_pagina(p)
+        _instalar_probe_historico(p)
         p.go_back(wait_until="domcontentloaded", timeout=12000)
+        evento_historico_observado = _ler_probe_historico(p)
         depois = _snapshot_pagina(p)
         return ToolResult.success(
             "Voltei para a pagina anterior.",
@@ -205,6 +207,7 @@ def voltar_pagina():
                 "url_antes": str(antes.get("url") or ""),
                 "url_depois": str(depois.get("url") or ""),
                 "mudou_url": antes.get("url") != depois.get("url"),
+                "evento_historico_observado": evento_historico_observado,
                 "titulo_antes": str(antes.get("titulo") or ""),
                 "titulo_depois": str(depois.get("titulo") or ""),
             }},
@@ -219,7 +222,9 @@ def avancar_pagina():
     try:
         p = _browser.obter_pagina()
         antes = _snapshot_pagina(p)
+        _instalar_probe_historico(p)
         p.go_forward(wait_until="domcontentloaded", timeout=12000)
+        evento_historico_observado = _ler_probe_historico(p)
         depois = _snapshot_pagina(p)
         return ToolResult.success(
             "Avancei para a proxima pagina.",
@@ -228,6 +233,7 @@ def avancar_pagina():
                 "url_antes": str(antes.get("url") or ""),
                 "url_depois": str(depois.get("url") or ""),
                 "mudou_url": antes.get("url") != depois.get("url"),
+                "evento_historico_observado": evento_historico_observado,
                 "titulo_antes": str(antes.get("titulo") or ""),
                 "titulo_depois": str(depois.get("titulo") or ""),
             }},
