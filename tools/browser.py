@@ -483,19 +483,17 @@ def fechar_navegador():
     playwright = None
 
 def navegar_navegador(url, modo="visivel"):
-    url = url.strip()
+    url = str(url or "").strip()
     modo = str(modo or "visivel").strip().lower()
     if modo not in {"visivel", "oculto"}:
         modo = "visivel"
 
-    # O modo e decidido no primeiro passo da navegacao. Se o navegador atual
-    # estiver em outro modo, recriamos a sessao antes de abrir a URL.
     global modo_navegador, browser_context
     if modo != modo_navegador or browser_context is None:
         try:
             p = reiniciar_navegador(modo)
-        except Exception:
-            p = None
+        except Exception as erro:
+            return f"Nao consegui preparar o navegador: {erro}"
     else:
         p = None
 
@@ -503,17 +501,14 @@ def navegar_navegador(url, modo="visivel"):
         url = "https://" + url
 
     ultimo_erro = None
-
     for tentativa in range(2):
         try:
             if p is None:
                 p = obter_pagina()
             p.goto(
                 url,
-                # DOMContentLoaded oferece um ponto seguro para ler o titulo
-                # sem aguardar recursos pesados da pagina inteira.
                 wait_until="domcontentloaded",
-                timeout=30000
+                timeout=30000,
             )
             titulo = _esperar_titulo(p)
             return (
@@ -523,15 +518,29 @@ def navegar_navegador(url, modo="visivel"):
             )
         except Exception as erro:
             ultimo_erro = erro
-            if tentativa == 0:
+
+            pagina_fechada = False
+            contexto_fechado = False
+            if p is not None:
                 try:
-                    # A primeira falha pode ser apenas uma referencia para uma
-                    # pagina/browser que foi fechado manualmente. Recria e troca
-                    # explicitamente a referencia usada na segunda tentativa.
+                    pagina_fechada = bool(p.is_closed())
+                except Exception:
+                    pagina_fechada = False
+            try:
+                contexto_fechado = bool(
+                    browser_context is not None and browser_context.is_closed()
+                )
+            except Exception:
+                contexto_fechado = False
+
+            if tentativa == 0 and (pagina_fechada or contexto_fechado):
+                try:
                     p = reiniciar_navegador(modo)
+                    continue
                 except Exception as reinicio_erro:
                     ultimo_erro = reinicio_erro
-                    break
+
+            break
 
     return f"Nao consegui navegar para '{url}': {ultimo_erro}"
 
