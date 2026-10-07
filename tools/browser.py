@@ -302,9 +302,10 @@ def abrir_nova_aba(url="", modo="visivel"):
                 pagina = obter_pagina()
             return _navegar_e_responder(pagina)
         except Exception as segundo_erro:
-            return (
-                "Nao consegui abrir nova aba: "
-                f"{segundo_erro}. Erro original: {erro}"
+            return ToolResult.failure(
+                f"Nao consegui abrir nova aba: {segundo_erro}. Erro original: {erro}",
+                error_code="open_tab_failed",
+                tool_name="abrir_nova_aba",
             )
 
 def trocar_aba(indice):
@@ -375,7 +376,12 @@ def fechar_aba(indice=None):
 
     abas = _paginas_abertas()
     if not abas:
-        return "Nenhuma aba aberta no navegador."
+        return ToolResult.failure(
+            "Nenhuma aba aberta no navegador.",
+            error_code="no_open_tabs",
+            data={"abas": []},
+            tool_name="fechar_aba",
+        )
 
     if indice is None:
         alvo = pagina if pagina in abas else abas[-1]
@@ -383,12 +389,20 @@ def fechar_aba(indice=None):
         try:
             indice = int(indice)
         except (TypeError, ValueError):
-            return "Indice de aba invalido."
+            return ToolResult.failure(
+                "Indice de aba invalido.",
+                error_code="invalid_tab_index",
+                tool_name="fechar_aba",
+            )
         if indice == 0:
             alvo = pagina if pagina in abas else abas[-1]
         else:
             if indice < 1 or indice > len(abas):
-                return f"Nao existe a aba {indice}. Existem {len(abas)} abas abertas."
+                return ToolResult.failure(
+                    f"Nao existe a aba {indice}. Existem {len(abas)} abas abertas.",
+                    error_code="tab_not_found",
+                    tool_name="fechar_aba",
+                )
             alvo = abas[indice - 1]
 
     posicao = abas.index(alvo)
