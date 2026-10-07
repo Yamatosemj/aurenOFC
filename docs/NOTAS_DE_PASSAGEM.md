@@ -53,7 +53,7 @@ Proxima tarefa: 2
 
 ## 2026-10-07 — Tarefa 2 — Pilha de undo + primeiras ações reversíveis (volume e mudo)
 
-Tarefa concluída: não marcada como concluída ainda; implementação entregue e portão de saída pendente
+Tarefa concluída: implementação e CI concluídos; portão de saída ainda pendente apenas pela execução manual do runner live no Windows real
 
 Arquivos criados/alterados:
 - core/undo.py
@@ -87,7 +87,7 @@ Testes:
 - Novos testes/asserções nesta tarefa: 15
 - Comando exigido: py -m pytest -q
 - Execução local completa: não disponível neste ambiente; não havia checkout local utilizável
-- GitHub Actions no novo head cbe68befd887ce7fd8ffdfdb1316552c706becb3: workflow Auren V47 visual interaction tests disparado com jobs Linux, Windows e Playwright; no momento do registro ainda sem conclusão final
+- GitHub Actions no head 119bf4fe01408580f15710f9cf63300f45c8c2bd: full pytest Linux 605 passed, 6 skipped, 5 warnings; full pytest Windows 611 passed, 5 warnings; static-checks e visual interaction verdes
 - Runner manual python testes_auren_live.py --rapido: não executado, porque este ambiente não é o Windows real do Auren
 
 Ficou pendente / virou backlog:

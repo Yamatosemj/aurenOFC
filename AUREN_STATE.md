@@ -14,11 +14,11 @@ Atualizado em: 2026-10-07
 - **Head da main:** `0a8304e1b097d458511f017ca1f0d9da19d86726`
 - **Último commit da implementação da Tarefa 1:** `fe9e587e26f7e4bef75bf2c8eb4a9d02b75a0dc0`
 - **Último head funcional validado:** `b72e43f3c04f6866f90340d1df2d3ec6782ab7b5`
-- **Head da implementação da Tarefa 2 (em validação):** `cbe68befd887ce7fd8ffdfdb1316552c706becb3`
+- **Head da implementação da Tarefa 2 (em validação):** `119bf4fe01408580f15710f9cf63300f45c8c2bd`
 - **CI da implementação mais recente em main:** pytest, focused Linux e focused Windows verdes
 - **CI do PR #77:** full tests Linux/Windows, static-checks e visual interaction/Playwright verdes no merge ref `4139b0696fe1e378d80fccb8541e6232b91d01b5`
 - **Baseline de pytest em 2026-10-07:** **576 passed, 5 warnings**
-- **Novos testes adicionados nesta transição:** **15**
+- **Novos testes adicionados nesta transição:** **16**
 - **Tarefa atual:** **Tarefa 2 — undo reversível (ativada nesta sessão; corresponde ao item 3 do roadmap interno)**
 - **Próxima tarefa:** **Tarefa 4 — confirmação humana não-forjável, após fechar a validação do undo**
 - **Fase do projeto:** Browser Intelligence
@@ -214,8 +214,8 @@ Esta transição implementa o undo solicitado pelo prompt da sessão. O roadmap 
 - Falha do undo: o callback de reversão retorna ToolResult; se falhar, desfazer_ultima_acao devolve erro estruturado e mantém a entrada no topo para nova tentativa.
 - Router: pedidos como 'desfaz' entram no grupo especializado de undo sem contaminar COMMON_TOOLS.
 - Dependências: nenhuma nova dependência.
-- Testes: 15 novos testes/asserções de cobertura adicionados; o baseline conhecido é 576 passed.
-- Validação externa: o GitHub Actions do novo head foi disparado, mas a suíte completa py -m pytest -q não é executável neste ambiente por falta de checkout local utilizável; o runner python testes_auren_live.py --rapido também não pode ser executado aqui.
+- Testes: 16 novos testes de cobertura adicionados; o baseline conhecido é 576 passed.
+- Validação externa: o GitHub Actions do head da implementação fechou com full pytest Linux 605 passed, 6 skipped, 5 warnings; full pytest Windows 611 passed, 5 warnings; static-checks e visual interaction verdes. O runner python testes_auren_live.py --rapido ainda não foi executado manualmente no Windows real.
 - Status: a implementação está no branch ativo, mas V48 ainda não é estável enquanto o portão de saída não for fechado no ambiente apropriado.
 
 ## Backlog
