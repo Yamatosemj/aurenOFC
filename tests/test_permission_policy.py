@@ -318,3 +318,24 @@ def test_navigation_to_normal_readonly_destination_remains_auto():
         {"url": "https://example.com/search?q=auren", "modo": "visivel"},
     )
     assert nivel == PermissionLevel.AUTO
+
+
+def test_no_progress_guard_covers_repeated_browser_click_and_keypress():
+    manager = PermissionManager(max_no_progress_repeats=3)
+    argumentos_clique = {"alvo": "Pesquisar", "indice": 1}
+    argumentos_tecla = {"tecla": "ArrowDown"}
+
+    for _ in range(3):
+        manager.registrar_resultado(True, "clicar_elemento", argumentos_clique)
+
+    permitido, motivo = manager.autorizar("clicar_elemento", argumentos_clique)
+    assert permitido is False
+    assert "sem evidencia de progresso" in motivo.lower()
+
+    manager.iniciar_tarefa()
+    for _ in range(3):
+        manager.registrar_resultado(True, "pressionar_tecla", argumentos_tecla)
+
+    permitido, motivo = manager.autorizar("pressionar_tecla", argumentos_tecla)
+    assert permitido is False
+    assert "sem evidencia de progresso" in motivo.lower()
