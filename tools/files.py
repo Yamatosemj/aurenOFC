@@ -622,7 +622,10 @@ def _undo_criar_pasta(pasta: Path) -> ToolResult:
 
 
 def mover_arquivo(origem: str, destino: str) -> ToolResult:
-    """Move um arquivo apenas dentro das raizes permitidas e registra undo seguro.\n    Origem e destino sao validados antes da movimentacao e o undo restaura o arquivo se o destino ainda for identico.\n    Custo: O(n) para o SHA-256 do arquivo mais o custo real do movimento.\n    """
+    """Move um arquivo apenas dentro das raizes permitidas e registra undo seguro.
+    Origem e destino sao validados antes da movimentacao e o undo restaura o arquivo se o destino ainda for identico.
+    Custo: O(n) para o SHA-256 do arquivo mais o custo real do movimento.
+    """
     tool_name = "mover_arquivo"
     source, failure = _validar_fonte_arquivo(origem, tool_name)
     if failure:
@@ -652,7 +655,10 @@ def mover_arquivo(origem: str, destino: str) -> ToolResult:
 
 
 def copiar_arquivo(origem: str, destino: str) -> ToolResult:
-    """Copia um arquivo apenas dentro das raizes permitidas e prepara undo da copia.\n    A copia usa copy2 sem modificar o original e o undo so remove a copia se ela permanecer identica.\n    Custo: O(n) pelo hash mais o custo O(n) da copia do arquivo.\n    """
+    """Copia um arquivo apenas dentro das raizes permitidas e prepara undo da copia.
+    A copia usa copy2 sem modificar o original e o undo so remove a copia se ela permanecer identica.
+    Custo: O(n) pelo hash mais o custo O(n) da copia do arquivo.
+    """
     tool_name = "copiar_arquivo"
     source, failure = _validar_fonte_arquivo(origem, tool_name)
     if failure:
@@ -687,7 +693,10 @@ def copiar_arquivo(origem: str, destino: str) -> ToolResult:
 
 
 def renomear_arquivo(caminho: str, novo_nome: str) -> ToolResult:
-    """Renomeia um arquivo dentro da mesma pasta permitida e registra undo.\n    O novo nome e convertido em destino no proprio diretorio e nunca pode virar um caminho arbitrario.\n    Custo: O(n) para validar o nome e calcular SHA-256, mais o custo do rename.\n    """
+    """Renomeia um arquivo dentro da mesma pasta permitida e registra undo.
+    O novo nome e convertido em destino no proprio diretorio e nunca pode virar um caminho arbitrario.
+    Custo: O(n) para validar o nome e calcular SHA-256, mais o custo do rename.
+    """
     tool_name = "renomear_arquivo"
     source, failure = _validar_fonte_arquivo(caminho, tool_name)
     if failure:
@@ -726,7 +735,10 @@ def renomear_arquivo(caminho: str, novo_nome: str) -> ToolResult:
 
 
 def criar_pasta(caminho: str) -> ToolResult:
-    """Cria uma pasta apenas dentro das raizes permitidas e registra undo condicional.\n    A pasta nasce vazia e o undo so a remove enquanto continuar vazia e sem reparse points.\n    Custo: O(tamanho do caminho) para validacao mais o custo de uma criacao de diretorio.\n    """
+    """Cria uma pasta apenas dentro das raizes permitidas e registra undo condicional.
+    A pasta nasce vazia e o undo so a remove enquanto continuar vazia e sem reparse points.
+    Custo: O(tamanho do caminho) para validacao mais o custo de uma criacao de diretorio.
+    """
     tool_name = "criar_pasta"
     target, failure = _validar_destino(caminho, tool_name)
     if failure:
@@ -781,7 +793,7 @@ def _enviar_para_lixeira_windows(path: Path) -> ToolResult:
     operation = _SHFILEOPSTRUCTW()
     operation.hwnd = None
     operation.wFunc = _FO_DELETE
-    operation.pFrom = f"{path}\\0\\0"
+    operation.pFrom = f"{path}\0\0"
     operation.pTo = None
     operation.fFlags = (
         _FOF_ALLOWUNDO
@@ -821,7 +833,10 @@ def _enviar_para_lixeira_windows(path: Path) -> ToolResult:
 
 
 def enviar_para_lixeira(caminho: str) -> ToolResult:
-    """Envia um arquivo ou pasta permitida para a Lixeira do Windows sem exclusao permanente.\n    O caminho e validado contra a mesma allowlist de arquivos e a Shell API usa FOF_ALLOWUNDO; nenhum undo e registrado sem restauracao confiavel.\n    Custo: O(n) para validar descendentes reparse de pastas mais o custo da operacao da Shell.\n    """
+    """Envia um arquivo ou pasta permitida para a Lixeira do Windows sem exclusao permanente.
+    O caminho e validado contra a mesma allowlist de arquivos e a Shell API usa FOF_ALLOWUNDO; nenhum undo e registrado sem restauracao confiavel.
+    Custo: O(n) para validar descendentes reparse de pastas mais o custo da operacao da Shell.
+    """
     tool_name = "enviar_para_lixeira"
     policy = _classify_write_path(caminho)
     if policy.status != "allowed":
