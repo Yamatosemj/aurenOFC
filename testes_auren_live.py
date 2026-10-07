@@ -28,9 +28,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent
-TEST_SUITE_VERSION = 46
+TEST_SUITE_VERSION = 47
 TESTER_BUILD = 'V18-p0-3-bateria-fast-path-aware'
-MIN_REQUIRED_VERSION = 46
+MIN_REQUIRED_VERSION = 47
 REQUIRED_TOOLS = [
     "abrir_programa",
     "listar_janelas_windows",
@@ -1163,7 +1163,7 @@ def _testes_estaticos_v42() -> None:
     except Exception:
         pass
     metadata_ok = config_arquivo_versao == versao == TEST_SUITE_VERSION
-    record("Metadados V46 sincronizados", metadata_ok, f"AUREN_VERSION={versao}; config={config_arquivo_versao}; tester={TEST_SUITE_VERSION}")
+    record("Metadados V47 sincronizados", metadata_ok, f"AUREN_VERSION={versao}; config={config_arquivo_versao}; tester={TEST_SUITE_VERSION}")
     record("Loop principal isola excecao por tarefa", "TASK_EXCEPTION" in fonte_harness or "except Exception" in fonte_harness)
     record("Confirmacao de preenchimento mascara texto", all(t in fonte_pm for t in ("preencher_elemento_windows", '"texto"', '"conteudo"')))
     record("Clique por coordenada nao falha aberto", "Clique global por coordenada exige confirmacao" in fonte_pm)
