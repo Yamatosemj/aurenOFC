@@ -221,10 +221,11 @@ def _verificar_tecla(abas: str, dados_acao: Any) -> bool | None:
         return antes != depois
 
     if tecla in {"control+w", "ctrl+w"}:
-        quantidade, observadas = _extrair_abas_observadas(abas)
-        if quantidade is None:
+        antes_abas = dados.get("abas_antes")
+        depois_abas = dados.get("abas_depois")
+        if not isinstance(antes_abas, list) or not isinstance(depois_abas, list):
             return None
-        return len(observadas) < quantidade if quantidade > 0 else False
+        return len(depois_abas) + 1 == len(antes_abas) if antes_abas else False
 
     return None
 
