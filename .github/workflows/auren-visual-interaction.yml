@@ -28,5 +28,5 @@ jobs:
         with:
           python-version: "3.13"
       - run: python -m pip install --upgrade pip
-      - run: python -m pip install -r requirements.txt pytest
+      - run: python -m pip install -r requirements.txt pytest==9.1.1
       - run: python -m pytest -q tests/test_router_tool_selection.py tests/test_vision_input.py tests/test_tool_contracts.py tests/test_dispatcher_contracts.py tests/test_capability_registry.py tests/test_visual_input.py
