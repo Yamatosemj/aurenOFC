@@ -14,6 +14,7 @@ from core.tool_contracts import capability_for_tool, validate_tool_arguments
 from core.tool_result import ToolResult
 import tools.dispatcher as dispatcher
 import tools.file_intelligence as file_intelligence
+import tools.files as files
 from tools.file_intelligence import READ_MAX_CHARS, _history, _parse_zone_identifier, inspect_file, read_file
 
 
@@ -601,3 +602,21 @@ def test_read_rejects_changed_file_identity(monkeypatch, tmp_path: Path):
 
     assert result.ok is False
     assert result.error_code == "path_changed_during_read"
+
+
+def test_busca_arquivo_ignora_symlink_para_fora_da_raiz(tmp_path, monkeypatch):
+    allowed = tmp_path / "Desktop"
+    allowed.mkdir()
+    outside = tmp_path / "privado.txt"
+    outside.write_text("segredo fora", encoding="utf-8")
+    link = allowed / "atalho.txt"
+    try:
+        link.symlink_to(outside)
+    except (OSError, NotImplementedError):
+        pytest.skip("symlink nao disponivel neste ambiente")
+
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    resultado = files.buscar_arquivo("atalho")
+
+    assert "atalho.txt" not in resultado
+    assert "privado.txt" not in resultado
