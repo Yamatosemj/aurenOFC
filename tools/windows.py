@@ -3,10 +3,7 @@ from __future__ import annotations
 import ctypes
 from ctypes import wintypes
 import os
-from pathlib import Path
-from datetime import datetime
 
-from core.tool_result import ToolResult
 
 
 def _configurar_user32_api(user32):
