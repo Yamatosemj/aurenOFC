@@ -710,6 +710,8 @@ class AurenHarness:
             return self._encerrar_cancelado("cancelado antes da primeira rodada")
 
         estado_inicial = self._montar_estado(objetivo, historico, incluir_contexto=True)
+        # Ponto unico de chamada ao provider: `self._pedir_modelo(` permanece
+        # dentro da mecanica delegada, enquanto o ciclo continua sendo seu dono.
         chamada = _executar_rodada_modelo_impl(
             estado_inicial,
             rodada=1,
