@@ -81,3 +81,10 @@ def test_permissions_are_keyed_by_capability_not_tool_name() -> None:
     assert not (set(pm.policy) & {item["name"] for item in tools})
     assert pm.nivel("listar_janelas_windows") == PermissionLevel.AUTO
     assert pm.capability("listar_janelas_windows") == "windows.window.read"
+
+
+def test_fechar_aba_schema_keeps_indice_optional():
+    from core.tools_registry import TOOL_REGISTRY
+
+    schema = next(item for item in TOOL_REGISTRY if item["name"] == "fechar_aba")
+    assert schema["parameters"]["required"] == []
