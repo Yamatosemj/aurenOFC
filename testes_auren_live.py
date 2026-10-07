@@ -1,4 +1,8 @@
-"""Runner live/manual do Auren.\n\nNao faz parte da suite pytest. Execute este arquivo explicitamente em um ambiente Windows real\nquando quiser validar modelo + ferramentas e efeitos integrados.\n"""\n\nfrom __future__ import annotations
+"""Runner live/manual do Auren.
+
+Nao faz parte da suite pytest. Execute este arquivo explicitamente em um ambiente Windows real
+quando quiser validar modelo + ferramentas e efeitos integrados.
+"""\n\nfrom __future__ import annotations
 
 import sys
 from pathlib import Path as _PathBootstrap
