@@ -250,6 +250,7 @@ def buscar_arquivo(consulta):
                     nome for nome in directories
                     if not _is_reparse_point(current_path / nome)
                 ]
+
                 for filename in filenames:
                     arquivo = current_path / filename
                     if _is_reparse_point(arquivo):
@@ -265,47 +266,37 @@ def buscar_arquivo(consulta):
                         estatisticas = resolvido.stat()
                     except OSError:
                         continue
-                except OSError:
-                    continue
 
-                modificacao = datetime.fromtimestamp(
-                    estatisticas.st_mtime
-                )
+                    modificacao = datetime.fromtimestamp(
+                        estatisticas.st_mtime
+                    )
+                    data_arquivo = modificacao.date()
 
-                data_arquivo = modificacao.date()
-
-                if inicio is not None:
-                    if (
+                    if inicio is not None and (
                         data_arquivo < inicio
                         or data_arquivo > fim
                     ):
                         continue
 
-                if extensoes:
-                    if arquivo.suffix.lower() not in extensoes:
+                    if extensoes and resolvido.suffix.lower() not in extensoes:
                         continue
 
-                nome_normalizado = normalizar_nome(
-                    arquivo.name
-                )
-
-                pontuacao = sum(
-                    3
-                    for termo in termos
-                    if termo in nome_normalizado
-                )
-
-                candidatos.append(
-                    (
-                        pontuacao,
-                        estatisticas.st_mtime,
-                        resolvido
+                    nome_normalizado = normalizar_nome(resolvido.name)
+                    pontuacao = sum(
+                        3
+                        for termo in termos
+                        if termo in nome_normalizado
                     )
-                )
 
+                    candidatos.append(
+                        (
+                            pontuacao,
+                            estatisticas.st_mtime,
+                            resolvido,
+                        )
+                    )
         except OSError:
             continue
-
     if not candidatos:
         if descricao:
             return (
