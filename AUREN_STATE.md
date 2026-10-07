@@ -12,7 +12,8 @@ Atualizado em: 2026-10-07
 - **Modelo padrão:** `gpt-5.6-luna`
 - **Branch/PR ativa:** `fix/browser-click-new-tab-page` / PR #77
 - **Head da main:** `0a8304e1b097d458511f017ca1f0d9da19d86726`
-- **CI da implementação mais recente:** pytest, focused Linux e focused Windows verdes
+- **CI da implementação mais recente em main:** pytest, focused Linux e focused Windows verdes
+- **CI do PR #77:** workflows da branch estão em execução; conclusão ainda não disponível
 - **Fase atual:** Browser Intelligence
 
 ### O que já está concluído nesta fase
@@ -28,16 +29,19 @@ Atualizado em: 2026-10-07
 - [x] abertura, troca e fechamento de abas expõem estado estruturado antes/depois e têm validação determinística de contagem e aba ativa
 - [x] preenchimento de campos não sensíveis tem verificação determinística do valor observado
 - [x] clique navegacional expõe evidência estruturada e pode ser verificado deterministicamente pelo destino observado
+- [x] cliques sem navegação capturam sinais determinísticos de estado do controle (aria-expanded, aria-pressed, aria-selected, checked, selected, open e data-state) quando disponíveis
+- [x] cliques sem navegação também capturam mudanças de visibilidade em diálogo, menu e listbox
+- [x] leitor de página expõe esses estados para permitir comparação independente após a ação
 - [x] rolagem expõe métricas estruturadas e possui verificação determinística da posição observada
 - [x] runner live separado possui casos explícitos de verificação pós-ação para navegação e rolagem
 
 ### Próximo passo da fase
 
-**Refinar a verificação por tipo de ação**, mantendo o princípio de não criar novas integrações:
+**Concluir a validação da verificação por tipo de ação e depois executar o runner live**, mantendo o princípio de não criar novas integrações:
 
 - navegação: confirmar título/URL efetivos — **parcialmente concluído**; URL já é comparada de forma determinística
 - abas: confirmar quantidade, aba ativa e destino — **parcialmente concluído**; abertura/troca/fechamento já carregam evidência estruturada e a contagem/aba ativa são comparadas deterministicamente
-- interação com elemento: confirmar o estado relevante da página ou controle — **parcialmente concluído**; preenchimento não sensível e cliques que navegam já possuem comparação determinística
+- interação com elemento: confirmar o estado relevante da página ou controle — **parcialmente concluído**; preenchimento não sensível e cliques navegacionais já têm comparação determinística, e cliques sem navegação agora verificam sinais específicos do controle ou mudanças estruturadas de dialog/menu/listbox
 - rolagem: posição de rolagem já é verificada deterministicamente; confirmar automaticamente o conteúdo esperado continua como etapa posterior
 - qualquer verificação continua tratando conteúdo da página como dado não confiável, nunca como instrução
 - resultado `None` do verificador não encerra mais uma verificação obrigatória; somente `True` limpa a pendência
@@ -75,6 +79,7 @@ Atualizado em: 2026-10-07
 - **#66** — verificação determinística de preenchimento de elemento — merged
 - **#69** — verificação determinística de rolagem e persistência da evidência entre rodadas — merged
 - **#72** — cobertura do Browser Intelligence no runner live — merged
+- **#77** — refinamento da verificação por tipo de ação — aberto; inclui cliques não navegacionais
 
 ## Contratos atuais importantes
 
