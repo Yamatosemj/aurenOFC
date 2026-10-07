@@ -379,9 +379,9 @@ CAPABILITY_DEFINITIONS: tuple[Capability, ...] = (
         tools=("mover_arquivo", "copiar_arquivo", "renomear_arquivo", "criar_pasta"),
         prioridade=63,
         padroes_objetivo=(
-            r"\b(mov|copi|renome|cri)\w*\\b.*\\b(arquivo|pasta|diretorio)\\b",
-            r"\b(arquivo|pasta|diretorio)\\b.*\\b(mov|copi|renome|cri)\w*\\b",
-            r"\b(duplicar|duplicado|trocar nome)\\b.*\\b(arquivo|pasta)\\b",
+            r"\b(mov|copi|renome|cri)\w*\b.*\b(arquivo|pasta|diretorio)\b",
+            r"\b(arquivo|pasta|diretorio)\b.*\b(mov|copi|renome|cri)\w*\b",
+            r"\b(duplicar|duplicado|trocar nome)\b.*\b(arquivo|pasta)\b",
         ),
     ),
     Capability(
@@ -398,8 +398,8 @@ CAPABILITY_DEFINITIONS: tuple[Capability, ...] = (
         tools=("enviar_para_lixeira",),
         prioridade=64,
         padroes_objetivo=(
-            r"\b(lixeir|joga|envia|mand|mov)\w*\\b.*\\b(arquivo|pasta|lixeira)\\b",
-            r"\b(arquivo|pasta)\\b.*\\b(lixeir|joga fora|envia para a lixeira)\w*\\b",
+            r"\b(lixeir|joga|envia|mand|mov)\w*\b.*\b(arquivo|pasta|lixeira)\b",
+            r"\b(arquivo|pasta)\b.*\b(lixeir|joga fora|envia para a lixeira)\w*\b",
         ),
     ),
 
