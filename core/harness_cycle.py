@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from typing import Any
 
+from core.harness_completion import _finalizar_resposta_sucesso, _tentar_retry_resposta_vazia
 from core.harness_guards import _tratar_rodada_sem_ferramentas as _tratar_rodada_sem_ferramentas_impl
 from core.harness_model import _executar_rodada_modelo as _executar_rodada_modelo_impl
 from core.harness_round_input import _montar_input_e_estado_da_rodada
 from core.harness_tools import _executar_chamadas_rodada as _executar_chamadas_rodada_impl
-from core.vision import prepare_vision_result_content
+from core.vision import get_active_vision_geometry, prepare_vision_result_content
 
 
 def executar_ciclo(
@@ -48,12 +49,12 @@ def executar_ciclo(
         log_tool_choice="required" if exigir_ferramenta else "auto",
     )
     if chamada is None:
-        return False, _RespostaWrapper(harness.MSG_ERRO_PROVIDER)
+        return False, resposta_wrapper(harness.MSG_ERRO_PROVIDER)
     resposta, latencia_ms, metricas_roteamento = chamada
 
     limite_rodadas = harness._limite_de_rodadas(objetivo)
     if limite_rodadas != harness.max_model_rounds:
-        _write_log("TASK_ADAPTIVE_DEPTH", task_id=harness._task_id, limite_base=harness.max_model_rounds, limite_adaptativo=limite_rodadas)
+        write_log("TASK_ADAPTIVE_DEPTH", task_id=harness._task_id, limite_base=harness.max_model_rounds, limite_adaptativo=limite_rodadas)
     for rodada in range(1, limite_rodadas + 1):
         chamadas = harness.obter_chamadas(resposta)
 
@@ -89,7 +90,7 @@ def executar_ciclo(
                 continue
 
             if guard.acao == "retornar":
-                return False, _RespostaWrapper(str(guard.resposta))
+                return False, resposta_wrapper(str(guard.resposta))
 
             if guard.acao == "falhar":
                 return harness._encerrar_falha(
@@ -238,14 +239,14 @@ def executar_ciclo(
             estado_chars=len(estado_enviado),
         )
         if chamada is None:
-            return False, _RespostaWrapper(harness.MSG_ERRO_PROVIDER)
+            return False, resposta_wrapper(harness.MSG_ERRO_PROVIDER)
         resposta, latencia_ms, metricas_roteamento = chamada
 
     harness.task_manager.fail(
         "limite local de rodadas do harness atingido",
         task_id=harness._task_id,
     )
-    _write_log(
+    write_log(
         "TASK_END",
         task_id=harness._task_id,
         status="max_rounds",
