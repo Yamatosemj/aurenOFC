@@ -856,6 +856,19 @@ def test_dispatcher_executes_file_move_through_registered_path(tmp_path: Path):
     assert destino.exists()
     assert not origem.exists()
 
+    undo_result = dispatcher.executar_ferramenta(
+        SimpleNamespace(
+            name="desfazer_ultima_acao",
+            arguments=json.dumps({}),
+        ),
+        PermissionManager(max_actions=10),
+        None,
+    )
+
+    assert undo_result.ok is True
+    assert origem.exists()
+    assert not destino.exists()
+
 
 def test_new_file_operations_have_strict_contract_samples():
     samples = {
