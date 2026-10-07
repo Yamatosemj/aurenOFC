@@ -1,4 +1,4 @@
-from core.browser_verification import verificar_resultado_navegador
+from core.browser_verification import _compromisso_preenchimento_sensivel, verificar_resultado_navegador
 
 
 def _contexto(pagina):
@@ -112,3 +112,93 @@ def test_sensitive_fill_returns_redacted_verification_commitment():
     assert evidence["compromisso"]
     assert "segredo-super-secreto" not in result.message
     assert "segredo-super-secreto" not in str(result.data)
+
+
+
+def test_sensitive_fill_verification_matches_private_commitment_without_secret():
+    compromisso = _compromisso_preenchimento_sensivel("segredo-super-secreto")
+    pagina = (
+        "Campos e controles visiveis:\n"
+        f"- tag=input | nome=Senha | chave=aria:Senha | valor=[REDACTED] | compromisso={compromisso}"
+    )
+
+    assert verificar_resultado_navegador(
+        "preencher_elemento",
+        '{"alvo":"Senha","texto":"segredo-super-secreto","indice":1}',
+        _contexto(pagina),
+        {
+            "preenchimento": {
+                "alvo": "Senha",
+                "indice": 1,
+                "sensivel": True,
+                "verificado_localmente": True,
+                "compromisso": compromisso,
+            }
+        },
+    ) is True
+
+
+def test_sensitive_fill_verification_rejects_mismatched_commitment():
+    pagina = (
+        "Campos e controles visiveis:\n"
+        "- tag=input | nome=Senha | chave=aria:Senha | valor=[REDACTED] | compromisso=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    )
+
+    assert verificar_resultado_navegador(
+        "preencher_elemento",
+        '{"alvo":"Senha","texto":"segredo-super-secreto","indice":1}',
+        _contexto(pagina),
+        {
+            "preenchimento": {
+                "alvo": "Senha",
+                "indice": 1,
+                "sensivel": True,
+                "verificado_localmente": True,
+                "compromisso": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            }
+        },
+    ) is False
+
+
+def test_browser_reader_exposes_commitment_but_never_sensitive_value(monkeypatch):
+    from tools import browser
+    from tools import browser_reading
+
+    class FakePage:
+        url = "https://example.com"
+
+        def title(self):
+            return "Teste"
+
+        def evaluate(self, _script, *_args):
+            return {
+                "controles": [{
+                    "score": 5,
+                    "ordem": 0,
+                    "tag": "input",
+                    "role": "textbox",
+                    "nome": "Senha",
+                    "nameAttr": "senha",
+                    "id": "senha",
+                    "placeholder": "Senha",
+                    "chave": "id:senha",
+                    "estados": {},
+                    "value": "[REDACTED]",
+                    "valor_interno": "segredo-super-secreto",
+                }],
+                "elementosFlutuantes": {"dialogos": 0, "menus": 0, "listboxes": 0},
+                "links": [],
+                "candidatosOrdem": [],
+                "resultadosEstruturados": [],
+                "snippets": [],
+            }
+
+    monkeypatch.setattr(browser, "obter_pagina", lambda: FakePage())
+    monkeypatch.setattr(browser, "_estado_abas", lambda: "Abas abertas: 1\\nAba ativa: 1\\nAba 1: Teste | https://example.com [ATIVA]")
+
+    resultado = browser_reading.ler_pagina("senha")
+    compromisso = _compromisso_preenchimento_sensivel("segredo-super-secreto")
+
+    assert compromisso in resultado
+    assert "[REDACTED]" in resultado
+    assert "segredo-super-secreto" not in resultado
