@@ -331,7 +331,6 @@ function Format-Item($Item, [int]$Index) {
 
 try {
     $payload = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('__PAYLOAD__')) | ConvertFrom-Json
-    $outputPath = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('__OUTPUT_FILE_B64__'))
     $root = Get-RootElement ([string]$payload.hwnd)
     $items = Get-AllControls $root
 
@@ -725,10 +724,10 @@ public static class AurenUiWin32 {
         }
     }
     $json = $resultado | ConvertTo-Json -Compress -Depth 7
-    [System.IO.File]::WriteAllText($outputPath, [string]$json, (New-Object System.Text.UTF8Encoding($false)))
+    Write-Output ([string]$json)
 } catch {
     $erroJson = [pscustomobject]@{ ok=$false; erro=(Safe-String $_.Exception.Message); tipo=(Safe-String $_.Exception.GetType().FullName) } | ConvertTo-Json -Compress -Depth 5
-    try { [System.IO.File]::WriteAllText($outputPath, [string]$erroJson, (New-Object System.Text.UTF8Encoding($false))) } catch {}
+    Write-Output ([string]$erroJson)
     Write-Error $_
     exit 1
 }
@@ -765,7 +764,7 @@ def _ui_automation_janela(alvo):
     return hwnd, titulo, None
 
 def _executar_ui_automation(operacao, dados):
-    """Executa uma operacao UI Automation atraves das APIs nativas do Windows."""
+    """Executa UIA via stdin/stdout sem arquivos temporarios de script ou JSON."""
     payload = {"operacao": operacao, **(dados or {})}
     powershell = shutil.which("powershell.exe") or shutil.which("powershell")
     if not powershell:
@@ -774,41 +773,20 @@ def _executar_ui_automation(operacao, dados):
     encoded_payload = base64.b64encode(
         json.dumps(payload, ensure_ascii=False).encode("utf-8")
     ).decode("ascii")
-    output_path = None
-    script_path = None
+    script = _UI_AUTOMATION_POWERSHELL.replace("__PAYLOAD__", encoded_payload)
+
     try:
-        output_path = tempfile.NamedTemporaryFile(
-            mode="wb",
-            suffix="_auren_uia.json",
-            delete=False,
-        ).name
-        encoded_output_path = base64.b64encode(
-            output_path.encode("utf-8")
-        ).decode("ascii")
-        script = _UI_AUTOMATION_POWERSHELL.replace("__PAYLOAD__", encoded_payload)
-        script = script.replace("__OUTPUT_FILE_B64__", encoded_output_path)
-
-        with tempfile.NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8-sig",
-            suffix="_auren_uia.ps1",
-            delete=False,
-        ) as arquivo:
-            arquivo.write(script)
-            script_path = arquivo.name
-
         processo = subprocess.run(
             [
                 powershell,
                 "-NoLogo",
                 "-NoProfile",
                 "-NonInteractive",
-                "-ExecutionPolicy",
-                "Bypass",
                 "-STA",
-                "-File",
-                script_path,
+                "-Command",
+                "-",
             ],
+            input=script,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -820,47 +798,27 @@ def _executar_ui_automation(operacao, dados):
         return {"ok": False, "erro": "A operacao de UI Automation excedeu o limite de 20 segundos."}
     except Exception as erro:
         return {"ok": False, "erro": f"Falha ao iniciar o Windows PowerShell: {erro}"}
-    finally:
-        if script_path:
-            try:
-                os.unlink(script_path)
-            except OSError:
-                pass
 
-    try:
-        if output_path and os.path.exists(output_path):
-            try:
-                saida = Path(output_path).read_text(encoding="utf-8-sig", errors="replace").strip()
-            except OSError as erro:
-                saida = ""
-                leitura_erro = str(erro)
-            else:
-                leitura_erro = ""
-        else:
-            saida = ""
-            leitura_erro = "arquivo de saida nao criado"
-    finally:
-        if output_path:
-            try:
-                os.unlink(output_path)
-            except OSError:
-                pass
-
+    saida = (processo.stdout or "").strip()
     if not saida:
-        stderr = processo.stderr.strip()
-        codigo = processo.returncode
-        detalhes = stderr[:1600] if stderr else leitura_erro
-        if detalhes:
-            return {"ok": False, "erro": f"Windows PowerShell saiu com codigo {codigo}: {detalhes}"}
-        return {"ok": False, "erro": f"UI Automation nao retornou resultado (PowerShell codigo {codigo}; saida em arquivo ausente/vazia)."}
+        stderr = (processo.stderr or "").strip()
+        detalhes = stderr[:1600] if stderr else "PowerShell nao retornou JSON."
+        return {"ok": False, "erro": f"UI Automation nao retornou resultado (PowerShell codigo {processo.returncode}): {detalhes}"}
 
-    try:
-        resultado = json.loads(saida)
-    except json.JSONDecodeError:
-        stderr = processo.stderr.strip()
-        return {"ok": False, "erro": stderr[:1600] if stderr else f"Resposta invalida da UI Automation (PowerShell codigo {processo.returncode}): {saida[:800]}"}
-    if not isinstance(resultado, dict):
-        return {"ok": False, "erro": "UI Automation retornou uma estrutura inesperada."}
+    linhas = [linha.strip() for linha in saida.splitlines() if linha.strip()]
+    candidatos = list(reversed(linhas))
+    resultado = None
+    for linha in candidatos:
+        try:
+            objeto = json.loads(linha)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(objeto, dict):
+            resultado = objeto
+            break
+    if resultado is None:
+        stderr = (processo.stderr or "").strip()
+        return {"ok": False, "erro": stderr[:1600] if stderr else f"Resposta invalida da UI Automation: {saida[:800]}"}
     return resultado
 
 def inspecionar_interface_windows(alvo_janela="", foco="", max_itens=40):
