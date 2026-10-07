@@ -62,13 +62,16 @@ Um valor vazio ou composto apenas por espaços volta automaticamente ao modelo p
 
 ```powershell
 py -m pytest -q
+python testes_auren_live.py --rapido
+python testes_auren_live.py --completo
+
+# compatibilidade com o comando legado
 python testes_auren.py --rapido
-python testes_auren.py --completo
 ```
 
-A validação automatizada desta etapa é registrada no Pull Request correspondente; números de testes só são atualizados aqui depois de uma execução confirmada.
+A suíte pytest é a validação automatizada do runtime e roda no CI. A bateria live de modelo + ferramentas fica separada em testes_auren_live.py, pois pode consumir a API e provocar efeitos reais no Windows. testes_auren.py permanece apenas como fachada de compatibilidade para o comando antigo.
 
-Os resultados gerados por `testes_auren.py` ficam em:
+Os resultados gerados por `testes_auren_live.py` ficam em:
 
 ```text
 logs/testes/RESULTADO_TESTE_AUREN.txt
