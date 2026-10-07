@@ -12,9 +12,9 @@ Atualizado em: 2026-10-07
 - **Modelo padrão:** `gpt-5.6-luna`
 - **Branch/PR ativa:** `fix/browser-click-new-tab-page` / PR #77
 - **Head da main:** `0a8304e1b097d458511f017ca1f0d9da19d86726`
-- **Head da branch ativa:** `c8b5d45ec1e06eb91bafbacab4f91f68e2aea881`
+- **Head da branch ativa:** `dac575ea92c82f3599fbc5a016d961914a3792cd`
 - **CI da implementação mais recente em main:** pytest, focused Linux e focused Windows verdes
-- **CI do PR #77:** head `c8b5d45ec1e06eb91bafbacab4f91f68e2aea881` com focused Linux e focused Windows verdes; full CI deste head ainda deve ser rechecado após novas correções
+- **CI do PR #77:** heads anteriores validados; o full CI do head `dac575ea92c82f3599fbc5a016d961914a3792cd` deve ser rechecado após as últimas correções
 - **Fase atual:** Browser Intelligence
 
 - [x] confirmação de voz consome o protocolo real da fila e rejeita itens stale/erro/legado
@@ -28,6 +28,9 @@ Atualizado em: 2026-10-07
 - [x] encerramento por nome de processo evita `taskkill /IM` ambíguo
 - [x] UI Automation não usa arquivo temporário de saída nem `ExecutionPolicy Bypass`
 - [x] Kokoro e Parakeet possuem manifestos de integridade/revisão
+- [x] navegação retorna `ToolResult` estruturado com evidência da URL final observada
+- [x] rolagem aceita alvo semântico opcional e registra se o alvo foi encontrado
+- [x] controles possuem impressão DOM estável para verificar efeitos que não expõem ARIA/URL
 
 ### O que já está concluído nesta fase
 
@@ -43,7 +46,8 @@ Atualizado em: 2026-10-07
 - [x] preenchimento de campos não sensíveis tem verificação determinística do valor observado
 - [x] clique navegacional expõe evidência estruturada e pode ser verificado deterministicamente pelo destino observado
 - [x] cliques sem navegação capturam sinais determinísticos de estado do controle (aria-expanded, aria-pressed, aria-selected, checked, selected, open e data-state) quando disponíveis
-- [x] cliques sem navegação também capturam mudanças de visibilidade em diálogo, menu e listbox
+- [x] cliques sem navegação também capturam mudanças de visibilidade em diálogo, menu e listbox, além de popover e `details[open]`
+- [x] clique sem navegação possui fallback por impressão DOM do próprio controle
 - [x] leitor de página expõe esses estados para permitir comparação independente após a ação
 - [x] rolagem expõe métricas estruturadas e possui verificação determinística da posição observada
 - [x] runner live separado possui casos explícitos de verificação pós-ação para navegação e rolagem
