@@ -10,10 +10,10 @@ from memory.store import PersistentMemoryStore
 
 # Mantemos esses literais no facade para ferramentas de compatibilidade que
 # descobrem a versao lendo o arquivo-fonte sem importar o modulo.
-AUREN_VERSION = 47
+AUREN_VERSION = 48
 MODEL = "gpt-5.6-luna"
 CACHE_KEY = f"auren-v{AUREN_VERSION}"
-ARCHITECTURE_NAME = "V47 ARI NATIVE VISUAL GEOMETRY"
+ARCHITECTURE_NAME = "V48 PLUGIN DISPATCH"
 if (AUREN_VERSION, MODEL, CACHE_KEY, ARCHITECTURE_NAME) != (_CONFIG_AUREN_VERSION, _CONFIG_MODEL, _CONFIG_CACHE_KEY, _CONFIG_ARCHITECTURE_NAME):
     raise RuntimeError("config.py e auren.py estao com versao/modelo incoerentes.")
 
@@ -22,6 +22,8 @@ from core import usage
 from core.capability_audio_runtime import try_execute as _try_experimental_audio
 from core.harness import AurenHarness
 from core.permission_manager import PermissionManager
+from core.plugin_loader import carregar_plugins as _carregar_plugins
+from core.plugin_loader import recarregar_plugins as _recarregar_plugins
 from core.response import criar_resposta, get_client, obter_metricas_roteamento
 from core.session import SessionContextManager
 from core.tools_registry import tools
@@ -60,6 +62,16 @@ from core.facade import (
     _WINDOW_TARGET_CACHE,
 )
 permission_manager = PermissionManager(max_actions=10)
+_plugin_registry = None
+
+
+def recarregar_plugins():
+    """Relê plugins e aplica liga/desliga sem reiniciar o processo do Auren.
+    O registry antigo e desmontado antes da nova descoberta e registro.
+    Custo: uma descoberta completa mais os imports dos plugins habilitados.""" 
+    global _plugin_registry
+    _plugin_registry = _recarregar_plugins()
+    return _plugin_registry
 memory_store = PersistentMemoryStore()
 client = None
 
@@ -114,8 +126,16 @@ def _client_lazy():
         client = get_client()
     return client
 
+def _garantir_plugins():
+    global _plugin_registry
+    if _plugin_registry is None:
+        _plugin_registry = _carregar_plugins()
+    return _plugin_registry
+
+
 def criar_harness(confirmation_channel=None) -> AurenHarness:
     """Unico ponto que monta o Harness. Todo canal (texto, voz, futuros) usa esta funcao."""
+    _garantir_plugins()
     task_permission_manager = permission_manager
 
     if confirmation_channel is not None:
