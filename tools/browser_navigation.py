@@ -188,6 +188,7 @@ def _executar_navegacao(nome, metodo):
         p = _browser.obter_pagina()
         antes = _snapshot_pagina(p)
         metodo(p)
+        _esperar_documento_pronto(p, timeout_ms=5000)
         depois = _snapshot_pagina(p)
         dados = {
             "url_antes": str(antes.get("url") or ""),
@@ -218,6 +219,7 @@ def voltar_pagina():
         antes = _snapshot_pagina(p)
         _instalar_probe_historico(p)
         p.go_back(wait_until="domcontentloaded", timeout=12000)
+        _esperar_documento_pronto(p, timeout_ms=5000)
         evento_historico_observado = _ler_probe_historico(p)
         depois = _snapshot_pagina(p)
         return ToolResult.success(
@@ -244,6 +246,7 @@ def avancar_pagina():
         antes = _snapshot_pagina(p)
         _instalar_probe_historico(p)
         p.go_forward(wait_until="domcontentloaded", timeout=12000)
+        _esperar_documento_pronto(p, timeout_ms=5000)
         evento_historico_observado = _ler_probe_historico(p)
         depois = _snapshot_pagina(p)
         return ToolResult.success(
@@ -269,6 +272,7 @@ def recarregar_pagina():
         p = _browser.obter_pagina()
         antes = _snapshot_pagina(p)
         p.reload(wait_until="domcontentloaded", timeout=12000)
+        _esperar_documento_pronto(p, timeout_ms=5000)
         depois = _snapshot_pagina(p)
         return ToolResult.success(
             "Pagina recarregada.",
