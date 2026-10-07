@@ -45,6 +45,9 @@ class VoiceConfirmationChannel:
             except Empty:
                 return False
 
+            if isinstance(item, tuple) and len(item) == 2 and item[0] == "erro":
+                return False
+
             audio = self._extrair_audio(item)
             if audio is None:
                 continue
