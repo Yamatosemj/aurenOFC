@@ -92,6 +92,7 @@ def _matches_json_type(value: Any, expected: str) -> bool:
 _CAPABILITY_RULES: tuple[tuple[str, str], ...] = (
     ("salvar_memoria_persistente", "memory.write"),
     ("consultar_memoria_persistente", "memory.read"),
+    ("listar_memoria", "memory.read"),
     ("esquecer_memoria_persistente", "memory.write"),
     ("abrir_programa", "application.open"),
     ("buscar_arquivo", "file.search"),
