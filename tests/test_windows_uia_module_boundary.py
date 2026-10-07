@@ -39,23 +39,14 @@ def test_windows_uia_starts_persistent_worker_without_bypass(monkeypatch):
     popen_calls = []
 
     monkeypatch.setattr(windows_uia.os, "name", "nt")
-    monkeypatch.setattr(windows_uia._UI_AUTOMATION_WORKER_SCRIPT.__class__, "is_file", lambda _self: True)
     monkeypatch.setattr(windows_uia.shutil, "which", lambda _name: "powershell.exe")
     monkeypatch.setattr(
         windows_uia.subprocess,
         "Popen",
         lambda *args, **kwargs: popen_calls.append((args, kwargs)) or processo,
     )
-    monkeypatch.setattr(
-        windows_uia,
-        "_UI_AUTOMATION_WORKER",
-        None,
-    )
-    monkeypatch.setattr(
-        windows_uia,
-        "_UI_AUTOMATION_WORKER_RESPONSES",
-        None,
-    )
+    monkeypatch.setattr(windows_uia, "_UI_AUTOMATION_WORKER", None)
+    monkeypatch.setattr(windows_uia, "_UI_AUTOMATION_WORKER_RESPONSES", None)
 
     result, responses = windows_uia._iniciar_ui_automation_worker()
 
@@ -73,6 +64,7 @@ def test_windows_uia_starts_persistent_worker_without_bypass(monkeypatch):
     assert kwargs["stdin"] is windows_uia.subprocess.PIPE
     assert kwargs["stdout"] is windows_uia.subprocess.PIPE
     assert kwargs["stderr"] is windows_uia.subprocess.DEVNULL
+    windows_uia._encerrar_ui_automation_worker()
 
 
 def test_windows_uia_reuses_worker_for_multiple_operations(monkeypatch):
@@ -89,9 +81,6 @@ def test_windows_uia_reuses_worker_for_multiple_operations(monkeypatch):
         def flush(self):
             pass
 
-        def close(self):
-            pass
-
     class _Process:
         returncode = None
 
@@ -105,12 +94,16 @@ def test_windows_uia_reuses_worker_for_multiple_operations(monkeypatch):
     respostas = Queue()
     respostas.put({"ok": True, "operacao": "resolver"})
     respostas.put({"ok": True, "operacao": "inspecionar"})
-    starts = []
 
+    monkeypatch.setattr(windows_uia.os, "name", "nt")
+    monkeypatch.setattr(windows_uia, "_UI_AUTOMATION_WORKER", processo)
+    monkeypatch.setattr(windows_uia, "_UI_AUTOMATION_WORKER_RESPONSES", respostas)
+
+    popen_called = []
     monkeypatch.setattr(
-        windows_uia,
-        "_iniciar_ui_automation_worker",
-        lambda: starts.append(True) or (processo, respostas),
+        windows_uia.subprocess,
+        "Popen",
+        lambda *args, **kwargs: popen_called.append((args, kwargs)),
     )
 
     primeiro = windows_uia._executar_ui_automation(
@@ -124,5 +117,5 @@ def test_windows_uia_reuses_worker_for_multiple_operations(monkeypatch):
 
     assert primeiro["ok"] is True
     assert segundo["ok"] is True
-    assert len(starts) == 2
+    assert popen_called == []
     assert len(processo.stdin.writes) == 2
