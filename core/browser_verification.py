@@ -116,6 +116,12 @@ def verificar_resultado_navegador(
                 return False
 
         # A URL solicitada pode redirecionar; a prova primaria e a URL final observada.
+        estado_resultado = _avaliar_mudanca_estado_pagina(
+            evidencia.get("estado_antes"),
+            evidencia.get("estado_depois"),
+        )
+        if estado_resultado is not True:
+            return None
         return True
 
     if ferramenta == "preencher_elemento":
@@ -181,9 +187,13 @@ def _verificar_navegacao_historico(ferramenta: str, abas: str, dados_acao: Any) 
         return False
 
     if ferramenta in {"voltar_pagina", "avancar_pagina"}:
-        # A navegacao de historico pode manter a mesma URL, portanto titulo
-        # divergente e evidencia suficiente de que a observacao nao e do
-        # mesmo estado final alegado pela acao.
+        # A URL pode mudar sem que o estado esperado tenha sido demonstrado.
+        estado_resultado = _avaliar_mudanca_estado_pagina(
+            dados.get("estado_antes"),
+            dados.get("estado_depois"),
+        )
+        if estado_resultado is not True:
+            return None
         mudou = dados.get("mudou_url")
         if mudou is True:
             return True
@@ -480,6 +490,14 @@ def _controle_corresponde_linha(
     return False
 
 
+def _texto_controle_na_linha(linha: str) -> str | None:
+    marcador = "texto="
+    if marcador not in linha:
+        return None
+    trecho = linha.split(marcador, 1)[1]
+    return trecho.split(" |", 1)[0].strip()
+
+
 def _estado_controle_na_linha(linha: str, atributo: str) -> str | None:
     if atributo == "domFingerprint":
         marcador = "dom-fingerprint="
@@ -505,6 +523,33 @@ def _estado_controle_na_linha(linha: str, atributo: str) -> str | None:
     return None
 
 
+def _avaliar_mudanca_estado_pagina(estado_antes: Any, estado_depois: Any) -> bool | None:
+    """Exige evidência observável além de URL/título/readyState isolados."""
+    if not isinstance(estado_antes, dict) or not isinstance(estado_depois, dict):
+        return None
+
+    comparou = False
+    for chave in ("dom_fingerprint", "texto_relevante", "rota_ativa"):
+        antes = str(estado_antes.get(chave) or "").strip()
+        depois = str(estado_depois.get(chave) or "").strip()
+        if antes or depois:
+            comparou = True
+            if antes != depois:
+                return True
+
+    antes_time = estado_antes.get("time_origin")
+    depois_time = estado_depois.get("time_origin")
+    if antes_time is not None and depois_time is not None:
+        try:
+            comparou = True
+            if float(antes_time) != float(depois_time):
+                return True
+        except (TypeError, ValueError):
+            pass
+
+    return False if comparou else None
+
+
 def _verificar_clique(
     dados_clique: Any,
     indice_atual: int,
@@ -526,9 +571,21 @@ def _verificar_clique(
             return atual == _normalize_url(esperado)
 
         if anterior:
-            return atual != _normalize_url(anterior)
+            if atual == _normalize_url(anterior):
+                return False
+        else:
+            return None
 
-        return None
+        efeito = dados_clique.get("efeito")
+        if not isinstance(efeito, dict):
+            return None
+        estado_resultado = _avaliar_mudanca_estado_pagina(
+            efeito.get("pagina_antes"),
+            efeito.get("pagina_depois"),
+        )
+        if estado_resultado is not True:
+            return None
+        return True
 
     efeito = dados_clique.get("efeito")
     if not isinstance(efeito, dict):
@@ -554,6 +611,23 @@ def _verificar_clique(
         if not linhas or len(linhas) > 1:
             return None
 
+        if atributo == "domFingerprint":
+            return None
+
+        if atributo == "domFingerprint+texto":
+            observado_fp = _estado_controle_na_linha(linhas[0], "domFingerprint")
+            observado_texto = _texto_controle_na_linha(linhas[0])
+            texto_depois = _normalizar_valor_estado(sinal.get("texto_depois"))
+            texto_antes = _normalizar_valor_estado(sinal.get("texto_antes"))
+            if (
+                observado_fp is None
+                or observado_texto is None
+                or not texto_depois
+                or texto_depois == texto_antes
+            ):
+                return None
+            return observado_fp == esperado and observado_texto == texto_depois
+
         observado = _estado_controle_na_linha(linhas[0], atributo)
         if observado is None:
             return None
@@ -567,6 +641,34 @@ def _verificar_clique(
             return None
         if alvo not in {"dialogos", "menus", "listboxes", "popovers", "details_abertos"}:
             return None
+
+        causalidade = str(sinal.get("causalidade") or "").strip()
+        relacao = sinal.get("relacao") if isinstance(sinal.get("relacao"), dict) else {}
+        valor_relacao = str(relacao.get("valor") or "").strip()
+        novos = sinal.get("novos")
+        if causalidade not in {"aria-controls", "aria-haspopup"}:
+            return None
+        if not valor_relacao or not isinstance(novos, list) or not novos:
+            return None
+
+        aria_controls = str(controle.get("aria_controls") or "").strip().split()
+        aria_haspopup = str(controle.get("aria_haspopup") or "").strip().casefold()
+        if causalidade == "aria-controls":
+            if valor_relacao not in aria_controls:
+                return None
+        else:
+            if alvo == "menus":
+                permitidos = {"menu", "true"}
+            elif alvo == "listboxes":
+                permitidos = {"listbox"}
+            elif alvo == "dialogos":
+                permitidos = {"dialog", "true"}
+            elif alvo == "popovers":
+                permitidos = {"true"}
+            else:
+                return None
+            if aria_haspopup not in permitidos:
+                return None
 
         if not _linhas_controle(pagina):
             return None
