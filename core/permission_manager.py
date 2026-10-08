@@ -67,6 +67,7 @@ class PermissionManager:
         "reminder.create": PermissionLevel.CONFIRM,
         "reminder.read": PermissionLevel.AUTO,
         "reminder.cancel": PermissionLevel.CONFIRM,
+        "web.search": PermissionLevel.AUTO,
     }
 
     # O orçamento de ações também é definido por capacidade. Capacidade de
@@ -97,6 +98,7 @@ class PermissionManager:
         "browser.tabs.read": "Somente leitura da lista de abas.",
         "browser.tabs.control": "Abrir/trocar abas e reversivel; fechar aba exige CONFIRM para evitar perda de estado.",
         "reminder.read": "Somente consulta lembretes futuros sem alterar o agendamento.",
+        "web.search": "Consulta fontes externas sem alterar o computador; todo resultado e tratado como nao confiavel.",
     }
 
     REVERSIBLE_WINDOW_CONTROL_TOOLS = frozenset({
