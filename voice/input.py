@@ -50,7 +50,7 @@ class PushToTalkRecorder:
     def __init__(
         self,
         *,
-        hotkey: str = "f8",
+        hotkey: str = "shift+1",
         config: AudioCaptureConfig | None = None,
         sounddevice_module: Any | None = None,
         keyboard_module: Any | None = None,
@@ -291,7 +291,7 @@ class PushToTalkRecorder:
             self._pre_roll_samples = 0
 
     def capturar(self) -> CapturedAudio | None:
-        """Aguarda F8, preserva contexto de borda e entrega audio segmentado."""
+        """Aguarda Shift+1, preserva contexto de borda e entrega audio segmentado."""
         self._load_dependencies()
         with input_session():
             return self._capturar_com_lock()
