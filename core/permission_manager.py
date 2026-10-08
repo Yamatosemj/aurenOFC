@@ -103,6 +103,7 @@ class PermissionManager:
         "browser.tabs.control": "Abrir/trocar abas e reversivel; fechar aba exige CONFIRM para evitar perda de estado.",
         "reminder.read": "Somente consulta lembretes futuros sem alterar o agendamento.",
         "web.search": "Consulta fontes externas sem alterar o computador; todo resultado e tratado como nao confiavel.",
+        "proactive.status": "Somente consulta o estado do monitoramento proativo; nao altera configuracoes.",
     }
 
     REVERSIBLE_WINDOW_CONTROL_TOOLS = frozenset({
