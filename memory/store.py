@@ -65,6 +65,26 @@ class PersistentMemoryStore:
             colunas = {row["name"] for row in con.execute("PRAGMA table_info(estrategias)")}
             if "chat_id" not in colunas:
                 con.execute("ALTER TABLE estrategias ADD COLUMN chat_id TEXT")
+            con.execute(
+                """CREATE TABLE IF NOT EXISTS resumos_sessao (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    chat_id TEXT NOT NULL,
+                    resumo TEXT NOT NULL,
+                    criado_em TEXT NOT NULL,
+                    consumido_em TEXT
+                )"""
+            )
+            con.execute(
+                """CREATE TABLE IF NOT EXISTS configuracoes_proativas (
+                    id INTEGER PRIMARY KEY CHECK (id = 1),
+                    monitoramento_ativo INTEGER NOT NULL DEFAULT 0,
+                    ultima_checada_em TEXT
+                )"""
+            )
+            con.execute(
+                """INSERT OR IGNORE INTO configuracoes_proativas (id, monitoramento_ativo, ultima_checada_em)
+                   VALUES (1, 0, NULL)"""
+            )
             con.commit()
 
     @classmethod
@@ -75,6 +95,88 @@ class PersistentMemoryStore:
     @staticmethod
     def _agora() -> str:
         return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+    def salvar_resumo_sessao(self, chat_id: str, resumo: str) -> dict[str, Any]:
+        """Persiste um resumo curto para a próxima abertura do Auren.
+        O resumo fica consumível uma única vez, evitando repetição entre inicializações.
+        Custo: uma escrita SQLite local."""
+        chat_id = str(chat_id or "").strip()
+        resumo = " ".join(str(resumo or "").split())[:360]
+        if not chat_id or not resumo:
+            return {"ok": False, "erro": "Resumo de sessao invalido."}
+        if self._contem_credencial(resumo):
+            return {"ok": False, "erro": "Nao vou persistir credenciais ou segredos no resumo."}
+        with self._lock, self._conexao() as con:
+            con.execute(
+                "INSERT INTO resumos_sessao (chat_id, resumo, criado_em) VALUES (?, ?, ?)",
+                (chat_id, resumo, self._agora()),
+            )
+            con.execute(
+                "DELETE FROM resumos_sessao WHERE id NOT IN (SELECT id FROM resumos_sessao ORDER BY id DESC LIMIT 3)"
+            )
+            con.commit()
+        return {"ok": True, "chat_id": chat_id}
+
+    def consumir_ultimo_resumo_sessao(self) -> dict[str, Any] | None:
+        """Retorna e consome o resumo mais recente de uma sessão anterior.
+        O consumo acontece na mesma transação para que a frase nunca seja repetida.
+        Custo: uma leitura e uma escrita SQLite local."""
+        with self._lock, self._conexao() as con:
+            row = con.execute(
+                "SELECT id, chat_id, resumo, criado_em FROM resumos_sessao "
+                "WHERE consumido_em IS NULL ORDER BY id DESC LIMIT 1"
+            ).fetchone()
+            if row is None:
+                return None
+            agora = self._agora()
+            con.execute("UPDATE resumos_sessao SET consumido_em = ? WHERE id = ?", (agora, row["id"]))
+            con.commit()
+            return dict(row)
+
+    def definir_monitoramento_proativo(self, ativo: bool) -> dict[str, Any]:
+        """Liga ou desliga o monitoramento passivo de tópicos do Auren.
+        A preferência fica persistente e desligada por padrão.
+        Custo: uma escrita SQLite local."""
+        with self._lock, self._conexao() as con:
+            con.execute(
+                "UPDATE configuracoes_proativas SET monitoramento_ativo = ? WHERE id = 1",
+                (1 if ativo else 0,),
+            )
+            con.commit()
+        return {"ok": True, "ativo": bool(ativo)}
+
+    def obter_monitoramento_proativo(self) -> dict[str, Any]:
+        """Consulta se o monitoramento passivo está habilitado.
+        A leitura não altera estado e retorna a última data de checagem.
+        Custo: uma leitura SQLite local."""
+        with self._lock, self._conexao() as con:
+            row = con.execute(
+                "SELECT monitoramento_ativo, ultima_checada_em FROM configuracoes_proativas WHERE id = 1"
+            ).fetchone()
+        return {"ok": True, "ativo": bool(row["monitoramento_ativo"]) if row else False,
+                "ultima_checada_em": row["ultima_checada_em"] if row else None}
+
+    def pode_checar_monitoramento_hoje(self) -> bool:
+        """Aplica a trava de no máximo uma checagem por dia para monitoramento.
+        A trava usa a data UTC persistida para sobreviver a reinicializações.
+        Custo: uma leitura SQLite local."""
+        estado = self.obter_monitoramento_proativo()
+        if not estado["ativo"]:
+            return False
+        ultima = str(estado.get("ultima_checada_em") or "")
+        return ultima[:10] != datetime.now(timezone.utc).date().isoformat()
+
+    def marcar_monitoramento_checado(self) -> None:
+        """Registra que a checagem diária foi executada.
+        A marcação é persistida mesmo quando não há alertas, evitando novas consultas no mesmo dia.
+        Custo: uma escrita SQLite local."""
+        with self._lock, self._conexao() as con:
+            con.execute(
+                "UPDATE configuracoes_proativas SET ultima_checada_em = ? WHERE id = 1",
+                (self._agora(),),
+            )
+            con.commit()
 
     def salvar(self, chave: str, valor: str, categoria: str = "geral") -> dict[str, Any]:
         chave = str(chave or "").strip()
