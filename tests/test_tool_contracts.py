@@ -24,7 +24,7 @@ def _sample_for_schema(schema: dict) -> dict:
 
 
 def test_all_registry_tools_have_generic_contracts() -> None:
-    assert len(tools) == 49
+    assert len(tools) == 52
     assert set(DEFAULT_TOOL_CONTRACTS.names()) == {item["name"] for item in tools}
     DEFAULT_TOOL_CONTRACTS.validate_registry()
 
