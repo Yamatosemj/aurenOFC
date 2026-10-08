@@ -59,7 +59,7 @@ def _write_entries(path: Path, entries: list[dict]) -> None:
 def test_tools_registry_contains_three_reminder_tools():
     names = {item["name"] for item in tools}
     assert {"criar_lembrete", "listar_lembretes", "cancelar_lembrete"} <= names
-    assert len(tools) == 52
+    assert len(tools) == 57
 
 
 def test_reminder_contracts_are_strict():
