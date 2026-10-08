@@ -90,3 +90,11 @@ def cancelar_lembrete(id):
     O wrapper encaminha para o mesmo cancelamento usado como reversao da criacao.
     Custo: uma chamada direta à ferramenta de lembretes."""
     return reminders.cancelar_lembrete(id)
+
+
+def pesquisar_web(consulta, modo):
+    """Expõe a pesquisa web pela API pública de compatibilidade.
+    O wrapper encaminha para o mesmo executor registrado no Dispatcher.
+    Custo: uma chamada ao provedor de web search."""
+    from tools.web_search import pesquisar_web as _pesquisar_web
+    return _pesquisar_web(consulta, modo)
