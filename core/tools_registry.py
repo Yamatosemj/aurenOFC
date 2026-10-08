@@ -976,6 +976,29 @@ tools = [
 
     {
         "type": "function",
+        "name": "pesquisar_web",
+        "description": "Pesquisa a web em modo news, research, price ou compare e devolve fontes externas como dados nao confiaveis. Para tarefas que exigem interacao com um site, o modelo pode preferir as ferramentas existentes do Browser.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "consulta": {
+                    "type": "string",
+                    "description": "Pergunta ou termos que devem ser pesquisados na web."
+                },
+                "modo": {
+                    "type": "string",
+                    "enum": ["news", "research", "price", "compare"],
+                    "description": "Tipo de pesquisa desejado."
+                }
+            },
+            "required": ["consulta", "modo"],
+            "additionalProperties": False
+        },
+        "strict": True
+    },
+
+    {
+        "type": "function",
         "name": "capturar_tela_windows",
         "description": (
             "Captura a tela inteira do Windows para que o Auren possa analisar visualmente o estado atual. "
