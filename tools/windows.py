@@ -73,7 +73,11 @@ from tools.windows_system import _status_windows, obter_status_windows
 
 from tools.windows_window import (
     _encontrar_janela_windows,
+    _encontrar_janela_windows_sem_cache,
+    _enumerar_janelas_windows,
     _processo_da_janela_windows,
+    _titulo_atual_da_janela_windows,
+    _WINDOW_TARGET_CACHE,
     listar_janelas_windows,
     focar_janela_windows,
     minimizar_janela_windows,
