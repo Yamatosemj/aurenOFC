@@ -15,7 +15,7 @@ from voice.tts import LocalKokoroTTS
 
 def test_voice_v4_components_are_lazy_and_constructible():
     recorder = PushToTalkRecorder(
-        hotkey="right ctrl+right shift+right shift",
+        hotkey="right ctrl+right shift",
         config=AudioCaptureConfig(min_seconds=0.1),
         sounddevice_module=object(),
         keyboard_module=object(),
