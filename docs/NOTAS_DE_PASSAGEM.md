@@ -235,3 +235,18 @@ Portão pendente:
 
 Após o portão:
 - Tarefa 10A, 10B e 10C formam o pacote da Tarefa 10 e a fase pode ser encerrada, sem abrir nova capacidade nesta sequência.
+
+## 2026-10-08 — Correção do portão da Tarefa 10
+
+O primeiro CI da PR #84 encontrou apenas expectativas herdadas após a entrada das quatro tools de monitoramento proativo: contagens antigas de 52/53 tools, a capability `monitoramento_proativo` ausente na expectativa do teste e a nova capacidade AUTO `proactive.status` sem justificativa correspondente.
+
+Correções aplicadas, sem mudança de arquitetura ou comportamento:
+- contagens dos testes alinhadas para 57 tools
+- `monitoramento_proativo` incluída na expectativa do registry de capabilities
+- justificativa de `proactive.status` adicionada ao conjunto de justificativas AUTO
+- README e AUREN_STATE sincronizados com V51, PR #84 e 57 tools
+
+Próxima validação:
+- CI completo da PR #84
+- focused-tests Linux/Windows
+- runner live Windows permanece dependente de ambiente Windows real
