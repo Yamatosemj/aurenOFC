@@ -115,3 +115,65 @@ PR:
 
 Próximo passo após o portão:
 - Tarefa 10B — Pesquisa na web em modos
+
+
+## 2026-10-08 — Tarefa 10B — Pesquisa web em modos
+
+Tarefa em validação: 10B — Pesquisa web
+
+Arquivos criados/alterados nesta transição:
+- `tools/web_search.py`
+- `providers/openai_provider.py`
+- `core/tools_registry.py`
+- `core/tool_contracts.py`
+- `core/capabilities.py`
+- `core/intent_resolver.py`
+- `core/permission_manager.py`
+- `core/router.py`
+- `tools/dispatcher.py`
+- `core/facade.py`
+- `core/prompt.py`
+- `config.py`
+- `README.md`
+- `AUREN_STATE.md`
+- `tests/test_web_search.py`
+- `tests/test_prompt_injection.py`
+- `tests/test_tool_contracts.py`
+
+Decisoes tomadas:
+- `pesquisar_web` usa o web search hospedado do Responses API pelo provider atual.
+- A implementacao nao adiciona um executor de navegador novo. O Browser existente continua sendo usado quando a tarefa exige abrir, navegar, observar ou interagir com pagina.
+- O modelo pode escolher entre `pesquisar_web` e as ferramentas do Browser dentro do subconjunto selecionado pelo Router.
+- Modos: `news`, `research`, `price`, `compare`.
+- Pesquisa generica via TaskSpec recebe `research` como modo padrao; noticias, precos e comparacoes sao inferidos quando a linguagem indica esses objetivos.
+- `pesquisar_web` e AUTO porque e somente leitura.
+- Todo retorno da busca e marcado como `conteudo_nao_confiavel`.
+- Fontes sao limitadas a 8; cada trecho a 600 caracteres; o conjunto fica limitado a aproximadamente 5000 caracteres.
+- Nenhuma dependencia externa nova foi adicionada.
+- O arquivo `actions/web_search.py` do enunciado nao existia no Auren; a implementacao foi escrita de novo em `tools/web_search.py`, sem copiar codigo de Mark-LV. A referencia de Mark-LV foi usada apenas para os modos/casos de uso.
+
+Testes novos:
+- schema e registro de `pesquisar_web`
+- limites e marcação de fontes como nao confiaveis
+- modos invalidos e falha do provider
+- politica AUTO
+- inferencia de modos no Router/IntentResolver
+- prompt injection vindo de resultado de busca nao pode liberar clique sem confirmacao
+- contagem do registry atualizada
+
+Comando exigido:
+`py -m pytest -q`
+
+Baseline:
+- Tarefa 10A: 476 passed, 6 skipped
+
+Portao pendente:
+- CI completo do PR #83
+- `python testes_auren_live.py --rapido` em Windows real
+
+PR:
+- #83 — Tarefa 10B
+- empilhada sobre #82/Tarefa 10A
+
+Proximo passo apos o portao:
+- Tarefa 10C — Abertura proativa
