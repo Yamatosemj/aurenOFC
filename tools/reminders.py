@@ -29,6 +29,10 @@ _TOOL_CANCEL = "cancelar_lembrete"
 _STORE_LOCK = threading.RLock()
 
 
+def _is_windows() -> bool:
+    return sys.platform == "win32"
+
+
 def _store_path() -> Path:
     configured = os.getenv("AUREN_REMINDERS_FILE", "").strip()
     if configured:
@@ -206,7 +210,7 @@ class TaskScheduler:
         """Cria uma tarefa ONCE para disparar o runner do lembrete no horario pedido.
         O sistema de tarefas passa a ser a agenda persistente, mesmo sem o Auren aberto.
         Custo: uma escrita de XML temporario e uma chamada ao schtasks.exe."""
-        if os.name != "nt":
+        if not _is_windows():
             raise RuntimeError("Lembretes do Windows exigem um sistema Windows.")
 
         xml_path = _store_path().with_name(
