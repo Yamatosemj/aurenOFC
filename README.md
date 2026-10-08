@@ -135,6 +135,15 @@ Os resultados de busca são sempre tratados como **conteúdo não confiável**. 
 
 A política é somente leitura (**AUTO**). Não há dependência nova.
 
+
+## Continuidade proativa (V51)
+
+Na abertura, o Auren pode apresentar uma frase curta sobre a sessão anterior usando os turnos persistidos da Tarefa 5. O resumo é consumido atomicamente quando apresentado, portanto a mesma frase não volta a aparecer em uma abertura futura.
+
+O monitoramento de tópicos é **desligado por padrão**. Tópicos podem ser configurados sem ativar o recurso. Quando ativado, a infraestrutura persiste a trava de **uma checagem por dia** e oferece estado explícito para desligamento. Não existe monitoramento silencioso ou contínuo.
+
+O projeto atual não possui uma UI gráfica própria de configurações; por isso, os controles ficam expostos como capacidades do próprio Auren, passando pelo Router, Dispatcher, Contrato e PermissionManager. Uma UI futura pode consumir o mesmo estado sem criar outro caminho de execução.
+
 ## Arquitetura atual
 
 ```text
