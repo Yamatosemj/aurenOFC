@@ -919,6 +919,63 @@ tools = [
 
     {
         "type": "function",
+        "name": "criar_lembrete",
+        "description": "Cria um lembrete persistente no Agendador de Tarefas do Windows. O Auren deve pedir confirmacao antes de criar.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "mensagem": {
+                    "type": "string",
+                    "description": "Texto curto que sera exibido quando o lembrete disparar."
+                },
+                "data": {
+                    "type": "string",
+                    "description": "Data local no formato YYYY-MM-DD."
+                },
+                "hora": {
+                    "type": "string",
+                    "description": "Hora local no formato HH:MM, em 24 horas."
+                }
+            },
+            "required": ["mensagem", "data", "hora"],
+            "additionalProperties": False
+        },
+        "strict": True
+    },
+
+    {
+        "type": "function",
+        "name": "listar_lembretes",
+        "description": "Lista os lembretes futuros do Auren que continuam agendados no Windows.",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+            "additionalProperties": False
+        },
+        "strict": True
+    },
+
+    {
+        "type": "function",
+        "name": "cancelar_lembrete",
+        "description": "Cancela um lembrete futuro pelo ID exato retornado ao criar ou listar lembretes. A operacao exige confirmacao.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "ID exato do lembrete, por exemplo rem-a1b2c3d4e5."
+                }
+            },
+            "required": ["id"],
+            "additionalProperties": False
+        },
+        "strict": True
+    },
+
+    {
+        "type": "function",
         "name": "capturar_tela_windows",
         "description": (
             "Captura a tela inteira do Windows para que o Auren possa analisar visualmente o estado atual. "
