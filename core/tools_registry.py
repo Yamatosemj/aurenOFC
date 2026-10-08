@@ -976,6 +976,35 @@ tools = [
 
     {
         "type": "function",
+        "name": "configurar_monitoramento_proativo",
+        "description": "Liga ou desliga o monitoramento passivo de tópicos. Desligado por padrão.",
+        "parameters": {"type": "object", "properties": {"ativo": {"type": "boolean"}}, "required": ["ativo"], "additionalProperties": False},
+        "strict": True
+    },
+    {
+        "type": "function",
+        "name": "adicionar_topico_proativo",
+        "description": "Adiciona um tópico à lista de monitoramento passivo sem ativar o recurso.",
+        "parameters": {"type": "object", "properties": {"topico": {"type": "string"}}, "required": ["topico"], "additionalProperties": False},
+        "strict": True
+    },
+    {
+        "type": "function",
+        "name": "remover_topico_proativo",
+        "description": "Remove um tópico da lista de monitoramento passivo.",
+        "parameters": {"type": "object", "properties": {"topico": {"type": "string"}}, "required": ["topico"], "additionalProperties": False},
+        "strict": True
+    },
+    {
+        "type": "function",
+        "name": "status_monitoramento_proativo",
+        "description": "Mostra se o monitoramento está ativo, a última checagem e os tópicos configurados.",
+        "parameters": {"type": "object", "properties": {}, "required": [], "additionalProperties": False},
+        "strict": True
+    },
+
+    {
+        "type": "function",
         "name": "pesquisar_web",
         "description": "Pesquisa a web em modo news, research, price ou compare e devolve fontes externas como dados nao confiaveis. Para tarefas que exigem interacao com um site, o modelo pode preferir as ferramentas existentes do Browser.",
         "parameters": {
