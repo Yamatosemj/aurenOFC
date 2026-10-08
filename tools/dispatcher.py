@@ -9,6 +9,7 @@ from core.vision import transform_visual_tool_arguments
 from tools import applications, browser, browser_context, file_intelligence, files
 from tools import windows, reminders
 from core import proactive_controls
+from tools import web_search
 from tools.memory import salvar_memoria_persistente, consultar_memoria_persistente, esquecer_memoria_persistente
 
 from core.tool_result import LEGACY_FAILURE_MARKERS, ToolResult, from_legacy
@@ -173,7 +174,7 @@ TOOL_HANDLERS = {
     "criar_lembrete": _sem_memoria(reminders.criar_lembrete, "mensagem", "data", "hora"),
     "listar_lembretes": _sem_memoria(reminders.listar_lembretes),
     "cancelar_lembrete": _sem_memoria(reminders.cancelar_lembrete, "id"),
-    "pesquisar_web": _sem_memoria(pesquisar_web, "consulta", "modo"),
+    "pesquisar_web": _sem_memoria(web_search.pesquisar_web, "consulta", "modo"),
     "configurar_monitoramento_proativo": _com_memoria(proactive_controls.ativar, "ativo"),
     "adicionar_topico_proativo": _com_memoria(proactive_controls.adicionar, "topico"),
     "remover_topico_proativo": _com_memoria(proactive_controls.remover, "topico"),
