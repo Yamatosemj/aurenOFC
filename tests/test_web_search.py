@@ -21,7 +21,7 @@ def test_web_search_registry_contract_and_count():
     assert item["parameters"]["properties"]["modo"]["enum"] == [
         "news", "research", "price", "compare"
     ]
-    assert len(tools) == 53
+    assert len(tools) == 57
 
 
 def test_web_search_returns_limited_untrusted_sources(monkeypatch):
