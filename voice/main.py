@@ -222,7 +222,7 @@ def _processar_e_falar(
 
 
 def main() -> int:
-    recorder = PushToTalkRecorder(hotkey="f8")
+    recorder = PushToTalkRecorder(hotkey="shift+1")
     stt = LocalPortugueseASR()
     tts = LocalKokoroTTS()
     fila_texto: Queue = Queue()
@@ -238,7 +238,7 @@ def main() -> int:
     harness = _novo_harness(confirmation_channel)
 
     print("Auren Voice Engine V4 online.")
-    print("F8 = segurar para falar | ESC = encerrar")
+    print("SHIFT+1 = segurar para falar | ESC = encerrar")
     print("Texto = digite a mensagem e pressione Enter")
     print("ASR: Parakeet TDT 0.6B pt-BR TAGARELA (ONNX INT8 local, entrada 16 kHz)")
     print("Captura: pre-roll + pos-roll + WebRTC VAD local (fallback por energia)")
