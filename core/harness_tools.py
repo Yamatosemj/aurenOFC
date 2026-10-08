@@ -99,7 +99,9 @@ def _executar_chamadas_rodada(
                 ferramenta=str(browser_verification_state.get("ferramenta") or ""),
                 verificado=verificado,
             )
-            if verificado is False:
+            if verificado is not True:
+                # Verificacao obrigatoria so termina com evidencia deterministica
+                # explicita. None significa que nao foi possivel provar o resultado.
                 browser_verification_pending = True
             else:
                 browser_verification_pending = False
