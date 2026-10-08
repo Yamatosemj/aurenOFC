@@ -189,6 +189,7 @@ class PluginRegistry:
                 self._active_names.add(record.name)
                 self.logger(f"Plugin carregado: {record.name} ({path.name})")
             except Exception as exc:
+                sys.modules.pop(f"plugins.{path.stem}", None)
                 self._reject(nome, path.name, _mensagem_erro_importacao(path, exc), approved=aprovado)
 
         rejeitados = len([record for record in self._records if not record.valid])
