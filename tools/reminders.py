@@ -84,6 +84,13 @@ def _gerar_id() -> str:
     return f"rem-{secrets.token_hex(5)}"
 
 
+def _task_name(reminder_id: str) -> str:
+    """Deriva o nome exato da tarefa a partir do ID validado do lembrete.
+    A derivacao elimina metadata externa como autoridade para escolher outra tarefa.
+    Custo: O(1), sem acesso ao sistema."""
+    return f"AurenReminder_{reminder_id}"
+
+
 def _validar_mensagem(mensagem: Any) -> str:
     texto = " ".join(str(mensagem or "").split()).strip()
     if not texto:
@@ -261,7 +268,7 @@ class TaskScheduler:
 
     def exists(self, task_name: str) -> bool:
         """Consulta se a tarefa exata ainda existe no Agendador do Windows.
-        A consulta evita listar lembretes cujo agendamento foi removido fora do Auren.
+        Falhas desconhecidas nao sao confundidas com ausencia, evitando apagar metadata por engano.
         Custo: uma chamada ao schtasks.exe por lembrete consultado."""
         if os.name != "nt":
             raise RuntimeError("Lembretes do Windows exigem um sistema Windows.")
@@ -271,7 +278,26 @@ class TaskScheduler:
             "/TN",
             task_name,
         ])
-        return result.returncode == 0
+        if result.returncode == 0:
+            return True
+
+        detalhe = (result.stderr or result.stdout or "").lower()
+        if any(token in detalhe for token in (
+            "cannot find",
+            "nao pode encontrar",
+            "não pode encontrar",
+            "does not exist",
+            "nao existe",
+            "não existe",
+            "the system cannot find",
+            "o sistema nao pode encontrar",
+            "o sistema não pode encontrar",
+        )):
+            return False
+
+        raise RuntimeError(
+            f"Nao foi possivel consultar a tarefa: {(result.stderr or result.stdout or 'erro desconhecido').strip()[:500]}"
+        )
 
 
 SCHEDULER = TaskScheduler()
@@ -377,10 +403,15 @@ def listar_lembretes() -> ToolResult:
                     removidos.add(str(entry.get("id", "")))
                     continue
 
+                task_name = _task_name(str(entry["id"]))
                 try:
-                    existe = SCHEDULER.exists(str(entry["task_name"]))
-                except RuntimeError:
-                    existe = False
+                    existe = SCHEDULER.exists(task_name)
+                except RuntimeError as exc:
+                    return ToolResult.failure(
+                        f"Nao foi possivel consultar os lembretes no Agendador do Windows: {exc}",
+                        error_code="reminder_scheduler_unavailable",
+                        tool_name=_TOOL_LIST,
+                    )
 
                 if not existe:
                     removidos.add(str(entry.get("id", "")))
@@ -450,7 +481,7 @@ def cancelar_lembrete(id: str) -> ToolResult:
                     tool_name=_TOOL_CANCEL,
                 )
 
-            task_name = str(entry["task_name"])
+            task_name = _task_name(reminder_id)
             SCHEDULER.delete(task_name)
             _save_entries([
                 item for item in entries
@@ -520,7 +551,7 @@ def _disparar_lembrete(reminder_id: str) -> int:
         sucesso = _notificar_windows(str(entry["mensagem"]))
         if sucesso:
             with _STORE_LOCK:
-                SCHEDULER.delete(str(entry["task_name"]))
+                SCHEDULER.delete(_task_name(reminder_id))
                 _save_entries([
                     item for item in _load_entries()
                     if str(item.get("id")) != reminder_id
