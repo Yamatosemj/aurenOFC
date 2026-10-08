@@ -44,9 +44,17 @@ class VoiceConfirmationChannel:
                     pass
 
         try:
-            audio = self._audio_queue.get(timeout=self._timeout)
+            item = self._audio_queue.get(timeout=self._timeout)
         except Empty:
             return False
+
+        if isinstance(item, tuple) and item:
+            tipo_audio = item[0]
+            audio = item[1] if len(item) > 1 else None
+            if tipo_audio != "audio":
+                return False
+        else:
+            audio = item
 
         if audio is None:
             return False
