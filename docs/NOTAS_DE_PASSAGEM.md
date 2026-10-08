@@ -227,7 +227,7 @@ Comando de saída:
 
 PR:
 - #84 — Tarefa 10C
-- base: Tarefa 10B / #83
+- base: `main`; PR #84 concentra o fechamento das Tarefas 10A + 10B + 10C
 
 Portão pendente:
 - CI completo
