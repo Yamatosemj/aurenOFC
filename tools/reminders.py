@@ -243,7 +243,7 @@ class TaskScheduler:
         """Exclui uma tarefa pelo nome exato e retorna se ela existia.
         Erros de inexistencia sao tratados como estado ja cancelado, sem repetir trabalho.
         Custo: uma chamada ao schtasks.exe."""
-        if os.name != "nt":
+        if not _is_windows():
             raise RuntimeError("Lembretes do Windows exigem um sistema Windows.")
 
         result = _run_schtasks([
