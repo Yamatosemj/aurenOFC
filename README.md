@@ -1,6 +1,6 @@
 # Auren
 
-Assistente desktop/voz para Windows, versão técnica **V49**, usando o modelo configurado em `config.py` (snapshot atual: `gpt-5.6-luna`).
+Assistente desktop/voz para Windows, versão técnica **V51**, usando o modelo configurado em `config.py` (snapshot atual: `gpt-5.6-luna`).
 
 > **Estado atual do projeto:** consulte [AUREN_STATE.md](AUREN_STATE.md) antes de iniciar ou continuar trabalho no Auren. O estado oficial registra a tarefa ativa, PRs em andamento, CI, próxima fase e backlog.
 
@@ -169,7 +169,7 @@ A captura de tela informa a área de trabalho virtual do Windows, incluindo orig
 
 ## Estado importante
 
-- **52 tools nativas** no registry/contratos + plugins locais dinamicos
+- **57 tools nativas** no registry/contratos + plugins locais dinamicos
 - memória persistente em SQLite
 - browser e automação Windows integrados
 - visão pode observar a tela, executar clique ou arraste global do mouse com confirmação, manter a geometria da captura e da imagem entregue ao modelo e verificar o estado final em tarefas visuais compostas
