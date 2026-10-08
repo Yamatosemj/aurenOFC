@@ -255,6 +255,7 @@ def test_successful_browser_context_clears_verification_pending():
         browser_verification_state=state,
         browser_state_mutating_tools={"clicar_elemento"},
         browser_verification_tool="obter_contexto_navegador",
+        browser_verifier=lambda *args, **kwargs: True,
     )
 
     assert results[0]["sucesso"] is True
