@@ -321,10 +321,20 @@ class IntentResolver:
 
         if capability_id == "pesquisar_web":
             consulta = _field(data, "consulta", "query", "pesquisa", "termo") or _extract_search_query(objective)
+            modo = _field(data, "modo", "mode")
+            if not modo:
+                if re.search(r"\bnot[ií]cia|\bnot[ií]cias|\bnews\b", normalized):
+                    modo = "news"
+                elif re.search(r"\bpre[cç]o|\bpre[cç]os|\bcota[cç][aã]o", normalized):
+                    modo = "price"
+                elif re.search(r"\bcompar", normalized):
+                    modo = "compare"
+                else:
+                    modo = "research"
             if consulta:
                 return ResolvedIntent(
                     capability_id="pesquisar_web",
-                    params={"consulta": str(consulta).strip()},
+                    params={"consulta": str(consulta).strip(), "modo": str(modo).strip().lower()},
                     reason_code="matched_web_search",
                     reason="Regra do Registry identificou uma pesquisa web direta.",
                 )
