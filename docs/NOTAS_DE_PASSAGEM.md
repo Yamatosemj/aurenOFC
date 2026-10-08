@@ -50,3 +50,68 @@ Ficou pendente / virou backlog:
 - PR #81 permanece aberto para revisão; a tarefa passou o portão de testes.
 
 Próxima tarefa: 9
+
+
+## 2026-10-07 — Tarefa 10A — Lembretes persistentes
+
+Tarefa em validação: 10A — Lembretes
+
+Arquivos criados/alterados nesta transição:
+- `tools/reminders.py`
+- `core/tools_registry.py`
+- `core/tool_contracts.py`
+- `core/capabilities.py`
+- `core/permission_manager.py`
+- `core/router.py`
+- `tools/dispatcher.py`
+- `core/facade.py`
+- `auren.py`
+- `config.py`
+- `README.md`
+- `AUREN_STATE.md`
+- `tests/test_reminders.py`
+- `tests/test_tool_contracts.py`
+- `tests/test_dispatcher_contracts.py`
+
+Decisoes tomadas:
+- As tres tools usam o caminho existente `Router -> Dispatcher -> Contrato -> Permissao -> Ferramenta -> ToolResult`; nao existe executor paralelo de lembretes.
+- `criar_lembrete` fica em CONFIRM porque cria estado persistente no Windows.
+- `listar_lembretes` fica em AUTO porque somente consulta metadata e a existencia das tarefas.
+- `cancelar_lembrete` fica em CONFIRM e e a reversao natural da criacao.
+- O Agendador de Tarefas do Windows recebe uma tarefa ONCE via XML. O horario fica no `StartBoundary` em formato ISO local, evitando parsing de data dependente de localizacao.
+- A acao do scheduler recebe o executavel Python e os argumentos como campos separados; no runtime do Auren nao ha `shell=True`.
+- O agendamento chama somente `tools.reminders --disparar <id>`; a mensagem fica no armazenamento local e nao e interpolada na linha de comando ou no XML.
+- O nome da tarefa e derivado exclusivamente do ID validado. Metadata local nao pode trocar o alvo do cancelamento para outra tarefa.
+- A metadata e gravada em `%APPDATA%\\Auren\\lembretes.json`. A criacao desfaz a escrita da metadata quando o scheduler falha.
+- O runner e de ocorrencia unica: depois de uma notificacao bem-sucedida, a tarefa e removida e a metadata do lembrete e apagada.
+- Nenhuma dependencia externa foi adicionada.
+- O nome `actions/reminder.py` do enunciado foi tratado como referencia de design; esse arquivo nao existia no Auren e a implementacao foi escrita de novo em `tools/reminders.py`.
+
+Testes novos:
+- registry/contrato das tres tools
+- politica CONFIRM/AUTO
+- selecao do Router
+- criacao e rollback com scheduler simulado
+- listagem e limpeza de tarefas obsoletas
+- cancelamento
+- XML do Task Scheduler
+- garantia de comando por lista e ausencia de shell
+- caminho unico via Dispatcher
+- runner de disparo
+
+Comando exigido:
+`py -m pytest -q`
+
+Baseline antes desta tarefa:
+- 457 passed, 6 skipped
+
+Portão pendente:
+- CI completo do PR #82 precisa ficar verde
+- `python testes_auren_live.py --rapido` em Windows deve ser executado após a funcionalidade estar disponível no ambiente real; este ambiente não tem Windows para executar esse runner
+
+PR:
+- #82 — Tarefa 10A
+- empilhada sobre #81; quando #81 entrar na main, o diff da #82 passa a representar apenas a Tarefa 10A
+
+Próximo passo após o portão:
+- Tarefa 10B — Pesquisa na web em modos
