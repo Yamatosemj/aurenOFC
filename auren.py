@@ -200,6 +200,9 @@ def iniciar_auren() -> None:
     abertura = preparar_abertura(memory_store)
     if abertura:
         print("Auren:", abertura)
+    alertas = checar_topicos(memory_store)
+    if alertas:
+        print("Auren:", " ".join(alertas))
     harness = criar_harness()
     chat_id = harness._garantir_sessao_chat()
     try:
