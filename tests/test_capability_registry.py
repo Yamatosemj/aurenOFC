@@ -48,6 +48,7 @@ def test_registry_contains_real_current_capabilities():
         "inspecionar_arquivo",
         "ler_arquivo",
         "gerenciar_lembretes",
+        "monitoramento_proativo",
     }
     assert set(CAPABILITY_REGISTRY.ids()) == expected
 
