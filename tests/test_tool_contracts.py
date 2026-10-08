@@ -70,7 +70,7 @@ def test_all_tools_have_registered_handlers() -> None:
     from tools.dispatcher import TOOL_HANDLERS, validar_registry_handlers
     ok, error = validar_registry_handlers()
     assert ok, error
-    assert len(TOOL_HANDLERS) == len(tools) == 49
+    assert len(TOOL_HANDLERS) == len(tools) == 52
 
 
 def test_permissions_are_keyed_by_capability_not_tool_name() -> None:
