@@ -177,3 +177,61 @@ PR:
 
 Proximo passo apos o portao:
 - Tarefa 10C — Abertura proativa
+
+
+## 2026-10-08 — Tarefa 10C — Abertura proativa e continuidade
+
+Implementação da Tarefa 10C em PR #84.
+
+Arquivos principais:
+- `core/proactive.py`
+- `core/proactive_controls.py`
+- `memory/store.py`
+- `core/capabilities.py`
+- `core/intent_resolver.py`
+- `core/router.py`
+- `core/tool_contracts.py`
+- `core/permission_manager.py`
+- `tools/dispatcher.py`
+- `auren.py`
+- `core/prompt.py`
+- `config.py`
+- `README.md`
+- `AUREN_STATE.md`
+- `tests/test_proactive.py`
+- `tests/test_tool_contracts.py`
+
+Comportamento:
+- Na abertura, o Auren consome no máximo uma lembrança da sessão anterior.
+- O resumo é gerado a partir dos turnos persistidos da Tarefa 5, sem chamada adicional ao modelo.
+- O registro é consumido atomicamente, então a mesma abertura não se repete.
+- Monitoramento é opt-in e começa desligado.
+- Tópicos podem existir sem ativar o recurso.
+- Ativação/desativação é persistente.
+- A trava diária também é persistente.
+- Configuração e estado entram no fluxo normal do Auren.
+- Não existe UI gráfica própria no projeto atual; os controles são capacidades do assistente e podem ser usados pela interface existente/futura.
+- Mark-LV foi usado somente como referência conceitual para resumo de sessão consumível e monitoramento diário; nenhum código foi copiado.
+
+Testes adicionados:
+- resumo usa histórico persistido
+- resumo é consumido somente uma vez
+- monitoramento começa desligado
+- ativação e trava diária
+- tópicos não ativam o recurso sozinhos
+- remoção de tópico
+- registro e permissões das novas tools
+
+Comando de saída:
+`py -m pytest -q`
+
+PR:
+- #84 — Tarefa 10C
+- base: Tarefa 10B / #83
+
+Portão pendente:
+- CI completo
+- runner live em Windows real
+
+Após o portão:
+- Tarefa 10A, 10B e 10C formam o pacote da Tarefa 10 e a fase pode ser encerrada, sem abrir nova capacidade nesta sequência.
