@@ -9,13 +9,12 @@ Atualizado em: 2026-10-08
 ## Estado atual
 
 - **Versão estável:** V48
-- **Versão em validação:** V50
+- **Versão em validação:** V51
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** `feat/tarefa-10b-web-search` / PR #83
+- **Branch/PR ativa:** `feat/tarefa-10c-proactive` / PR #84
 - **Head da main:** `0a8304e1b097d458511f017ca1f0d9da19d86726`
-- **Head da PR #83:** `159dbe5df2f38160bd731a3c2fcc3465d270731e`
-- **CI da Tarefa 10B:** aguardando execução no PR #83
-- **Fase atual:** Novas capacidades — Tarefa 10B (Pesquisa web)
+- **CI da PR #84:** falhou por expectativas antigas de contagem/capability; correção em andamento
+- **Fase atual:** Fechamento da Tarefa 10 — 10A + 10B + 10C
 
 ### O que já está concluído nesta fase
 
@@ -74,7 +73,7 @@ A execução manual do runner Browser Intelligence em Windows continua pendente 
 - [x] runner interno limitado a `--disparar <id>`
 - [x] testes com scheduler simulado cobrindo criacao, listagem, cancelamento, XML, argumentos, permissao, Router e Dispatcher
 - [x] nenhuma dependencia nova adicionada
-- [ ] portao final: `py -m pytest -q` verde no CI do PR #82
+- [ ] portao final: `py -m pytest -q` verde no CI da PR #84
 - [ ] runner live Windows `python testes_auren_live.py --rapido` — pendente porque este ambiente nao possui Windows; o focused-tests-windows do CI passou
 
 ### Decisoes da 10A
@@ -100,7 +99,7 @@ A execução manual do runner Browser Intelligence em Windows continua pendente 
 - [x] todo retorno e marcado como `conteudo_nao_confiavel`
 - [x] resultados externos nao autorizam acoes automaticamente; prompt injection continua passando pela mesma guarda do PermissionManager
 - [x] nenhuma dependencia nova
-- [ ] portao final: `py -m pytest -q` verde no CI do PR #83
+- [ ] portao final: `py -m pytest -q` verde no CI da PR #84
 - [ ] `python testes_auren_live.py --rapido` apos a entrada em ambiente Windows real
 
 ### Decisoes da 10B
@@ -155,14 +154,9 @@ A execução manual do runner Browser Intelligence em Windows continua pendente 
 - [x] validação visual Windows com geometria/coordenadas protegidas
 
 ## PRs mais recentes
-- **#84** — Tarefa 10C: abertura proativa e continuidade — open
-- **#83** — Tarefa 10B: pesquisa web em modos — open
-- **#82** — Tarefa 10A: lembretes persistentes — open
-- **#83** — Tarefa 10B: pesquisa web em modos — open
-- **#82** — Tarefa 10A: lembretes persistentes — open
-- **#83** — Tarefa 10B: pesquisa web em modos — open
-- **#82** — Tarefa 10A: lembretes persistentes — open
-- **#82** — Tarefa 10A: lembretes persistentes — open
+- **#84** — Fechamento da Tarefa 10 (10A + 10B + 10C) — open
+- **#83** — Tarefa 10B: pesquisa web em modos — closed
+- **#82** — Tarefa 10A: lembretes persistentes — closed
 - **#81** — Tarefa 8: carregador de plugins via Dispatcher — open
 
 - **#48** — extração de Windows UI Automation — merged
@@ -193,9 +187,9 @@ A execução manual do runner Browser Intelligence em Windows continua pendente 
 
 ## Próximas etapas
 
-A Tarefa 8 passou o portão final. A Tarefa 10A foi selecionada explicitamente como a frente atual; a Tarefa 9 continua registrada como pendência herdada, sem implementação silenciosa.
+A Tarefa 8 passou o portão final. A Tarefa 10A, 10B e 10C já estão implementadas na PR #84; resta somente fechar o portão automatizado e validar o que for aplicável no ambiente Windows real.
 
-Próxima etapa, após o portão da 10A: Tarefa 10B — Pesquisa na web em modos. A execução manual do runner Browser Intelligence continua pendente da fase anterior.
+Enquanto a Tarefa 10 não passar o portão final, não abrir novas frentes nem ampliar escopo.
 
 Depois disso, revisar novamente a estabilização e só então abrir novas frentes.
 
