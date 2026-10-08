@@ -366,7 +366,6 @@ CAPABILITY_DEFINITIONS: tuple[Capability, ...] = (
             r"\bguarde\b",
         ),
     ),
-,
     Capability(
         id="gerenciar_lembretes",
         descricao="Criar, listar e cancelar lembretes persistentes pelo Agendador de Tarefas do Windows.",
