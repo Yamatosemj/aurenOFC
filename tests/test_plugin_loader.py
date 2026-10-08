@@ -521,7 +521,7 @@ def test_capacidade_do_plugin_entra_no_subconjunto_do_router(monkeypatch, tmp_pa
     registry = discover_plugins(directory, approval_file=approval, logger=lambda _msg: None)
     try:
         from core.router import Router
-        nomes = Router().select_tool_names("use a coisaespecial agora", tools)
+        nomes = Router().select_tool_names("veja a janela e a janelaespecial agora", tools)
         assert "rota_plugin" in nomes
     finally:
         registry.descarregar()
