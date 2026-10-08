@@ -28,7 +28,7 @@ from core.response import criar_resposta, get_client, obter_metricas_roteamento
 from core.session import SessionContextManager
 from core.tools_registry import tools
 from skills.loader import SkillLibrary
-from tools import applications, browser, files, reminders, windows
+from tools import applications, browser, files, windows
 from tools.dispatcher import (
     executar_ferramenta as _executar_ferramenta,
     _resultado_ferramenta_bem_sucedido,
