@@ -80,7 +80,7 @@ CAPABILITY_DEFINITIONS: tuple[Capability, ...] = (
     Capability(
         id="pesquisar_web",
         descricao="Pesquisar a web em modo news, research, price ou compare e devolver fontes externas limitadas.",
-        local=False,
+        local=True,
         deterministica=True,
         multi_etapa=False,
         exige_raciocinio=False,
