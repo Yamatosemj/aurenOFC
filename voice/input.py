@@ -175,12 +175,13 @@ class PushToTalkRecorder:
             raise RuntimeError(f"Nao foi possivel consultar o microfone: {exc}") from exc
 
     def _stream_kwargs(self, *, device: int | str | None, sample_rate: int) -> dict[str, Any]:
-        blocksize = max(1, int(round(sample_rate * 0.02)))
+        blocksize = max(1, int(round(sample_rate * 0.04)))
         return {
             "samplerate": int(sample_rate),
             "channels": self.config.channels,
             "dtype": self.config.dtype,
             "blocksize": blocksize,
+            "latency": "high",
             "callback": self._callback,
             "device": device,
         }
