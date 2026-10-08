@@ -274,7 +274,7 @@ class TaskScheduler:
         """Consulta se a tarefa exata ainda existe no Agendador do Windows.
         Falhas desconhecidas nao sao confundidas com ausencia, evitando apagar metadata por engano.
         Custo: uma chamada ao schtasks.exe por lembrete consultado."""
-        if os.name != "nt":
+        if not _is_windows():
             raise RuntimeError("Lembretes do Windows exigem um sistema Windows.")
 
         result = _run_schtasks([
@@ -379,7 +379,7 @@ def listar_lembretes() -> ToolResult:
     """Lista os lembretes futuros registrados pelo Auren e ainda presentes no Windows.
     Entradas quebradas ou agendamentos removidos sao limpos sem alterar outros lembretes.
     Custo: leitura do JSON e uma consulta ao Task Scheduler por entrada."""
-    if os.name != "nt":
+    if not _is_windows():
         return ToolResult.failure(
             "Lembretes do Auren usam o Agendador de Tarefas do Windows.",
             error_code="platform_not_supported",
