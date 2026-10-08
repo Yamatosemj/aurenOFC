@@ -25,7 +25,10 @@ CAPABILITY = {
 
 
 def executar(argumentos: dict) -> ToolResult:
-    """Retorne sempre ToolResult; permissao e politica pertencem ao Core."""
+    """Define o ponto de entrada logico do plugin sem executar por fora do Dispatcher.
+    O loader registra esta funcao no Dispatcher e o Core aplica contrato e permissao antes da chamada.
+    Custo: depende somente da operacao concreta implementada pelo plugin.
+    """
     return ToolResult.success(
         "Substitua este corpo pelo comportamento do plugin.",
         tool_name=TOOL["name"],
