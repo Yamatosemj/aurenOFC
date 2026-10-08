@@ -73,6 +73,21 @@ def _iniciar_captura_de_voz(
     thread.start()
     return thread
 
+def _iniciar_precarregamento_stt(stt: LocalPortugueseASR, stop_event: Event) -> Thread:
+    """Carrega o ASR fora do loop principal para reduzir a latencia da primeira fala."""
+
+    def _worker() -> None:
+        try:
+            stt.precarregar()
+            if not stop_event.is_set():
+                print("Auren voz: ASR local pronto.")
+        except Exception as exc:
+            if not stop_event.is_set():
+                print(f"Auren voz: nao foi possivel aquecer o ASR agora: {exc}")
+
+    thread = Thread(target=_worker, name="auren-stt-warmup", daemon=True)
+    thread.start()
+    return thread
 
 def _falar_interrompivel(
     tts: LocalKokoroTTS,
@@ -228,6 +243,7 @@ def main() -> int:
     print("Captura: pre-roll + pos-roll + WebRTC VAD local (fallback por energia)")
     print("TTS: Kokoro ONNX local")
     print("O primeiro uso baixa os modelos e os deixa em cache local.")
+    _iniciar_precarregamento_stt(stt, stop_event)
     _iniciar_leitor_texto(fila_texto, stop_event)
     _iniciar_captura_de_voz(recorder, fila_audio, stop_event)
 
