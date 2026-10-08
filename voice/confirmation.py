@@ -17,17 +17,31 @@ class VoiceConfirmationChannel:
         stt: Any,
         audio_queue: Queue,
         timeout: float = 8.0,
+        set_output_active: Any | None = None,
     ) -> None:
         self._tts = tts
         self._stt = stt
         self._audio_queue = audio_queue
         self._timeout = max(0.1, float(timeout))
+        self._set_output_active = set_output_active
 
     def confirmar(self, request: ConfirmationRequest) -> bool:
+        if self._set_output_active is not None:
+            try:
+                self._set_output_active(True)
+            except Exception:
+                pass
+
         try:
             self._tts.falar(self._prompt(request))
         except Exception:
             return False
+        finally:
+            if self._set_output_active is not None:
+                try:
+                    self._set_output_active(False)
+                except Exception:
+                    pass
 
         try:
             audio = self._audio_queue.get(timeout=self._timeout)
