@@ -73,3 +73,30 @@ def hoje_utc() -> str:
     Centraliza a referência temporal para testes determinísticos.
     Custo: O(1)."""
     return datetime.now(timezone.utc).date().isoformat()
+
+
+def checar_topicos(store: Any) -> list[str]:
+    """Consulta uma vez os tópicos habilitados e devolve alertas curtos.
+    A checagem é somente leitura e respeita a trava diária persistente.
+    Custo: até uma busca web por tópico configurado."""
+    if not monitoramento_necessario(store):
+        return []
+    topicos = store.listar_topicos_proativos()
+    if not topicos:
+        marcar_monitoramento(store)
+        return []
+    from tools.web_search import pesquisar_web
+    alertas = []
+    for topico in topicos:
+        resultado = pesquisar_web(topico, "news")
+        if not getattr(resultado, "ok", False):
+            continue
+        fontes = (getattr(resultado, "data", {}) or {}).get("fontes", [])
+        if not fontes:
+            continue
+        primeiro = fontes[0]
+        trecho = " ".join(str(primeiro.get("trecho", "")).split())
+        if trecho:
+            alertas.append(f"Atualização sobre {topico}: {trecho[:260]}")
+    marcar_monitoramento(store)
+    return alertas
