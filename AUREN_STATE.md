@@ -4,7 +4,7 @@
 > Antes de iniciar uma nova tarefa, compare este arquivo com a branch/PR, o head da main e o CI do GitHub.
 > Histórico, memórias da conversa e documentos arquivados não substituem este estado.
 
-Atualizado em: 2026-10-07
+Atualizado em: 2026-10-08
 
 ## Estado atual
 
@@ -71,6 +71,7 @@ A validação real com microfone, driver, ruído ambiente e fala natural em port
 
 - [x] allowlist de leitura/inspeção de arquivos
 - [x] defesa contra prompt injection de conteúdo não confiável
+- [x] resultados OK marcados como conteúdo não confiável sempre registram a fonte no PermissionManager pelo Dispatcher
 - [x] política de permissões endurecida
 - [x] exceções genéricas reduzidas em caminhos críticos
 - [x] dependências principais fixadas

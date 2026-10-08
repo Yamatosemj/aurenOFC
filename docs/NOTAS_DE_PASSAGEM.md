@@ -1,6 +1,6 @@
 # Notas de passagem — Auren Voice/STT V4
 
-Data: 2026-10-07
+Data: 2026-10-08
 Branch: `feat/tarefa-1-voice-stt-v48`
 Tarefa: Sistema de voz e STT
 
@@ -50,3 +50,11 @@ A validação local focada passou com **6 testes** cobrindo resampling 48→16 k
 ## Próximo passo
 
 Executar a bateria de voz no Windows real e medir exemplos curtos, comandos naturais, fala lenta/rápida, pausas, ruído e troca/ausência do microfone. Só depois disso decidir ajustes finos dos limiares de VAD.
+
+
+## Correção de segurança nesta passagem
+
+- resultados OK de `ler_pagina`, `ler_arquivo` e `obter_contexto_navegador` passam a registrar a fonte não confiável no `PermissionManager` mesmo quando a própria ferramenta já devolve `conteudo_nao_confiavel=True`
+- a marcação existente de `ler_pagina` foi preservada
+- regressões adicionadas pelo fluxo `executar_ferramenta` cobrem leitura real de arquivo, contexto de navegador, leitura de página, ausência de leitura anterior e limpeza por `iniciar_tarefa()`
+- nenhuma nova ferramenta foi classificada como não confiável e nenhuma capacidade/permissão foi afrouxada
