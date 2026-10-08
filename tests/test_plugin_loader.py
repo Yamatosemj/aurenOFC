@@ -116,8 +116,10 @@ def test_plugin_entra_em_confirm_e_aprovacao_muda_nivel_sem_reboot(monkeypatch, 
     _write_approval(approval, teste_plugin={"habilitado": True, "aprovado": False})
     monkeypatch.setenv("AUREN_PLUGINS_APPROVAL_FILE", str(approval))
 
+    directory = _tmp_plugins_with(tmp_path, "teste_plugin")
+    _write_plugin(directory, "teste_plugin.py", _valid_plugin("teste_plugin"))
     registry = discover_plugins(
-        _tmp_plugins_with(tmp_path, "teste_plugin"),
+        directory,
         approval_file=approval,
         logger=lambda _msg: None,
     )
@@ -135,8 +137,10 @@ def test_aprovacao_nao_bypassa_politica_de_conteudo_nao_confiavel(monkeypatch, t
     approval = tmp_path / "aprovacoes.json"
     _write_approval(approval, teste_untrusted={"habilitado": True, "aprovado": True})
     monkeypatch.setenv("AUREN_PLUGINS_APPROVAL_FILE", str(approval))
+    directory = _tmp_plugins_with(tmp_path, "teste_untrusted")
+    _write_plugin(directory, "teste_untrusted.py", _valid_plugin("teste_untrusted"))
     registry = discover_plugins(
-        _tmp_plugins_with(tmp_path, "teste_untrusted"),
+        directory,
         approval_file=approval,
         logger=lambda _msg: None,
     )
