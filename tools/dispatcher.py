@@ -173,7 +173,11 @@ TOOL_HANDLERS = {
     "criar_lembrete": _sem_memoria(reminders.criar_lembrete, "mensagem", "data", "hora"),
     "listar_lembretes": _sem_memoria(reminders.listar_lembretes),
     "cancelar_lembrete": _sem_memoria(reminders.cancelar_lembrete, "id"),
-    "pesquisar_web": _sem_memoria(pesquisar_web, "consulta", "modo"),
+    "pesquisar_web": _sem_memoria(pesquisar_web, "consulta", "modo"),\n    "configurar_monitoramento_proativo": _sem_memoria(lambda ativo: proactive_controls.ativar(memory_store, ativo), "ativo"),
+    "adicionar_topico_proativo": _sem_memoria(lambda topico: proactive_controls.adicionar(memory_store, topico), "topico"),
+    "remover_topico_proativo": _sem_memoria(lambda topico: proactive_controls.remover(memory_store, topico), "topico"),
+    "status_monitoramento_proativo": _sem_memoria(lambda: proactive_controls.status(memory_store)),
+
     "listar_janelas_windows": _sem_memoria(windows.listar_janelas_windows),
     "focar_janela_windows": _sem_memoria(windows.focar_janela_windows, "alvo"),
     "minimizar_janela_windows": _sem_memoria(windows.minimizar_janela_windows, "alvo"),
