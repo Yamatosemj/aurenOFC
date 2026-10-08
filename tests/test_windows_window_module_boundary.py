@@ -39,6 +39,7 @@ def test_facade_compatibility_internals_are_reexported_by_windows_module():
         "_ui_automation_janela",
         "_executar_ui_automation",
         "_pressionar_vk",
+        "_powershell_literal",
         "_WINDOW_TARGET_CACHE",
     )
 
