@@ -145,6 +145,7 @@ _CAPABILITY_RULES += (
     ("criar_lembrete", "reminder.create"),
     ("listar_lembretes", "reminder.read"),
     ("cancelar_lembrete", "reminder.cancel"),
+    ("pesquisar_web", "web.search"),
 )
 
 _CAPABILITY_BY_TOOL = dict(_CAPABILITY_RULES)
