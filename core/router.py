@@ -112,6 +112,11 @@ TOOL_GROUPS = {
         "consultar_memoria_persistente",
         "esquecer_memoria_persistente",
     },
+    "reminders": {
+        "criar_lembrete",
+        "listar_lembretes",
+        "cancelar_lembrete",
+    },
 }
 
 # Frases suficientemente específicas para evitar que o Router corte uma
@@ -207,6 +212,12 @@ DOMAIN_PATTERNS: dict[str, tuple[str, ...]] = {
         r"\bmem[oó]ria\b.*\b(uso|usada|utilizada)\b",
         r"\btempo\b.*\b(ligado|ligad[oó]|computador)",
         r"\bh[aá] quanto tempo.*\bcomputador",
+    ),
+    "reminders": (
+        r"\blembrete(s)?\b",
+        r"\blembr(?:ar|e|a|ou)\b.*\b(?:me|mim)\b",
+        r"\bme\s+lembre\b",
+        r"\b(?:avise|avisar|me avisa)\b.*\b(?:de|sobre|para)\b",
     ),
     "apps_files": (
         r"\baplicativo\b",
