@@ -8,12 +8,12 @@ Atualizado em: 2026-10-08
 
 ## Estado atual
 
-- **Versão estável:** V48
+- **Versão estável:** V47
 - **Versão em validação:** V51
 - **Modelo padrão:** `gpt-5.6-luna`
 - **Branch/PR ativa:** `feat/tarefa-10c-proactive` / PR #84
 - **Head da main:** `0a8304e1b097d458511f017ca1f0d9da19d86726`
-- **CI da PR #84:** falhou por expectativas antigas de contagem/capability; correção em andamento
+- **CI da PR #84:** pytest completo, focused Linux e focused Windows verdes após correções; auditoria final em andamento
 - **Fase atual:** Fechamento da Tarefa 10 — 10A + 10B + 10C
 
 ### O que já está concluído nesta fase
@@ -73,7 +73,7 @@ A execução manual do runner Browser Intelligence em Windows continua pendente 
 - [x] runner interno limitado a `--disparar <id>`
 - [x] testes com scheduler simulado cobrindo criacao, listagem, cancelamento, XML, argumentos, permissao, Router e Dispatcher
 - [x] nenhuma dependencia nova adicionada
-- [ ] portao final: `py -m pytest -q` verde no CI da PR #84
+- [x] portao automatizado: `py -m pytest -q` verde no CI da PR #84 — 492 passed, 6 skipped
 - [ ] runner live Windows `python testes_auren_live.py --rapido` — pendente porque este ambiente nao possui Windows; o focused-tests-windows do CI passou
 
 ### Decisoes da 10A
