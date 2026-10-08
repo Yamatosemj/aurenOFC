@@ -243,6 +243,8 @@ class LocalPortugueseASR:
         if duration < 0.08:
             return ""
 
+        waveform = _normalizar_nivel_fala(waveform)
+
         try:
             with self._inference_lock:
                 self._ensure_model()
