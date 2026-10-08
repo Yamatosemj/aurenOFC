@@ -126,7 +126,7 @@ A execução manual do runner Browser Intelligence em Windows continua pendente 
 - [x] ativação e alteração de tópicos exigem CONFIRM; consulta de estado é AUTO
 - [x] nenhum caminho paralelo de execução foi criado
 - [x] testes de continuidade, consumo único, estado padrão, trava diária e tópicos adicionados
-- [ ] portão final: `py -m pytest -q` verde no CI
+- [ ] portão final: `py -m pytest -q` verde no CI da PR #84
 - [ ] runner live `python testes_auren_live.py --rapido` em Windows real
 
 ### Decisões da 10C
