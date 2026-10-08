@@ -9,13 +9,13 @@ Atualizado em: 2026-10-08
 ## Estado atual
 
 - **Versão estável:** V48
-- **Versão em validação:** V49
+- **Versão em validação:** V50
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** `feat/tarefa-10a-lembretes` / PR #82
+- **Branch/PR ativa:** `feat/tarefa-10b-web-search` / PR #83
 - **Head da main:** `0a8304e1b097d458511f017ca1f0d9da19d86726`
-- **Head da PR #82:** `d52247afd8eaa321f8ddc35a57a89e70ea5f0881`
-- **CI da Tarefa 10A:** verde no PR #82 — 476 passed, 6 skipped
-- **Fase atual:** Novas capacidades — Tarefa 10A (Lembretes)
+- **Head da PR #83:** `159dbe5df2f38160bd731a3c2fcc3465d270731e`
+- **CI da Tarefa 10B:** aguardando execução no PR #83
+- **Fase atual:** Novas capacidades — Tarefa 10B (Pesquisa web)
 
 ### O que já está concluído nesta fase
 
@@ -129,6 +129,8 @@ A execução manual do runner Browser Intelligence em Windows continua pendente 
 - [x] validação visual Windows com geometria/coordenadas protegidas
 
 ## PRs mais recentes
+- **#83** — Tarefa 10B: pesquisa web em modos — open
+- **#82** — Tarefa 10A: lembretes persistentes — open
 - **#83** — Tarefa 10B: pesquisa web em modos — open
 - **#82** — Tarefa 10A: lembretes persistentes — open
 - **#82** — Tarefa 10A: lembretes persistentes — open
