@@ -11,6 +11,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import auren  # noqa: E402
+from voice.audio_devices import prefetch as prefetch_dispositivos  # noqa: E402
 from voice.confirmation import VoiceConfirmationChannel  # noqa: E402
 from voice.input import PushToTalkRecorder  # noqa: E402
 from voice.speech_response import SpeechResponseFormatter  # noqa: E402
@@ -65,7 +66,6 @@ def _iniciar_captura_de_voz(
             if stop_event.is_set():
                 return
 
-            # ESC faz o recorder devolver None; o loop principal decide encerrar.
             fila.put(("audio", audio))
 
     thread = Thread(target=_worker, name="auren-voice-input", daemon=True)
@@ -94,7 +94,7 @@ def _falar_interrompivel(
     def _worker() -> None:
         try:
             tts.falar(texto, cancel_event=cancel_event, on_audio_start=_marcar_inicio_voz)
-        except BaseException as exc:  # propaga o erro no thread principal
+        except BaseException as exc:
             erro.append(exc)
 
     thread = Thread(target=_worker, name="auren-tts", daemon=True)
@@ -156,9 +156,6 @@ def _processar_e_falar(
     texto = resposta if tratado else getattr(resposta, "output_text", str(resposta))
     texto = str(texto or "").strip()
     snapshot = harness.current_task()
-    # Fast path/local completion pode ser enriquecido pela formatacao
-    # especifica de ferramenta; respostas finais do modelo ficam com
-    # o texto natural do proprio modelo, apenas limpo/encurtado.
     fala = SpeechResponseFormatter.formatar(
         objetivo=mensagem,
         texto=texto,
@@ -185,8 +182,6 @@ def _processar_e_falar(
         return True, latencia
 
     if interrompido:
-        # F8 tambem serve como barge-in: interrompe a fala do Auren
-        # e deixa o usuario continuar falando sem precisar esperar o TTS.
         print("Auren voz: fala interrompida.")
 
     auren.mostrar_uso()
@@ -194,6 +189,8 @@ def _processar_e_falar(
 
 
 def main() -> int:
+    prefetch_dispositivos()
+
     recorder = PushToTalkRecorder(hotkey="f8")
     stt = LocalPortugueseASR()
     tts = LocalKokoroTTS()
@@ -223,7 +220,6 @@ def main() -> int:
                 print("Auren: Até mais.")
                 return 0
 
-            # Primeiro verificamos texto para deixar o modo silencioso responsivo.
             try:
                 entrada_texto = fila_texto.get_nowait()
             except Empty:
@@ -261,7 +257,6 @@ def main() -> int:
                         return 0
                 continue
 
-            # Depois verificamos o resultado do push-to-talk.
             try:
                 tipo_audio, audio = fila_audio.get(timeout=0.05)
             except Empty:

@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import os
 import time
 from dataclasses import dataclass
 from threading import Event, Lock
+from typing import Any
 
 from agent.ari_native.audio_manager import input_session
-from typing import Any
+from voice.audio_devices import carregar_escolha, resolver_dispositivo
 
 
 @dataclass(frozen=True)
@@ -48,7 +48,6 @@ class PushToTalkRecorder:
         self._lock = Lock()
         self._frames: list[Any] = []
         self._recording = False
-        self._device_index = self._resolve_device_from_env()
         self._last_device_name = ""
         self._last_sample_rate = 16_000
 
@@ -71,25 +70,19 @@ class PushToTalkRecorder:
                 ) from exc
             self._keyboard = keyboard
 
-    @staticmethod
-    def _resolve_device_from_env() -> int | str | None:
-        value = os.getenv("AUREN_MIC_DEVICE", "").strip()
-        if not value:
-            return None
-        try:
-            return int(value)
-        except ValueError:
-            return value
-
-    def _input_device_info(self) -> tuple[str, int]:
+    def _input_device_info(self, device_index: int | None) -> tuple[str, int]:
         try:
             info = (
-                self._sd.query_devices(self._device_index, "input")
-                if self._device_index is not None
+                self._sd.query_devices(device_index, "input")
+                if device_index is not None
                 else self._sd.query_devices(kind="input")
             )
             name = str(info.get("name", "desconhecido")) if isinstance(info, dict) else str(info)
-            default_sr = float(info.get("default_samplerate", 16_000)) if isinstance(info, dict) else 16_000.0
+            default_sr = (
+                float(info.get("default_samplerate", 16_000))
+                if isinstance(info, dict)
+                else 16_000.0
+            )
             configured = self.config.sample_rate
             sample_rate = int(configured or round(default_sr) or 16_000)
             return name, sample_rate
@@ -123,7 +116,9 @@ class PushToTalkRecorder:
         sd = self._sd
         keyboard = self._keyboard
 
-        device_name, sample_rate = self._input_device_info()
+        saved_name = carregar_escolha("input")
+        device_index = resolver_dispositivo(saved_name, "input")
+        device_name, sample_rate = self._input_device_info(device_index)
         self._last_device_name = device_name
         self._last_sample_rate = sample_rate
         print(f"Microfone: {device_name} | captura={sample_rate} Hz")
@@ -143,7 +138,7 @@ class PushToTalkRecorder:
                     channels=self.config.channels,
                     dtype=self.config.dtype,
                     callback=self._callback,
-                    device=self._device_index,
+                    device=device_index,
                 ):
                     while keyboard.is_pressed(self.hotkey):
                         if keyboard.is_pressed("esc"):

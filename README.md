@@ -1,6 +1,6 @@
 # Auren
 
-Assistente desktop/voz para Windows, versão técnica **V47**, usando o modelo configurado em `config.py` (snapshot atual: `gpt-5.6-luna`).
+Assistente desktop/voz para Windows, versão técnica **V48**, usando o modelo configurado em `config.py` (snapshot atual: `gpt-5.6-luna`).
 
 > **Estado atual do projeto:** consulte [AUREN_STATE.md](AUREN_STATE.md) antes de iniciar ou continuar trabalho no Auren. O estado oficial registra a tarefa ativa, PRs em andamento, CI, próxima fase e backlog.
 
@@ -44,6 +44,27 @@ INSTALAR_VOZ.bat
 ```
 
 A camada de voz usa dependências separadas de `requirements-voice.txt`.
+### Dispositivos de áudio por nome (V48)
+
+A voz não guarda índices do \`sounddevice\`: entrada e saída são escolhidas por nome e resolvidas novamente quando o áudio é aberto. A seleção fica em \`%LOCALAPPDATA%\\Auren\\audio_devices.json\`, fora do repositório.
+
+Para listar os dispositivos utilizáveis e a escolha atual:
+
+\`\`\`powershell
+py voice\\list_devices.py
+AUREN_LISTAR_MICROFONES.bat
+\`\`\`
+
+Para salvar uma escolha pelo nome:
+
+\`\`\`powershell
+py voice\\list_devices.py --entrada "Nome do microfone" --saida "Nome do headset"
+\`\`\`
+
+A lista remove aliases/pseudo-dispositivos, deduplica por nome e valida a abertura no sample rate usado pelo Auren. Uma sonda opcional mede o tempo de escrita da saída para detectar host API que aceita a escrita mas não consome o áudio. Para desligar essa sonda: \`AUREN_AUDIO_PROBE=0\`.
+
+A resolução é feita de novo a cada captura e a cada fala TTS, então a troca do headset não exige reiniciar o Auren. Se o nome salvo desaparecer ou não puder ser aberto, o Auren usa o padrão do sistema e registra um warning.
+
 
 ### Modelo
 
