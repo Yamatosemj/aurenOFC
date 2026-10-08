@@ -45,7 +45,7 @@ O Mark-LV foi usado como referência para decisões de baixo nível como VAD, tr
 
 ## Validação
 
-A validação determinística da camada deve rodar no CI. O teste final de qualidade ainda depende de um Windows com microfone real, porque latência percebida, driver, ruído e qualidade do PT-BR não podem ser validados apenas por testes unitários.
+A validação local focada passou com **6 testes** cobrindo resampling 48→16 kHz, rejeição de audio curto, VAD com padding, silencio, resolução de microfone e confirmação por voz. O CI V48 ainda não reportou status para o head atual. O teste final de qualidade depende de um Windows com microfone real, porque latência percebida, driver, ruído e qualidade do PT-BR não podem ser validados apenas por testes unitários.
 
 ## Próximo passo
 
