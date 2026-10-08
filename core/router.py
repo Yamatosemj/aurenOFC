@@ -362,6 +362,23 @@ class Router:
         texto = self._extract_text(mensagem).strip().lower()
         domains = self._detectar_dominios(mensagem)
 
+        # Plugins podem declarar padroes de objetivo na mesma capability que alimenta o prompt.
+        from core.capabilities import CAPABILITY_REGISTRY
+        plugin_names: set[str] = set()
+        for capacidade in CAPABILITY_REGISTRY.all():
+            if not capacidade.id.startswith("plugin.") or not capacidade.padroes_objetivo:
+                continue
+            try:
+                if any(
+                    re.search(pattern, texto, flags=re.IGNORECASE)
+                    for pattern in capacidade.padroes_objetivo
+                ):
+                    plugin_names.update(capacidade.tools)
+            except re.error:
+                # O loader rejeita novos plugins com regex invalida; esta guarda
+                # protege capacidades antigas ou testes que montem o registry manualmente.
+                continue
+
         # Sem sinal suficientemente claro: preserva 100% da compatibilidade.
         if not domains:
             self.last_domains = []
@@ -369,6 +386,7 @@ class Router:
             return all_names
 
         selected = set(COMMON_TOOLS)
+        selected.update(plugin_names)
         spotify_desktop_only = "spotify_desktop" in domains
         for domain in domains:
             if spotify_desktop_only and domain == "browser":
