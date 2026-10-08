@@ -19,7 +19,7 @@ class AudioCaptureConfig:
     min_seconds: float = 0.10
     max_seconds: float = 30.0
     poll_interval: float = 0.02
-    sample_rate: int | None = None
+    sample_rate: int | None = 16_000
     silence_rms: float = 0.0008
     silence_peak: float = 0.005
     pre_roll_seconds: float = 0.18
@@ -67,6 +67,7 @@ class PushToTalkRecorder:
         self._pre_roll_limit_samples = 0
         self._recording = False
         self._output_active = False
+        self._input_overflow_count = 0
         self._device_index = self._resolve_device_from_env()
         self._last_device_name = ""
         self._last_sample_rate = 16_000
@@ -221,9 +222,12 @@ class PushToTalkRecorder:
     def _callback(self, indata, frames, time_info, status) -> None:  # noqa: ANN001
         del frames, time_info
         if status:
-            # Overflow deve aparecer no diagnostico sem executar trabalho pesado
-            # dentro do callback de audio.
-            print(f"Auren voz: aviso do driver de captura: {status}")
+            # Nunca imprimimos dentro do callback: I/O aqui pode aumentar o
+            # proprio risco de overflow. O contador e reportado apos a captura.
+            status_text = str(status).lower()
+            if "input overflow" in status_text:
+                with self._lock:
+                    self._input_overflow_count += 1
 
         copy = getattr(indata, "copy", None)
         chunk = copy() if callable(copy) else indata
@@ -343,6 +347,8 @@ class PushToTalkRecorder:
             self._last_device_name = device_name
             self._last_sample_rate = actual_rate
             self._preparar_buffer(actual_rate)
+            with self._lock:
+                self._input_overflow_count = 0
             print(f"Microfone: {device_name} | captura={actual_rate} Hz")
             print(f"Segure {self.hotkey.upper()} para falar... (ESC encerra)")
 
@@ -419,6 +425,11 @@ class PushToTalkRecorder:
                         pass
 
         frames = self._registrar_fim()
+        with self._lock:
+            overflow_count = self._input_overflow_count
+            self._input_overflow_count = 0
+        if overflow_count:
+            print(f"Auren voz: {overflow_count} avisos de input overflow durante a captura.")
         if esc_requested or not frames:
             return None
 
