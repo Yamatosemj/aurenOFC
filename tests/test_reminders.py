@@ -42,6 +42,7 @@ def reminder_env(monkeypatch, tmp_path):
     scheduler = FakeScheduler()
     monkeypatch.setenv("AUREN_REMINDERS_FILE", str(store))
     monkeypatch.setattr(reminders, "SCHEDULER", scheduler)
+    monkeypatch.setattr(reminders.sys, "platform", "win32")
     return store, scheduler
 
 
@@ -280,13 +281,13 @@ def test_scheduler_xml_uses_iso_time_interactive_token_and_least_privilege(tmp_p
     xml = reminders._task_xml(
         "AurenReminder_rem-aaaaaaaaaa",
         target,
-        ["C:\Python\pythonw.exe", "-m", "tools.reminders", "--disparar", "rem-aaaaaaaaaa"],
+        [r"C:\Python\pythonw.exe", "-m", "tools.reminders", "--disparar", "rem-aaaaaaaaaa"],
     )
 
     assert "<StartBoundary>2030-05-17T14:30:00</StartBoundary>" in xml
     assert "<LogonType>InteractiveToken</LogonType>" in xml
     assert "<RunLevel>LeastPrivilege</RunLevel>" in xml
-    assert "<Command>C:\Python\pythonw.exe</Command>" in xml
+    assert r"<Command>C:\Python\pythonw.exe</Command>" in xml
     assert "--disparar" in xml
     assert "shell=True" not in xml
 
