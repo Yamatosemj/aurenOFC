@@ -43,14 +43,14 @@ class PushToTalkRecorder:
     """Captura PTT com pre-roll, pos-roll e segmentacao local da fala.
 
     O microfone fica aberto somente no processo local enquanto o recorder esta
-    esperando F8. Fora da fala, apenas uma janela curta em RAM e mantida para
+    esperando Ctrl direito + Shift direito. Fora da fala, apenas uma janela curta em RAM e mantida para
     evitar cortar a primeira silaba quando o usuario aperta a tecla.
     """
 
     def __init__(
         self,
         *,
-        hotkey: str = "right ctrl+right shift+right shift",
+        hotkey: str = "right ctrl+right shift",
         config: AudioCaptureConfig | None = None,
         sounddevice_module: Any | None = None,
         keyboard_module: Any | None = None,
