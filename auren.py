@@ -26,6 +26,7 @@ from core.plugin_loader import carregar_plugins as _carregar_plugins
 from core.plugin_loader import recarregar_plugins as _recarregar_plugins
 from core.response import criar_resposta, get_client, obter_metricas_roteamento
 from core.session import SessionContextManager
+from core.proactive import criar_resumo_sessao, preparar_abertura, salvar_fechamento
 from core.tools_registry import tools
 from skills.loader import SkillLibrary
 from tools import applications, browser, files, windows
@@ -134,6 +135,15 @@ def _garantir_plugins():
     return _plugin_registry
 
 
+def _salvar_resumo_pos_tarefa(objetivo, historico):
+    chat_id = getattr(session_context, "chat_id_atual", "")
+    if not chat_id:
+        return None
+    resumo = criar_resumo_sessao(memory_store, chat_id, limite_turnos=8)
+    if resumo:
+        salvar_fechamento(memory_store, chat_id, resumo)
+    return None
+
 def criar_harness(confirmation_channel=None) -> AurenHarness:
     """Unico ponto que monta o Harness. Todo canal (texto, voz, futuros) usa esta funcao."""
     _garantir_plugins()
@@ -176,7 +186,7 @@ def criar_harness(confirmation_channel=None) -> AurenHarness:
         obter_chamadas=lambda resposta: [item for item in resposta.output if item.type == "function_call"],
         comando_rapido=comando_rapido if confirmation_channel is None else _comando_rapido_canal,
         iniciar_tarefa=permission_manager.iniciar_tarefa if confirmation_channel is None else task_permission_manager.iniciar_tarefa,
-        apos_tarefa=None,
+        apos_tarefa=_salvar_resumo_pos_tarefa,
         fechar=fechar_navegador,
         obter_metricas_roteamento=obter_metricas_roteamento,
         context=session_context,
@@ -186,6 +196,9 @@ def criar_harness(confirmation_channel=None) -> AurenHarness:
 
 def iniciar_auren() -> None:
     print("Auren online.")
+    abertura = preparar_abertura(memory_store)
+    if abertura:
+        print("Auren:", abertura)
     criar_harness().executar()
 
 if __name__ == "__main__":
