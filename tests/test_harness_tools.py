@@ -230,7 +230,7 @@ def test_successful_browser_mutation_marks_verification_pending():
     assert state["pending"] is True
 
 
-def test_successful_browser_context_clears_verification_pending():
+def test_browser_context_stays_pending_without_explicit_verifier():
     manager = _TaskManager()
     state = {"pending": True}
 
@@ -239,6 +239,41 @@ def test_successful_browser_context_clears_verification_pending():
         historico=[],
         task_manager=manager,
         task_id="task-browser-2",
+        rodada=2,
+        executar_ferramenta=lambda _: ToolResult.success(
+            "Contexto atualizado.",
+            tool_name="obter_contexto_navegador",
+        ),
+        trace=None,
+        vision_state_mutating_tools=set(),
+        vision_reobserve_pending=False,
+        falha_nao_recuperada=False,
+        max_tool_result_chars=100,
+        get_active_vision_geometry=lambda: None,
+        clear_active_vision_geometry=lambda: None,
+        write_log=lambda *args, **kwargs: None,
+        browser_verification_state=state,
+        browser_state_mutating_tools={"clicar_elemento"},
+        browser_verification_tool="obter_contexto_navegador",
+    )
+
+    assert results[0]["sucesso"] is True
+    assert count == 1
+    assert failed is False
+    assert vision_pending is False
+    assert cancelled is False
+    assert state["pending"] is True
+
+
+def test_successful_browser_context_clears_verification_pending_when_verifier_confirms():
+    manager = _TaskManager()
+    state = {"pending": True, "ferramenta": "clicar_elemento", "argumentos": "{}"}
+
+    results, count, failed, vision_pending, cancelled = _executar_chamadas_rodada(
+        [_item("obter_contexto_navegador", "call-browser-2-confirmed")],
+        historico=[],
+        task_manager=manager,
+        task_id="task-browser-2-confirmed",
         rodada=2,
         executar_ferramenta=lambda _: ToolResult.success(
             "Contexto atualizado.",
@@ -264,7 +299,8 @@ def test_successful_browser_context_clears_verification_pending():
     assert vision_pending is False
     assert cancelled is False
     assert state["pending"] is False
-
+    assert "ferramenta" not in state
+    assert "argumentos" not in state
 
 def test_browser_navigation_verification_clears_pending_only_when_target_matches():
     manager = _TaskManager()
