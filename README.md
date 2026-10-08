@@ -113,7 +113,7 @@ O Router escolhe o conjunto de ferramentas da rodada. Toda execução de ferrame
 
 A entrada de voz continua passando pelo mesmo `Harness` usado pela entrada textual. A camada de voz não cria uma segunda rota de execução nem executa ferramentas diretamente.
 
-O PTT abre o stream de entrada antes de Shift+1 ser pressionado, mas mantém somente uma janela curta em memória enquanto aguarda. Quando Shift+1 é segurado, esse pré-roll acompanha o início da fala; ao soltar a tecla, um pós-roll curto protege o final das palavras.
+O PTT abre o stream de entrada antes de Ctrl+Shift+Space ser pressionado, mas mantém somente uma janela curta em memória enquanto aguarda. Quando Ctrl+Shift+Space é segurado, esse pré-roll acompanha o início da fala; ao soltar a tecla, um pós-roll curto protege o final das palavras.
 
 A segmentação usa WebRTC VAD em frames curtos. Quando o backend não está disponível ou falha, o Auren usa um detector de energia simples como fallback. Silêncio quase puro é descartado antes do ASR.
 
@@ -138,7 +138,7 @@ A captura de tela informa a área de trabalho virtual do Windows, incluindo orig
 - captura PTT mantém uma janela curta de pré-roll em RAM, usa pós-roll na soltura e segmenta a fala localmente com WebRTC VAD
 - ASR Parakeet PT-BR TAGARELA recebe uma forma mono normalizada e uma taxa estável de 16 kHz
 - falhas do microfone ou do STT são isoladas da sessão principal e geram nova tentativa
-- `experimental/wake_word.py` existe, mas não faz parte do caminho normal de voz atual (PTT/Shift+1)
+- `experimental/wake_word.py` existe, mas não faz parte do caminho normal de voz atual (PTT/Ctrl+Shift+Space)
 - componentes históricos e relatórios antigos não fazem parte deste pacote runtime
 
 ## Licença
