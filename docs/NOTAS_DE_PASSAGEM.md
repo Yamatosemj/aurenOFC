@@ -26,18 +26,27 @@ Arquivos criados/alterados:
 
 Decisões tomadas (e por quê):
 - O plugin entra nos registries de tools, contratos, capacidades e Dispatcher; não existe executor paralelo.
-- O nível inicial é CONFIRM e a promoção para AUTO depende de `plugins_aprovados.json`; o plugin não declara sua própria política.
-- Plugins desativados são filtrados por AST antes de import e não têm dependências consultadas.
-- Dependências declaradas são verificadas com `find_spec` antes do import; módulos do próprio Auren ausentes recebem diagnóstico de projeto incompleto, não instrução de `pip install core`.
-- O retorno de plugin é marcado como conteúdo não confiável e alimenta a mesma guarda de confirmação usada para leituras externas.
-- O prompt final é gerado a partir do registry de capacidades em tempo de uso, sem abandonar o texto-base de segurança.
-- `hora_atual` é o exemplo oficial e funciona pelo Dispatcher sem edição adicional do runtime.
+- O plugin novo começa em CONFIRM e só vira AUTO quando aprovado em `plugins_aprovados.json`; a capacidade não pode declarar sua própria política.
+- Plugins desativados são filtrados antes do import e antes de `find_spec`.
+- Dependências declaradas são verificadas com `importlib.util.find_spec`; ausência de módulo do próprio Auren gera diagnóstico do projeto e não sugestão de `pip install core`.
+- Falhas de plugin, colisões e nomes inválidos são isoladas com motivo legível e não derrubam o boot.
+- O retorno de plugin é marcado como conteúdo não confiável e passa pela mesma guarda do PermissionManager usada para conteúdo externo.
+- O prompt final é gerado a partir do registry atual de capacidades; o texto-base continua sendo mantido como política fixa.
+- O Router não foi alterado nesta tarefa: a tentativa de integrá-lo diretamente extrapolou o escopo e foi removida. A seleção continua tendo um único dono; o plugin só ganha execução por meio do Dispatcher.
+- `hora_atual` e `plugins/_template.py` demonstram o formato sem exigir edição adicional do runtime para cada novo plugin.
 - Nenhuma dependência nova foi adicionada.
 
-Testes: `py -m pytest -q`; baseline conhecido do CI antes da tarefa: 438 passando; resultado final: pendente enquanto o PR #81 termina o CI.
+Testes:
+- Comando exigido: `py -m pytest -q`
+- Baseline antes da tarefa: 438 passed, 6 skipped
+- Resultado no head da implementação: 457 passed, 6 skipped
+- Ganho: +19 testes passando
+- CI full pytest verde no head `b7358f295239c668d65e38803462deaf35389351`
+- Workflow focado visual continuou separado; nenhuma alteração de Browser/Windows exigiu o runner live desta tarefa.
 
 Ficou pendente / virou backlog:
 - Execução manual do runner Browser Intelligence em Windows continua pendente da fase anterior.
-- Nenhuma nova integração ou feature fora da tarefa 8 foi implementada.
+- Integração de capacidades de plugin em regras específicas do Router ficou fora da Tarefa 8 e não foi implementada silenciosamente.
+- PR #81 permanece aberto para revisão; a tarefa passou o portão de testes.
 
 Próxima tarefa: 9
