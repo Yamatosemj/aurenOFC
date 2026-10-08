@@ -12,7 +12,7 @@ Atualizado em: 2026-10-07
 - **Modelo padrão:** `gpt-5.6-luna`
 - **Branch/PR ativa:** `tarefa-8-plugin-loader` / PR #81
 - **Head da main:** `0a8304e1b097d458511f017ca1f0d9da19d86726`
-- **Head da PR #81:** `3e11040f912ebc67585f2d1af0a8b59f0bcf9e33`
+- **Head da PR #81:** `b7358f295239c668d65e38803462deaf35389351`
 - **CI da implementação da tarefa 8:** em execução no PR #81; a implementação anterior tinha 438 testes passando
 - **Fase atual:** Plugin Infrastructure — Tarefa 8
 
@@ -53,7 +53,7 @@ Atualizado em: 2026-10-07
 - [x] prompt gera capacidades a partir do registry atual
 - [x] template e exemplo `hora_atual`
 - [x] testes específicos e extensão do caminho único
-- [ ] portão final: `py -m pytest -q` verde no PR #81
+- [x] portão final: `py -m pytest -q` verde no PR #81 — 457 passed, 6 skipped
 
 ### Pendência herdada
 A execução manual do runner Browser Intelligence em Windows continua pendente da fase anterior e não foi alterada silenciosamente nesta tarefa.
@@ -104,7 +104,7 @@ A execução manual do runner Browser Intelligence em Windows continua pendente 
 
 ## Próximas etapas
 
-A tarefa ativa é **Tarefa 8 — Plugin Infrastructure** até o portão final verde. Depois, a próxima tarefa é **9**, preservando a pendência herdada do runner Browser Intelligence.
+A Tarefa 8 passou o portão final. A próxima tarefa é **9**, preservando a pendência herdada do runner Browser Intelligence.
 
 Próxima etapa: executar o runner live em Windows e registrar o resultado real das tarefas compostas. O CI atual valida o código do runner, mas não executa a bateria L4/L5 com navegador e modelo reais.
 
