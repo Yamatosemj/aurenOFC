@@ -4,7 +4,6 @@ import os
 import time
 from collections import deque
 from dataclasses import dataclass
-from math import ceil
 from threading import Lock
 from typing import Any
 
@@ -397,7 +396,7 @@ class PushToTalkRecorder:
                             break
                         time.sleep(self.config.poll_interval)
 
-        except Exception as exc:
+        except Exception:
             with self._lock:
                 self._recording = False
                 self._frames = []
