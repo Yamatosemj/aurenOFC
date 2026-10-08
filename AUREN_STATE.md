@@ -9,12 +9,13 @@ Atualizado em: 2026-10-07
 ## Estado atual
 
 - **Versão estável:** V48
+- **Versão em validação:** V49
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** `tarefa-8-plugin-loader` / PR #81
+- **Branch/PR ativa:** `feat/tarefa-10a-lembretes` / PR #82
 - **Head da main:** `0a8304e1b097d458511f017ca1f0d9da19d86726`
-- **Head da PR #81:** `4d177c5929bb21776bfbd675c8d354f7eae7fd0d`
-- **CI da implementação da tarefa 8:** em execução no PR #81; a implementação anterior tinha 438 testes passando
-- **Fase atual:** Plugin Infrastructure — Tarefa 8
+- **Head da PR #82:** `c4bee59cd22998f88ef8cc9190ea2d5e72a2fa47`
+- **CI da Tarefa 10A:** enfileirado no PR #82; baseline anterior da linha de desenvolvimento: 457 passed, 6 skipped
+- **Fase atual:** Novas capacidades — Tarefa 10A (Lembretes)
 
 ### O que já está concluído nesta fase
 
@@ -58,6 +59,34 @@ Atualizado em: 2026-10-07
 ### Pendência herdada
 A execução manual do runner Browser Intelligence em Windows continua pendente da fase anterior e não foi alterada silenciosamente nesta tarefa.
 
+
+## Tarefa 10A — Lembretes persistentes
+
+- [x] `criar_lembrete` registrado no registry, contrato, capability, Router, permissao e Dispatcher
+- [x] `listar_lembretes` registrado no mesmo caminho oficial
+- [x] `cancelar_lembrete` registrado como reversao natural da criacao
+- [x] scheduler Windows baseado em Task Scheduler + XML, sem `shell=True`
+- [x] comando agendado usa lista de argumentos e chama `python(w) -m tools.reminders --disparar <id>`
+- [x] metadata local persistente em `%APPDATA%\\Auren\\lembretes.json`
+- [x] criar = CONFIRM; listar = AUTO; cancelar = CONFIRM
+- [x] IDs curtos e estaveis e nomes das tarefas derivados exclusivamente do ID validado
+- [x] rollback de metadata quando a criacao do agendamento falha
+- [x] runner interno limitado a `--disparar <id>`
+- [x] testes com scheduler simulado cobrindo criacao, listagem, cancelamento, XML, argumentos, permissao, Router e Dispatcher
+- [x] nenhuma dependencia nova adicionada
+- [ ] portao final: `py -m pytest -q` verde no CI do PR #82
+- [ ] runner live Windows `python testes_auren_live.py --rapido` apos a entrada da funcionalidade no ciclo de testes Windows
+
+### Decisoes da 10A
+
+- O Agendador de Tarefas do Windows e a camada persistente de agendamento; o Auren nao precisa permanecer aberto para executar o runner do horario.
+- A acao de criacao e persistente, portanto exige confirmacao humana.
+- A listagem e somente leitura e consulta tambem a existencia da tarefa no scheduler para eliminar metadata obsoleta.
+- O cancelamento remove a tarefa agendada e a metadata. Ele e a reversao natural da criacao e nao foi ligado ao `core/undo.py`, porque essa pilha nao esta presente na linha base desta tarefa.
+- O XML usa `InteractiveToken` e `LeastPrivilege`; a tarefa foi desenhada para a sessao interativa do usuario, sem elevar privilegios.
+- O ID do lembrete e a unica autoridade para derivar o nome da tarefa do scheduler. Metadata local nao pode escolher arbitrariamente outro nome para cancelamento.
+- O runner envia notificacao por comandos do Windows sem shell e possui fallbacks locais; depois de notificar com sucesso, remove a ocorrencia unica e sua metadata.
+
 ## Segurança e base estrutural concluídas
 
 - [x] allowlist de leitura/inspeção de arquivos
@@ -74,6 +103,7 @@ A execução manual do runner Browser Intelligence em Windows continua pendente 
 - [x] validação visual Windows com geometria/coordenadas protegidas
 
 ## PRs mais recentes
+- **#82** — Tarefa 10A: lembretes persistentes — open
 - **#81** — Tarefa 8: carregador de plugins via Dispatcher — open
 
 - **#48** — extração de Windows UI Automation — merged
@@ -104,9 +134,9 @@ A execução manual do runner Browser Intelligence em Windows continua pendente 
 
 ## Próximas etapas
 
-A Tarefa 8 passou o portão final. A próxima tarefa é **9**, preservando a pendência herdada do runner Browser Intelligence.
+A Tarefa 8 passou o portão final. A Tarefa 10A foi selecionada explicitamente como a frente atual; a Tarefa 9 continua registrada como pendência herdada, sem implementação silenciosa.
 
-Próxima etapa: executar o runner live em Windows e registrar o resultado real das tarefas compostas. O CI atual valida o código do runner, mas não executa a bateria L4/L5 com navegador e modelo reais.
+Próxima etapa, após o portão da 10A: Tarefa 10B — Pesquisa na web em modos. A execução manual do runner Browser Intelligence continua pendente da fase anterior.
 
 Depois disso, revisar novamente a estabilização e só então abrir novas frentes.
 
