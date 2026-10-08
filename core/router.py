@@ -112,6 +112,12 @@ TOOL_GROUPS = {
         "consultar_memoria_persistente",
         "esquecer_memoria_persistente",
     },
+    "web_search": {
+        "pesquisar_web",
+        "navegar_navegador",
+        "obter_contexto_navegador",
+        "ler_pagina",
+    },
     "reminders": {
         "criar_lembrete",
         "listar_lembretes",
@@ -212,6 +218,14 @@ DOMAIN_PATTERNS: dict[str, tuple[str, ...]] = {
         r"\bmem[oó]ria\b.*\b(uso|usada|utilizada)\b",
         r"\btempo\b.*\b(ligado|ligad[oó]|computador)",
         r"\bh[aá] quanto tempo.*\bcomputador",
+    ),
+    "web_search": (
+        r"\bpesquis(?:ar|e|a)\b",
+        r"\bbusc(?:ar|e|a)\b",
+        r"\bnot[ií]cia(s)?\b",
+        r"\bpre[cç]o(s)?\b",
+        r"\bcota[cç][aã]o\b",
+        r"\bcompar(?:ar|e|a)\b.*\b(?:produto|op[cç][aã]o|pre[cç]o)\b",
     ),
     "reminders": (
         r"\blembrete(s)?\b",
@@ -391,7 +405,9 @@ class Router:
         if "apps_files" in domains and "browser" not in domains:
             selected.update(TOOL_GROUPS["windows"])
         if "browser" in domains:
-            selected.update({"abrir_programa"})  # fallback para navegadores instalados
+            selected.update({"abrir_programa", "pesquisar_web"})
+        if "web_search" in domains and "browser" not in domains:
+            selected.update(TOOL_GROUPS["web_search"])  # fallback para navegadores instalados
         if "spotify_desktop" in domains:
             # Spotify playback usa o aplicativo Windows, não o Web Player.
             selected.update(TOOL_GROUPS["spotify_desktop"])
