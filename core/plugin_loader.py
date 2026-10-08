@@ -26,6 +26,7 @@ _DEFAULT_PARAMS = {
 }
 _APPROVAL_ENV = "AUREN_PLUGINS_APPROVAL_FILE"
 _DEFAULT_APPROVAL_FILE = "plugins_aprovados.json"
+_ACTIVE_APPROVAL_FILE: Path | None = None
 _FIRST_PARTY_ROOTS = {
     "agent",
     "core",
@@ -81,6 +82,8 @@ class PluginRegistry:
         self.logger = logger
         self._records: list[PluginRecord] = []
         self._active_names: set[str] = set()
+        global _ACTIVE_APPROVAL_FILE
+        _ACTIVE_APPROVAL_FILE = self.approval_file
         self.recarregar()
 
     @property
@@ -234,6 +237,8 @@ def _approval_path(path: str | Path | None = None) -> Path:
     configured = os.getenv(_APPROVAL_ENV, "").strip()
     if configured:
         return Path(configured).resolve()
+    if _ACTIVE_APPROVAL_FILE is not None:
+        return _ACTIVE_APPROVAL_FILE
     return Path(__file__).resolve().parents[1] / _DEFAULT_APPROVAL_FILE
 
 
