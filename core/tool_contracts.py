@@ -141,6 +141,12 @@ _CAPABILITY_RULES: tuple[tuple[str, str], ...] = (
     ("rolar_pagina", "browser.scroll"),
 )
 
+_CAPABILITY_RULES += (
+    ("criar_lembrete", "reminder.create"),
+    ("listar_lembretes", "reminder.read"),
+    ("cancelar_lembrete", "reminder.cancel"),
+)
+
 _CAPABILITY_BY_TOOL = dict(_CAPABILITY_RULES)
 
 
