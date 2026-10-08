@@ -105,9 +105,9 @@ Comando exigido:
 Baseline antes desta tarefa:
 - 457 passed, 6 skipped
 
-Portão pendente:
-- CI completo do PR #82 precisa ficar verde
-- `python testes_auren_live.py --rapido` em Windows deve ser executado após a funcionalidade estar disponível no ambiente real; este ambiente não tem Windows para executar esse runner
+Portão final:
+- CI completo do PR #82: concluído — 476 passed, 6 skipped
+- `python testes_auren_live.py --rapido`: pendente no ambiente atual por ausência de Windows
 
 PR:
 - #82 — Tarefa 10A
