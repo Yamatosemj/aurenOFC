@@ -68,6 +68,10 @@ class PermissionManager:
         "reminder.read": PermissionLevel.AUTO,
         "reminder.cancel": PermissionLevel.CONFIRM,
         "web.search": PermissionLevel.AUTO,
+        "proactive.configure": PermissionLevel.CONFIRM,
+        "proactive.topic.add": PermissionLevel.CONFIRM,
+        "proactive.topic.remove": PermissionLevel.CONFIRM,
+        "proactive.status": PermissionLevel.AUTO,
     }
 
     # O orçamento de ações também é definido por capacidade. Capacidade de
