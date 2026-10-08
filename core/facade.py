@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from tools import applications, browser, browser_context, files, windows
+from tools import applications, browser, browser_context, files, reminders, windows
 
 
 def abrir_programa(programa): return applications.abrir_programa(programa)
@@ -69,3 +69,11 @@ _executar_ui_automation = windows._executar_ui_automation
 _pressionar_vk = windows._pressionar_vk
 _powershell_literal = applications._powershell_literal
 _WINDOW_TARGET_CACHE = windows._WINDOW_TARGET_CACHE
+
+
+def criar_lembrete(mensagem, data, hora):
+    return reminders.criar_lembrete(mensagem, data, hora)
+def listar_lembretes():
+    return reminders.listar_lembretes()
+def cancelar_lembrete(id):
+    return reminders.cancelar_lembrete(id)
