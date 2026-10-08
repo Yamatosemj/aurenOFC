@@ -164,10 +164,19 @@ def test_plugin_invalido_e_ignorado_sem_derrumbar_boot(monkeypatch, tmp_path):
         directory,
         "invalido.py",
         '''
-TOOL = {"name": "invalido", "description": "x", "parameters": {"type": "object"}}
+from core.tool_result import ToolResult
+
 CAPABILITY = {"id": "plugin.invalido"}
+
 def executar(argumentos):
-    return None
+    return ToolResult.success("x", tool_name="invalido")
+
+TOOL = {
+    "name": "invalido",
+    "description": "x",
+    "parameters": {"type": "object", "properties": {}, "required": [], "additionalProperties": False},
+    "handler": executar,
+}
 ''',
     )
     registry = discover_plugins(directory, approval_file=approval, logger=lambda _msg: None)
