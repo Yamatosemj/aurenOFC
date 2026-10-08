@@ -329,7 +329,7 @@ def criar_lembrete(mensagem: str, data: str, hora: str) -> ToolResult:
         )
 
     return ToolResult.success(
-        f"Lembrete criado para {alvo.strftime("%d/%m/%Y às %H:%M")}: {texto}",
+        f"Lembrete criado para {alvo.strftime('%d/%m/%Y às %H:%M')}: {texto}",
         data={
             "id": reminder_id,
             "data": entry["data"],
@@ -366,7 +366,7 @@ def listar_lembretes() -> ToolResult:
             for entry in entries:
                 try:
                     alvo = datetime.strptime(
-                        f"{entry["data"]} {entry["hora"]}",
+                        f"{entry['data']} {entry['hora']}",
                         f"{_DATE_FORMAT} {_TIME_FORMAT}",
                     )
                 except (KeyError, TypeError, ValueError):
@@ -414,7 +414,7 @@ def listar_lembretes() -> ToolResult:
         )
 
     resumo = "; ".join(
-        f"{item["id"]} — {item["data"]} {item["hora"]} — {item["mensagem"]}"
+        f"{item['id']} — {item['data']} {item['hora']} — {item['mensagem']}"
         for item in ativos
     )
     return ToolResult.success(
@@ -520,13 +520,11 @@ def _disparar_lembrete(reminder_id: str) -> int:
         sucesso = _notificar_windows(str(entry["mensagem"]))
         if sucesso:
             with _STORE_LOCK:
-                try:
-                    SCHEDULER.delete(str(entry["task_name"]))
-                finally:
-                    _save_entries([
-                        item for item in _load_entries()
-                        if str(item.get("id")) != reminder_id
-                    ])
+                SCHEDULER.delete(str(entry["task_name"]))
+                _save_entries([
+                    item for item in _load_entries()
+                    if str(item.get("id")) != reminder_id
+                ])
             return 0
 
         return 1
