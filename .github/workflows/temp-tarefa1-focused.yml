@@ -1,0 +1,18 @@
+name: TEMP Tarefa 1 focused tests
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -r requirements.txt pytest==9.1.1 numpy==2.5.3
+      - run: python -m pytest -q tests/test_prompt_injection.py
