@@ -10,10 +10,10 @@ from memory.store import PersistentMemoryStore
 
 # Mantemos esses literais no facade para ferramentas de compatibilidade que
 # descobrem a versao lendo o arquivo-fonte sem importar o modulo.
-AUREN_VERSION = 48
+AUREN_VERSION = 49
 MODEL = "gpt-5.6-luna"
 CACHE_KEY = f"auren-v{AUREN_VERSION}"
-ARCHITECTURE_NAME = "V48 PLUGIN DISPATCH"
+ARCHITECTURE_NAME = "V49 WINDOWS REMINDERS"
 if (AUREN_VERSION, MODEL, CACHE_KEY, ARCHITECTURE_NAME) != (_CONFIG_AUREN_VERSION, _CONFIG_MODEL, _CONFIG_CACHE_KEY, _CONFIG_ARCHITECTURE_NAME):
     raise RuntimeError("config.py e auren.py estao com versao/modelo incoerentes.")
 
@@ -28,7 +28,7 @@ from core.response import criar_resposta, get_client, obter_metricas_roteamento
 from core.session import SessionContextManager
 from core.tools_registry import tools
 from skills.loader import SkillLibrary
-from tools import applications, browser, files, windows
+from tools import applications, browser, files, reminders, windows
 from tools.dispatcher import (
     executar_ferramenta as _executar_ferramenta,
     _resultado_ferramenta_bem_sucedido,
@@ -47,6 +47,7 @@ from core.facade import (
     minimizar_janela_windows, maximizar_janela_windows, obter_geometria_janela_windows,
     mover_janela_windows, redimensionar_janela_windows, restaurar_janela_windows,
     fechar_janela_windows, obter_status_windows, listar_processos_windows,
+    criar_lembrete, listar_lembretes, cancelar_lembrete,
     encerrar_processo_windows, ler_area_transferencia_windows, definir_area_transferencia_windows,
     pressionar_tecla_windows, mover_mouse_windows, clicar_mouse_windows, obter_audio_windows,
     definir_volume_windows, definir_mudo_windows, controle_midia_windows,
