@@ -75,6 +75,13 @@ class PersistentMemoryStore:
                 )"""
             )
             con.execute(
+                """CREATE TABLE IF NOT EXISTS topicos_proativos (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    topico TEXT NOT NULL UNIQUE,
+                    adicionado_em TEXT NOT NULL
+                )"""
+            )
+            con.execute(
                 """CREATE TABLE IF NOT EXISTS configuracoes_proativas (
                     id INTEGER PRIMARY KEY CHECK (id = 1),
                     monitoramento_ativo INTEGER NOT NULL DEFAULT 0,
@@ -96,6 +103,42 @@ class PersistentMemoryStore:
     def _agora() -> str:
         return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
+
+    def adicionar_topico_proativo(self, topico: str) -> dict[str, Any]:
+        """Adiciona um tópico ao conjunto opcional de monitoramento.
+        A lista fica desligada por padrão e não inicia nenhuma consulta sozinha.
+        Custo: uma escrita SQLite local."""
+        topico = " ".join(str(topico or "").split())[:180]
+        if not topico:
+            return {"ok": False, "erro": "Topico vazio."}
+        with self._lock, self._conexao() as con:
+            try:
+                con.execute(
+                    "INSERT INTO topicos_proativos (topico, adicionado_em) VALUES (?, ?)",
+                    (topico, self._agora()),
+                )
+            except sqlite3.IntegrityError:
+                return {"ok": False, "erro": "Topico ja monitorado."}
+            con.commit()
+        return {"ok": True, "topico": topico}
+
+    def remover_topico_proativo(self, topico: str) -> dict[str, Any]:
+        """Remove um tópico do monitoramento opcional.
+        Remover o tópico não altera os demais nem liga o monitoramento.
+        Custo: uma escrita SQLite local."""
+        topico = " ".join(str(topico or "").split())
+        with self._lock, self._conexao() as con:
+            cur = con.execute("DELETE FROM topicos_proativos WHERE lower(topico) = lower(?)", (topico,))
+            con.commit()
+        return {"ok": cur.rowcount > 0, "topico": topico}
+
+    def listar_topicos_proativos(self) -> list[str]:
+        """Lista os tópicos configurados para monitoramento passivo.
+        A leitura é local e não consulta a internet.
+        Custo: uma leitura SQLite local."""
+        with self._lock, self._conexao() as con:
+            rows = con.execute("SELECT topico FROM topicos_proativos ORDER BY id").fetchall()
+        return [str(row["topico"]) for row in rows]
 
     def salvar_resumo_sessao(self, chat_id: str, resumo: str) -> dict[str, Any]:
         """Persiste um resumo curto para a próxima abertura do Auren.
