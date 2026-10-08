@@ -233,6 +233,7 @@ def main() -> int:
         stt=stt,
         audio_queue=fila_audio,
         timeout=8.0,
+        set_output_active=recorder.definir_saida_ativa,
     )
     harness = _novo_harness(confirmation_channel)
 
