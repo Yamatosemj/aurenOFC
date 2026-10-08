@@ -91,6 +91,32 @@ def test_fallback_keeps_general_model_answer_short():
     )
 
 
+def test_asr_boosts_low_level_segment_without_clipping():
+    class FakeModel:
+        def __init__(self):
+            self.waveform = None
+
+        def recognize(self, waveform, sample_rate=None, language=None, channel=None):
+            self.waveform = waveform
+            return "teste"
+
+    model = FakeModel()
+    asr = LocalPortugueseASR(model=model)
+    captured = CapturedAudio(
+        samples=np.full(1600, 0.006, dtype=np.float32),
+        sample_rate=16_000,
+        duration=0.1,
+        rms=0.006,
+        peak=0.006,
+        device_name="Realtek",
+    )
+
+    assert asr.transcrever(captured) == "teste"
+    assert model.waveform is not None
+    assert float(np.sqrt(np.mean(np.square(model.waveform)))) > 0.02
+    assert float(np.max(np.abs(model.waveform))) <= 0.95
+
+
 def test_asr_resamples_capture_audio_to_16khz():
     class FakeModel:
         def __init__(self):
