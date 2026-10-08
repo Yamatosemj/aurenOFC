@@ -15,12 +15,12 @@ from voice.tts import LocalKokoroTTS
 
 def test_voice_v4_components_are_lazy_and_constructible():
     recorder = PushToTalkRecorder(
-        hotkey="shift+1",
+        hotkey="ctrl+shift+space",
         config=AudioCaptureConfig(min_seconds=0.1),
         sounddevice_module=object(),
         keyboard_module=object(),
     )
-    assert recorder.hotkey == "shift+1"
+    assert recorder.hotkey == "ctrl+shift+space"
     assert recorder.config.pre_roll_seconds == 0.18
     assert recorder.config.post_roll_seconds == 0.12
     assert recorder.config.key_debounce_seconds == 0.06
