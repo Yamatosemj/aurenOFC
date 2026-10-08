@@ -427,6 +427,29 @@ def test_prompt_usa_capacidade_de_plugin_do_registry(monkeypatch, tmp_path):
         registry.descarregar()
 
 
+
+def test_capacidade_do_plugin_entra_no_subconjunto_do_router(monkeypatch, tmp_path):
+    approval = tmp_path / "aprovacoes.json"
+    _write_approval(approval, rota_plugin={"habilitado": True, "aprovado": False})
+    monkeypatch.setenv("AUREN_PLUGINS_APPROVAL_FILE", str(approval))
+    directory = _tmp_plugins_with(tmp_path, "rota_plugin")
+    _write_plugin(
+        directory,
+        "rota_plugin.py",
+        _valid_plugin("rota_plugin").replace(
+            '"resolver": "plugin",',
+            '"resolver": "plugin",\n    "padroes_objetivo": (r"\\bcoisaespecial\\b",),',
+        ),
+    )
+    registry = discover_plugins(directory, approval_file=approval, logger=lambda _msg: None)
+    try:
+        from core.router import Router
+        nomes = Router().select_tool_names("use a coisaespecial agora", tools)
+        assert "rota_plugin" in nomes
+    finally:
+        registry.descarregar()
+
+
 def test_tool_do_plugin_usa_contrato_dinamico(monkeypatch, tmp_path):
     approval = tmp_path / "aprovacoes.json"
     _write_approval(approval, contrato_plugin={"habilitado": True, "aprovado": True})
