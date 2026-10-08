@@ -192,7 +192,7 @@ class LocalPortugueseASR:
         except Exception as exc:
             raise RuntimeError(f"Falha ao carregar o ASR Parakeet local: {exc}") from exc
 
-    def precaregar(self) -> None:
+    def precarregar(self) -> None:
         """Aquece o modelo explicitamente sem transcrever audio."""
 
         with self._inference_lock:
