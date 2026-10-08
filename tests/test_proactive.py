@@ -78,3 +78,24 @@ def test_proactive_tools_are_registered_with_safe_permissions():
     manager = PermissionManager(max_actions=10)
     assert manager.nivel("status_monitoramento_proativo") == PermissionLevel.AUTO
     assert manager.nivel("configurar_monitoramento_proativo") == PermissionLevel.CONFIRM
+
+
+def test_daily_check_is_opt_in_and_once_per_day(monkeypatch, tmp_path):
+    from core import proactive
+    store = _store(tmp_path)
+    store.adicionar_topico_proativo("Auren")
+    calls = []
+    def fake_search(query, mode):
+        calls.append((query, mode))
+        class Result:
+            ok = True
+            data = {"fontes": [{"trecho": "novidade"}]}
+        return Result()
+    monkeypatch.setattr("tools.web_search.pesquisar_web", fake_search)
+    assert proactive.checar_topicos(store) == []
+    assert calls == []
+    store.definir_monitoramento_proativo(True)
+    assert len(proactive.checar_topicos(store)) == 1
+    assert calls == [("Auren", "news")]
+    assert proactive.checar_topicos(store) == []
+    assert len(calls) == 1
