@@ -129,7 +129,7 @@ Modos disponíveis:
 - `price`: prioriza preços, disponibilidade, moeda e atualidade
 - `compare`: estrutura a busca para comparação entre opções
 
-A implementação usa o **web search hospedado do Responses API** do provedor OpenAI, sem criar um executor paralelo de navegador. Para tarefas interativas, o modelo continua podendo escolher as ferramentas Browser existentes. A API de web search pode devolver a lista completa de fontes consultadas quando solicitada por `include=["web_search_call.action.sources"]`. citeturn5view0turn5view1
+A implementação usa o **web search hospedado do Responses API** do provedor OpenAI, sem criar um executor paralelo de navegador. Para tarefas interativas, o modelo continua podendo escolher as ferramentas Browser existentes. A API de web search pode devolver a lista completa de fontes consultadas quando solicitada por `include=["web_search_call.action.sources"]`.
 
 Os resultados de busca são sempre tratados como **conteúdo não confiável**. A ferramenta limita a oito fontes, cerca de 600 caracteres por trecho e aproximadamente 5000 caracteres no conjunto devolvido. Conteúdo externo nunca pode autorizar uma ação por si só.
 
