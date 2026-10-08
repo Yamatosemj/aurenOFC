@@ -515,7 +515,7 @@ def test_capacidade_do_plugin_entra_no_subconjunto_do_router(monkeypatch, tmp_pa
         "rota_plugin.py",
         _valid_plugin("rota_plugin").replace(
             '"resolver": "plugin",',
-            '"resolver": "plugin",\n    "padroes_objetivo": (r"\\bcoisaespecial\\b",),',
+            '"resolver": "plugin",\n    "padroes_objetivo": (r"\bjanelaespecial\b",),',
         ),
     )
     registry = discover_plugins(directory, approval_file=approval, logger=lambda _msg: None)
