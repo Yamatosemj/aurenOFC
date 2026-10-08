@@ -230,7 +230,7 @@ def test_successful_browser_mutation_marks_verification_pending():
     assert state["pending"] is True
 
 
-def test_successful_browser_context_clears_verification_pending():
+def test_browser_context_stays_pending_without_explicit_verifier():
     manager = _TaskManager()
     state = {"pending": True}
 
@@ -262,8 +262,45 @@ def test_successful_browser_context_clears_verification_pending():
     assert failed is False
     assert vision_pending is False
     assert cancelled is False
-    assert state["pending"] is False
+    assert state["pending"] is True
 
+
+def test_successful_browser_context_clears_verification_pending_when_verifier_confirms():
+    manager = _TaskManager()
+    state = {"pending": True, "ferramenta": "clicar_elemento", "argumentos": "{}"}
+
+    results, count, failed, vision_pending, cancelled = _executar_chamadas_rodada(
+        [_item("obter_contexto_navegador", "call-browser-2-confirmed")],
+        historico=[],
+        task_manager=manager,
+        task_id="task-browser-2-confirmed",
+        rodada=2,
+        executar_ferramenta=lambda _: ToolResult.success(
+            "Contexto atualizado.",
+            tool_name="obter_contexto_navegador",
+        ),
+        trace=None,
+        vision_state_mutating_tools=set(),
+        vision_reobserve_pending=False,
+        falha_nao_recuperada=False,
+        max_tool_result_chars=100,
+        get_active_vision_geometry=lambda: None,
+        clear_active_vision_geometry=lambda: None,
+        write_log=lambda *args, **kwargs: None,
+        browser_verification_state=state,
+        browser_state_mutating_tools={"clicar_elemento"},
+        browser_verification_tool="obter_contexto_navegador",
+        browser_verifier=lambda *args, **kwargs: True,
+    )
+
+    assert results[0]["sucesso"] is True
+    assert count == 1
+    assert failed is False
+    assert vision_pending is False
+    assert cancelled is False
+    assert state["pending"] is False
+    assert "ferramenta" not in state
+    assert "argumentos" not in state
 
 def test_browser_navigation_verification_clears_pending_only_when_target_matches():
     manager = _TaskManager()
@@ -443,3 +480,55 @@ def test_browser_verification_state_survives_between_tool_rounds():
     assert "ferramenta" not in state
     assert "argumentos" not in state
     assert "dados_acao" not in state
+
+def test_browser_verification_stays_pending_when_verifier_cannot_determine_result():
+    manager = _TaskManager()
+    state = {
+        "pending": True,
+        "ferramenta": "clicar_elemento",
+        "argumentos": '{"alvo":"Pesquisar","indice":1}',
+        "dados_acao": {"clique": {"navegacao": False}},
+    }
+
+    results, count, failed, vision_pending, cancelled = _executar_chamadas_rodada(
+        [_item("obter_contexto_navegador", "call-browser-unknown")],
+        historico=[],
+        task_manager=manager,
+        task_id="task-browser-unknown",
+        rodada=2,
+        executar_ferramenta=lambda _: ToolResult.success(
+            "Contexto atualizado.",
+            tool_name="obter_contexto_navegador",
+            data={
+                "abas": (
+                    "Abas abertas: 1\n"
+                    "Aba ativa: 1\n"
+                    "Aba 1: Site | https://example.com [ATIVA]"
+                ),
+                "pagina": "conteudo",
+            },
+        ),
+        trace=None,
+        vision_state_mutating_tools=set(),
+        vision_reobserve_pending=False,
+        falha_nao_recuperada=False,
+        max_tool_result_chars=100,
+        get_active_vision_geometry=lambda: None,
+        clear_active_vision_geometry=lambda: None,
+        write_log=lambda *args, **kwargs: None,
+        browser_verification_state=state,
+        browser_state_mutating_tools={"clicar_elemento"},
+        browser_verification_tool="obter_contexto_navegador",
+        browser_verifier=lambda *args, **kwargs: None,
+    )
+
+    assert results[0]["sucesso"] is True
+    assert count == 1
+    assert failed is False
+    assert vision_pending is False
+    assert cancelled is False
+    assert state["pending"] is True
+    assert state["ferramenta"] == "clicar_elemento"
+    assert state["argumentos"] == '{"alvo":"Pesquisar","indice":1}'
+    assert state["dados_acao"]["clique"]["navegacao"] is False
+

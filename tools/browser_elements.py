@@ -177,7 +177,7 @@ def clicar_elemento(alvo, indice=1):
         novas_abas = [aba for aba in abas_depois if aba not in abas_antes]
         if novas_abas:
             _browser.pagina = novas_abas[-1]
-            p = pagina
+            p = novas_abas[-1]
         else:
             p = _browser.obter_pagina()
 
