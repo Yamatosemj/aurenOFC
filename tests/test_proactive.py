@@ -1,4 +1,5 @@
 from pathlib import Path
+import ast
 
 from core.proactive import criar_resumo_sessao, preparar_abertura
 from memory.store import PersistentMemoryStore
@@ -98,3 +99,25 @@ def test_daily_check_is_opt_in_and_once_per_day(monkeypatch, tmp_path):
     assert calls == [("Auren", "news")]
     assert proactive.checar_topicos(store, fake_search) == []
     assert len(calls) == 1
+
+def test_proactive_nao_importa_tools_diretamente():
+    codigo = Path("core/proactive.py").read_text(encoding="utf-8")
+    arvore = ast.parse(codigo)
+    imports = []
+    for node in ast.walk(arvore):
+        if isinstance(node, ast.Import):
+            imports.extend(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            imports.append(node.module or "")
+    assert not any(nome.startswith("tools.") for nome in imports)
+
+
+def test_facade_version_matches_config():
+    import auren
+    from config import AUREN_VERSION, ARCHITECTURE_NAME, CACHE_KEY, MODEL
+
+    assert auren.AUREN_VERSION == AUREN_VERSION
+    assert auren.MODEL == MODEL
+    assert auren.CACHE_KEY == CACHE_KEY
+    assert auren.ARCHITECTURE_NAME == ARCHITECTURE_NAME
+
