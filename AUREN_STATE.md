@@ -24,7 +24,7 @@ Implementação em andamento nesta branch para substituir os pontos frágeis da 
 ### Concluído nesta tarefa
 
 - [x] stream de entrada mantido aberto apenas localmente, com janela curta de pré-roll em RAM
-- [x] pós-roll após a soltura de Shift+1 para reduzir cortes de palavras no final
+- [x] pós-roll após a soltura de Ctrl+Shift+Space para reduzir cortes de palavras no final
 - [x] debounce da tecla antes de iniciar uma fala
 - [x] segmentação local com WebRTC VAD e fallback por energia
 - [x] rejeição de áudio vazio ou quase silencioso antes do ASR
