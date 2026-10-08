@@ -118,6 +118,23 @@ O runner interno aceita somente `--disparar <id>`, recupera a mensagem pelo ID e
 
 A implementacao nao adiciona dependencia externa e e limitada ao Windows/Agendador de Tarefas.
 
+
+## Pesquisa web (V50)
+
+O Auren possui a tool `pesquisar_web(consulta, modo)`, registrada no mesmo Registry, Contrato, Router, Dispatcher e PermissionManager das demais ferramentas.
+
+Modos disponíveis:
+- `news`: prioriza notícias e informação recente
+- `research`: prioriza pesquisa mais profunda e fontes técnicas/institucionais
+- `price`: prioriza preços, disponibilidade, moeda e atualidade
+- `compare`: estrutura a busca para comparação entre opções
+
+A implementação usa o **web search hospedado do Responses API** do provedor OpenAI, sem criar um executor paralelo de navegador. Para tarefas interativas, o modelo continua podendo escolher as ferramentas Browser existentes. A API de web search pode devolver a lista completa de fontes consultadas quando solicitada por `include=["web_search_call.action.sources"]`. citeturn5view0turn5view1
+
+Os resultados de busca são sempre tratados como **conteúdo não confiável**. A ferramenta limita a oito fontes, cerca de 600 caracteres por trecho e aproximadamente 5000 caracteres no conjunto devolvido. Conteúdo externo nunca pode autorizar uma ação por si só.
+
+A política é somente leitura (**AUTO**). Não há dependência nova.
+
 ## Arquitetura atual
 
 ```text
