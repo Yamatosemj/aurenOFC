@@ -13,7 +13,8 @@ Atualizado em: 2026-10-07
 - **Modelo padrão:** `gpt-5.6-luna`
 - **Branch/PR ativa:** `feat/tarefa-1-voice-stt-v48`
 - **Head da main:** `71ebe7b77826d1673f9abe6926e40eb9fb63d0f2`
-- **CI da implementação mais recente:** aguardando execução da bateria V48 de voz + Windows/Linux
+- **Validação local da voz:** 6 testes focados passaram
+- **CI V48:** ainda sem status reportado pelo GitHub para o head atual
 - **Fase atual:** Voice/STT
 
 ### Tarefa 1 — Voice/STT V4
@@ -40,7 +41,8 @@ Implementação em andamento nesta branch para substituir os pontos frágeis da 
 
 ### Validação pendente
 
-A validação real com microfone, driver, ruído ambiente e fala natural em português ainda precisa ser executada em Windows. O CI cobre a parte determinística da camada, mas não substitui o teste de áudio físico.
+A validação real com microfone, driver, ruído ambiente e fala natural em português ainda precisa ser executada em Windows. Os testes focados locais cobrem a parte determinística da camada; o CI V48 ainda não reportou status e o teste de áudio físico continua pendente.
+
 ## O que já está concluído nesta fase
 
 - [x] contexto unificado do navegador via `obter_contexto_navegador`
