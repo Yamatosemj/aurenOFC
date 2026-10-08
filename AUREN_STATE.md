@@ -113,6 +113,32 @@ A execução manual do runner Browser Intelligence em Windows continua pendente 
 - O modo `research` usa contexto de busca maior; os demais usam contexto medio para controlar custo/latencia.
 - O web search hospedado retorna as fontes consultadas via `include=["web_search_call.action.sources"]`.
 
+## Tarefa 10C — Abertura proativa
+
+- [x] resumo curto da sessão anterior usando os turnos persistidos da Tarefa 5
+- [x] resumo consumido atomicamente na abertura, evitando repetição
+- [x] resumo sem nova chamada ao modelo
+- [x] monitoramento de tópicos desligado por padrão
+- [x] tópicos persistidos separadamente da ativação global
+- [x] ativação/desativação persistente
+- [x] trava persistente de no máximo uma checagem por dia
+- [x] controles passam pelo Registry, Contrato, Router, Dispatcher e PermissionManager
+- [x] ativação e alteração de tópicos exigem CONFIRM; consulta de estado é AUTO
+- [x] nenhum caminho paralelo de execução foi criado
+- [x] testes de continuidade, consumo único, estado padrão, trava diária e tópicos adicionados
+- [ ] portão final: `py -m pytest -q` verde no CI
+- [ ] runner live `python testes_auren_live.py --rapido` em Windows real
+
+### Decisões da 10C
+
+- Abertura usa somente dados persistidos do mesmo sistema de contexto da Tarefa 5; não depende de Mark-LV em runtime.
+- A ideia de Mark-LV reaproveitada foi apenas o padrão de resumo curto consumível e a existência de uma trava diária para monitoramento.
+- O resumo é determinístico e curto para não gastar uma chamada de modelo na inicialização.
+- O monitoramento permanece opt-in e não roda quando desligado.
+- O projeto atual não possui UI gráfica de configurações própria; os controles foram expostos como capacidades do Auren para que a interface atual e uma UI futura usem o mesmo caminho seguro.
+- Nenhum código de Mark-LV foi copiado.
+
+
 ## Segurança e base estrutural concluídas
 
 - [x] allowlist de leitura/inspeção de arquivos
@@ -129,6 +155,9 @@ A execução manual do runner Browser Intelligence em Windows continua pendente 
 - [x] validação visual Windows com geometria/coordenadas protegidas
 
 ## PRs mais recentes
+- **#84** — Tarefa 10C: abertura proativa e continuidade — open
+- **#83** — Tarefa 10B: pesquisa web em modos — open
+- **#82** — Tarefa 10A: lembretes persistentes — open
 - **#83** — Tarefa 10B: pesquisa web em modos — open
 - **#82** — Tarefa 10A: lembretes persistentes — open
 - **#83** — Tarefa 10B: pesquisa web em modos — open
