@@ -26,7 +26,7 @@ from core.plugin_loader import carregar_plugins as _carregar_plugins
 from core.plugin_loader import recarregar_plugins as _recarregar_plugins
 from core.response import criar_resposta, get_client, obter_metricas_roteamento
 from core.session import SessionContextManager
-from core.proactive import criar_resumo_sessao, preparar_abertura, salvar_fechamento
+from core.proactive import criar_resumo_sessao, preparar_abertura, salvar_fechamento, checar_topicos
 from core.harness_runtime import current_chat_id
 from core.tools_registry import tools
 from skills.loader import SkillLibrary
