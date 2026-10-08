@@ -163,6 +163,13 @@ def test_asr_returns_empty_for_too_short_audio_without_inference():
     ) == ""
 
 
+def test_voice_segmenter_prepares_low_level_audio_for_vad_without_clipping():
+    audio = np.full(1600, 0.006, dtype=np.float32)
+    prepared = VoiceActivitySegmenter._preparar_nivel_para_vad(audio)
+    assert float(np.sqrt(np.mean(np.square(prepared)))) > 0.01
+    assert float(np.max(np.abs(prepared))) <= 0.95
+
+
 def test_voice_segmenter_keeps_start_and_end_padding():
     class FakeVad:
         def __init__(self):
