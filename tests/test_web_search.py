@@ -61,25 +61,17 @@ def test_web_search_rejects_invalid_mode_without_provider_call(monkeypatch):
     assert called == []
 
 
-def test_web_search_provider_failure_is_structured():
-    class FailingProvider:
-        def search_web(self, *args, **kwargs):
-            raise RuntimeError("provider indisponivel")
+def test_web_search_provider_failure_is_structured(monkeypatch):
+    from providers.openai_provider import OpenAIProvider
 
-    import tools.web_search as web_search
-    original = web_search.OpenAIProvider if hasattr(web_search, "OpenAIProvider") else None
-    try:
-        web_search.OpenAIProvider = FailingProvider
-        result = web_search.pesquisar_web("teste", "news")
-    finally:
-        if original is None:
-            delattr(web_search, "OpenAIProvider")
-        else:
-            web_search.OpenAIProvider = original
+    def fail(self, *args, **kwargs):
+        raise RuntimeError("provider indisponivel")
+
+    monkeypatch.setattr(OpenAIProvider, "search_web", fail)
+    result = pesquisar_web("teste", "news")
 
     assert result.ok is False
     assert result.error_code == "web_search_failed"
-
 
 def test_web_search_permission_is_auto():
     manager = PermissionManager(max_actions=10)
