@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from config import (
     AUREN_VERSION as _CONFIG_AUREN_VERSION,
     MODEL as _CONFIG_MODEL,
@@ -27,7 +29,7 @@ from core.plugin_loader import recarregar_plugins as _recarregar_plugins
 from core.response import criar_resposta, get_client, obter_metricas_roteamento
 from core.session import SessionContextManager
 from core.proactive import criar_resumo_sessao, preparar_abertura, salvar_fechamento, checar_topicos
-from core.harness_runtime import current_chat_id
+from types import SimpleNamespace
 from core.tools_registry import tools
 from skills.loader import SkillLibrary
 from tools import applications, browser, files, windows
@@ -136,15 +138,6 @@ def _garantir_plugins():
     return _plugin_registry
 
 
-def _salvar_resumo_pos_tarefa(objetivo, historico):
-    chat_id = current_chat_id() or ""
-    if not chat_id:
-        return None
-    resumo = criar_resumo_sessao(memory_store, chat_id, limite_turnos=8)
-    if resumo:
-        salvar_fechamento(memory_store, chat_id, resumo)
-    return None
-
 def criar_harness(confirmation_channel=None) -> AurenHarness:
     """Unico ponto que monta o Harness. Todo canal (texto, voz, futuros) usa esta funcao."""
     _garantir_plugins()
@@ -195,12 +188,23 @@ def criar_harness(confirmation_channel=None) -> AurenHarness:
     globals()["harness"] = harness
     return harness
 
+def _pesquisar_proativo(consulta: str, modo: str):
+    """Executa a busca proativa pelo Dispatcher oficial do Auren.
+    A observação interna usa o mesmo contrato, permissão e handler da tool pública.
+    Custo: uma passagem pelo Dispatcher mais a chamada de web search."""
+    item = SimpleNamespace(
+        name="pesquisar_web",
+        arguments=json.dumps({"consulta": consulta, "modo": modo}, ensure_ascii=False),
+        call_id="proactive-search",
+    )
+    return _executar_ferramenta(item, permission_manager, memory_store)
+
 def iniciar_auren() -> None:
     print("Auren online.")
     abertura = preparar_abertura(memory_store)
     if abertura:
         print("Auren:", abertura)
-    alertas = checar_topicos(memory_store)
+    alertas = checar_topicos(memory_store, _pesquisar_proativo)
     if alertas:
         print("Auren:", " ".join(alertas))
     harness = criar_harness()
