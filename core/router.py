@@ -112,6 +112,12 @@ TOOL_GROUPS = {
         "consultar_memoria_persistente",
         "esquecer_memoria_persistente",
     },
+    "proactive": {
+        "configurar_monitoramento_proativo",
+        "adicionar_topico_proativo",
+        "remover_topico_proativo",
+        "status_monitoramento_proativo",
+    },
     "web_search": {
         "pesquisar_web",
         "navegar_navegador",
@@ -218,6 +224,10 @@ DOMAIN_PATTERNS: dict[str, tuple[str, ...]] = {
         r"\bmem[oó]ria\b.*\b(uso|usada|utilizada)\b",
         r"\btempo\b.*\b(ligado|ligad[oó]|computador)",
         r"\bh[aá] quanto tempo.*\bcomputador",
+    ),
+    "proactive": (
+        r"\bmonitor(?:ar|amento|e)\b",
+        r"\bproativ[oa]\b",
     ),
     "web_search": (
         r"\bpesquis(?:ar|e|a)\b",
@@ -407,7 +417,9 @@ class Router:
         if "browser" in domains:
             selected.update({"abrir_programa", "pesquisar_web"})
         if "web_search" in domains and "browser" not in domains:
-            selected.update(TOOL_GROUPS["web_search"])  # fallback para navegadores instalados
+            selected.update(TOOL_GROUPS["web_search"])
+        if "proactive" in domains:
+            selected.update(TOOL_GROUPS["proactive"])  # fallback para navegadores instalados
         if "spotify_desktop" in domains:
             # Spotify playback usa o aplicativo Windows, não o Web Player.
             selected.update(TOOL_GROUPS["spotify_desktop"])
