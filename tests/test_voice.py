@@ -2,13 +2,16 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+import numpy as np
+
 from voice.input import AudioCaptureConfig, CapturedAudio, PushToTalkRecorder
+from voice.segmentation import VoiceActivitySegmenter, VoiceSegmentConfig
 from voice.speech_response import SpeechResponseFormatter
 from voice.stt import LocalPortugueseASR
 from voice.tts import LocalKokoroTTS
 
 
-def test_voice_v3_components_are_lazy_and_constructible():
+def test_voice_v4_components_are_lazy_and_constructible():
     recorder = PushToTalkRecorder(
         hotkey="f8",
         config=AudioCaptureConfig(min_seconds=0.1),
@@ -16,9 +19,13 @@ def test_voice_v3_components_are_lazy_and_constructible():
         keyboard_module=object(),
     )
     assert recorder.hotkey == "f8"
+    assert recorder.config.pre_roll_seconds == 0.18
+    assert recorder.config.post_roll_seconds == 0.12
+    assert recorder.config.key_debounce_seconds == 0.06
 
     stt = LocalPortugueseASR(model=object())
     assert stt.language == "pt"
+    assert stt.target_sample_rate == 16_000
     assert "TAGARELA" in stt.repo_id
 
     tts = LocalKokoroTTS(model=object(), sounddevice_module=object())
@@ -26,7 +33,7 @@ def test_voice_v3_components_are_lazy_and_constructible():
     assert tts.lang == "pt-br"
 
 
-def test_captured_audio_keeps_native_sample_rate():
+def test_captured_audio_keeps_capture_sample_rate():
     captured = CapturedAudio(
         samples=[0.0, 0.1],
         sample_rate=48000,
@@ -34,9 +41,13 @@ def test_captured_audio_keeps_native_sample_rate():
         rms=0.05,
         peak=0.1,
         device_name="Microfone Realtek",
+        speech_detected=True,
+        vad_backend="webrtcvad",
     )
     assert captured.sample_rate == 48000
     assert captured.device_name.startswith("Microfone")
+    assert captured.speech_detected is True
+    assert captured.vad_backend == "webrtcvad"
 
 
 def test_speech_formatter_for_clock_is_short_and_objective():
@@ -77,7 +88,7 @@ def test_fallback_keeps_general_model_answer_short():
     )
 
 
-def test_asr_forwards_native_sample_rate_to_local_model():
+def test_asr_resamples_capture_audio_to_16khz():
     class FakeModel:
         def __init__(self):
             self.calls = []
@@ -89,15 +100,94 @@ def test_asr_forwards_native_sample_rate_to_local_model():
     model = FakeModel()
     asr = LocalPortugueseASR(model=model)
     captured = CapturedAudio(
-        samples=[0.1, 0.2],
+        samples=np.full(4800, 0.1, dtype=np.float32),
         sample_rate=48000,
-        duration=0.01,
+        duration=0.1,
         rms=0.1,
-        peak=0.2,
+        peak=0.1,
         device_name="Realtek",
     )
     assert asr.transcrever(captured) == "Auren, teste local."
-    assert model.calls[0][1:] == (48000, "pt", "mean")
+    waveform, sample_rate, language, channel = model.calls[0]
+    assert sample_rate == 16_000
+    assert language == "pt"
+    assert channel == "mean"
+    assert len(waveform) == 1600
+    assert waveform.dtype == np.float32
+
+
+def test_asr_returns_empty_for_too_short_audio_without_inference():
+    class FakeModel:
+        def recognize(self, *args, **kwargs):
+            raise AssertionError("audio curto nao deveria chegar ao modelo")
+
+    asr = LocalPortugueseASR(model=FakeModel())
+    assert asr.transcrever(
+        CapturedAudio(
+            samples=np.zeros(100, dtype=np.float32),
+            sample_rate=16_000,
+            duration=0.006,
+            rms=0.0,
+            peak=0.0,
+            device_name="Realtek",
+        )
+    ) == ""
+
+
+def test_voice_segmenter_keeps_start_and_end_padding():
+    class FakeVad:
+        def __init__(self):
+            self.calls = 0
+
+        def is_speech(self, frame, sample_rate):
+            assert sample_rate == 16_000
+            self.calls += 1
+            return 10 <= self.calls <= 19
+
+    config = VoiceSegmentConfig(
+        frame_duration_ms=20,
+        start_padding_ms=80,
+        end_padding_ms=120,
+        min_speech_seconds=0.08,
+        silence_rms=0.0008,
+        silence_peak=0.005,
+    )
+    segmenter = VoiceActivitySegmenter(config=config, vad=FakeVad())
+    audio = np.zeros(16_000, dtype=np.float32)
+    audio[3200:6400] = 0.15
+
+    result = segmenter.segment(audio, 16_000)
+
+    assert result is not None
+    assert result.speech_detected is True
+    assert result.vad_backend == "webrtcvad"
+    assert result.sample_rate == 16_000
+    assert 0.38 <= result.duration <= 0.42
+
+
+def test_voice_segmenter_rejects_near_silence():
+    segmenter = VoiceActivitySegmenter()
+    audio = np.full(16_000, 0.00001, dtype=np.float32)
+    assert segmenter.segment(audio, 16_000) is None
+
+
+def test_named_microphone_is_resolved_against_current_devices():
+    class FakeSoundDevice:
+        def query_devices(self, *args, **kwargs):
+            if args or kwargs:
+                return {"name": "USB Microphone", "default_samplerate": 48000}
+            return [
+                {"name": "Notebook Mic", "max_input_channels": 2},
+                {"name": "USB Microphone", "max_input_channels": 1},
+            ]
+
+    recorder = PushToTalkRecorder(
+        sounddevice_module=FakeSoundDevice(),
+        keyboard_module=object(),
+    )
+    recorder._device_index = "USB Microphone"
+
+    assert recorder._resolver_dispositivo() == 1
 
 
 def test_kokoro_tts_streams_audio_without_sapi():
