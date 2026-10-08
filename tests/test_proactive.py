@@ -91,11 +91,10 @@ def test_daily_check_is_opt_in_and_once_per_day(monkeypatch, tmp_path):
             ok = True
             data = {"fontes": [{"trecho": "novidade"}]}
         return Result()
-    monkeypatch.setattr("tools.web_search.pesquisar_web", fake_search)
-    assert proactive.checar_topicos(store) == []
+    assert proactive.checar_topicos(store, fake_search) == []
     assert calls == []
     store.definir_monitoramento_proativo(True)
-    assert len(proactive.checar_topicos(store)) == 1
+    assert len(proactive.checar_topicos(store, fake_search)) == 1
     assert calls == [("Auren", "news")]
-    assert proactive.checar_topicos(store) == []
+    assert proactive.checar_topicos(store, fake_search) == []
     assert len(calls) == 1
