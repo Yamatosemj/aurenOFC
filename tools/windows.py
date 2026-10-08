@@ -91,6 +91,7 @@ from tools.windows_window import (
 
 from tools.windows_uia import (
     _executar_ui_automation,
+    _ui_automation_hwnd_int,
     _ui_automation_janela,
     clicar_elemento_windows,
     inspecionar_interface_windows,
