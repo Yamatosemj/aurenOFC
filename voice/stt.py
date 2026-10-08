@@ -12,6 +12,27 @@ ASR_DIR.mkdir(parents=True, exist_ok=True)
 
 DEFAULT_REPO = "calneymgp/parakeet-tdt-0.6b-v3-ptBR-TAGARELA-onnx-int8"
 DEFAULT_SAMPLE_RATE = 16_000
+DEFAULT_GAIN_TARGET_RMS = 0.035
+DEFAULT_GAIN_MAX = 8.0
+
+
+def _normalizar_nivel_fala(waveform: Any, *, target_rms: float = DEFAULT_GAIN_TARGET_RMS, max_gain: float = DEFAULT_GAIN_MAX) -> Any:
+    """Eleva apenas sinais de fala muito baixos, sem permitir ganho destrutivo."""
+    import numpy as np
+
+    audio = _normalizar_onda(waveform)
+    if audio.size == 0:
+        return audio
+
+    rms = float(np.sqrt(np.mean(np.square(audio.astype(np.float64)))))
+    peak = float(np.max(np.abs(audio)))
+    if rms <= 0.0 or peak <= 0.0 or target_rms <= 0.0 or max_gain <= 1.0:
+        return audio
+
+    gain = min(float(max_gain), max(1.0, float(target_rms) / rms))
+    if peak * gain > 0.95:
+        gain = min(gain, 0.95 / peak)
+    return (audio * np.float32(max(1.0, gain))).astype(np.float32, copy=False)
 
 
 def _normalizar_onda(waveform: Any) -> Any:
