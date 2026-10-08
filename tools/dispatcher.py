@@ -172,6 +172,7 @@ TOOL_HANDLERS = {
     "criar_lembrete": _sem_memoria(reminders.criar_lembrete, "mensagem", "data", "hora"),
     "listar_lembretes": _sem_memoria(reminders.listar_lembretes),
     "cancelar_lembrete": _sem_memoria(reminders.cancelar_lembrete, "id"),
+    "pesquisar_web": _sem_memoria(pesquisar_web, "consulta", "modo"),
     "listar_janelas_windows": _sem_memoria(windows.listar_janelas_windows),
     "focar_janela_windows": _sem_memoria(windows.focar_janela_windows, "alvo"),
     "minimizar_janela_windows": _sem_memoria(windows.minimizar_janela_windows, "alvo"),
