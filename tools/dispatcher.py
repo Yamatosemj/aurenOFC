@@ -8,6 +8,7 @@ from core.tool_contracts import validate_tool_arguments
 from core.vision import transform_visual_tool_arguments
 from tools import applications, browser, browser_context, file_intelligence, files
 from tools import windows, reminders
+from core import proactive_controls
 from tools.memory import salvar_memoria_persistente, consultar_memoria_persistente, esquecer_memoria_persistente
 
 from core.tool_result import LEGACY_FAILURE_MARKERS, ToolResult, from_legacy
