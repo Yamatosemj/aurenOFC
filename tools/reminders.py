@@ -334,7 +334,7 @@ def criar_lembrete(mensagem: str, data: str, hora: str) -> ToolResult:
         )
 
     reminder_id = _gerar_id()
-    task_name = f"AurenReminder_{reminder_id}"
+    task_name = _task_name(reminder_id)
     entry = _criar_entrada(reminder_id, task_name, texto, alvo)
 
     try:
