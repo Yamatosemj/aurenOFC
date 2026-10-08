@@ -21,6 +21,7 @@ def test_voice_v4_components_are_lazy_and_constructible():
         keyboard_module=object(),
     )
     assert recorder.hotkey == "ctrl+shift+space"
+    assert recorder.config.sample_rate == 16_000
     assert recorder.config.pre_roll_seconds == 0.18
     assert recorder.config.post_roll_seconds == 0.12
     assert recorder.config.key_debounce_seconds == 0.06
