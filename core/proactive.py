@@ -75,9 +75,9 @@ def hoje_utc() -> str:
     return datetime.now(timezone.utc).date().isoformat()
 
 
-def checar_topicos(store: Any) -> list[str]:
-    """Consulta uma vez os tópicos habilitados e devolve alertas curtos.
-    A checagem é somente leitura e respeita a trava diária persistente.
+def checar_topicos(store: Any, pesquisar: Any) -> list[str]:
+    """Consulta uma vez os tópicos habilitados usando o executor recebido.
+    O callback entra no caminho oficial do Dispatcher; nenhum tool é importado aqui.
     Custo: até uma busca web por tópico configurado."""
     if not monitoramento_necessario(store):
         return []
@@ -85,10 +85,9 @@ def checar_topicos(store: Any) -> list[str]:
     if not topicos:
         marcar_monitoramento(store)
         return []
-    from tools.web_search import pesquisar_web
     alertas = []
     for topico in topicos:
-        resultado = pesquisar_web(topico, "news")
+        resultado = pesquisar(topico, "news")
         if not getattr(resultado, "ok", False):
             continue
         fontes = (getattr(resultado, "data", {}) or {}).get("fontes", [])
