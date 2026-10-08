@@ -12,7 +12,7 @@ Atualizado em: 2026-10-07
 - **Modelo padrão:** `gpt-5.6-luna`
 - **Branch/PR ativa:** `tarefa-8-plugin-loader` / PR #81
 - **Head da main:** `0a8304e1b097d458511f017ca1f0d9da19d86726`
-- **Head da PR #81:** `b7358f295239c668d65e38803462deaf35389351`
+- **Head da PR #81:** `4d177c5929bb21776bfbd675c8d354f7eae7fd0d`
 - **CI da implementação da tarefa 8:** em execução no PR #81; a implementação anterior tinha 438 testes passando
 - **Fase atual:** Plugin Infrastructure — Tarefa 8
 
