@@ -8,12 +8,13 @@ Atualizado em: 2026-10-07
 
 ## Estado atual
 
-- **Versão estável:** V47
+- **Versão estável:** V48
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** nenhuma
-- **Head da main:** `71ebe7b77826d1673f9abe6926e40eb9fb63d0f2`
-- **CI da implementação mais recente:** pytest, focused Linux e focused Windows verdes
-- **Fase atual:** Browser Intelligence
+- **Branch/PR ativa:** `tarefa-8-plugin-loader` / PR #81
+- **Head da main:** `0a8304e1b097d458511f017ca1f0d9da19d86726`
+- **Head da PR #81:** `3e11040f912ebc67585f2d1af0a8b59f0bcf9e33`
+- **CI da implementação da tarefa 8:** em execução no PR #81; a implementação anterior tinha 438 testes passando
+- **Fase atual:** Plugin Infrastructure — Tarefa 8
 
 ### O que já está concluído nesta fase
 
@@ -39,6 +40,24 @@ Atualizado em: 2026-10-07
 - rolagem: posição de rolagem já é verificada deterministicamente; confirmar automaticamente o conteúdo esperado continua como etapa posterior
 - qualquer verificação continua tratando conteúdo da página como dado não confiável, nunca como instrução
 
+## Tarefa 8 — Carregador de plugins que passa pelo Dispatcher
+
+- [x] carregador dedicado em `core/plugin_loader.py`
+- [x] `TOOL` + `CAPABILITY` + handler entram nos registries oficiais
+- [x] novo plugin parte de `CONFIRM`; aprovação fica em `plugins_aprovados.json`
+- [x] habilitar/desabilitar sem reiniciar via recarregamento
+- [x] dependências checadas com `find_spec` antes do import
+- [x] plugin desativado não é importado
+- [x] colisões, plugins inválidos e dependências ausentes são isolados com motivo legível
+- [x] retorno de plugin marcado como conteúdo não confiável
+- [x] prompt gera capacidades a partir do registry atual
+- [x] template e exemplo `hora_atual`
+- [x] testes específicos e extensão do caminho único
+- [ ] portão final: `py -m pytest -q` verde no PR #81
+
+### Pendência herdada
+A execução manual do runner Browser Intelligence em Windows continua pendente da fase anterior e não foi alterada silenciosamente nesta tarefa.
+
 ## Segurança e base estrutural concluídas
 
 - [x] allowlist de leitura/inspeção de arquivos
@@ -55,6 +74,7 @@ Atualizado em: 2026-10-07
 - [x] validação visual Windows com geometria/coordenadas protegidas
 
 ## PRs mais recentes
+- **#81** — Tarefa 8: carregador de plugins via Dispatcher — open
 
 - **#48** — extração de Windows UI Automation — merged
 - **#49** — extração de status do Windows — merged
@@ -84,7 +104,7 @@ Atualizado em: 2026-10-07
 
 ## Próximas etapas
 
-A tarefa ativa permanece **Browser Intelligence** até que a verificação por tipo de ação esteja suficientemente robusta e coberta por testes.
+A tarefa ativa é **Tarefa 8 — Plugin Infrastructure** até o portão final verde. Depois, a próxima tarefa é **9**, preservando a pendência herdada do runner Browser Intelligence.
 
 Próxima etapa: executar o runner live em Windows e registrar o resultado real das tarefas compostas. O CI atual valida o código do runner, mas não executa a bateria L4/L5 com navegador e modelo reais.
 
