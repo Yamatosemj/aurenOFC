@@ -319,6 +319,21 @@ class IntentResolver:
                     reason="Regra do Registry identificou reproducao especifica no aplicativo Spotify do Windows.",
                 )
 
+        if capability_id == "monitoramento_proativo":
+            ativo = _field(data, "ativo")
+            topico = _field(data, "topico")
+            if ativo is None:
+                ativo = not bool(re.search(r"\bdesativ|\bdeslig|\bparar", normalized))
+            params = {"ativo": bool(ativo)}
+            if topico:
+                params["topico"] = str(topico).strip()
+            return ResolvedIntent(
+                capability_id="monitoramento_proativo",
+                params=params,
+                reason_code="matched_proactive",
+                reason="Regra do Registry identificou configuracao de monitoramento proativo.",
+            )
+
         if capability_id == "pesquisar_web":
             consulta = _field(data, "consulta", "query", "pesquisa", "termo") or _extract_search_query(objective)
             modo = _field(data, "modo", "mode")
