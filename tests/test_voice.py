@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from queue import Queue
 from types import SimpleNamespace
 
 import numpy as np
 
+from voice.confirmation import VoiceConfirmationChannel
 from voice.input import AudioCaptureConfig, CapturedAudio, PushToTalkRecorder
 from voice.segmentation import VoiceActivitySegmenter, VoiceSegmentConfig
 from voice.speech_response import SpeechResponseFormatter
@@ -234,3 +236,43 @@ def test_kokoro_tts_streams_audio_without_sapi():
     assert sd.stream.writes == 1
     assert sd.stream.stopped is True
     assert sd.stream.closed is True
+
+
+def test_voice_confirmation_unpacks_capture_queue_envelope():
+    class FakeTTS:
+        def __init__(self):
+            self.spoken = []
+
+        def falar(self, text):
+            self.spoken.append(text)
+
+    class FakeSTT:
+        def transcrever(self, audio):
+            assert isinstance(audio, CapturedAudio)
+            return "sim"
+
+    queue = Queue()
+    queue.put(
+        (
+            "audio",
+            CapturedAudio(
+                samples=np.zeros(1600, dtype=np.float32),
+                sample_rate=16_000,
+                duration=0.1,
+                rms=0.1,
+                peak=0.1,
+                device_name="Realtek",
+            ),
+        )
+    )
+    tts = FakeTTS()
+    channel = VoiceConfirmationChannel(
+        tts=tts,
+        stt=FakeSTT(),
+        audio_queue=queue,
+        timeout=0.1,
+    )
+
+    request = SimpleNamespace(action="definir volume", reason="e necessario confirmar")
+    assert channel.confirmar(request) is True
+    assert tts.spoken
