@@ -48,6 +48,7 @@ class VoiceActivitySegmenter:
         self.config = config or VoiceSegmentConfig()
         self._vad = vad
         self._vad_load_attempted = vad is not None
+        self._vad_error: str | None = None
 
     @property
     def backend(self) -> str:
@@ -60,17 +61,20 @@ class VoiceActivitySegmenter:
         self._vad_load_attempted = True
         try:
             import webrtcvad
-        except ImportError:
+        except ImportError as exc:
             self._vad = False
+            self._vad_error = f"import: {exc}"
             return
-        except Exception:
+        except Exception as exc:
             self._vad = False
+            self._vad_error = f"import: {exc}"
             return
 
         try:
             self._vad = webrtcvad.Vad(int(self.config.vad_mode))
-        except Exception:
+        except Exception as exc:
             self._vad = False
+            self._vad_error = f"inicializacao: {exc}"
 
     @staticmethod
     def _resample_for_vad(audio: Any, sample_rate: int, target_rate: int) -> tuple[Any, int]:
@@ -142,7 +146,8 @@ class VoiceActivitySegmenter:
             frame = vad_audio[start:end]
             try:
                 flags.append(bool(self._vad.is_speech(self._pcm16_bytes(frame), vad_rate)))
-            except Exception:
+            except Exception as exc:
+                self._vad_error = f"frame: {exc}"
                 return [], vad_rate
         return flags, vad_rate
 
@@ -234,6 +239,10 @@ class VoiceActivitySegmenter:
         flags, frame_rate = self._webrtc_flags(waveform, sr)
         backend = "webrtcvad"
         if not flags or not any(flags):
+            if self._vad_error:
+                print(f"Auren voz: WebRTC VAD indisponivel; fallback por energia: {self._vad_error}")
+            else:
+                print("Auren voz: WebRTC VAD nao detectou fala; fallback por energia.")
             flags, frame_rate = self._energy_flags(waveform, sr)
             backend = "energy"
 
