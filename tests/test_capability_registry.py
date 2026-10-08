@@ -31,7 +31,7 @@ def test_registry_only_contains_v43_backed_tools():
         assert set(capability.tools) <= available
 
 
-def test_registry_contains_real_v44_capabilities_only():
+def test_registry_contains_real_current_capabilities():
     expected = {
         "abrir_programa",
         "abrir_url",
@@ -47,6 +47,7 @@ def test_registry_contains_real_v44_capabilities_only():
         "analisar_tela",
         "inspecionar_arquivo",
         "ler_arquivo",
+        "gerenciar_lembretes",
     }
     assert set(CAPABILITY_REGISTRY.ids()) == expected
 
