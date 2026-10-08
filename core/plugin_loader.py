@@ -468,6 +468,22 @@ def _validar_e_registrar(module: Any, filename: str) -> _ValidatedPlugin:
     if set(obrigatorios) & set(opcionais):
         raise ValueError("Um parametro nao pode ser simultaneamente obrigatorio e opcional.")
 
+    padroes = tuple(capability.get("padroes_objetivo", ()) or ())
+    if not all(isinstance(item, str) and item.strip() for item in padroes):
+        raise ValueError("CAPABILITY['padroes_objetivo'] deve conter apenas strings.")
+    try:
+        for pattern in padroes:
+            re.compile(pattern)
+    except re.error as exc:
+        raise ValueError(f"CAPABILITY possui regex invalida em padroes_objetivo: {exc}") from exc
+
+    try:
+        prioridade = int(capability.get("prioridade", 1000))
+    except (TypeError, ValueError) as exc:
+        raise ValueError("CAPABILITY['prioridade'] deve ser inteiro.") from exc
+    if not 1 <= prioridade <= 10000:
+        raise ValueError("CAPABILITY['prioridade'] deve estar entre 1 e 10000.")
+
     capability_registro = Capability(
         id=capability_id,
         descricao=descricao.strip(),
@@ -480,8 +496,8 @@ def _validar_e_registrar(module: Any, filename: str) -> _ValidatedPlugin:
         politica_confirmacao="confirm",
         resolver=resolver.strip(),
         tools=(nome,),
-        prioridade=int(capability.get("prioridade", 1000)),
-        padroes_objetivo=tuple(capability.get("padroes_objetivo", ()) or ()),
+        prioridade=prioridade,
+        padroes_objetivo=padroes,
     )
 
     normalized_tool = {
