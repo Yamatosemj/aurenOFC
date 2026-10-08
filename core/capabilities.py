@@ -78,6 +78,22 @@ CAPABILITY_DEFINITIONS: tuple[Capability, ...] = (
         ),
     ),
     Capability(
+        id="monitoramento_proativo",
+        descricao="Configurar ou consultar monitoramento passivo de topicos, desligado por padrao e limitado a uma checagem diaria.",
+        local=True,
+        deterministica=True,
+        multi_etapa=False,
+        exige_raciocinio=False,
+        parametros_obrigatorios=(),
+        parametros_opcionais=("ativo", "topico"),
+        politica_confirmacao="confirm",
+        resolver="proactive",
+        tools=("configurar_monitoramento_proativo", "adicionar_topico_proativo", "remover_topico_proativo", "status_monitoramento_proativo"),
+        prioridade=25,
+        padroes_objetivo=(r"\bmonitor(?:ar|amento|e)\b", r"\bproativ[oa]\b"),
+    ),
+
+    Capability(
         id="pesquisar_web",
         descricao="Pesquisar a web em modo news, research, price ou compare e devolver fontes externas limitadas.",
         local=True,
