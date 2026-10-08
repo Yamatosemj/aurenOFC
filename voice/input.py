@@ -50,7 +50,7 @@ class PushToTalkRecorder:
     def __init__(
         self,
         *,
-        hotkey: str = "right ctrl",
+        hotkey: str = "right ctrl+right shift+right shift",
         config: AudioCaptureConfig | None = None,
         sounddevice_module: Any | None = None,
         keyboard_module: Any | None = None,
