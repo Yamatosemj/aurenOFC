@@ -10,10 +10,10 @@ from memory.store import PersistentMemoryStore
 
 # Mantemos esses literais no facade para ferramentas de compatibilidade que
 # descobrem a versao lendo o arquivo-fonte sem importar o modulo.
-AUREN_VERSION = 47
+AUREN_VERSION = 48
 MODEL = "gpt-5.6-luna"
 CACHE_KEY = f"auren-v{AUREN_VERSION}"
-ARCHITECTURE_NAME = "V47 ARI NATIVE VISUAL GEOMETRY"
+ARCHITECTURE_NAME = "V48 VOICE VAD + VISUAL GEOMETRY"
 if (AUREN_VERSION, MODEL, CACHE_KEY, ARCHITECTURE_NAME) != (_CONFIG_AUREN_VERSION, _CONFIG_MODEL, _CONFIG_CACHE_KEY, _CONFIG_ARCHITECTURE_NAME):
     raise RuntimeError("config.py e auren.py estao com versao/modelo incoerentes.")
 
@@ -82,7 +82,7 @@ def comando_rapido(mensagem):
     # Experimento controlado: quando habilitado explicitamente, tenta apenas
     # a capacidade local de áudio antes dos atalhos rápidos existentes.
     # Qualquer pedido que não seja resolvido com segurança continua no fluxo
-    # normal V46 (Fast Path -> LocalDecision -> Router -> Luna).
+    # normal V48 (Fast Path -> LocalDecision -> Router -> Luna).
     tratado, resposta, metadata = _try_experimental_audio(
         mensagem,
         executar_ferramenta=executar_ferramenta,
