@@ -68,6 +68,7 @@ def _user32():
     return user32
 
 from tools.windows_processes import _nome_executavel_por_pid_windows, encerrar_processo_windows, listar_processos_windows
+from tools.applications import _powershell_literal
 
 from tools.windows_system import _status_windows, obter_status_windows
 
