@@ -193,6 +193,51 @@ TOOL = {
         registry.descarregar()
 
 
+
+def test_nome_invalido_e_rejeitado_antes_do_import(tmp_path):
+    approval = tmp_path / "aprovacoes.json"
+    _write_approval(approval, **{"nome invalido": {"habilitado": True, "aprovado": False}})
+    directory = tmp_path / "plugins"
+    directory.mkdir()
+    _write_plugin(
+        directory,
+        "nome_invalido.py",
+        '''
+from pathlib import Path
+Path(__file__).with_suffix(".importado").write_text("nao deveria")
+from core.tool_result import ToolResult
+
+CAPABILITY = {
+    "id": "plugin.nome invalido",
+    "descricao": "invalido",
+    "local": True,
+    "deterministica": True,
+    "multi_etapa": False,
+    "exige_raciocinio": False,
+    "resolver": "plugin",
+}
+
+def executar(argumentos):
+    return ToolResult.success("x", tool_name="nome invalido")
+
+TOOL = {
+    "name": "nome invalido",
+    "description": "invalido",
+    "parameters": {"type": "object", "properties": {}, "required": [], "additionalProperties": False},
+    "handler": executar,
+}
+''',
+    )
+    registry = discover_plugins(directory, approval_file=approval, logger=lambda _msg: None)
+    try:
+        record = next(item for item in registry.records if item.name == "nome invalido")
+        assert not record.valid
+        assert "Nome invalido" in record.error
+        assert not (directory / "nome_invalido.importado").exists()
+    finally:
+        registry.descarregar()
+
+
 def test_plugin_com_nome_de_core_e_ignorado_antes_do_import(tmp_path):
     approval = tmp_path / "aprovacoes.json"
     _write_approval(approval, obter_status_windows={"habilitado": True, "aprovado": False})
