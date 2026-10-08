@@ -1,6 +1,6 @@
 # Auren
 
-Assistente desktop/voz para Windows, versão técnica **V48**, usando o modelo configurado em `config.py` (snapshot atual: `gpt-5.6-luna`).
+Assistente desktop/voz para Windows, versão técnica **V49**, usando o modelo configurado em `config.py` (snapshot atual: `gpt-5.6-luna`).
 
 > **Estado atual do projeto:** consulte [AUREN_STATE.md](AUREN_STATE.md) antes de iniciar ou continuar trabalho no Auren. O estado oficial registra a tarefa ativa, PRs em andamento, CI, próxima fase e backlog.
 
@@ -104,6 +104,20 @@ O retorno de plugin e marcado como conteudo nao confiavel, assim como leituras d
 
 Use `plugins/_template.py` como modelo e `plugins/hora_atual.py` como exemplo completo.
 
+## Lembretes (V49)
+
+O Auren possui tres tools de lembretes pelo mesmo Dispatcher: `criar_lembrete`, `listar_lembretes` e `cancelar_lembrete`.
+
+`criar_lembrete` registra o lembrete no Agendador de Tarefas do Windows como uma tarefa de disparo unico. O XML usa horario local em ISO-8601, execucao como usuario interativo e nivel de privilegio minimo. O comando agendado e uma lista de argumentos que chama o proprio modulo `tools.reminders`; nao ha `shell=True`.
+
+A mensagem fica em metadata local em `%APPDATA%\Auren\lembretes.json` por padrao. O scheduler permanece sendo a fonte do disparo: o Auren nao precisa ficar aberto para o processo agendado chamar o runner.
+
+Criar e cancelar sao acoes persistentes e exigem **CONFIRM**. Listar e somente leitura e fica em **AUTO**. O resultado de criacao inclui o ID do lembrete e o cancelamento como reversao natural da criacao.
+
+O runner interno aceita somente `--disparar <id>`, recupera a mensagem pelo ID e envia uma notificacao no Windows. Depois de uma notificacao bem-sucedida, o agendamento e a metadata sao removidos porque o lembrete e de ocorrencia unica.
+
+A implementacao nao adiciona dependencia externa e e limitada ao Windows/Agendador de Tarefas.
+
 ## Arquitetura atual
 
 ```text
@@ -129,7 +143,7 @@ A captura de tela informa a área de trabalho virtual do Windows, incluindo orig
 
 ## Estado importante
 
-- **48 tools nativas** no registry/contratos + plugins locais dinamicos
+- **52 tools nativas** no registry/contratos + plugins locais dinamicos
 - memória persistente em SQLite
 - browser e automação Windows integrados
 - visão pode observar a tela, executar clique ou arraste global do mouse com confirmação, manter a geometria da captura e da imagem entregue ao modelo e verificar o estado final em tarefas visuais compostas
