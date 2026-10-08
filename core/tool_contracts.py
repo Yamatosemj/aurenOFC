@@ -146,6 +146,10 @@ _CAPABILITY_RULES += (
     ("listar_lembretes", "reminder.read"),
     ("cancelar_lembrete", "reminder.cancel"),
     ("pesquisar_web", "web.search"),
+    ("configurar_monitoramento_proativo", "proactive.configure"),
+    ("adicionar_topico_proativo", "proactive.topic.add"),
+    ("remover_topico_proativo", "proactive.topic.remove"),
+    ("status_monitoramento_proativo", "proactive.status"),
 )
 
 _CAPABILITY_BY_TOOL = dict(_CAPABILITY_RULES)
