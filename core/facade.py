@@ -72,8 +72,21 @@ _WINDOW_TARGET_CACHE = windows._WINDOW_TARGET_CACHE
 
 
 def criar_lembrete(mensagem, data, hora):
+    """Expõe a criação de lembretes pela API pública de compatibilidade.
+    O wrapper encaminha para o mesmo executor usado pelo Dispatcher.
+    Custo: uma chamada direta à ferramenta de lembretes."""
     return reminders.criar_lembrete(mensagem, data, hora)
+
+
 def listar_lembretes():
+    """Expõe a listagem de lembretes pela API pública de compatibilidade.
+    O wrapper encaminha para a ferramenta que consulta o scheduler e metadata local.
+    Custo: uma chamada direta à ferramenta de lembretes.""" 
     return reminders.listar_lembretes()
+
+
 def cancelar_lembrete(id):
+    """Expõe o cancelamento de lembretes pela API pública de compatibilidade.
+    O wrapper encaminha para o mesmo cancelamento usado como reversao da criacao.
+    Custo: uma chamada direta à ferramenta de lembretes."""
     return reminders.cancelar_lembrete(id)
