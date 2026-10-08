@@ -7,7 +7,7 @@ Tarefa: Sistema de voz e STT
 ## O que foi feito
 
 - captura PTT com stream aberto localmente, pré-roll curto e pós-roll
-- debounce de Shift+1 para evitar acionamento acidental
+- debounce de Ctrl+Shift+Space para evitar acionamento acidental
 - segmentação local com WebRTC VAD, com fallback por energia
 - descarte de silêncio quase puro antes do ASR
 - resolução do microfone por nome e fallback para o dispositivo padrão
