@@ -64,6 +64,9 @@ class PermissionManager:
         "browser.scroll": PermissionLevel.AUTO,
         "browser.tabs.read": PermissionLevel.AUTO,
         "browser.tabs.control": PermissionLevel.AUTO,
+        "reminder.create": PermissionLevel.CONFIRM,
+        "reminder.read": PermissionLevel.AUTO,
+        "reminder.cancel": PermissionLevel.CONFIRM,
     }
 
     # O orçamento de ações também é definido por capacidade. Capacidade de
@@ -93,6 +96,7 @@ class PermissionManager:
         "browser.scroll": "Rolar a pagina altera apenas a posicao local de visualizacao.",
         "browser.tabs.read": "Somente leitura da lista de abas.",
         "browser.tabs.control": "Abrir/trocar abas e reversivel; fechar aba exige CONFIRM para evitar perda de estado.",
+        "reminder.read": "Somente consulta lembretes futuros sem alterar o agendamento.",
     }
 
     REVERSIBLE_WINDOW_CONTROL_TOOLS = frozenset({
@@ -128,6 +132,8 @@ class PermissionManager:
         "windows.input",
         "windows.audio.control",
         "windows.ui.control",
+        "reminder.create",
+        "reminder.cancel",
     }
 
     # Ações cujo sucesso repetido com exatamente os mesmos argumentos pode
@@ -764,6 +770,18 @@ class PermissionManager:
 
         if nome_ferramenta == "pressionar_tecla":
             return f"pressionar a tecla {argumentos.get('tecla', '')!r}"
+
+        if nome_ferramenta == "criar_lembrete":
+            mensagem = str(argumentos.get("mensagem", ""))
+            if len(mensagem) > 100:
+                mensagem = mensagem[:97] + "..."
+            return (
+                f"criar lembrete para {argumentos.get('data', '')} "
+                f"{argumentos.get('hora', '')}: {mensagem!r}"
+            )
+
+        if nome_ferramenta == "cancelar_lembrete":
+            return f"cancelar o lembrete {argumentos.get('id', '')!r}"
 
         if capacidade == "application.open":
             return f"abrir o programa {argumentos.get('programa', '')!r}"
