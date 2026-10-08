@@ -10,7 +10,7 @@ class VoiceSegmentConfig:
     """Parametros de segmentacao local da fala."""
 
     frame_duration_ms: int = 20
-    vad_mode: int = 2
+    vad_mode: int = 1
     min_speech_seconds: float = 0.08
     start_padding_ms: int = 80
     end_padding_ms: int = 120
@@ -89,6 +89,26 @@ class VoiceActivitySegmenter:
         return resampled.astype(np.float32, copy=False), target
 
     @staticmethod
+    def _preparar_nivel_para_vad(audio: Any) -> Any:
+        """Eleva sinais muito baixos apenas para a decisão do VAD."""
+        import numpy as np
+
+        waveform = np.asarray(audio, dtype=np.float32).reshape(-1)
+        if waveform.size == 0:
+            return waveform
+        rms = float(np.sqrt(np.mean(np.square(waveform.astype(np.float64)))))
+        peak = float(np.max(np.abs(waveform)))
+        if rms <= 0.0 or peak <= 0.0:
+            return waveform
+
+        target_rms = 0.02
+        max_gain = 6.0
+        gain = min(max_gain, max(1.0, target_rms / rms))
+        if peak * gain > 0.95:
+            gain = min(gain, 0.95 / peak)
+        return (waveform * np.float32(gain)).astype(np.float32, copy=False)
+
+    @staticmethod
     def _pcm16_bytes(audio: Any) -> bytes:
         import numpy as np
 
@@ -106,6 +126,7 @@ class VoiceActivitySegmenter:
             sample_rate,
             self.config.vad_sample_rate,
         )
+        vad_audio = self._preparar_nivel_para_vad(vad_audio)
         if vad_rate not in _SUPPORTED_VAD_RATES:
             return [], vad_rate
 
