@@ -61,3 +61,20 @@ def test_topic_can_be_removed(tmp_path):
 
     assert store.remover_topico_proativo("Auren")["ok"] is True
     assert store.listar_topicos_proativos() == []
+
+
+def test_proactive_tools_are_registered_with_safe_permissions():
+    from core.permission_manager import PermissionLevel, PermissionManager
+    from core.tools_registry import tools
+
+    names = {item["name"] for item in tools}
+    assert {
+        "configurar_monitoramento_proativo",
+        "adicionar_topico_proativo",
+        "remover_topico_proativo",
+        "status_monitoramento_proativo",
+    } <= names
+
+    manager = PermissionManager(max_actions=10)
+    assert manager.nivel("status_monitoramento_proativo") == PermissionLevel.AUTO
+    assert manager.nivel("configurar_monitoramento_proativo") == PermissionLevel.CONFIRM
