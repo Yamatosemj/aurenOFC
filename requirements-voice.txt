@@ -4,3 +4,4 @@ sounddevice==0.5.6
 soundfile==0.13.1
 keyboard==0.13.5
 numpy==2.5.3
+webrtcvad-wheels==2.0.14.post1
