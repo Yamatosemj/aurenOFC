@@ -8,14 +8,40 @@ Atualizado em: 2026-10-07
 
 ## Estado atual
 
-- **Versão estável:** V47
+- **Versão em desenvolvimento:** V48
+- **Versão estável da main:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** nenhuma
+- **Branch/PR ativa:** `feat/tarefa-1-voice-stt-v48`
 - **Head da main:** `71ebe7b77826d1673f9abe6926e40eb9fb63d0f2`
-- **CI da implementação mais recente:** pytest, focused Linux e focused Windows verdes
-- **Fase atual:** Browser Intelligence
+- **CI da implementação mais recente:** aguardando execução da bateria V48 de voz + Windows/Linux
+- **Fase atual:** Voice/STT
 
-### O que já está concluído nesta fase
+### Tarefa 1 — Voice/STT V4
+
+Implementação em andamento nesta branch para substituir os pontos frágeis da captura PTT e do caminho de transcrição, sem alterar o fluxo de execução do Auren.
+
+### Concluído nesta tarefa
+
+- [x] stream de entrada mantido aberto apenas localmente, com janela curta de pré-roll em RAM
+- [x] pós-roll após a soltura de F8 para reduzir cortes de palavras no final
+- [x] debounce da tecla antes de iniciar uma fala
+- [x] segmentação local com WebRTC VAD e fallback por energia
+- [x] rejeição de áudio vazio ou quase silencioso antes do ASR
+- [x] resolução do microfone por nome, com fallback para o dispositivo de entrada padrão
+- [x] tentativa de taxa preferida e fallback para a taxa nativa do dispositivo
+- [x] áudio mono sanitizado e normalizado para 16 kHz antes da inferência do Parakeet
+- [x] acesso serializado ao modelo STT para evitar chamadas concorrentes sobre a mesma instância
+- [x] erros de captura e STT deixam de encerrar a sessão de voz automaticamente
+- [x] TTS não contamina o pré-roll da próxima fala
+- [x] texto e voz continuam entrando no mesmo Harness
+- [x] testes unitários de VAD, resampling, silêncio e resolução de dispositivo adicionados
+- [x] cache local do ASR deixa de ser apagado pelo instalador de voz
+- [x] wake word e Echo Guard permanecem fora do escopo
+
+### Validação pendente
+
+A validação real com microfone, driver, ruído ambiente e fala natural em português ainda precisa ser executada em Windows. O CI cobre a parte determinística da camada, mas não substitui o teste de áudio físico.
+## O que já está concluído nesta fase
 
 - [x] contexto unificado do navegador via `obter_contexto_navegador`
 - [x] contexto disponível no registry, contratos, facade e Dispatcher
