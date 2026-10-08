@@ -13,8 +13,8 @@ Atualizado em: 2026-10-07
 - **Modelo padrão:** `gpt-5.6-luna`
 - **Branch/PR ativa:** `feat/tarefa-10a-lembretes` / PR #82
 - **Head da main:** `0a8304e1b097d458511f017ca1f0d9da19d86726`
-- **Head da PR #82:** `c4bee59cd22998f88ef8cc9190ea2d5e72a2fa47`
-- **CI da Tarefa 10A:** enfileirado no PR #82; baseline anterior da linha de desenvolvimento: 457 passed, 6 skipped
+- **Head da PR #82:** `d52247afd8eaa321f8ddc35a57a89e70ea5f0881`
+- **CI da Tarefa 10A:** verde no PR #82 — 476 passed, 6 skipped
 - **Fase atual:** Novas capacidades — Tarefa 10A (Lembretes)
 
 ### O que já está concluído nesta fase
@@ -75,7 +75,7 @@ A execução manual do runner Browser Intelligence em Windows continua pendente 
 - [x] testes com scheduler simulado cobrindo criacao, listagem, cancelamento, XML, argumentos, permissao, Router e Dispatcher
 - [x] nenhuma dependencia nova adicionada
 - [ ] portao final: `py -m pytest -q` verde no CI do PR #82
-- [ ] runner live Windows `python testes_auren_live.py --rapido` apos a entrada da funcionalidade no ciclo de testes Windows
+- [ ] runner live Windows `python testes_auren_live.py --rapido` — pendente porque este ambiente nao possui Windows; o focused-tests-windows do CI passou
 
 ### Decisoes da 10A
 
