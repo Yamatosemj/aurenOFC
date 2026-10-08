@@ -341,6 +341,34 @@ def test_modulo_do_proprio_auren_ausente_nao_manda_instalar_com_pip(tmp_path):
         registry.descarregar()
 
 
+
+def test_erro_de_importacao_de_plugin_e_isolado(tmp_path):
+    approval = tmp_path / "aprovacoes.json"
+    _write_approval(
+        approval,
+        quebrado={"habilitado": True, "aprovado": False},
+        normal={"habilitado": True, "aprovado": True},
+    )
+    directory = _tmp_plugins_with(tmp_path, "isolado")
+    _write_plugin(
+        directory,
+        "quebrado.py",
+        '''
+raise RuntimeError("falha isolada de import")
+''',
+    )
+    _write_plugin(directory, "normal.py", _valid_plugin("normal"))
+
+    registry = discover_plugins(directory, approval_file=approval, logger=lambda _msg: None)
+    try:
+        quebrado = next(item for item in registry.records if item.name == "quebrado")
+        assert not quebrado.valid
+        assert "falha isolada de import" in quebrado.error
+        assert "normal" in registry.active_names
+    finally:
+        registry.descarregar()
+
+
 def test_plugin_desativado_nao_importa_nem_checa_dependencia(monkeypatch, tmp_path):
     approval = tmp_path / "aprovacoes.json"
     _write_approval(
