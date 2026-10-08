@@ -366,6 +366,32 @@ CAPABILITY_DEFINITIONS: tuple[Capability, ...] = (
             r"\bguarde\b",
         ),
     ),
+,
+    Capability(
+        id="gerenciar_lembretes",
+        descricao="Criar, listar e cancelar lembretes persistentes pelo Agendador de Tarefas do Windows.",
+        local=True,
+        deterministica=True,
+        multi_etapa=False,
+        exige_raciocinio=False,
+        parametros_obrigatorios=(),
+        parametros_opcionais=("mensagem", "data", "hora", "id"),
+        politica_confirmacao="core_policy",
+        resolver="reminders",
+        tools=(
+            "criar_lembrete",
+            "listar_lembretes",
+            "cancelar_lembrete",
+        ),
+        prioridade=65,
+        padroes_objetivo=(
+            r"\blembrete(s)?\b",
+            r"\blembr(?:ar|e|a|ou)\b.*\b(?:me|mim)\b",
+            r"\bme\s+lembre\b",
+            r"\b(?:avise|avisar|me avisa)\b.*\b(?:de|sobre|para)\b",
+        ),
+    ),
+
 )
 
 
