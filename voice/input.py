@@ -293,6 +293,10 @@ class PushToTalkRecorder:
     def capturar(self) -> CapturedAudio | None:
         """Aguarda F8, preserva contexto de borda e entrega audio segmentado."""
         self._load_dependencies()
+        with input_session():
+            return self._capturar_com_lock()
+
+    def _capturar_com_lock(self) -> CapturedAudio | None:
         sd = self._sd
         keyboard = self._keyboard
 
