@@ -4,7 +4,7 @@
 > Antes de iniciar uma nova tarefa, compare este arquivo com a branch/PR, o head da main e o CI do GitHub.
 > Histórico, memórias da conversa e documentos arquivados não substituem este estado.
 
-Atualizado em: 2026-10-07
+Atualizado em: 2026-10-08
 
 ## Estado atual
 
@@ -87,6 +87,32 @@ A execução manual do runner Browser Intelligence em Windows continua pendente 
 - O ID do lembrete e a unica autoridade para derivar o nome da tarefa do scheduler. Metadata local nao pode escolher arbitrariamente outro nome para cancelamento.
 - O runner envia notificacao por comandos do Windows sem shell e possui fallbacks locais; depois de notificar com sucesso, remove a ocorrencia unica e sua metadata.
 
+
+## Tarefa 10B — Pesquisa web em modos
+
+- [x] `pesquisar_web(consulta, modo)` registrado no Registry, Contrato, Capability, Router, Dispatcher e PermissionManager
+- [x] modos `news`, `research`, `price` e `compare`
+- [x] modo inferido pelo IntentResolver quando o TaskSpec nao informa o campo `modo`; pesquisa generica usa `research`
+- [x] usa o web search hospedado do Responses API do provider, sem criar executor paralelo do Browser
+- [x] Browser existente continua disponivel para tarefas interativas; o modelo recebe ambos quando a rota de pesquisa permitir escolha
+- [x] retorno estruturado com URL, titulo e trecho
+- [x] limite de ate 8 fontes, 600 caracteres por trecho e aproximadamente 5000 caracteres no conjunto
+- [x] todo retorno e marcado como `conteudo_nao_confiavel`
+- [x] resultados externos nao autorizam acoes automaticamente; prompt injection continua passando pela mesma guarda do PermissionManager
+- [x] nenhuma dependencia nova
+- [ ] portao final: `py -m pytest -q` verde no CI do PR #83
+- [ ] `python testes_auren_live.py --rapido` apos a entrada em ambiente Windows real
+
+### Decisoes da 10B
+
+- A busca hospedada do provedor e usada como ferramenta de leitura; o Browser continua sendo a ferramenta para interacao com paginas.
+- A escolha entre `pesquisar_web` e Browser permanece com o modelo dentro do subconjunto seguro selecionado pelo Router.
+- `pesquisar_web` e AUTO porque somente consulta dados externos e nao altera o computador.
+- O resultado da web e explicitamente nao confiavel mesmo quando vem do provedor, pois titulo, trecho e pagina podem conter instrucoes maliciosas.
+- A ferramenta limita a quantidade e o tamanho das fontes antes de devolver o resultado ao modelo.
+- O modo `research` usa contexto de busca maior; os demais usam contexto medio para controlar custo/latencia.
+- O web search hospedado retorna as fontes consultadas via `include=["web_search_call.action.sources"]`.
+
 ## Segurança e base estrutural concluídas
 
 - [x] allowlist de leitura/inspeção de arquivos
@@ -103,6 +129,8 @@ A execução manual do runner Browser Intelligence em Windows continua pendente 
 - [x] validação visual Windows com geometria/coordenadas protegidas
 
 ## PRs mais recentes
+- **#83** — Tarefa 10B: pesquisa web em modos — open
+- **#82** — Tarefa 10A: lembretes persistentes — open
 - **#82** — Tarefa 10A: lembretes persistentes — open
 - **#81** — Tarefa 8: carregador de plugins via Dispatcher — open
 
