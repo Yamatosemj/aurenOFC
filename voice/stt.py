@@ -31,8 +31,10 @@ def _normalizar_nivel_fala(waveform: Any, *, target_rms: float = DEFAULT_GAIN_TA
 
     gain = min(float(max_gain), max(1.0, float(target_rms) / rms))
     if peak * gain > 0.95:
+        if peak >= 0.95:
+            return audio
         gain = min(gain, 0.95 / peak)
-    return (audio * np.float32(max(1.0, gain))).astype(np.float32, copy=False)
+    return (audio * np.float32(gain)).astype(np.float32, copy=False)
 
 
 def _normalizar_onda(waveform: Any) -> Any:
