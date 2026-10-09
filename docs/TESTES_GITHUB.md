@@ -16,14 +16,14 @@ Abra a execução para ver o resumo por sistema, as falhas nos passos e os artif
 
 Os artifacts ficam por 14 dias; os logs dos passos também ficam no GitHub conforme a retenção do repositório.
 Falhas mantêm o job vermelho. Cancelamento forçado ou perda do runner pode impedir o upload.
-Os workflows anteriores continuam preservados. O novo workflow também roda em PR que altera seu próprio arquivo, para validar a automação antes de integrá-la.
+Os gatilhos pull_request foram removidos dos três workflows de testes. O workflow manual usa somente workflow_dispatch; os dois workflows de CI mantêm push em main e usam exclusivamente runners hospedados pelo GitHub.
 Não há mudanças no código do Auren.
 
 ## Windows local: configuração em andamento
 
 O repositório foi confirmado **privado** nesta inspeção (2026-10-09).
 O workflow existente de pytest continua usando exclusivamente os runners do GitHub.
-Os workflows de push/pull_request existentes também usam exclusivamente runners do GitHub.
+Os dois workflows de CI usam push em main exclusivamente nos runners do GitHub; não há gatilhos pull_request nos workflows ativos.
 
 [Auren - verificar conexão Windows](https://github.com/Yamatosemj/aurenOFC/actions/workflows/auren-windows-connection.yml)
 é manual, sem inputs, checkout, actions externas, dependências ou código importado do Auren.
