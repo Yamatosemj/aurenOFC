@@ -458,32 +458,33 @@ def test_kokoro_tts_streams_audio_without_sapi():
 
 def test_voice_confirmation_unpacks_capture_queue_envelope():
     class FakeTTS:
-        def __init__(self):
+        def __init__(self, queue, captured):
             self.spoken = []
+            self.queue = queue
+            self.captured = captured
 
         def falar(self, text):
             self.spoken.append(text)
+            assert self.queue.empty()
+            # Simula uma nova resposta do usuário durante a fala do prompt.
+            self.queue.put(("audio", self.captured))
 
     class FakeSTT:
         def transcrever(self, audio):
             assert isinstance(audio, CapturedAudio)
+            assert audio.device_name == "Realtek"
             return "sim"
 
-    queue = Queue()
-    queue.put(
-        (
-            "audio",
-            CapturedAudio(
-                samples=np.zeros(1600, dtype=np.float32),
-                sample_rate=16_000,
-                duration=0.1,
-                rms=0.1,
-                peak=0.1,
-                device_name="Realtek",
-            ),
-        )
+    captured = CapturedAudio(
+        samples=np.zeros(1600, dtype=np.float32),
+        sample_rate=16_000,
+        duration=0.1,
+        rms=0.1,
+        peak=0.1,
+        device_name="Realtek",
     )
-    tts = FakeTTS()
+    queue = Queue()
+    tts = FakeTTS(queue, captured)
     channel = VoiceConfirmationChannel(
         tts=tts,
         stt=FakeSTT(),
