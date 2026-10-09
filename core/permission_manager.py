@@ -403,7 +403,10 @@ class PermissionManager:
         capacidade = self._capability(nome_ferramenta)
         if capacidade.startswith("plugin."):
             from core.plugin_loader import plugin_aprovado
-            return PermissionLevel.AUTO if plugin_aprovado(nome_ferramenta) else PermissionLevel.CONFIRM
+            # A revogacao invalida o uso imediatamente, mesmo antes do reload
+            # que retirara o handler do registry. CONFIRM nao reautoriza codigo
+            # Python que perdeu sua aprovacao explicita.
+            return PermissionLevel.AUTO if plugin_aprovado(nome_ferramenta) else PermissionLevel.BLOCKED
         return self.policy.get(capacidade, PermissionLevel.BLOCKED)
 
     def capability(self, nome_ferramenta: str) -> str:
