@@ -496,6 +496,16 @@ class PermissionManager:
         capacidade = self._capability(nome_ferramenta)
         nivel_base = self.nivel(nome_ferramenta)
 
+        # BLOCKED tem precedencia absoluta, inclusive apos leitura externa.
+        if nivel_base == PermissionLevel.BLOCKED:
+            return (
+                PermissionLevel.BLOCKED,
+                (
+                    f"A ferramenta '{nome_ferramenta}' "
+                    "esta bloqueada pela politica de permissoes."
+                ),
+            )
+
         if (
             self._fonte_nao_confiavel_pendente is not None
             and capacidade in self.COUNTED_CAPABILITIES
@@ -510,14 +520,6 @@ class PermissionManager:
                 ),
             )
 
-        if nivel_base == PermissionLevel.BLOCKED:
-            return (
-                PermissionLevel.BLOCKED,
-                (
-                    f"A ferramenta '{nome_ferramenta}' "
-                    "esta bloqueada pela politica de permissoes."
-                ),
-            )
         if capacidade in {"file.read", "file.inspect"}:
             path = _resolve_path(str(argumentos.get("caminho", "")))
             path_policy = _classify_read_path(path)
