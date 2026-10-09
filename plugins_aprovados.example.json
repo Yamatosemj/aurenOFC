@@ -1,5 +1,5 @@
 {
-  "_comentario": "hora_atual entra como CONFIRM ate aprovado; habilitado pode ser alterado para false",
+  "_comentario": "Plugin nao aprovado nao sera importado; altere aprovado para true e recarregue os plugins para ativar",
   "hora_atual": {
     "habilitado": true,
     "aprovado": false
