@@ -13,7 +13,7 @@ Atualizado em: 2026-10-09
 - **Modelo padrão:** `gpt-5.6-luna`
 - **Branch/PR ativa:** `feat/tarefa-10c-proactive` / PR #84
 - **Head da main:** `db35ca8426845ac94b0198bf7ddea1864f7d638d`
-- **CI da PR #84:** pytest completo com 511 passed / 6 skipped; focused Linux e Windows verdes na revisão de correção de segurança (aguardar o último run após atualização documental)
+- **CI da PR #84:** pytest completo 511 passed / 6 skipped, focused Linux 149 passed / 6 skipped e focused Windows 155 passed (GitHub Actions; HEAD anterior `8c2a10d`), com cobertura ampliada para Tarefas 8 e 10
 - **Fase atual:** Fechamento da Tarefa 10 — 10A + 10B + 10C
 
 ### O que já está concluído nesta fase
