@@ -1,0 +1,83 @@
+# TEMPLATE INATIVO. Copiar somente para um repositorio PRIVADO de controle,
+# depois de revisar docs/TESTES_GITHUB.md. Nunca registrar o PC no repo publico.
+name: Auren - Windows real
+on:
+  workflow_dispatch:
+    inputs:
+      camada:
+        description: 'Escopo revisado (L4 usa API e causa efeitos reais)'
+        type: choice
+        options: [L0,L2,L4]
+        default: L0
+permissions:
+  contents: read
+concurrency:
+  group: auren-windows-real
+  cancel-in-progress: false
+jobs:
+  validar:
+    if: >-
+      github.event.repository.private == true &&
+      github.ref == 'refs/heads/main' &&
+      github.actor == github.repository_owner &&
+      vars.AUREN_WINDOWS_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.sha.outputs.sha }}
+    steps:
+      - id: sha
+        env:
+          REVIEWED_SHA: ${{ vars.AUREN_REVIEWED_SHA }}
+        run: |
+          if [[ ! "$REVIEWED_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Configure o SHA completo previamente revisado"
+            exit 1
+          fi
+          echo "sha=$REVIEWED_SHA" >> "$GITHUB_OUTPUT"
+  live:
+    needs: validar
+    environment: auren-windows
+    runs-on: [self-hosted, Windows, X64, auren-isolated]
+    timeout-minutes: 30
+    env:
+      PYTHONUTF8: '1'
+      PYTHONUNBUFFERED: '1'
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: Yamatosemj/aurenOFC
+          ref: ${{ needs.validar.outputs.sha }}
+          persist-credentials: false
+      - name: Executar escopo aprovado
+        env:
+          LAYER: ${{ inputs.camada }}
+          OPENAI_API_KEY: ${{ inputs.camada == 'L4' && secrets.AUREN_TEST_API_KEY || '' }}
+        run: |
+          $scopes = @{ L0 = 'L0'; L2 = 'L0,L1,L2'; L4 = 'L0,L1,L2,L4' }
+          if (-not $scopes.ContainsKey($env:LAYER)) { throw 'Escopo invalido' }
+          $testPython = 'C:\auren-test-env\Scripts\python.exe'
+          if (-not (Test-Path -LiteralPath $testPython)) { throw 'Ambiente revisado ausente' }
+          New-Item -ItemType Directory -Force reports | Out-Null
+          & $testPython testes_auren_live.py --camada $scopes[$env:LAYER] 2>&1 | Tee-Object -FilePath reports/live.log
+          exit $LASTEXITCODE
+      - name: Resumo
+        if: always()
+        env:
+          LIVE_STATUS: ${{ job.status }}
+          REVIEWED_SHA: ${{ needs.validar.outputs.sha }}
+        run: |
+          "### Windows real: $env:LIVE_STATUS" >> $env:GITHUB_STEP_SUMMARY
+          "Commit revisado: $env:REVIEWED_SHA. Consulte os artifacts privados." >> $env:GITHUB_STEP_SUMMARY
+      - name: Publicar somente evidencias selecionadas
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: auren-windows-real-${{ github.run_attempt }}
+          path: |
+            reports/live.log
+            logs/testes/RESULTADO_TESTE_AUREN.txt
+          if-no-files-found: warn
+          retention-days: 7
