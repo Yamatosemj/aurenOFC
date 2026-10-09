@@ -111,7 +111,7 @@ def test_plugin_exemplo_hora_atual_carrega_e_executa_pelo_dispatcher(monkeypatch
         registry.descarregar()
 
 
-def test_plugin_entra_em_confirm_e_aprovacao_muda_nivel_sem_reboot(monkeypatch, tmp_path):
+def test_plugin_requires_approval_before_import_and_reload(monkeypatch, tmp_path):
     approval = tmp_path / "aprovacoes.json"
     _write_approval(approval, teste_plugin={"habilitado": True, "aprovado": False})
     monkeypatch.setenv("AUREN_PLUGINS_APPROVAL_FILE", str(approval))
@@ -125,10 +125,21 @@ def test_plugin_entra_em_confirm_e_aprovacao_muda_nivel_sem_reboot(monkeypatch, 
     )
     try:
         pm = PermissionManager()
-        assert pm.nivel("teste_plugin") is PermissionLevel.CONFIRM
+        assert "teste_plugin" not in dispatcher.TOOL_HANDLERS
+        assert pm.nivel("teste_plugin") is PermissionLevel.BLOCKED
+
         _write_approval(approval, teste_plugin={"habilitado": True, "aprovado": True})
         assert plugin_aprovado("teste_plugin") is True
+        # O novo status so pode importar o codigo depois do reload explicito.
+        assert "teste_plugin" not in dispatcher.TOOL_HANDLERS
+        registry.recarregar()
+        assert "teste_plugin" in dispatcher.TOOL_HANDLERS
         assert pm.nivel("teste_plugin") is PermissionLevel.AUTO
+
+        _write_approval(approval, teste_plugin={"habilitado": True, "aprovado": False})
+        registry.recarregar()
+        assert "teste_plugin" not in dispatcher.TOOL_HANDLERS
+        assert pm.nivel("teste_plugin") is PermissionLevel.BLOCKED
     finally:
         registry.descarregar()
 
@@ -162,7 +173,7 @@ def test_aprovacao_nao_bypassa_politica_de_conteudo_nao_confiavel(monkeypatch, t
 
 def test_plugin_invalido_e_ignorado_sem_derrumbar_boot(monkeypatch, tmp_path):
     approval = tmp_path / "aprovacoes.json"
-    _write_approval(approval, invalido={"habilitado": True, "aprovado": False})
+    _write_approval(approval, invalido={"habilitado": True, "aprovado": True})
     directory = _tmp_plugins_with(tmp_path, "invalido")
     _write_plugin(
         directory,
@@ -196,7 +207,7 @@ TOOL = {
 
 def test_nome_invalido_e_rejeitado_antes_do_import(tmp_path):
     approval = tmp_path / "aprovacoes.json"
-    _write_approval(approval, **{"nome invalido": {"habilitado": True, "aprovado": False}})
+    _write_approval(approval, **{"nome invalido": {"habilitado": True, "aprovado": True}})
     directory = tmp_path / "plugins"
     directory.mkdir()
     _write_plugin(
@@ -240,7 +251,7 @@ TOOL = {
 
 def test_plugin_com_nome_de_core_e_ignorado_antes_do_import(tmp_path):
     approval = tmp_path / "aprovacoes.json"
-    _write_approval(approval, obter_status_windows={"habilitado": True, "aprovado": False})
+    _write_approval(approval, obter_status_windows={"habilitado": True, "aprovado": True})
     directory = tmp_path / "plugins"
     directory.mkdir()
     _write_plugin(
@@ -283,7 +294,7 @@ def test_nome_duplicado_nao_importa_segundo(tmp_path):
     approval = tmp_path / "aprovacoes.json"
     _write_approval(
         approval,
-        duplicado={"habilitado": True, "aprovado": False},
+        duplicado={"habilitado": True, "aprovado": True},
     )
     directory = tmp_path / "plugins"
     directory.mkdir()
@@ -309,7 +320,7 @@ def test_nome_duplicado_nao_importa_segundo(tmp_path):
 
 def test_dependencia_ausente_e_legivel_sem_importar_o_plugin(tmp_path):
     approval = tmp_path / "aprovacoes.json"
-    _write_approval(approval, faltante={"habilitado": True, "aprovado": False})
+    _write_approval(approval, faltante={"habilitado": True, "aprovado": True})
     directory = _tmp_plugins_with(tmp_path, "faltante")
     _write_plugin(
         directory,
@@ -328,7 +339,7 @@ def test_dependencia_ausente_e_legivel_sem_importar_o_plugin(tmp_path):
 
 def test_modulo_do_proprio_auren_ausente_nao_manda_instalar_com_pip(tmp_path):
     approval = tmp_path / "aprovacoes.json"
-    _write_approval(approval, proprio_faltante={"habilitado": True, "aprovado": False})
+    _write_approval(approval, proprio_faltante={"habilitado": True, "aprovado": True})
     directory = _tmp_plugins_with(tmp_path, "proprio_faltante")
     _write_plugin(directory, "proprio_faltante.py", _valid_plugin("proprio_faltante", dependency="core.modulo_que_nao_existe"))
     registry = discover_plugins(directory, approval_file=approval, logger=lambda _msg: None)
@@ -346,7 +357,7 @@ def test_erro_de_importacao_de_plugin_e_isolado(tmp_path):
     approval = tmp_path / "aprovacoes.json"
     _write_approval(
         approval,
-        quebrado={"habilitado": True, "aprovado": False},
+        quebrado={"habilitado": True, "aprovado": True},
         normal={"habilitado": True, "aprovado": True},
     )
     directory = _tmp_plugins_with(tmp_path, "isolado")
@@ -469,7 +480,7 @@ def test_ligar_desligar_funciona_sem_reiniciar(tmp_path):
 
 def test_capability_do_plugin_nao_pode_definir_permissao(tmp_path):
     approval = tmp_path / "aprovacoes.json"
-    _write_approval(approval, sem_permissao={"habilitado": True, "aprovado": False})
+    _write_approval(approval, sem_permissao={"habilitado": True, "aprovado": True})
     directory = _tmp_plugins_with(tmp_path, "sem_permissao")
     body = _valid_plugin("sem_permissao").replace(
         '"resolver": "plugin",',
@@ -488,7 +499,7 @@ def test_capability_do_plugin_nao_pode_definir_permissao(tmp_path):
 
 def test_prompt_usa_capacidade_de_plugin_do_registry(monkeypatch, tmp_path):
     approval = tmp_path / "aprovacoes.json"
-    _write_approval(approval, prompt_plugin={"habilitado": True, "aprovado": False})
+    _write_approval(approval, prompt_plugin={"habilitado": True, "aprovado": True})
     monkeypatch.setenv("AUREN_PLUGINS_APPROVAL_FILE", str(approval))
     directory = _tmp_plugins_with(tmp_path, "prompt_plugin")
     _write_plugin(directory, "prompt_plugin.py", _valid_plugin("prompt_plugin"))
@@ -499,7 +510,7 @@ def test_prompt_usa_capacidade_de_plugin_do_registry(monkeypatch, tmp_path):
         prompt = gerar_instrucoes()
         assert "plugin.prompt_plugin" in prompt
         assert "prompt_plugin" in prompt
-        assert "CONFIRM ate aprovacao local" in prompt
+        assert "AUTO apos aprovacao local" in prompt
     finally:
         registry.descarregar()
 
@@ -565,3 +576,90 @@ def _tmp_plugins_with(tmp_path: Path, name: str) -> Path:
     directory = tmp_path / f"plugins_{name}"
     directory.mkdir()
     return directory
+
+
+@pytest.mark.parametrize(
+    "approval_case",
+    [
+        "not_approved",
+        "missing_entry",
+        "missing_file",
+        "invalid_json",
+        "approval_as_string",
+        "approval_as_integer",
+        "enabled_as_string",
+    ],
+)
+def test_a02_never_imports_unapproved_plugin_or_runs_top_level_code(
+    approval_case, tmp_path, monkeypatch,
+):
+    plugin_name = "a02_not_approved"
+    approvals = tmp_path / "aprovacoes.json"
+    marker = tmp_path / "import_executed.txt"
+    directory = _tmp_plugins_with(tmp_path, "a02")
+    malicious_module = (
+        "from pathlib import Path\n"
+        + f"Path({str(marker)!r}).write_text('executado', encoding='utf-8')\n"
+        + _valid_plugin(plugin_name)
+    )
+    _write_plugin(directory, f"{plugin_name}.py", malicious_module)
+
+    if approval_case == "not_approved":
+        _write_approval(approvals, **{plugin_name: {"habilitado": True, "aprovado": False}})
+    elif approval_case == "missing_entry":
+        _write_approval(approvals)
+    elif approval_case == "invalid_json":
+        approvals.write_text("{not json", encoding="utf-8")
+    elif approval_case == "approval_as_string":
+        _write_approval(approvals, **{plugin_name: {"habilitado": True, "aprovado": "false"}})
+    elif approval_case == "approval_as_integer":
+        _write_approval(approvals, **{plugin_name: {"habilitado": True, "aprovado": 1}})
+    elif approval_case == "enabled_as_string":
+        _write_approval(approvals, **{plugin_name: {"habilitado": "false", "aprovado": True}})
+
+    monkeypatch.setenv("AUREN_PLUGINS_APPROVAL_FILE", str(approvals))
+    registry = discover_plugins(directory, approval_file=approvals, logger=lambda _message: None)
+    try:
+        records = [item for item in registry.records if item.name == plugin_name]
+        assert len(records) == 1
+        assert not records[0].active
+        assert plugin_name not in registry.active_names
+        assert plugin_name not in dispatcher.TOOL_HANDLERS
+        assert CAPABILITY_REGISTRY.get(f"plugin.{plugin_name}") is None
+        assert f"plugins.{plugin_name}" not in sys.modules
+        assert not marker.exists(), "Codigo de topo executado durante descoberta de plugin nao aprovado"
+    finally:
+        registry.descarregar()
+
+
+def test_a02_plugin_runs_only_after_explicit_approval_and_reload(tmp_path, monkeypatch):
+    plugin_name = "a02_requires_approval"
+    approvals = tmp_path / "aprovacoes.json"
+    marker = tmp_path / "approved_import.txt"
+    directory = _tmp_plugins_with(tmp_path, "a02_reload")
+    _write_plugin(
+        directory,
+        f"{plugin_name}.py",
+        "from pathlib import Path\n"
+        + f"Path({str(marker)!r}).write_text('executado', encoding='utf-8')\n"
+        + _valid_plugin(plugin_name),
+    )
+    _write_approval(approvals, **{plugin_name: {"habilitado": True, "aprovado": False}})
+    monkeypatch.setenv("AUREN_PLUGINS_APPROVAL_FILE", str(approvals))
+    registry = discover_plugins(directory, approval_file=approvals, logger=lambda _message: None)
+    try:
+        assert not marker.exists()
+        assert plugin_name not in dispatcher.TOOL_HANDLERS
+
+        _write_approval(approvals, **{plugin_name: {"habilitado": True, "aprovado": True}})
+        registry.recarregar()
+        assert marker.read_text(encoding="utf-8") == "executado"
+        assert plugin_name in dispatcher.TOOL_HANDLERS
+        assert plugin_name in registry.active_names
+
+        _write_approval(approvals, **{plugin_name: {"habilitado": True, "aprovado": False}})
+        registry.recarregar()
+        assert plugin_name not in dispatcher.TOOL_HANDLERS
+        assert plugin_name not in registry.active_names
+    finally:
+        registry.descarregar()
