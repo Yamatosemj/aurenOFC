@@ -4,16 +4,23 @@
 > Antes de iniciar uma nova tarefa, compare este arquivo com a branch/PR, o head da main e o CI do GitHub.
 > Histórico, memórias da conversa e documentos arquivados não substituem este estado.
 
-Atualizado em: 2026-10-07
+Atualizado em: 2026-10-08
 
 ## Estado atual
 
 - **Versão estável:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** nenhuma
-- **Head da main:** `71ebe7b77826d1673f9abe6926e40eb9fb63d0f2`
+- **Branch/PR ativa:** `fix/a01-untrusted-source-guard` / PR #99 (correcao A01, ainda sem merge)
+- **Head da main:** `db35ca8426845ac94b0198bf7ddea1864f7d638d`
 - **CI da implementação mais recente:** pytest, focused Linux e focused Windows verdes
 - **Fase atual:** Browser Intelligence
+
+### Correcao de seguranca A01 — PR #99 (nao incorporada)
+
+- Falha confirmada na main: leituras de `ler_arquivo` e `obter_contexto_navegador` com `ToolResult.conteudo_nao_confiavel=True` nao ativavam a guarda de confirmacao adicional no `PermissionManager`.
+- Na branch da PR #99, `tools/dispatcher.py` registra a fonte em toda leitura bem-sucedida de `ler_arquivo`, `ler_pagina` e `obter_contexto_navegador`, independentemente de a flag ja estar presente.
+- Regressoes: tres casos reproduziram falha antes da correcao; depois, suite completa do CI Linux retornou 445 passed e 6 skipped.
+- Nao inclui outros itens da auditoria (A02, A03 ou A04). Nao tratar como integrado ate o merge.
 
 ### O que já está concluído nesta fase
 
