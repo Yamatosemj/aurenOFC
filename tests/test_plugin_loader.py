@@ -565,3 +565,90 @@ def _tmp_plugins_with(tmp_path: Path, name: str) -> Path:
     directory = tmp_path / f"plugins_{name}"
     directory.mkdir()
     return directory
+
+
+@pytest.mark.parametrize(
+    "approval_case",
+    [
+        "not_approved",
+        "missing_entry",
+        "missing_file",
+        "invalid_json",
+        "approval_as_string",
+        "approval_as_integer",
+        "enabled_as_string",
+    ],
+)
+def test_a02_never_imports_unapproved_plugin_or_runs_top_level_code(
+    approval_case, tmp_path, monkeypatch,
+):
+    plugin_name = "a02_not_approved"
+    approvals = tmp_path / "aprovacoes.json"
+    marker = tmp_path / "import_executed.txt"
+    directory = _tmp_plugins_with(tmp_path, "a02")
+    malicious_module = (
+        "from pathlib import Path\n"
+        + f"Path({str(marker)!r}).write_text('executado', encoding='utf-8')\n"
+        + _valid_plugin(plugin_name)
+    )
+    _write_plugin(directory, f"{plugin_name}.py", malicious_module)
+
+    if approval_case == "not_approved":
+        _write_approval(approvals, **{plugin_name: {"habilitado": True, "aprovado": False}})
+    elif approval_case == "missing_entry":
+        _write_approval(approvals)
+    elif approval_case == "invalid_json":
+        approvals.write_text("{not json", encoding="utf-8")
+    elif approval_case == "approval_as_string":
+        _write_approval(approvals, **{plugin_name: {"habilitado": True, "aprovado": "false"}})
+    elif approval_case == "approval_as_integer":
+        _write_approval(approvals, **{plugin_name: {"habilitado": True, "aprovado": 1}})
+    elif approval_case == "enabled_as_string":
+        _write_approval(approvals, **{plugin_name: {"habilitado": "false", "aprovado": True}})
+
+    monkeypatch.setenv("AUREN_PLUGINS_APPROVAL_FILE", str(approvals))
+    registry = discover_plugins(directory, approval_file=approvals, logger=lambda _message: None)
+    try:
+        records = [item for item in registry.records if item.name == plugin_name]
+        assert len(records) == 1
+        assert not records[0].active
+        assert plugin_name not in registry.active_names
+        assert plugin_name not in dispatcher.TOOL_HANDLERS
+        assert CAPABILITY_REGISTRY.get(f"plugin.{plugin_name}") is None
+        assert f"plugins.{plugin_name}" not in sys.modules
+        assert not marker.exists(), "Codigo de topo executado durante descoberta de plugin nao aprovado"
+    finally:
+        registry.descarregar()
+
+
+def test_a02_plugin_runs_only_after_explicit_approval_and_reload(tmp_path, monkeypatch):
+    plugin_name = "a02_requires_approval"
+    approvals = tmp_path / "aprovacoes.json"
+    marker = tmp_path / "approved_import.txt"
+    directory = _tmp_plugins_with(tmp_path, "a02_reload")
+    _write_plugin(
+        directory,
+        f"{plugin_name}.py",
+        "from pathlib import Path\n"
+        + f"Path({str(marker)!r}).write_text('executado', encoding='utf-8')\n"
+        + _valid_plugin(plugin_name),
+    )
+    _write_approval(approvals, **{plugin_name: {"habilitado": True, "aprovado": False}})
+    monkeypatch.setenv("AUREN_PLUGINS_APPROVAL_FILE", str(approvals))
+    registry = discover_plugins(directory, approval_file=approvals, logger=lambda _message: None)
+    try:
+        assert not marker.exists()
+        assert plugin_name not in dispatcher.TOOL_HANDLERS
+
+        _write_approval(approvals, **{plugin_name: {"habilitado": True, "aprovado": True}})
+        registry.recarregar()
+        assert marker.read_text(encoding="utf-8") == "executado"
+        assert plugin_name in dispatcher.TOOL_HANDLERS
+        assert plugin_name in registry.active_names
+
+        _write_approval(approvals, **{plugin_name: {"habilitado": True, "aprovado": False}})
+        registry.recarregar()
+        assert plugin_name not in dispatcher.TOOL_HANDLERS
+        assert plugin_name not in registry.active_names
+    finally:
+        registry.descarregar()
