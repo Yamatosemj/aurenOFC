@@ -2,6 +2,8 @@
 
 Este controle opera no repositório **privado** `Yamatosemj/aurenOFC`, sem atualização periódica. O PC precisa estar ligado, online, com sessão Windows ativa e self-hosted runner online.
 
+**Verificação real (2026-10-09):** a operação `atualizar_main` foi concluída com sucesso no runner Windows, conforme [execução #37890091132](https://github.com/Yamatosemj/aurenOFC/actions/runs/37890091132). Esta alteração documental serve também como teste de uma nova atualização remota. **Testar PR por número ainda requer uma validação separada no PC.**
+
 ## O que foi preparado no GitHub
 
 Workflow: `.github/workflows/auren-update-pc.yml` (**Auren - controle remoto do PC**).
@@ -14,9 +16,9 @@ Para uma execução manual no GitHub Actions, selecione a branch **`ci/remote-up
 
 O resultado fica na página da execução do GitHub Actions (sucesso, falha ou timeout). Os relatórios privados são retidos por 7 dias. O workflow só roda por despacho manual do proprietário em repositório privado e na branch de controle.
 
-## Ativação local única — ainda necessária
+## Configuração local (para instalação ou recuperação)
 
-Este repositório contém **somente o código do GitHub**. A política real do runner está **fora do GitHub**, no Windows, e hoje aceita apenas workflows específicos e commits fixados. Logo, não é possível executar o novo workflow no PC até que o agente local configure, **uma única vez**:
+Este repositório contém **somente o código do GitHub**. A política real do runner está **fora do GitHub**, no Windows, e aceita apenas workflows específicos e commits fixados. A operação de atualizar `main` já foi validada em Windows; os passos abaixo documentam a configuração necessária em caso de reinstalação ou recuperação:
 
 1. Revisar este workflow e o arquivo `remote_tests/pr_job.py` com atenção. Aprovar a branch estável de controle `ci/remote-update-control` pelo seu SHA exato na política `%USERPROFILE%\auren-remote\policy\before-job.ps1`, sem retirar as regras de repositório privado, proprietário, não-admin e dispatch manual. Não permita qualquer branch/SHA arbitrário.
 2. Criar `%USERPROFILE%\auren-remote\policy\checkout-path.txt` contendo apenas o caminho absoluto do clone principal real do Auren que está na `main`. Não adivinhar o caminho.
