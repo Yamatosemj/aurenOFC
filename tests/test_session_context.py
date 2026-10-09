@@ -297,7 +297,7 @@ def test_dois_harnesses_com_o_mesmo_store_nao_misturam_chats(tmp_path, monkeypat
 
 # -------------------------------------------------------- texto e voz = mesmo contexto
 def test_texto_e_voz_usam_o_mesmo_contexto_no_mesmo_chat(tmp_path, monkeypatch):
-    """Na voz, F8 e texto digitado entram no MESMO harness; a 2a mensagem ve a 1a."""
+    """Na voz, Ctrl direito + Shift direito e texto digitado entram no MESMO harness; a 2a mensagem ve a 1a."""
     store = _store(tmp_path)
     harness, enviados = _harness(tmp_path, monkeypatch, SessionContextManager(store))
     harness.processar_mensagem("pesquise teclados mecanicos")  # chegou por texto

@@ -95,7 +95,7 @@ def _falar_interrompivel(
     texto: str,
     texto_recebido_em: float | None = None,
 ) -> tuple[bool, bool, float | None]:
-    """Fala em segundo plano para permitir ESC ou F8 interromper a fala."""
+    """Fala em segundo plano para permitir ESC ou Ctrl direito + Shift direito interromper a fala."""
 
     cancel_event = Event()
     erro: list[BaseException] = []

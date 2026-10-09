@@ -12,9 +12,9 @@ Atualizado em: 2026-10-08
 - **Versão estável da main:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
 - **Branch/PR ativa:** `feat/tarefa-1-voice-stt-v48`
-- **Head da main:** `71ebe7b77826d1673f9abe6926e40eb9fb63d0f2`
-- **Validação local da voz:** 6 testes focados passaram
-- **CI V48:** ainda sem status reportado pelo GitHub para o head atual
+- **Head da main:** `db35ca8426845ac94b0198bf7ddea1864f7d638d`
+- **Validação histórica inicial da voz:** 6 testes focados passaram na Tarefa 1; a suíte atual inclui mais casos de voz
+- **CI V48 antes da Tarefa 8 (HEAD `54f46f7e`):** suíte completa Linux 472 passed/6 skipped; focada Linux 89 passed/6 skipped; focada Windows 95 passed
 - **Fase atual:** Voice/STT
 
 ### Tarefa 1 — Voice/STT V4
@@ -24,7 +24,7 @@ Implementação em andamento nesta branch para substituir os pontos frágeis da 
 ### Concluído nesta tarefa
 
 - [x] stream de entrada mantido aberto apenas localmente, com janela curta de pré-roll em RAM
-- [x] pós-roll após a soltura de Ctrl+Shift+Space para reduzir cortes de palavras no final
+- [x] pós-roll após a soltura de Ctrl direito + Shift direito para reduzir cortes de palavras no final
 - [x] debounce da tecla antes de iniciar uma fala
 - [x] segmentação local com WebRTC VAD e fallback por energia
 - [x] rejeição de áudio vazio ou quase silencioso antes do ASR
@@ -41,7 +41,7 @@ Implementação em andamento nesta branch para substituir os pontos frágeis da 
 
 ### Validação pendente
 
-A validação real com microfone, driver, ruído ambiente e fala natural em português ainda precisa ser executada em Windows. Os testes focados locais cobrem a parte determinística da camada; o CI V48 ainda não reportou status e o teste de áudio físico continua pendente.
+A validação real com microfone, driver, ruído ambiente e fala natural em português ainda precisa ser executada em Windows. Os testes automatizados cobrem a parte determinística da camada e o CI V48 tem resultados aprovados; a validação real de microfone/driver e qualidade natural do PT-BR ainda é pendente para a captura.
 
 ## O que já está concluído nesta fase
 
@@ -164,3 +164,15 @@ Fluxo oficial:
 - [x] Mesmos testes depois da correção, ainda na branch temporária: 89 passed, 6 skipped no CI focado Linux; 95 passed no Windows; 472 passed, 6 skipped na suíte completa Linux.
 - [ ] Confirmar com microfone/driver real no Windows a ausência de cortes na primeira sílaba em capturas com blocos grandes. Nenhuma validação física desta tarefa foi realizada.
 - [ ] Considerar medições específicas de latência/overflow com `latency="high"` e `blocksize=0` em tarefa futura, sem mudança de configuração nesta correção.
+
+
+### Tarefa 8 — alinhamento da documentação, scripts e cobertura de testes
+
+- Hotkey real do PTT: `right ctrl+right shift` (Ctrl direito + Shift direito); F8 e Ctrl+Shift+Space não são os comandos do modo de voz atual.
+- Registry confirmado em `core/tools_registry.py`: **49 ferramentas**, corroboradas pelos contratos em `tests/test_tool_contracts.py`.
+- Antes da consolidação: `tests/test_voice.py` contém 17 funções, com um teste parametrizado em 8 casos, totalizando **24 casos**; `tests/test_voice_v3.py` contém **15 casos**. Total: **39 casos de voz**. Depois de remover 3 duplicados, esperado **36 casos de voz**.
+- Migração concluída nesta tarefa: 12 testes exclusivos da V3 preservados em `tests/test_voice.py`, 3 duplicados removidos e `tests/test_voice_v3.py` excluído após conferência.
+- Base antes da migração: **472 passed, 6 skipped** (Linux, `python -m pytest -q`, CI do commit `54f46f7e`). Validação real após migração (PR temporária #98, fechada sem merge): **469 passed, 6 skipped** na suíte completa Linux; **101 passed, 6 skipped** no focado Linux; **107 passed** no focado Windows. A redução de três casos corresponde apenas aos duplicados removidos.
+- Workflows: apenas renomear o nome exibido do CI completo V47, sem modificar comandos ou lista de testes; CI focado Windows permanece limitado aos sete arquivos existentes.
+- Scripts `.bat` de experimento usam diretório do próprio projeto e Python da `.venv` quando disponível; lógica de ativação/desativação da variável preservada. Teste de execução interativa dos scripts no Windows físico ainda pendente.
+- Executar validação real no Windows dos scripts `.bat` permanece pendente.
