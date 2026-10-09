@@ -1,4 +1,4 @@
-# TEMPLATE INATIVO. Copiar somente para um repositorio PRIVADO de controle,
+# PREPARADO E BLOQUEADO: ativacao exige autorizacao explicita.
 # depois de revisar docs/TESTES_GITHUB.md. Nunca registrar o PC no repo publico.
 name: Auren - Windows real
 on:
@@ -47,7 +47,7 @@ jobs:
       PYTHONUNBUFFERED: '1'
     defaults:
       run:
-        shell: pwsh
+        shell: powershell
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -61,7 +61,7 @@ jobs:
         run: |
           $scopes = @{ L0 = 'L0'; L2 = 'L0,L1,L2'; L4 = 'L0,L1,L2,L4' }
           if (-not $scopes.ContainsKey($env:LAYER)) { throw 'Escopo invalido' }
-          $testPython = 'C:\auren-test-env\Scripts\python.exe'
+          $testPython = Join-Path $env:USERPROFILE 'auren-remote\venv\Scripts\python.exe'
           if (-not (Test-Path -LiteralPath $testPython)) { throw 'Ambiente revisado ausente' }
           New-Item -ItemType Directory -Force reports | Out-Null
           & $testPython testes_auren_live.py --camada $scopes[$env:LAYER] 2>&1 | Tee-Object -FilePath reports/live.log
