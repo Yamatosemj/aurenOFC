@@ -76,6 +76,8 @@ A validação real com microfone, driver, ruído ambiente e fala natural em port
 - [x] exceções genéricas reduzidas em caminhos críticos
 - [x] dependências principais fixadas
 - [x] modelo configurável por ambiente com padrão `gpt-5.6-luna`
+- [x] import de `auren` usa o modelo efetivo de `config.MODEL` sem perder o literal lido pelo runner live; coerência de versão, cache e arquitetura continua verificada
+- [x] regressões cobrem importação isolada com e sem `AUREN_MODEL` e restauração do módulo `config` entre testes
 - [x] Windows dividido por domínio
 - [x] Browser dividido em leitura, elementos e navegação
 - [x] Harness dividido em runtime, guards, ciclo e demais mecanismos

@@ -58,3 +58,11 @@ Executar a bateria de voz no Windows real e medir exemplos curtos, comandos natu
 - a marcação existente de `ler_pagina` foi preservada
 - regressões adicionadas pelo fluxo `executar_ferramenta` cobrem leitura real de arquivo, contexto de navegador, leitura de página, ausência de leitura anterior e limpeza por `iniciar_tarefa()`
 - nenhuma nova ferramenta foi classificada como não confiável e nenhuma capacidade/permissão foi afrouxada
+
+
+## Correção da configuração do modelo — Tarefa 2
+
+- `auren.MODEL` acompanha o valor efetivo de `config.MODEL`, incluindo quando `AUREN_MODEL` define outro modelo
+- o literal padrão `gpt-5.6-luna` permanece reconhecível pelo leitor regex de `testes_auren_live.py`
+- a verificação de coerência de `AUREN_VERSION`, `CACHE_KEY` e `ARCHITECTURE_NAME` foi mantida
+- `tests/test_model_config.py` cobre os imports em subprocesso, a preservação do literal de compatibilidade e o restauro do módulo `config` após testes que alteram o ambiente

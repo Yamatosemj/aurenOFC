@@ -11,11 +11,16 @@ from memory.store import PersistentMemoryStore
 # Mantemos esses literais no facade para ferramentas de compatibilidade que
 # descobrem a versao lendo o arquivo-fonte sem importar o modulo.
 AUREN_VERSION = 48
-MODEL = "gpt-5.6-luna"
+# O runner live extrai o modelo por regex a partir de "MODEL = <literal>".
+# Mantemos o literal padrao na atribuicao, mas o valor efetivo segue config.MODEL.
+MODEL = "gpt-5.6-luna" if _CONFIG_MODEL == "gpt-5.6-luna" else _CONFIG_MODEL
 CACHE_KEY = f"auren-v{AUREN_VERSION}"
 ARCHITECTURE_NAME = "V48 VOICE VAD + VISUAL GEOMETRY"
-if (AUREN_VERSION, MODEL, CACHE_KEY, ARCHITECTURE_NAME) != (_CONFIG_AUREN_VERSION, _CONFIG_MODEL, _CONFIG_CACHE_KEY, _CONFIG_ARCHITECTURE_NAME):
-    raise RuntimeError("config.py e auren.py estao com versao/modelo incoerentes.")
+if (
+    (AUREN_VERSION, CACHE_KEY, ARCHITECTURE_NAME)
+    != (_CONFIG_AUREN_VERSION, _CONFIG_CACHE_KEY, _CONFIG_ARCHITECTURE_NAME)
+):
+    raise RuntimeError("config.py e auren.py estao com versao/cache/arquitetura incoerentes.")
 
 
 from core import usage
