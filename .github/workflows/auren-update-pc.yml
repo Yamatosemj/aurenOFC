@@ -1,0 +1,64 @@
+# Workflow manual; execute escolhendo a branch ci/remote-update-control.
+# A politica local deve autorizar APENAS este workflow no SHA fixo do ramo de controle.
+name: Auren - atualizar PC
+on:
+  workflow_dispatch:
+permissions: {}
+concurrency:
+  group: auren-remote-update-pc
+  cancel-in-progress: false
+jobs:
+  atualizar:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.event.repository.private == true &&
+      github.ref == 'refs/heads/ci/remote-update-control' &&
+      github.actor == github.repository_owner &&
+      github.triggering_actor == github.repository_owner
+    runs-on: [self-hosted, Windows, X64, auren-isolated]
+    timeout-minutes: 6
+    steps:
+      - name: Atualizar checkout local do Auren
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $summary = $env:GITHUB_STEP_SUMMARY
+          try {
+            $pathConfig = Join-Path $env:USERPROFILE 'auren-remote\policy\checkout-path.txt'
+            if (-not (Test-Path -LiteralPath $pathConfig -PathType Leaf)) {
+              throw 'Caminho do checkout nao configurado pelo Codex local.'
+            }
+            $folder = (Get-Content -LiteralPath $pathConfig -Raw).Trim()
+            if (-not $folder -or -not [System.IO.Path]::IsPathRooted($folder)) {
+              throw 'Caminho do checkout local invalido.'
+            }
+            if (-not (Test-Path -LiteralPath (Join-Path $folder '.git'))) {
+              throw 'Pasta configurada nao e um repositorio Git.'
+            }
+            $branch = (& git.exe -C $folder branch --show-current | Out-String).Trim()
+            if ($LASTEXITCODE -ne 0 -or $branch -ne 'main') {
+              throw 'Checkout local precisa estar na branch main.'
+            }
+            $origin = (& git.exe -C $folder remote get-url origin | Out-String).Trim()
+            if ($LASTEXITCODE -ne 0 -or $origin -notmatch '^(?:https://github\.com/|git@github\.com:|ssh://git@github\.com/)Yamatosemj/aurenOFC(?:\.git)?$') {
+              throw 'Remote origin nao corresponde ao repositorio privado esperado.'
+            }
+            $changes = & git.exe -C $folder status --porcelain --untracked-files=no
+            if ($LASTEXITCODE -ne 0) { throw 'Nao foi possivel conferir alteracoes locais.' }
+            if ($changes) { throw 'Ha alteracoes locais. Nenhum arquivo foi sobrescrito.' }
+            $before = (& git.exe -C $folder rev-parse HEAD | Out-String).Trim()
+            if ($LASTEXITCODE -ne 0) { throw 'Nao foi possivel ler o commit atual.' }
+            & git.exe -C $folder -c credential.interactive=never pull --ff-only origin main
+            if ($LASTEXITCODE -ne 0) { throw 'git pull --ff-only falhou. Consulte o log do job.' }
+            $after = (& git.exe -C $folder rev-parse HEAD | Out-String).Trim()
+            if ($LASTEXITCODE -ne 0) { throw 'Pull executado, mas nao foi possivel confirmar o commit.' }
+            $result = if ($before -eq $after) { 'Ja estava atualizado' } else { 'Atualizacao concluida' }
+            "### Auren no PC: $result" | Out-File -LiteralPath $summary -Encoding utf8 -Append
+            "Antes: `$before`" | Out-File -LiteralPath $summary -Encoding utf8 -Append
+            "Depois: `$after`" | Out-File -LiteralPath $summary -Encoding utf8 -Append
+            Write-Output "$result. Commit anterior: $before. Commit atual: $after."
+          } catch {
+            "### Falha ao atualizar o Auren no PC" | Out-File -LiteralPath $summary -Encoding utf8 -Append
+            "Motivo: $($_.Exception.Message)" | Out-File -LiteralPath $summary -Encoding utf8 -Append
+            throw
+          }
