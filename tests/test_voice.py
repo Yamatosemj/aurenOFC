@@ -208,6 +208,130 @@ def test_voice_segmenter_rejects_near_silence():
     assert segmenter.segment(audio, 16_000) is None
 
 
+class _NoSpeechWebRTC:
+    def __init__(self):
+        self.calls = 0
+
+    def is_speech(self, frame, sample_rate):
+        self.calls += 1
+        return False
+
+
+class _FailingWebRTC:
+    def is_speech(self, frame, sample_rate):
+        raise RuntimeError("falha simulada no VAD")
+
+
+class _SpeechFramesWebRTC:
+    def __init__(self):
+        self.calls = 0
+
+    def is_speech(self, frame, sample_rate):
+        self.calls += 1
+        return 16 <= self.calls <= 30
+
+
+def _segmenter_without_webrtc():
+    segmenter = VoiceActivitySegmenter()
+    segmenter._vad = False
+    segmenter._vad_load_attempted = True
+    segmenter._vad_error = "backend nao instalado (simulado)"
+    return segmenter
+
+
+@pytest.mark.parametrize("rms", [0.001, 0.003, 0.01])
+@pytest.mark.parametrize("backend", ["webrtc_no_speech", "energy"])
+def test_noise_without_speech_never_reaches_asr(rms, backend):
+    generator = np.random.default_rng(2026)
+    audio = generator.normal(0, 1, 16_000).astype(np.float32)
+    audio *= np.float32(rms / np.sqrt(np.mean(np.square(audio, dtype=np.float64))))
+    if backend == "webrtc_no_speech":
+        vad = _NoSpeechWebRTC()
+        segmenter = VoiceActivitySegmenter(vad=vad)
+    else:
+        segmenter = _segmenter_without_webrtc()
+
+    assert segmenter.segment(audio, 16_000) is None
+    if backend == "webrtc_no_speech":
+        assert vad.calls > 0
+
+
+def test_energy_fallback_preserves_modulated_speech_and_padding():
+    sr = 16_000
+    generator = np.random.default_rng(41)
+    audio = generator.normal(0.0, 0.0005, sr).astype(np.float32)
+    start, end = int(sr * 0.30), int(sr * 0.60)
+    t = np.arange(end - start, dtype=np.float64) / sr
+    # Tom modulado cria atividade de energia clara sobre o ruido de base.
+    envelope = 0.65 + 0.35 * np.sin(2 * np.pi * 6 * t)
+    audio[start:end] += (0.020 * envelope * np.sin(2 * np.pi * 180 * t)).astype(np.float32)
+    result = _segmenter_without_webrtc().segment(audio, sr)
+
+    assert result is not None
+    assert result.speech_detected is True
+    assert result.vad_backend == "energy"
+    assert 0.30 <= result.duration < 0.70
+    assert result.duration > 0.30
+
+
+def test_energy_fallback_preserves_low_speech_over_quiet_noise():
+    sr = 16_000
+    generator = np.random.default_rng(42)
+    audio = generator.normal(0.0, 0.0005, sr).astype(np.float32)
+    start, end = int(sr * 0.30), int(sr * 0.60)
+    t = np.arange(end - start, dtype=np.float64) / sr
+    # RMS da fala ~=0.003, sobre um piso de ruido ~=0.0005.
+    audio[start:end] += (0.003 * np.sqrt(2.0) * np.sin(2 * np.pi * 190 * t)).astype(np.float32)
+    result = _segmenter_without_webrtc().segment(audio, sr)
+
+    assert result is not None
+    assert result.speech_detected is True
+    assert result.vad_backend == "energy"
+    assert 0.30 <= result.duration < 0.70
+
+
+def test_webrtc_negative_decision_does_not_trigger_energy_fallback(monkeypatch):
+    vad = _NoSpeechWebRTC()
+    segmenter = VoiceActivitySegmenter(vad=vad)
+
+    def unexpected_energy_fallback(*args):
+        raise AssertionError("fallback por energia nao pode contrariar o WebRTC")
+
+    monkeypatch.setattr(segmenter, "_energy_flags", unexpected_energy_fallback)
+    speech_like = np.zeros(16_000, dtype=np.float32)
+    speech_like[4_000:9_000] = 0.06
+
+    assert segmenter.segment(speech_like, 16_000) is None
+    assert vad.calls > 0
+
+
+def test_webrtc_failure_allows_energy_fallback():
+    sr = 16_000
+    audio = np.zeros(sr, dtype=np.float32)
+    t = np.arange(4_800, dtype=np.float64) / sr
+    audio[4_800:9_600] = (0.015 * np.sin(2 * np.pi * 175 * t)).astype(np.float32)
+    segmenter = VoiceActivitySegmenter(vad=_FailingWebRTC())
+
+    result = segmenter.segment(audio, sr)
+
+    assert result is not None
+    assert result.speech_detected is True
+    assert result.vad_backend == "energy"
+
+
+def test_webrtc_detected_speech_preserves_padding():
+    audio = np.zeros(16_000, dtype=np.float32)
+    audio[3_200:9_600] = 0.02
+    segmenter = VoiceActivitySegmenter(vad=_SpeechFramesWebRTC())
+
+    result = segmenter.segment(audio, 16_000)
+
+    assert result is not None
+    assert result.speech_detected
+    assert result.vad_backend == "webrtcvad"
+    assert 0.30 < result.duration < 0.65
+
+
 def test_named_microphone_is_resolved_against_current_devices():
     class FakeSoundDevice:
         def query_devices(self, *args, **kwargs):

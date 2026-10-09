@@ -88,3 +88,14 @@ Executar a bateria de voz no Windows real e medir exemplos curtos, comandos natu
 - Só um item do formato `("audio", CapturedAudio)` é enviado ao ASR; erros de captura, itens crus, payloads vazios ou de outro tipo negam.
 - `core/confirmation.py` (canal textual), timeout e Echo Guard permanecem inalterados.
 - Testes de pontuação, lista fechada, prioridade da negação, fila antiga, fala nova durante o prompt, payload inválido e comandos de saída estão adicionados. CI validado no commit de código `304b026`: suíte completa Linux com 499 passed/6 skipped; testes focados Linux com 124 passed/6 skipped e Windows com 130 passed. O teste local Windows desta tarefa ainda não foi executado pelo usuário.
+
+
+## Tarefa 5 — áudio sem fala não chega ao ASR
+
+- Decisão válida de ausência de fala pelo WebRTC é definitiva: não usamos energia para contrariá-la.
+- Energia atua exclusivamente na falta/erro do WebRTC; sem quadros de fala suficientes, `segment()` retorna `None`.
+- O caminho existente em `voice/input.py` já descarta `None` e avisa o usuário, de forma que não foi alterado. `voice/main.py`, `voice/stt.py`, `voice/tts.py` e `voice/confirmation.py` seguem sem mudanças nesta tarefa.
+- O detector de energia mantém os mesmos parâmetros: percentil 20 para piso de ruído, energia de quadro ≥2× o piso (ou mínimo `silence_rms`) e pico ≥0,35× `silence_peak`. São critérios heurísticos para preservar fala baixa; não distinguem com garantia todos os tipos de ruído variável.
+- Novas regressões com ruído controlado, WebRTC falso/erro, tom modulado e fala baixa. Ajustes finos dependem de validação com microfone real no Windows.
+
+- CI da Tarefa 5: suíte completa Linux **510 passed/6 skipped**, conjunto focado Linux **135 passed/6 skipped**, conjunto focado Windows **141 passed**. Testes locais do usuário e calibração com microfone real permanecem pendentes.

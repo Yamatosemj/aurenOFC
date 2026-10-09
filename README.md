@@ -115,7 +115,7 @@ A entrada de voz continua passando pelo mesmo `Harness` usado pela entrada textu
 
 O PTT abre o stream de entrada antes de Ctrl+Shift+Space ser pressionado, mas mantém somente uma janela curta em memória enquanto aguarda. Quando Ctrl+Shift+Space é segurado, esse pré-roll acompanha o início da fala; ao soltar a tecla, um pós-roll curto protege o final das palavras.
 
-A segmentação usa WebRTC VAD em frames curtos. Quando o backend não está disponível ou falha, o Auren usa um detector de energia simples como fallback. Silêncio quase puro é descartado antes do ASR.
+A segmentação usa WebRTC VAD em frames curtos. Quando o backend não está disponível ou falha, o Auren usa um detector de energia simples como fallback; uma decisão válida de ausência de fala do WebRTC não é contrariada pela energia. Se nenhum detector identificar fala suficiente, a captura é descartada antes do ASR (não se envia a gravação inteira). O fallback compara a energia de quadros com o piso de ruído estimado (percentil 20; relação mínima 2×) e aplica padding ao trecho detectado, preservando possibilidades de fala baixa sem liberar ruído constante. Esses limiares ainda precisam de calibração com gravações reais no Windows.
 
 O Parakeet local continua sendo o motor PT-BR. O áudio é convertido para mono, sanitizado e normalizado para 16 kHz antes da inferência. O modelo continua carregado de forma preguiçosa e seu acesso é serializado para evitar chamadas concorrentes sobre a mesma instância.
 
