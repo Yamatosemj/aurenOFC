@@ -110,3 +110,12 @@ Toda mudança relevante de arquitetura, comportamento, capacidade, versão ou pr
 Fluxo oficial:
 
 `AUREN_STATE.md → branch/PR → CI → implementação → testes → atualização do estado`
+
+## Automação remota de testes — 2026-10-09
+
+- Workflow manual pytest nos runners do GitHub disponível, com logs e JUnit.
+- Repositório confirmado privado nesta inspeção.
+- Workflow manual de conexão Windows preparado, sem checkout/imports do Auren.
+- Runner local não instalado/registrado e conexão local ainda não validada: executor local falha antes de iniciar comandos.
+- Job live do template explicitamente bloqueado; ações que controlam desktop/navegador ou alteram arquivos aguardam autorização posterior.
+- Estado e próximos passos: [Testes pelo GitHub](docs/TESTES_GITHUB.md).
