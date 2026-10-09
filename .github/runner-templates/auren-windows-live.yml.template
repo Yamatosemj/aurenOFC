@@ -35,6 +35,9 @@ jobs:
           fi
           echo "sha=$REVIEWED_SHA" >> "$GITHUB_OUTPUT"
   live:
+    # BLOQUEIO: testes com efeitos reais exigem autorizacao explicita posterior.
+    # Nem variaveis nem inputs habilitam este job enquanto este bloqueio existir.
+    if: ${{ false }}
     needs: validar
     environment: auren-windows
     runs-on: [self-hosted, Windows, X64, auren-isolated]

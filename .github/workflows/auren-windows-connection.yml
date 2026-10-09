@@ -1,0 +1,37 @@
+name: Auren - verificar conexao Windows
+on:
+  workflow_dispatch:
+permissions: {}
+concurrency:
+  group: auren-windows-connection
+  cancel-in-progress: false
+jobs:
+  connection:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.event.repository.private == true &&
+      github.ref == 'refs/heads/main' &&
+      github.actor == github.repository_owner &&
+      github.triggering_actor == github.repository_owner
+    runs-on: [self-hosted, Windows, X64, auren-isolated]
+    timeout-minutes: 3
+    steps:
+      - name: Verificar runner sem carregar o Auren
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
+            throw 'Este teste requer Windows.'
+          }
+          if (-not [Environment]::Is64BitProcess) {
+            throw 'Este teste requer processo de 64 bits.'
+          }
+          $connectionLines = @(
+            'Conexao GitHub Actions -> runner Windows confirmada.',
+            'Processo Windows de 64 bits confirmado.',
+            'Nenhum modulo do Auren foi carregado.',
+            'Nenhum token, variavel de ambiente ou identidade da maquina foi impresso.'
+          )
+          $connectionLines | ForEach-Object { Write-Output $_ }
+          '### Conexao Windows confirmada' | Out-File -LiteralPath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+          $connectionLines | Out-File -LiteralPath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
