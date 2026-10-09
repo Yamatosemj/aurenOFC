@@ -39,7 +39,7 @@ jobs:
           python -m pip freeze | Out-File reports/dependencies.txt -Encoding utf8
       - name: Executar suite automatizada
         run: |
-          python -m pytest tests -q -ra --tb=short --junitxml=reports/pytest.xml 2>&1 | Tee-Object -FilePath reports/pytest.log
+          python -m pytest tests -q -ra --tb=short --basetemp="$env:RUNNER_TEMP/auren-pytest-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT" --junitxml=reports/pytest.xml 2>&1 | Tee-Object -FilePath reports/pytest.log
           exit $LASTEXITCODE
       - name: Resumo dos resultados
         if: always()
