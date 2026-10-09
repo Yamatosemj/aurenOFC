@@ -26,7 +26,7 @@ Arquivos criados/alterados:
 
 Decisões tomadas (e por quê):
 - O plugin entra nos registries de tools, contratos, capacidades e Dispatcher; não existe executor paralelo.
-- O plugin novo começa em CONFIRM e só vira AUTO quando aprovado em `plugins_aprovados.json`; a capacidade não pode declarar sua própria política.
+- A02 corrigido na PR #84: um plugin sem aprovação explícita não é importado nem registrado. A aprovação booleana `true` permite importá-lo após recarregamento; a revogação bloqueia a execução imediatamente. A capacidade não pode declarar sua própria política.
 - Plugins desativados são filtrados antes do import e antes de `find_spec`.
 - Dependências declaradas são verificadas com `importlib.util.find_spec`; ausência de módulo do próprio Auren gera diagnóstico do projeto e não sugestão de `pip install core`.
 - Falhas de plugin, colisões e nomes inválidos são isoladas com motivo legível e não derrubam o boot.
