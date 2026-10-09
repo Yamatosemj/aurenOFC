@@ -332,6 +332,9 @@ def executar_ferramenta(item, permission_manager, memory_store) -> ToolResult:
             data=data,
             error_code=resultado_estruturado.error_code,
             tool_name=resultado_estruturado.tool_name,
+            # A geometria e apenas metadado; nunca altera a confiabilidade
+            # do retorno original da ferramenta.
+            conteudo_nao_confiavel=resultado_estruturado.conteudo_nao_confiavel,
         )
     permission_manager.registrar_resultado(resultado_estruturado.ok, nome, argumentos_execucao)
     return resultado_estruturado

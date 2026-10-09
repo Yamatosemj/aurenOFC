@@ -443,3 +443,49 @@ def test_coordenada_visual_fora_da_imagem_e_rejeitada_antes_da_execucao(
 def _limpar_snapshot_visual():
     yield
     clear_active_vision_geometry()
+
+
+
+@pytest.mark.parametrize("ok", [True, False])
+def test_visual_transform_preserves_untrusted_provenance(monkeypatch, tmp_path, ok):
+    """Anexar geometria nao pode apagar origem externa nem codigo de erro."""
+    geometry = _set_geometry(tmp_path)
+
+    def fake_handler(_args, _memory, _context):
+        fields = {
+            "data": {"evidencia": "conteudo externo"},
+            "tool_name": "clicar_mouse_windows",
+            "conteudo_nao_confiavel": True,
+        }
+        if ok:
+            return ToolResult.success("retorno externo", **fields)
+        return ToolResult.failure(
+            "retorno externo falhou", error_code="external_failure", **fields,
+        )
+
+    monkeypatch.setitem(dispatcher.TOOL_HANDLERS, "clicar_mouse_windows", fake_handler)
+    monkeypatch.setattr(builtins, "input", lambda *_: "s")
+
+    result = dispatcher.executar_ferramenta(
+        _item(
+            "clicar_mouse_windows",
+            {
+                "x": 100,
+                "y": 120,
+                "botao": "esquerdo",
+                "descricao": "teste de proveniencia",
+                "coordinate_space": "vision_image",
+                "vision_snapshot_id": geometry["vision_snapshot_id"],
+            },
+        ),
+        PermissionManager(max_actions=10),
+        None,
+    )
+
+    assert result.ok is ok
+    assert result.error_code == (None if ok else "external_failure")
+    assert result.conteudo_nao_confiavel is True
+    assert result.data["evidencia"] == "conteudo externo"
+    assert result.data["vision_coordinate_transform"]["snapshot_id"] == geometry["vision_snapshot_id"]
+    assert json.loads(result.for_model())["conteudo_nao_confiavel"] is True
+    assert result.as_dict()["conteudo_nao_confiavel"] is True
