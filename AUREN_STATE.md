@@ -10,9 +10,9 @@ Atualizado em: 2026-10-09
 
 - **Versão estável:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** nenhuma correção de segurança imediata em aberto para a main; outras PRs de funcionalidades permanecem separadas
-- **Head da main:** consultar o GitHub antes de cada tarefa; ultimo merge funcional: PR #104 (`a3d0f07ea521fc4dffc00d74e9525237be9ffd3a`)
-- **CI:** PR #104 aprovada pela suite completa Linux e testes focados Linux/Windows; CI do novo push na main deve ser confirmado separadamente
+- **Branch/PR ativa:** nenhuma nesta rodada; PRs de funcionalidades antigas continuam separadas e nao foram integradas automaticamente
+- **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #106 (`d7b55026404a7c0331b48a36ee8d3346b586a95a`)
+- **CI:** PRs #105 e #106 com suite completa Linux e testes focados Linux/Windows verdes; validar separadamente os workflows de push e a bateria live no PC
 - **Fase atual:** Browser Intelligence
 
 ### Seguranca A01 — incorporada na main (PR #99)
@@ -28,6 +28,21 @@ Atualizado em: 2026-10-09
 - `PermissionManager` agora aplica `BLOCKED` antes da guarda de origem externa; AUTO ainda sobe para CONFIRM apos leitura nao confiavel.
 - Testes para ambos os cenarios passaram na PR #104, assim como o teste A01 ajustado sem contornar a protecao de AppData no Windows.
 - A02 foi corrigido na branch da PR #81 por merge da PR #100 (`12b72d1`), com aprovacao obrigatoria antes do import. As PRs #81/#84 ainda nao foram incorporadas a `main` e seguem exigindo revisao de conflitos e integracao. A03 (pesquisa web) tambem permanece fora da `main`.
+
+### Confirmacao por voz — PR #105 incorporada na main
+
+- Em V47, a confirmacao podia consumir audio antigo da fila e nao verificava estritamente o envelope de `CapturedAudio`.
+- Agora descarta a fila antes do prompt, aceita somente um envelope `("audio", CapturedAudio)` novo e exige afirmacao explicita. Negacao e resposta ambigua nao autorizam.
+- Comandos de saida textuais/falados aceitam pontuacao mantendo correspondencia exata.
+- CI da PR #105: suite completa Linux 494 passed/15 skipped, focused Linux 119 passed/6 skipped e focused Windows 125 passed.
+- O codigo especifico desta correcao foi portado da PR #92 para a V47. Ao integrar a cadeia V48 (#85, #90, #92, #95), reconciliar as alteracoes duplicadas; nao executar merge cego nem tratar como validacao fisica de microfone.
+
+### Preservacao de origem visual — PR #106 incorporada na main
+
+- O Dispatcher reconstruia `ToolResult` ao anexar `vision_coordinate_transform`, mas perdia `conteudo_nao_confiavel`; a reconstrucao agora preserva a marca de proveniencia.
+- Regressao testada para sucesso e falha, incluindo `for_model()`, `as_dict()`, `error_code` e metadados de geometria.
+- CI da PR #106: suite completa Linux 496 passed/15 skipped, focused Linux 128 passed/6 skipped e focused Windows 134 passed.
+- Nao substitui exercicios reais de visao+acao+verificacao no Windows.
 
 ### CI de revisao de PRs (PR #104)
 
