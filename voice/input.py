@@ -168,9 +168,10 @@ class PushToTalkRecorder:
                 if isinstance(info, dict)
                 else 16_000.0
             )
-            configured = self.config.sample_rate
-            sample_rate = int(configured or round(default_sr) or 16_000)
-            return name, sample_rate
+            # Keep the device's native rate separate from the configured preference.
+            # The preference is applied later by _capturar_com_lock().
+            native_rate = int(round(default_sr)) or 16_000
+            return name, native_rate
         except Exception as exc:
             raise RuntimeError(f"Nao foi possivel consultar o microfone: {exc}") from exc
 
@@ -197,7 +198,7 @@ class PushToTalkRecorder:
         native_rate: int,
     ) -> tuple[Any, int]:
         rates: list[int] = []
-        for rate in (preferred_rate, native_rate):
+        for rate in (preferred_rate, native_rate, 48_000, 44_100):
             normalized = int(rate or 16_000)
             if normalized not in rates:
                 rates.append(normalized)
