@@ -1,6 +1,6 @@
 # Auren
 
-Assistente desktop/voz para Windows, versão técnica **V47**, usando o modelo configurado em `config.py` (snapshot atual: `gpt-5.6-luna`).
+Assistente desktop/voz para Windows, versão técnica **V48**, usando o modelo configurado em `config.py` (snapshot atual: `gpt-5.6-luna`).
 
 > **Estado atual do projeto:** consulte [AUREN_STATE.md](AUREN_STATE.md) antes de iniciar ou continuar trabalho no Auren. O estado oficial registra a tarefa ativa, PRs em andamento, CI, próxima fase e backlog.
 
@@ -109,18 +109,36 @@ Entrada
 
 O Router escolhe o conjunto de ferramentas da rodada. Toda execução de ferramenta passa pelo Dispatcher, validação de contrato e permissões antes de chegar ao executor. O resultado estruturado volta ao Harness como `ToolResult`.
 
+## Voz e STT (V48)
+
+A entrada de voz continua passando pelo mesmo `Harness` usado pela entrada textual. A camada de voz não cria uma segunda rota de execução nem executa ferramentas diretamente.
+
+O PTT abre o stream de entrada antes de Ctrl direito + Shift direito ser pressionado, mas mantém somente uma janela curta em memória enquanto aguarda. Quando Ctrl direito + Shift direito é segurado, esse pré-roll acompanha o início da fala; ao soltar a tecla, um pós-roll curto protege o final das palavras.
+
+A segmentação usa WebRTC VAD em frames curtos. Quando o backend não está disponível ou falha, o Auren usa um detector de energia simples como fallback. Silêncio quase puro é descartado antes do ASR.
+
+O Parakeet local continua sendo o motor PT-BR. O áudio é convertido para mono, sanitizado e normalizado para 16 kHz antes da inferência. O modelo continua carregado de forma preguiçosa e seu acesso é serializado para evitar chamadas concorrentes sobre a mesma instância.
+
+O nome do microfone configurado é resolvido novamente na abertura do stream. Se o dispositivo escolhido desaparecer ou não puder ser aberto, a captura tenta o dispositivo de entrada padrão em vez de derrubar o processo.
+
+O cache local do modelo ASR é preservado por `INSTALAR_VOZ.bat`; a instalação não apaga mais um modelo que já foi baixado.
+
+Wake word e Echo Guard continuam fora do escopo desta tarefa.
 ## Visão e coordenadas
 
 A captura de tela informa a área de trabalho virtual do Windows, incluindo origem e dimensões. Quando a imagem enviada ao modelo é comprimida ou redimensionada, o Harness transporta a geometria efetivamente entregue e as escalas necessárias para converter pontos observados na imagem para coordenadas da área de trabalho virtual. A camada de Windows usa um contexto DPI por monitor quando disponível para manter a leitura da tela e as coordenadas de entrada no mesmo referencial físico. Conversões com proporção incompatível são rejeitadas em vez de produzir cliques silenciosamente deslocados.
 
 ## Estado importante
 
-- **48 tools** no registry/contratos atuais
+- **49 tools** no registry/contratos atuais
 - memória persistente em SQLite
 - browser e automação Windows integrados
 - visão pode observar a tela, executar clique ou arraste global do mouse com confirmação, manter a geometria da captura e da imagem entregue ao modelo e verificar o estado final em tarefas visuais compostas
-- voice local-first para ASR/TTS
-- `experimental/wake_word.py` existe, mas não faz parte do caminho normal de voz atual (PTT/F8)
+- voice V4 local-first para ASR/TTS
+- captura PTT mantém uma janela curta de pré-roll em RAM, usa pós-roll na soltura e segmenta a fala localmente com WebRTC VAD
+- ASR Parakeet PT-BR TAGARELA recebe uma forma mono normalizada e uma taxa estável de 16 kHz
+- falhas do microfone ou do STT são isoladas da sessão principal e geram nova tentativa
+- `experimental/wake_word.py` existe, mas não faz parte do caminho normal de voz atual (PTT/Ctrl direito + Shift direito)
 - componentes históricos e relatórios antigos não fazem parte deste pacote runtime
 
 ## Licença

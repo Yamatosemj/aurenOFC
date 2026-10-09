@@ -11,7 +11,7 @@ if exist ".venv\Scripts\python.exe" (
 set "AUREN_EXIT_CODE=%ERRORLEVEL%"
 echo.
 echo ========================================
-echo AUREN VOICE ENGINE V3 - CODIGO: %AUREN_EXIT_CODE%
+echo AUREN VOICE ENGINE V4 - CODIGO: %AUREN_EXIT_CODE%
 echo ========================================
 pause
 exit /b %AUREN_EXIT_CODE%

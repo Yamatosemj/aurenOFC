@@ -4,18 +4,46 @@
 > Antes de iniciar uma nova tarefa, compare este arquivo com a branch/PR, o head da main e o CI do GitHub.
 > Histórico, memórias da conversa e documentos arquivados não substituem este estado.
 
-Atualizado em: 2026-10-07
+Atualizado em: 2026-10-08
 
 ## Estado atual
 
-- **Versão estável:** V47
+- **Versão em desenvolvimento:** V48
+- **Versão estável da main:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** nenhuma
-- **Head da main:** `71ebe7b77826d1673f9abe6926e40eb9fb63d0f2`
-- **CI da implementação mais recente:** pytest, focused Linux e focused Windows verdes
-- **Fase atual:** Browser Intelligence
+- **Branch/PR ativa:** `feat/tarefa-1-voice-stt-v48`
+- **Head da main:** `db35ca8426845ac94b0198bf7ddea1864f7d638d`
+- **Validação histórica inicial da voz:** 6 testes focados passaram na Tarefa 1; a suíte atual inclui mais casos de voz
+- **CI V48 antes da Tarefa 8 (HEAD `54f46f7e`):** suíte completa Linux 472 passed/6 skipped; focada Linux 89 passed/6 skipped; focada Windows 95 passed
+- **Fase atual:** Voice/STT
 
-### O que já está concluído nesta fase
+### Tarefa 1 — Voice/STT V4
+
+Implementação em andamento nesta branch para substituir os pontos frágeis da captura PTT e do caminho de transcrição, sem alterar o fluxo de execução do Auren.
+
+### Concluído nesta tarefa
+
+- [x] stream de entrada mantido aberto apenas localmente, com janela curta de pré-roll em RAM
+- [x] pós-roll após a soltura de Ctrl direito + Shift direito para reduzir cortes de palavras no final
+- [x] debounce da tecla antes de iniciar uma fala
+- [x] segmentação local com WebRTC VAD e fallback por energia
+- [x] rejeição de áudio vazio ou quase silencioso antes do ASR
+- [x] resolução do microfone por nome, com fallback para o dispositivo de entrada padrão
+- [x] tentativa de taxa preferida e fallback para a taxa nativa do dispositivo
+- [x] áudio mono sanitizado e normalizado para 16 kHz antes da inferência do Parakeet
+- [x] acesso serializado ao modelo STT para evitar chamadas concorrentes sobre a mesma instância
+- [x] erros de captura e STT deixam de encerrar a sessão de voz automaticamente
+- [x] TTS não contamina o pré-roll da próxima fala
+- [x] texto e voz continuam entrando no mesmo Harness
+- [x] testes unitários de VAD, resampling, silêncio e resolução de dispositivo adicionados
+- [x] cache local do ASR deixa de ser apagado pelo instalador de voz
+- [x] wake word e Echo Guard permanecem fora do escopo
+
+### Validação pendente
+
+A validação real com microfone, driver, ruído ambiente e fala natural em português ainda precisa ser executada em Windows. Os testes automatizados cobrem a parte determinística da camada e o CI V48 tem resultados aprovados; a validação real de microfone/driver e qualidade natural do PT-BR ainda é pendente para a captura.
+
+## O que já está concluído nesta fase
 
 - [x] contexto unificado do navegador via `obter_contexto_navegador`
 - [x] contexto disponível no registry, contratos, facade e Dispatcher
@@ -43,10 +71,13 @@ Atualizado em: 2026-10-07
 
 - [x] allowlist de leitura/inspeção de arquivos
 - [x] defesa contra prompt injection de conteúdo não confiável
+- [x] resultados OK marcados como conteúdo não confiável sempre registram a fonte no PermissionManager pelo Dispatcher
 - [x] política de permissões endurecida
 - [x] exceções genéricas reduzidas em caminhos críticos
 - [x] dependências principais fixadas
 - [x] modelo configurável por ambiente com padrão `gpt-5.6-luna`
+- [x] import de `auren` usa o modelo efetivo de `config.MODEL` sem perder o literal lido pelo runner live; coerência de versão, cache e arquitetura continua verificada
+- [x] regressões cobrem importação isolada com e sem `AUREN_MODEL` e restauração do módulo `config` entre testes
 - [x] Windows dividido por domínio
 - [x] Browser dividido em leitura, elementos e navegação
 - [x] Harness dividido em runtime, guards, ciclo e demais mecanismos
@@ -110,3 +141,38 @@ Toda mudança relevante de arquitetura, comportamento, capacidade, versão ou pr
 Fluxo oficial:
 
 `AUREN_STATE.md → branch/PR → CI → implementação → testes → atualização do estado`
+
+
+### Tarefa 6 — interrupcao do TTS
+
+- [x] Dividir escrita de chunks Kokoro em blocos de aproximadamente 50 ms, verificando cancelamento antes de cada bloco.
+- [x] Em cancelamento, usar `stream.abort()` se existir ou `stop()` como fallback; `close()` garantido.
+- [x] Preservar chamada unica de `create_stream`, callback `on_audio_start` unico, locks e `output_session`.
+- [x] Reproduzir isoladamente comportamento anterior: 64.000 samples escritos de uma vez, sem abort.
+- [x] CI do commit `99452aeb`: suite completa Linux 462 passed/6 skipped; testes focados Linux 79 passed/6 skipped e Windows 85 passed.
+- [x] Teste funcional com saida de audio real no Windows relatado pelo usuario: ESC cortou imediatamente, PTT cortou imediatamente, reproducao sem cancelamento ocorreu normalmente; nenhuma observacao adicional.
+- [ ] Medicao instrumental de latencia em milissegundos e teste de drivers/buffers alternativos nao realizados.
+
+
+### Tarefa 7 — pré-roll com retenção por amostra (2026-10-08)
+
+- [x] Corrigir `PushToTalkRecorder._callback()` para descartar apenas as amostras mais antigas excedentes, sem eliminar um chunk inteiro quando ainda contém áudio útil.
+- [x] Preservar exatamente as últimas N amostras (`N = _pre_roll_limit_samples`) em chunks NumPy `(N,1)` e listas, com tamanho variável de 480, 1600, 3200 e 8000 amostras.
+- [x] Preservar a ordem do pré-roll antes dos frames gravados; `definir_saida_ativa(True)` e `limpar_pre_roll()` continuam esvaziando o buffer.
+- [x] Não alterar `latency="high"`, `blocksize=0`, pós-roll, debounce, wake word nem Echo Guard.
+- [x] Regressão antes da correção (branch temporária descartável, PR #97): 8 failed, 81 passed, 6 skipped no CI focado Linux; 8 failed, 87 passed no Windows; 8 failed, 464 passed, 6 skipped na suíte completa Linux.
+- [x] Mesmos testes depois da correção, ainda na branch temporária: 89 passed, 6 skipped no CI focado Linux; 95 passed no Windows; 472 passed, 6 skipped na suíte completa Linux.
+- [ ] Confirmar com microfone/driver real no Windows a ausência de cortes na primeira sílaba em capturas com blocos grandes. Nenhuma validação física desta tarefa foi realizada.
+- [ ] Considerar medições específicas de latência/overflow com `latency="high"` e `blocksize=0` em tarefa futura, sem mudança de configuração nesta correção.
+
+
+### Tarefa 8 — alinhamento da documentação, scripts e cobertura de testes
+
+- Hotkey real do PTT: `right ctrl+right shift` (Ctrl direito + Shift direito); F8 e Ctrl+Shift+Space não são os comandos do modo de voz atual.
+- Registry confirmado em `core/tools_registry.py`: **49 ferramentas**, corroboradas pelos contratos em `tests/test_tool_contracts.py`.
+- Antes da consolidação: `tests/test_voice.py` contém 17 funções, com um teste parametrizado em 8 casos, totalizando **24 casos**; `tests/test_voice_v3.py` contém **15 casos**. Total: **39 casos de voz**. Depois de remover 3 duplicados, esperado **36 casos de voz**.
+- Migração concluída nesta tarefa: 12 testes exclusivos da V3 preservados em `tests/test_voice.py`, 3 duplicados removidos e `tests/test_voice_v3.py` excluído após conferência.
+- Base antes da migração: **472 passed, 6 skipped** (Linux, `python -m pytest -q`, CI do commit `54f46f7e`). Validação real após migração (PR temporária #98, fechada sem merge): **469 passed, 6 skipped** na suíte completa Linux; **101 passed, 6 skipped** no focado Linux; **107 passed** no focado Windows. A redução de três casos corresponde apenas aos duplicados removidos.
+- Workflows: apenas renomear o nome exibido do CI completo V47, sem modificar comandos ou lista de testes; CI focado Windows permanece limitado aos sete arquivos existentes.
+- Scripts `.bat` de experimento usam diretório do próprio projeto e Python da `.venv` quando disponível; lógica de ativação/desativação da variável preservada. Teste de execução interativa dos scripts no Windows físico ainda pendente.
+- Executar validação real no Windows dos scripts `.bat` permanece pendente.

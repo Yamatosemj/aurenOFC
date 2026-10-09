@@ -3,7 +3,7 @@ setlocal
 cd /d "%~dp0"
 
 echo ========================================
-echo AUREN VOICE ENGINE V3 - INSTALACAO
+echo AUREN VOICE ENGINE V4 - INSTALACAO
 echo ========================================
 echo.
 
@@ -22,14 +22,16 @@ if errorlevel 1 (
 )
 
 echo.
-echo Limpando apenas cache ASR incompleto da V3, se existir...
+echo O cache local do ASR sera preservado para evitar novo download desnecessario.
 if exist "data\voice\asr\parakeet-tdt-0.6b-v3-ptBR-TAGARELA-onnx-int8" (
-    rmdir /s /q "data\voice\asr\parakeet-tdt-0.6b-v3-ptBR-TAGARELA-onnx-int8"
+    echo Cache ASR encontrado: mantendo arquivos existentes.
+) else (
+    echo Cache ASR ainda nao existe; sera baixado no primeiro uso.
 )
 
 echo.
 echo ========================================
-echo AUREN - INSTALACAO DA VOZ V3: 0
+echo AUREN - INSTALACAO DA VOZ V4: 0
 echo ========================================
 pause
 exit /b 0

@@ -1,4 +1,4 @@
-name: Auren V47 full tests
+name: Auren full tests
 
 on:
   push:

@@ -131,7 +131,6 @@ class LocalKokoroTTS:
         async def _play() -> None:
             stream = None
             try:
-                stream = None
                 async for samples, sample_rate in self._model.create_stream(
                     mensagem,
                     voice=self.voice,
@@ -146,21 +145,40 @@ class LocalKokoroTTS:
                     audio = np.asarray(samples, dtype=np.float32).reshape(-1)
                     if audio.size == 0:
                         continue
-                    if stream is None:
-                        stream = sd.OutputStream(
-                            samplerate=int(sample_rate),
-                            channels=1,
-                            dtype="float32",
-                            latency="low",
-                        )
-                        stream.start()
-                        if on_audio_start is not None:
-                            on_audio_start()
-                    stream.write(audio)
+
+                    # Um write() bloqueante deve representar ~50 ms, nao todo
+                    # o chunk produzido pelo Kokoro (que pode durar segundos).
+                    block_samples = max(1, int(round(int(sample_rate) * 0.05)))
+                    for start in range(0, audio.size, block_samples):
+                        if cancel_event is not None and cancel_event.is_set():
+                            break
+                        if stream is None:
+                            stream = sd.OutputStream(
+                                samplerate=int(sample_rate),
+                                channels=1,
+                                dtype="float32",
+                                latency="low",
+                            )
+                            stream.start()
+                            if on_audio_start is not None:
+                                on_audio_start()
+                        stream.write(audio[start : start + block_samples])
+
+                    if cancel_event is not None and cancel_event.is_set():
+                        break
             finally:
                 if stream is not None:
-                    stream.stop()
-                    stream.close()
+                    try:
+                        if cancel_event is not None and cancel_event.is_set():
+                            abort = getattr(stream, "abort", None)
+                            if callable(abort):
+                                abort()
+                            else:
+                                stream.stop()
+                        else:
+                            stream.stop()
+                    finally:
+                        stream.close()
 
         try:
             with self._lock:
