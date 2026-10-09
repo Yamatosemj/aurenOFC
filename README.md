@@ -121,6 +121,8 @@ O Parakeet local continua sendo o motor PT-BR. O áudio é convertido para mono,
 
 O nome do microfone configurado é resolvido novamente na abertura do stream. Se o dispositivo escolhido desaparecer ou não puder ser aberto, a captura tenta o dispositivo de entrada padrão em vez de derrubar o processo.
 
+A abertura do stream tenta, sem repetir taxas, a taxa configurada, a taxa nativa informada pelo dispositivo e, se necessário, 48 kHz e 44,1 kHz. A taxa que realmente abriu é preservada em `CapturedAudio.sample_rate`; o STT continua convertendo esse áudio para 16 kHz antes da inferência.
+
 O cache local do modelo ASR é preservado por `INSTALAR_VOZ.bat`; a instalação não apaga mais um modelo que já foi baixado.
 
 Wake word e Echo Guard continuam fora do escopo desta tarefa.

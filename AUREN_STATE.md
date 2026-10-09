@@ -11,11 +11,11 @@ Atualizado em: 2026-10-08
 - **Versão em desenvolvimento:** V48
 - **Versão estável da main:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** `feat/tarefa-1-voice-stt-v48`
-- **Head da main:** `71ebe7b77826d1673f9abe6926e40eb9fb63d0f2`
-- **Validação local da voz:** 6 testes focados passaram
-- **CI V48:** ainda sem status reportado pelo GitHub para o head atual
-- **Fase atual:** Voice/STT
+- **Branch ativa:** `fix/tarefa-3-native-microphone-rate` (derivada do commit validado da Tarefa 2)
+- **PR da Tarefa 1:** #85 (`feat/tarefa-1-voice-stt-v48`); não foi rebased nem alterado por esta tarefa
+- **Head da main observado na revisão anterior:** `71ebe7b77826d1673f9abe6926e40eb9fb63d0f2`
+- **Validação da Tarefa 3:** testes determinísticos com sounddevice falso adicionados; status de execução pendente
+- **Fase atual:** Voice/STT — fallback da taxa nativa
 
 ### Tarefa 1 — Voice/STT V4
 
@@ -141,3 +141,13 @@ Toda mudança relevante de arquitetura, comportamento, capacidade, versão ou pr
 Fluxo oficial:
 
 `AUREN_STATE.md → branch/PR → CI → implementação → testes → atualização do estado`
+
+
+### Tarefa 3 — fallback da taxa nativa do microfone
+
+- [x] separar a taxa nativa (`default_samplerate`) da taxa preferida configurada
+- [x] tentar taxas únicas na ordem: preferida, nativa, 48 kHz e 44,1 kHz
+- [x] preservar o fallback para o dispositivo padrão quando o nome configurado não existe
+- [x] manter a taxa do stream aberto no caminho de `CapturedAudio.sample_rate`
+- [x] adicionar regressões com sounddevice falso para taxa nativa, taxa preferida, dispositivo inexistente e falha de todas as taxas
+- [ ] validar os testes no CI e no Windows local

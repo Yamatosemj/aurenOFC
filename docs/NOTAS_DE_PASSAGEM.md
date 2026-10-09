@@ -66,3 +66,15 @@ Executar a bateria de voz no Windows real e medir exemplos curtos, comandos natu
 - o literal padrão `gpt-5.6-luna` permanece reconhecível pelo leitor regex de `testes_auren_live.py`
 - a verificação de coerência de `AUREN_VERSION`, `CACHE_KEY` e `ARCHITECTURE_NAME` foi mantida
 - `tests/test_model_config.py` cobre os imports em subprocesso, a preservação do literal de compatibilidade e o restauro do módulo `config` após testes que alteram o ambiente
+
+
+## Tarefa 3 — fallback da taxa nativa do microfone
+
+- `voice/input.py` agora retorna `default_samplerate` como taxa nativa, sem substituí-la pela taxa preferida configurada
+- `_abrir_stream()` tenta taxas únicas na ordem: preferida, nativa, 48 kHz e 44,1 kHz; para na primeira abertura bem-sucedida
+- se todas falharem, o erro mantém os detalhes por taxa tentada
+- o fallback de dispositivo padrão permanece preservado quando o nome selecionado não existe ou o stream selecionado falha
+- a taxa do stream que abriu continua fluindo para segmentação e `CapturedAudio.sample_rate`; o STT segue normalizando para 16 kHz
+- testes determinísticos novos usam sounddevice falso para cobrir rejeição da taxa preferida, sucesso imediato, microfone configurado inexistente e falha de todas as taxas
+- nenhuma alteração em `voice/segmentation.py`, `voice/stt.py`, `voice/tts.py`, pré-roll, pós-roll ou debounce
+- validação de execução dos testes pendente após a implementação
