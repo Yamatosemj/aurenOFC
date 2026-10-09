@@ -29,6 +29,12 @@ class VoiceSegment:
 
 
 _SUPPORTED_VAD_RATES = {8_000, 16_000, 32_000, 48_000}
+# Criterios existentes do fallback, agora nomeados: 20% dos quadros como
+# referencia de ruido; atividade precisa dobrar a energia desse piso.
+# Ainda dependem de testes com fala/ruido reais para calibracao fina.
+_ENERGY_NOISE_FLOOR_PERCENTILE = 20
+_ENERGY_MIN_SIGNAL_TO_NOISE_RATIO = 2.0
+_ENERGY_MIN_PEAK_FRACTION = 0.35
 
 
 class VoiceActivitySegmenter:
@@ -168,13 +174,13 @@ class VoiceActivitySegmenter:
             peaks.append(float(np.max(np.abs(frame))) if frame.size else 0.0)
 
         values = np.asarray(rms_values, dtype=np.float64)
-        noise_floor = float(np.percentile(values, 20))
+        noise_floor = float(np.percentile(values, _ENERGY_NOISE_FLOOR_PERCENTILE))
         threshold = max(
             float(self.config.silence_rms),
-            noise_floor * 2.0,
+            noise_floor * _ENERGY_MIN_SIGNAL_TO_NOISE_RATIO,
         )
         flags = [
-            rms >= threshold and peak >= self.config.silence_peak * 0.35
+            rms >= threshold and peak >= self.config.silence_peak * _ENERGY_MIN_PEAK_FRACTION
             for rms, peak in zip(rms_values, peaks)
         ]
         return flags, sample_rate
@@ -238,13 +244,17 @@ class VoiceActivitySegmenter:
         self._load_vad()
         flags, frame_rate = self._webrtc_flags(waveform, sr)
         backend = "webrtcvad"
-        if not flags or not any(flags):
+        if not flags:
+            # Somente ausência/falha do WebRTC abre caminho para o detector
+            # de energia. Uma decisão válida "sem fala" é conclusiva.
             if self._vad_error:
                 print(f"Auren voz: WebRTC VAD indisponivel; fallback por energia: {self._vad_error}")
             else:
-                print("Auren voz: WebRTC VAD nao detectou fala; fallback por energia.")
+                print("Auren voz: WebRTC VAD sem quadros validos; fallback por energia.")
             flags, frame_rate = self._energy_flags(waveform, sr)
             backend = "energy"
+        elif not any(flags):
+            return None
 
         bounds = self._bounds_from_flags(
             flags,
@@ -254,16 +264,10 @@ class VoiceActivitySegmenter:
         )
 
         if bounds is None:
-            # O VAD pode ser conservador em fala muito baixa. O gate de ruido
-            # acima ja rejeitou silencio quase puro; neste caso preservamos a
-            # captura em vez de correr o risco de apagar uma frase valida.
-            return VoiceSegment(
-                samples=waveform,
-                sample_rate=sr,
-                duration=duration,
-                speech_detected=False,
-                vad_backend=backend,
-            )
+            # Não enviar a captura inteira ao ASR quando nenhum detector
+            # encontrou fala suficiente. Preservar fala baixa fica a cargo
+            # dos quadros ativos e do padding, não de um bypass do VAD.
+            return None
 
         start, end = bounds
         trimmed = waveform[start:end]
