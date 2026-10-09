@@ -1,7 +1,7 @@
 # Notas de passagem — Auren Voice/STT V4
 
 Data: 2026-10-08
-Branch: `feat/tarefa-1-voice-stt-v48`
+Branch: `fix/tarefa-4-voice-confirmation-queue`
 Tarefa: Sistema de voz e STT
 
 ## O que foi feito
@@ -78,3 +78,13 @@ Executar a bateria de voz no Windows real e medir exemplos curtos, comandos natu
 - testes determinísticos novos usam sounddevice falso para cobrir rejeição da taxa preferida, sucesso imediato, microfone configurado inexistente e falha de todas as taxas
 - nenhuma alteração em `voice/segmentation.py`, `voice/stt.py`, `voice/tts.py`, pré-roll, pós-roll ou debounce
 - CI de validação concluído: suíte completa com 462 passed e 6 skipped; testes focados V48 com 83 passed e 6 skipped no Linux e 89 passed no Windows. O teste local do usuário no Windows concluiu `tests/test_voice.py` com 18 passed em 0,34 s. No teste físico seguinte, `Microfone (Realtek(R) Audio)` abriu a 16.000 Hz; houve captura de 1,64 s, transcrição pelo ASR em 0,295 s e resposta por voz. Um aviso de input overflow apareceu durante a captura, mas não impediu essa execução; acompanhar em testes posteriores. O fallback para outras taxas continua validado pelos testes com sounddevice falso, pois o dispositivo real aceitou 16 kHz.
+
+
+## Tarefa 4 — confirmação por voz e fila de áudio
+
+- `normalizar_resposta_falada()` é o helper único usado pela confirmação e pelos comandos de saída do `voice/main.py`; remove acentos e pontuação, converte para minúsculas e colapsa espaços.
+- A confirmação só aceita `sim`, `s`, `yes`, `y`, `pode`, `pode sim`, `sim pode`, `confirmo` ou `autorizo`; palavras de negação (`nao`, `nunca`, `cancela`, `para`) prevalecem antes da lista afirmativa. Respostas ambíguas negam.
+- A fila compartilhada é esvaziada com `get_nowait()` em loop antes do prompt. Não há limpeza após o TTS, para preservar uma resposta iniciada durante o prompt.
+- Só um item do formato `("audio", CapturedAudio)` é enviado ao ASR; erros de captura, itens crus, payloads vazios ou de outro tipo negam.
+- `core/confirmation.py` (canal textual), timeout e Echo Guard permanecem inalterados.
+- Testes de pontuação, lista fechada, prioridade da negação, fila antiga, fala nova durante o prompt, payload inválido e comandos de saída estão adicionados. CI validado no commit de código `304b026`: suíte completa Linux com 499 passed/6 skipped; testes focados Linux com 124 passed/6 skipped e Windows com 130 passed. O teste local Windows desta tarefa ainda não foi executado pelo usuário.

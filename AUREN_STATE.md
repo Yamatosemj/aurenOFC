@@ -11,11 +11,13 @@ Atualizado em: 2026-10-08
 - **Versão em desenvolvimento:** V48
 - **Versão estável da main:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch ativa:** `fix/tarefa-3-native-microphone-rate` (derivada do commit validado da Tarefa 2)
+- **Branch ativa:** `fix/tarefa-4-voice-confirmation-queue` (derivada da Tarefa 3; alterações anteriores preservadas)
 - **PR da Tarefa 1:** #85 (`feat/tarefa-1-voice-stt-v48`); não foi rebased nem alterado por esta tarefa
+- **PR da Tarefa 4:** #92 (`fix/tarefa-4-voice-confirmation-queue`); aberta, encadeada sobre a Tarefa 3 e ainda não mesclada
 - **Head da main observado na revisão anterior:** `71ebe7b77826d1673f9abe6926e40eb9fb63d0f2`
 - **Validação da Tarefa 3:** CI verde — suíte completa 462 passed/6 skipped; V48 focado 83 passed/6 skipped Linux e 89 passed Windows; Windows local `tests/test_voice.py`: 18 passed; teste físico no Realtek concluído a 16.000 Hz, com captura e ASR funcionando; 1 aviso de input overflow a observar
-- **Fase atual:** Voice/STT — fallback da taxa nativa
+- **Fase atual:** Voice/STT — confirmação por voz e fila de áudio
+- **Validação da Tarefa 4 no CI (commit de código `304b026`):** suíte completa Linux 499 passed/6 skipped; focado Linux 124 passed/6 skipped; focado Windows 130 passed
 
 ### Tarefa 1 — Voice/STT V4
 
@@ -41,7 +43,7 @@ Implementação em andamento nesta branch para substituir os pontos frágeis da 
 
 ### Validação pendente
 
-A validação real com microfone, driver, ruído ambiente e fala natural em português ainda precisa ser executada em Windows. Os testes focados locais cobrem a parte determinística da camada; o CI V48 ainda não reportou status e o teste de áudio físico continua pendente.
+A captura física já foi exercitada no Windows com o Realtek a 16.000 Hz: áudio de 1,64 s chegou ao ASR, a transcrição levou 0,295 s e houve resposta por voz. Um aviso de input overflow foi registrado; ainda vale observar estabilidade em várias falas, pausas e ruído ambiente.
 
 ## O que já está concluído nesta fase
 
@@ -115,9 +117,9 @@ A validação real com microfone, driver, ruído ambiente e fala natural em port
 
 ## Próximas etapas
 
-A tarefa ativa permanece **Browser Intelligence** até que a verificação por tipo de ação esteja suficientemente robusta e coberta por testes.
+A tarefa ativa no momento é **Tarefa 4 — confirmação por voz e fila de áudio**, acompanhada pela PR #92, ainda aberta e sem merge. Não mesclar automaticamente a PR encadeada nem as tarefas anteriores.
 
-Próxima etapa: executar o runner live em Windows e registrar o resultado real das tarefas compostas. O CI atual valida o código do runner, mas não executa a bateria L4/L5 com navegador e modelo reais.
+Após revisão e integração explícita da Tarefa 4, retomar **Browser Intelligence**: executar o runner live em Windows e registrar o resultado real das tarefas compostas. O CI valida os testes automatizados, mas não executa a bateria L4/L5 com navegador e modelo reais.
 
 Depois disso, revisar novamente a estabilização e só então abrir novas frentes.
 
@@ -153,3 +155,16 @@ Fluxo oficial:
 - [x] validar as regressões com sounddevice falso no CI Linux e Windows (suíte completa e suíte focada)
 - [x] validar `tests/test_voice.py` no Windows local (18 passed em 0,34 s)
 - [x] validar a captura com microfone físico e driver real no Windows local — Realtek abriu a 16.000 Hz; áudio de 1,64 s foi capturado e transcrito (ASR 0,295 s); houve 1 aviso de input overflow, sem impedir a captura ou a resposta
+
+
+### Tarefa 4 — confirmação por voz e fila de áudio
+
+- [x] criar helper compartilhado de normalização para texto do ASR e comandos de saída, removendo acentos e pontuação e colapsando espaços
+- [x] aceitar somente as respostas afirmativas explícitas e manter negações com prioridade
+- [x] descartar a fila antiga antes do prompt e preservar respostas novas recebidas durante o TTS
+- [x] rejeitar itens da fila que não sejam o envelope de áudio com `CapturedAudio`
+- [x] adicionar testes de pontuação, lista afirmativa/negativa, áudio antigo, resposta durante o prompt e comandos de saída pontuados
+- [x] validar suíte completa no CI Linux (499 passed, 6 skipped)
+- [x] validar testes focados no CI Linux (124 passed, 6 skipped) e Windows (130 passed)
+- [ ] executar os testes focados no Windows local
+- [x] revisar o diff final; PR #92 aberta para revisão, sem merge
