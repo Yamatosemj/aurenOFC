@@ -137,6 +137,13 @@ def test_plugin_requires_approval_before_import_and_reload(monkeypatch, tmp_path
         assert pm.nivel("teste_plugin") is PermissionLevel.AUTO
 
         _write_approval(approval, teste_plugin={"habilitado": True, "aprovado": False})
+        assert pm.nivel("teste_plugin") is PermissionLevel.BLOCKED
+        # Revogacao deve bloquear ate mesmo o handler ja carregado.
+        denied = dispatcher.executar_ferramenta(
+            SimpleNamespace(name="teste_plugin", arguments="{}"), pm, None,
+        )
+        assert denied.ok is False
+        assert denied.error_code == "permission_denied"
         registry.recarregar()
         assert "teste_plugin" not in dispatcher.TOOL_HANDLERS
         assert pm.nivel("teste_plugin") is PermissionLevel.BLOCKED
