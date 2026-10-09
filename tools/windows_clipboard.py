@@ -6,7 +6,9 @@ from ctypes import wintypes
 
 def _configurar_api_clipboard_windows():
     """Configura assinaturas ctypes para handles/pointers Win64 corretamente."""
-    user32 = _user32()
+    # Usa a API nativa diretamente: este modulo nao define _user32().
+    # _user32 existe em outras fachadas Windows e nao deve ser assumido aqui.
+    user32 = ctypes.windll.user32
     kernel32 = ctypes.windll.kernel32
 
     HWND = ctypes.c_void_p
