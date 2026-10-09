@@ -355,21 +355,22 @@ def executar_ferramenta(item, permission_manager, memory_store) -> ToolResult:
             )
         permission_manager.registrar_fonte_nao_confiavel(nome)
 
-    # Conteudo retornado por pagina/arquivo e dado nao confiavel: ele pode
-    # conter texto escrito para induzir o agente a executar outra acao.
+    # Leituras externas devem sempre armar a guarda, mesmo quando a propria
+    # ferramenta ja devolveu ToolResult marcado como nao confiavel.
+    # Inclui pesquisa web: seus snippets tambem podem conter prompt injection.
     if (
         resultado_estruturado.ok
-        and nome in {"ler_pagina", "ler_arquivo", "obter_contexto_navegador"}
-        and not resultado_estruturado.conteudo_nao_confiavel
+        and nome in {"ler_pagina", "ler_arquivo", "obter_contexto_navegador", "pesquisar_web"}
     ):
-        resultado_estruturado = ToolResult(
-            ok=resultado_estruturado.ok,
-            message=resultado_estruturado.message,
-            data=resultado_estruturado.data,
-            error_code=resultado_estruturado.error_code,
-            tool_name=resultado_estruturado.tool_name,
-            conteudo_nao_confiavel=True,
-        )
+        if not resultado_estruturado.conteudo_nao_confiavel:
+            resultado_estruturado = ToolResult(
+                ok=resultado_estruturado.ok,
+                message=resultado_estruturado.message,
+                data=resultado_estruturado.data,
+                error_code=resultado_estruturado.error_code,
+                tool_name=resultado_estruturado.tool_name,
+                conteudo_nao_confiavel=True,
+            )
         permission_manager.registrar_fonte_nao_confiavel(nome)
 
     if vision_transform is not None:
