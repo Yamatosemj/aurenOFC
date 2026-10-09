@@ -98,7 +98,7 @@ A descoberta faz preflight estatico para plugins desativados, verifica dependenc
 
 Todo plugin ativo e registrado simultaneamente no registry de tools, no registry de contratos, no registry de capacidades e no Dispatcher. A execucao continua sendo somente `Router -> Dispatcher -> Contrato -> Permissao -> Ferramenta -> ToolResult`.
 
-Por seguranca, plugin novo entra em `CONFIRM`. A aprovacao fica em `plugins_aprovados.json`, arquivo local ignorado pelo Git. Alterar `habilitado` e chamar `auren.recarregar_plugins()` liga/desliga sem reiniciar; alterar `aprovado` muda o nivel entre `CONFIRM` e `AUTO` sem reiniciar.
+Por seguranca, **plugins nao aprovados nunca sao importados nem registrados**. A aprovacao fica no arquivo local `plugins_aprovados.json`, ignorado pelo Git: para carregar um plugin, use `{"nome_da_tool": {"habilitado": true, "aprovado": true}}`. Ambas as flags devem ser booleanas; valores como `"true"`, `"false"` e `1` nao autorizam o import. Ausencia de aprovacao, arquivo inexistente ou JSON invalido mantem o plugin fora do runtime. Para aplicar aprovacao, revogacao ou habilitacao, chame `auren.recarregar_plugins()` (sem reiniciar). Plugins aprovados continuam passando pelo Dispatcher/contrato/permissao nas chamadas; **a aprovacao para importar e uma decisao de confianca em codigo Python local, nao um sandbox**.
 
 O retorno de plugin e marcado como conteudo nao confiavel, assim como leituras de pagina/arquivo. Isso nunca concede permissao para outra acao.
 
