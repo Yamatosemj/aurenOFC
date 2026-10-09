@@ -77,4 +77,4 @@ Executar a bateria de voz no Windows real e medir exemplos curtos, comandos natu
 - a taxa do stream que abriu continua fluindo para segmentação e `CapturedAudio.sample_rate`; o STT segue normalizando para 16 kHz
 - testes determinísticos novos usam sounddevice falso para cobrir rejeição da taxa preferida, sucesso imediato, microfone configurado inexistente e falha de todas as taxas
 - nenhuma alteração em `voice/segmentation.py`, `voice/stt.py`, `voice/tts.py`, pré-roll, pós-roll ou debounce
-- CI de validação concluído: suíte completa com 462 passed e 6 skipped; testes focados V48 com 83 passed e 6 skipped no Linux e 89 passed no Windows. A captura com microfone físico e driver real ainda não foi validada.
+- CI de validação concluído: suíte completa com 462 passed e 6 skipped; testes focados V48 com 83 passed e 6 skipped no Linux e 89 passed no Windows. O teste local do usuário no Windows concluiu `tests/test_voice.py` com 18 passed em 0,34 s. A captura com microfone físico e driver real ainda não foi validada.
