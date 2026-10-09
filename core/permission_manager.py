@@ -516,6 +516,17 @@ class PermissionManager:
         capacidade = self._capability(nome_ferramenta)
         nivel_base = self.nivel(nome_ferramenta)
 
+        # BLOQUEIO e absoluto. Uma leitura externa nunca deve transformar
+        # uma capacidade proibida em uma acao confirmavel pelo usuario.
+        if nivel_base == PermissionLevel.BLOCKED:
+            return (
+                PermissionLevel.BLOCKED,
+                (
+                    f"A ferramenta '{nome_ferramenta}' "
+                    "esta bloqueada pela politica de permissoes."
+                ),
+            )
+
         if (
             self._fonte_nao_confiavel_pendente is not None
             and self._capability_conta(capacidade)
@@ -527,15 +538,6 @@ class PermissionManager:
                     "Esta acao foi solicitada apos a leitura de conteudo nao confiavel "
                     f"(fonte: {fonte}). Conteudo externo nunca e uma instrucao do usuario; "
                     "confirmacao explicita e obrigatoria antes de qualquer acao com efeito externo."
-                ),
-            )
-
-        if nivel_base == PermissionLevel.BLOCKED:
-            return (
-                PermissionLevel.BLOCKED,
-                (
-                    f"A ferramenta '{nome_ferramenta}' "
-                    "esta bloqueada pela politica de permissoes."
                 ),
             )
         if capacidade in {"file.read", "file.inspect"}:
