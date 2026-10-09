@@ -1,4 +1,4 @@
-﻿# Auren: testes remotos pelo GitHub
+# Auren: testes remotos pelo GitHub
 
 Configurado em 2026-10-09 no Windows local. Repositorio privado confirmado; somente o proprietario aparece como colaborador. Autenticacao existente do Git Credential Manager reutilizada, sem copiar tokens para arquivos versionados.
 
@@ -10,9 +10,9 @@ Pelo celular, abra [Conexao Windows](https://github.com/Yamatosemj/aurenOFC/acti
 
 ## Restricao efetiva
 
-Runner oficial 2.338.0 com SHA-256 verificado contra o digest da release. Instalacao em %USERPROFILE%\auren-remote\runner. Hook externo em policy\before-job.ps1 rejeita o job antes dos passos se evento, repositorio privado, ator, reator, branch, workflow ou SHA nao corresponderem a conexao revisada. Tambem rejeita processo elevado. O commit permitido fica na politica local; mudancas na main exigem revisao e atualizacao local pelo agente. Labels apenas selecionam o runner.
+Runner oficial 2.338.0 com SHA-256 verificado contra o digest da release. Instalacao em %USERPROFILE%\auren-remote\runner. Hook externo em policy\before-job.ps1 rejeita o job antes dos passos se evento, repositorio privado, ator, reator, branch, workflow ou SHA nao corresponderem aos workflows de conexao/live revisados. Tambem rejeita processo elevado. O commit permitido fica em policy\live-approval.json, junto do estado live_ready validado pelo agente; mudancas na main exigem revisao e atualizacao local pelo agente. Labels apenas selecionam o runner.
 
-A conta pessoal nao oferece restricao de runner group por workflow. A protecao adotada e local, com SHA fixo, e nao constitui sandbox contra o proprietario/administrador do repositorio ou da maquina. Nao ha gatilhos pull_request nos workflows. CI em push continua exclusivamente nos runners do GitHub. GITHUB_TOKEN da conexao tem permissions: {}; a configuracao padrao do repositorio e read, sem aprovar PRs.
+A conta pessoal nao oferece restricao de runner group por workflow. A protecao adotada e local, com SHA fixo, e nao constitui sandbox contra o proprietario/administrador do repositorio ou da maquina. Nao ha gatilhos pull_request nos workflows. CI em push continua exclusivamente nos runners do GitHub. GITHUB_TOKEN da conexao tem permissions: {}; live tem contents: read; a configuracao padrao do repositorio e read, sem aprovar PRs.
 
 O runner publica automaticamente nome da maquina e caminhos operacionais nos logs privados de inicializacao; o passo de conexao nao lista ambiente nem credenciais. Credenciais internas do runner permanecem somente na instalacao local. Nenhuma chave de API foi adicionada ao GitHub.
 
@@ -50,3 +50,5 @@ Fixtures verificam timeout silencioso, loop com saida continua, log flood, inter
 Interrupcao forcada garante encerramento dos processos contidos, mas nao reverte efeitos ja ocorridos, como clipboard, volume ou arquivos; os finally normais tentam suas limpezas. O runner roda na sessao interativa do usuario, sem privilegios administrativos. Resultados nao devem ser interpretados como isolamento de seguranca do desktop.
 
 Pelo celular, use [Windows real](https://github.com/Yamatosemj/aurenOFC/actions/workflows/auren-windows-live.yml), main, camada desejada ou ALL. PC ligado, conectado e usuario conectado. Resultados incluem reports/watchdog.json (motivo, duracao e exit code), live.log, logs parciais integrados e relatorio do tester. Falha e timeout deixam o job vermelho; artifacts selecionados privados ficam por sete dias.
+
+Validacao antes dos testes reais: 68 testes selecionados passaram localmente; as 12 fixtures de seguranca tambem passaram no runner sem elevacao via [GitHub Actions](https://github.com/Yamatosemj/aurenOFC/actions/runs/37885714287), com logs e JUnit publicados. O job de efeitos reais foi ignorado nessa execucao. O agente so marca live_ready=true depois desse resultado.
