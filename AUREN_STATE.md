@@ -10,9 +10,9 @@ Atualizado em: 2026-10-09
 
 - **Versão estável:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** `fix/security-blocked-precedence-20261009` (correcao A04; aguardando validacao e integracao)
-- **Head da main:** consultar o GitHub antes de cada tarefa; ultimo merge validado: PR #99 (`2167655b2c4532f3dd80eafc188a9c9f6b76f22d`)
-- **CI:** PR #99 com workflows verdes antes do merge; verificar CI da correcao A04 nesta nova PR
+- **Branch/PR ativa:** nenhuma correção de segurança imediata em aberto para a main; outras PRs de funcionalidades permanecem separadas
+- **Head da main:** consultar o GitHub antes de cada tarefa; ultimo merge funcional: PR #104 (`a3d0f07ea521fc4dffc00d74e9525237be9ffd3a`)
+- **CI:** PR #104 aprovada pela suite completa Linux e testes focados Linux/Windows; CI do novo push na main deve ser confirmado separadamente
 - **Fase atual:** Browser Intelligence
 
 ### Seguranca A01 — incorporada na main (PR #99)
@@ -20,14 +20,21 @@ Atualizado em: 2026-10-09
 - A falha anterior fazia leituras externas ja marcadas como nao confiaveis deixarem de ativar a guarda de confirmacao. Corrigida na main pelo merge da PR #99.
 - `tools/dispatcher.py` registra a fonte em toda leitura bem-sucedida de `ler_arquivo`, `ler_pagina` e `obter_contexto_navegador`, mesmo com a flag previamente ativa.
 - Regressoes: tres casos reproduziram falha antes da correcao; depois, suite completa do CI Linux retornou 445 passed e 6 skipped.
-- Esta correcao nao implementa A02/A03. O A04 foi isolado na branch `fix/security-blocked-precedence-20261009`.
+- Esta correcao nao implementa A02/A03. O A04 tambem foi incorporado na main pela PR #104.
 
-### Seguranca A04 — bloqueio absoluto (PR em validacao)
+### Seguranca A04 — bloqueio absoluto integrado na main (PR #104)
 
 - `core/permission_manager.py` tinha precedencia incorreta: apos conteudo externo, uma capacidade `BLOCKED` contada podia virar `CONFIRM`.
-- A branch de correção aplica `BLOCKED` antes da guarda de origem externa; AUTO ainda sobe para CONFIRM apos leitura nao confiavel.
-- Testes adicionados para ambos os cenarios, alem de ajustar o teste A01 para nao contornar a protecao de AppData no Windows.
+- `PermissionManager` agora aplica `BLOCKED` antes da guarda de origem externa; AUTO ainda sobe para CONFIRM apos leitura nao confiavel.
+- Testes para ambos os cenarios passaram na PR #104, assim como o teste A01 ajustado sem contornar a protecao de AppData no Windows.
 - Dependencias de plugins A02/A03 da PR #84 seguem fora da `main`; nao integrar pacote amplo sem revalidar conflitos e riscos.
+
+### CI de revisao de PRs (PR #104)
+
+- Workflows de pytest completo e testes focados agora usam `pull_request` para a `main` em runners hospedados do GitHub, alem do push normal.
+- Regressao de prompt injection incluida na bateria focada Linux/Windows.
+- Na PR #104, o workflow completo Linux e os dois jobs focados Linux/Windows concluiram com sucesso.
+- Ainda falta validar a bateria funcional live de Auren+modelo+navegador no PC, independente da suite pytest.
 
 ### O que já está concluído nesta fase
 
