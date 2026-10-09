@@ -11,12 +11,12 @@ Atualizado em: 2026-10-08
 - **Versão em desenvolvimento:** V48
 - **Versão estável da main:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch ativa:** `fix/tarefa-4-voice-confirmation-queue` (derivada da Tarefa 3; alterações anteriores preservadas)
+- **Branch ativa:** `fix/tarefa-5-silence-gate` (derivada da Tarefa 4; alterações anteriores preservadas)
 - **PR da Tarefa 1:** #85 (`feat/tarefa-1-voice-stt-v48`); não foi rebased nem alterado por esta tarefa
 - **PR da Tarefa 4:** #92 (`fix/tarefa-4-voice-confirmation-queue`); aberta, encadeada sobre a Tarefa 3 e ainda não mesclada
 - **Head da main observado na revisão anterior:** `71ebe7b77826d1673f9abe6926e40eb9fb63d0f2`
 - **Validação da Tarefa 3:** CI verde — suíte completa 462 passed/6 skipped; V48 focado 83 passed/6 skipped Linux e 89 passed Windows; Windows local `tests/test_voice.py`: 18 passed; teste físico no Realtek concluído a 16.000 Hz, com captura e ASR funcionando; 1 aviso de input overflow a observar
-- **Fase atual:** Voice/STT — confirmação por voz e fila de áudio
+- **Fase atual:** Voice/STT — segmentação: bloquear áudio sem fala antes do ASR
 - **Validação da Tarefa 4 no CI (commit de código `304b026`):** suíte completa Linux 499 passed/6 skipped; focado Linux 124 passed/6 skipped; focado Windows 130 passed
 
 ### Tarefa 1 — Voice/STT V4
@@ -166,5 +166,16 @@ Fluxo oficial:
 - [x] adicionar testes de pontuação, lista afirmativa/negativa, áudio antigo, resposta durante o prompt e comandos de saída pontuados
 - [x] validar suíte completa no CI Linux (499 passed, 6 skipped)
 - [x] validar testes focados no CI Linux (124 passed, 6 skipped) e Windows (130 passed)
-- [ ] executar os testes focados no Windows local
+- [x] executar os testes focados da Tarefa 4 no Windows local (59 passed em 0,89 s)
 - [x] revisar o diff final; PR #92 aberta para revisão, sem merge
+
+
+### Tarefa 5 — bloqueio de áudio sem fala antes do ASR
+
+- [x] WebRTC válido e sem fala retorna `None`, sem fallback de energia
+- [x] fallback de energia somente se WebRTC indisponível ou apresentar erro
+- [x] falta de limites de fala (`bounds=None`) retorna `None`, nunca a captura inteira com `speech_detected=False`
+- [x] constantes nomeadas para percentil do piso de ruído (20), relação mínima entre energia e ruído (2×) e fração mínima de pico (0,35), mantendo os valores anteriores
+- [x] novos testes sintéticos para ruído RMS 0,001/0,003/0,01, fala baixa e tom modulado, WebRTC negativo/positivo e erro de WebRTC
+- [ ] validar no CI Linux e Windows; validar testes focados no Windows local
+- [ ] ajuste fino de limiares somente com dados de microfone, ruído ambiente e fala natural em Windows real; não considerar testes sintéticos suficientes para calibração
