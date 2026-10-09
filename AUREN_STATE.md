@@ -14,7 +14,7 @@ Atualizado em: 2026-10-08
 - **Branch ativa:** `fix/tarefa-3-native-microphone-rate` (derivada do commit validado da Tarefa 2)
 - **PR da Tarefa 1:** #85 (`feat/tarefa-1-voice-stt-v48`); não foi rebased nem alterado por esta tarefa
 - **Head da main observado na revisão anterior:** `71ebe7b77826d1673f9abe6926e40eb9fb63d0f2`
-- **Validação da Tarefa 3:** CI verde — suíte completa 462 passed/6 skipped; V48 focado 83 passed/6 skipped Linux e 89 passed Windows; Windows local `tests/test_voice.py`: 18 passed; teste físico pendente
+- **Validação da Tarefa 3:** CI verde — suíte completa 462 passed/6 skipped; V48 focado 83 passed/6 skipped Linux e 89 passed Windows; Windows local `tests/test_voice.py`: 18 passed; teste físico no Realtek concluído a 16.000 Hz, com captura e ASR funcionando; 1 aviso de input overflow a observar
 - **Fase atual:** Voice/STT — fallback da taxa nativa
 
 ### Tarefa 1 — Voice/STT V4
@@ -152,4 +152,4 @@ Fluxo oficial:
 - [x] adicionar regressões com sounddevice falso para taxa nativa, taxa preferida, dispositivo inexistente e falha de todas as taxas
 - [x] validar as regressões com sounddevice falso no CI Linux e Windows (suíte completa e suíte focada)
 - [x] validar `tests/test_voice.py` no Windows local (18 passed em 0,34 s)
-- [ ] validar a captura com microfone físico e driver real no Windows local
+- [x] validar a captura com microfone físico e driver real no Windows local — Realtek abriu a 16.000 Hz; áudio de 1,64 s foi capturado e transcrito (ASR 0,295 s); houve 1 aviso de input overflow, sem impedir a captura ou a resposta
