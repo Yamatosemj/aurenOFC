@@ -14,6 +14,10 @@ on:
         description: 'Numero da PR; usado somente em testar_pr'
         type: string
         required: false
+      sha_aprovado:
+        description: 'Somente para testes L4/L5/ALL de PR: commit SHA completo revisado'
+        type: string
+        required: false
       camada:
         description: 'Teste da PR: pytest (padrao) ou live; live causa efeitos no PC'
         type: choice
@@ -147,7 +151,7 @@ jobs:
             $message = if ($before -eq $after) { 'Ja estava atualizado' } else { 'Atualizacao concluida' }
             "### Auren PC: $message" | Out-File -LiteralPath $summary -Encoding utf8 -Append
             "De $before para $after" | Out-File -LiteralPath $summary -Encoding utf8 -Append
-            Write-Output "$message: $before -> $after"
+            Write-Output ("{0}: {1} -> {2}" -f $message, $before, $after)
           } catch {
             '### Atualizacao no PC falhou' | Out-File -LiteralPath $summary -Encoding utf8 -Append
             $_.Exception.Message | Out-File -LiteralPath $summary -Encoding utf8 -Append
@@ -159,6 +163,7 @@ jobs:
           TEST_LAYER: ${{ inputs.camada }}
           PR_SHA: ${{ needs.validar.outputs.pr_sha }}
           PR_NUMBER: ${{ needs.validar.outputs.pr_number }}
+          APPROVED_SHA: ${{ inputs.sha_aprovado }}
         run: |
           $ErrorActionPreference = 'Stop'
           $python = Join-Path $env:USERPROFILE 'auren-remote\venv\Scripts\python.exe'
@@ -171,10 +176,17 @@ jobs:
           if ($LASTEXITCODE -ne 0 -or $actual -ne $env:PR_SHA) {
             throw 'O checkout da PR nao corresponde ao SHA validado.'
           }
-          if (-not $env:OPENAI_API_KEY) {
-            $env:OPENAI_API_KEY = [Environment]::GetEnvironmentVariable('OPENAI_API_KEY', 'User')
+          if ($env:TEST_LAYER -in @('L4','L5','ALL')) {
+            if ($env:APPROVED_SHA -ne $env:PR_SHA) {
+              throw 'Para testes de PR com API, informe o SHA completo revisado no campo sha_aprovado.'
+            }
+            if (-not $env:OPENAI_API_KEY) {
+              $env:OPENAI_API_KEY = [Environment]::GetEnvironmentVariable('OPENAI_API_KEY', 'User')
+            }
+            if ($env:OPENAI_API_KEY) { Write-Output "::add-mask::$env:OPENAI_API_KEY" }
+          } else {
+            Remove-Item Env:OPENAI_API_KEY -ErrorAction SilentlyContinue
           }
-          if ($env:OPENAI_API_KEY) { Write-Output "::add-mask::$env:OPENAI_API_KEY" }
           & $python $trusted --project $project --output $reports --camada $env:TEST_LAYER
           $code = $LASTEXITCODE
           "### PR #$env:PR_NUMBER no Windows" | Out-File $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
