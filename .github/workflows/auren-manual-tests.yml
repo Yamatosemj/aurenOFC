@@ -1,9 +1,6 @@
 name: Auren - testes manuais
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - '.github/workflows/auren-manual-tests.yml'
 permissions:
   contents: read
 concurrency:
