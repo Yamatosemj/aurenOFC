@@ -4,6 +4,7 @@ from queue import Queue
 from types import SimpleNamespace
 
 import numpy as np
+import pytest
 
 from voice.confirmation import VoiceConfirmationChannel
 from voice.input import AudioCaptureConfig, CapturedAudio, PushToTalkRecorder
@@ -310,3 +311,73 @@ def test_voice_confirmation_unpacks_capture_queue_envelope():
     request = SimpleNamespace(action="definir volume", reason="e necessario confirmar")
     assert channel.confirmar(request) is True
     assert tts.spoken
+
+
+# Tarefa 7: a janela de pre-roll deve ser limitada por amostras,
+# independentemente do tamanho dos blocos entregues pelo PortAudio.
+@pytest.mark.parametrize("block_samples", [480, 1600, 3200, 8000])
+@pytest.mark.parametrize("as_list", [False, True])
+def test_ptt_pre_roll_keeps_exact_latest_samples(block_samples, as_list):
+    sample_rate = 16_000
+    recorder = PushToTalkRecorder(
+        sounddevice_module=object(), keyboard_module=object(),
+    )
+    recorder._preparar_buffer(sample_rate)
+    limit = recorder._pre_roll_limit_samples
+    all_audio = np.arange(block_samples * (limit // block_samples + 3), dtype=np.float32)
+    for offset in range(0, len(all_audio), block_samples):
+        original = all_audio[offset : offset + block_samples]
+        block = original.tolist() if as_list else original.reshape(-1, 1)
+        recorder._callback(block, len(block), None, None)
+
+    saved = np.asarray(
+        [sample for chunk in recorder._pre_roll
+         for sample in np.asarray(chunk).reshape(-1)],
+        dtype=np.float32,
+    )
+    assert recorder._pre_roll_samples == limit
+    assert len(saved) == limit
+    np.testing.assert_array_equal(saved, all_audio[-limit:])
+
+
+def test_ptt_recording_starts_with_latest_pre_roll_before_new_frames():
+    recorder = PushToTalkRecorder(
+        sounddevice_module=object(), keyboard_module=object(),
+    )
+    recorder._preparar_buffer(16_000)
+    before = np.arange(8_000, dtype=np.float32).reshape(-1, 1)
+    recorder._callback(before, len(before), None, None)
+    recorder._registrar_inicio()
+    after = np.arange(8_000, 8_480, dtype=np.float32).reshape(-1, 1)
+    recorder._callback(after, len(after), None, None)
+    recorded = np.concatenate(recorder._registrar_fim(), axis=0).reshape(-1)
+
+    np.testing.assert_array_equal(
+        recorded, np.concatenate([before[-2_880:].reshape(-1), after.reshape(-1)])
+    )
+    assert recorder._pre_roll_samples == 0
+    assert not recorder._pre_roll
+
+
+def test_ptt_output_active_clears_and_blocks_pre_roll():
+    recorder = PushToTalkRecorder(
+        sounddevice_module=object(), keyboard_module=object(),
+    )
+    recorder._preparar_buffer(16_000)
+    chunk = np.arange(3_200, dtype=np.float32).reshape(-1, 1)
+    recorder._callback(chunk, len(chunk), None, None)
+    assert recorder._pre_roll_samples == 2_880
+
+    recorder.definir_saida_ativa(True)
+    assert recorder._pre_roll_samples == 0
+    assert not recorder._pre_roll
+    recorder._callback(chunk, len(chunk), None, None)
+    assert recorder._pre_roll_samples == 0
+    assert not recorder._pre_roll
+
+    recorder.definir_saida_ativa(False)
+    recorder._callback(chunk, len(chunk), None, None)
+    assert recorder._pre_roll_samples == 2_880
+    recorder.limpar_pre_roll()
+    assert recorder._pre_roll_samples == 0
+    assert not recorder._pre_roll

@@ -152,3 +152,15 @@ Fluxo oficial:
 - [x] CI do commit `99452aeb`: suite completa Linux 462 passed/6 skipped; testes focados Linux 79 passed/6 skipped e Windows 85 passed.
 - [x] Teste funcional com saida de audio real no Windows relatado pelo usuario: ESC cortou imediatamente, PTT cortou imediatamente, reproducao sem cancelamento ocorreu normalmente; nenhuma observacao adicional.
 - [ ] Medicao instrumental de latencia em milissegundos e teste de drivers/buffers alternativos nao realizados.
+
+
+### Tarefa 7 — pré-roll com retenção por amostra (2026-10-08)
+
+- [x] Corrigir `PushToTalkRecorder._callback()` para descartar apenas as amostras mais antigas excedentes, sem eliminar um chunk inteiro quando ainda contém áudio útil.
+- [x] Preservar exatamente as últimas N amostras (`N = _pre_roll_limit_samples`) em chunks NumPy `(N,1)` e listas, com tamanho variável de 480, 1600, 3200 e 8000 amostras.
+- [x] Preservar a ordem do pré-roll antes dos frames gravados; `definir_saida_ativa(True)` e `limpar_pre_roll()` continuam esvaziando o buffer.
+- [x] Não alterar `latency="high"`, `blocksize=0`, pós-roll, debounce, wake word nem Echo Guard.
+- [x] Regressão antes da correção (branch temporária descartável, PR #97): 8 failed, 81 passed, 6 skipped no CI focado Linux; 8 failed, 87 passed no Windows; 8 failed, 464 passed, 6 skipped na suíte completa Linux.
+- [x] Mesmos testes depois da correção, ainda na branch temporária: 89 passed, 6 skipped no CI focado Linux; 95 passed no Windows; 472 passed, 6 skipped na suíte completa Linux.
+- [ ] Confirmar com microfone/driver real no Windows a ausência de cortes na primeira sílaba em capturas com blocos grandes. Nenhuma validação física desta tarefa foi realizada.
+- [ ] Considerar medições específicas de latência/overflow com `latency="high"` e `blocksize=0` em tarefa futura, sem mudança de configuração nesta correção.

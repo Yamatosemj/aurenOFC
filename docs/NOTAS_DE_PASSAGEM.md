@@ -79,3 +79,15 @@ Executar a bateria de voz no Windows real e medir exemplos curtos, comandos natu
 - Validacao funcional no Windows, relatada pelo usuario: ESC cortou imediatamente; PTT cortou imediatamente; reproducao normal sem falhas; nenhuma observacao adicional.
 - Nao houve cronometro ou medida instrumental em milissegundos; comportamento com outros dispositivos/drivers continua nao verificado.
 - CI do commit `99452aeb`: pytest completo Linux 462 passed/6 skipped; focado Linux 79 passed/6 skipped; focado Windows 85 passed.
+
+
+## Tarefa 7 — pré-roll retido por amostra
+
+- O callback do PortAudio descarta a quantidade exata de amostras mais antigas, preservando o fim do chunk limítrofe com slicing. O deque continua compatível com NumPy `(N,1)` e listas simples.
+- A janela mantém o limite de 180 ms (2880 amostras a 16 kHz) e os dados mais recentes mesmo quando um callback entrega 3200 ou 8000 amostras de uma vez.
+- A gravação continua começando pelo pré-roll antes dos novos frames. `definir_saida_ativa(True)` e `limpar_pre_roll()` continuam limpando o deque e o contador.
+- Regressões adicionadas a `tests/test_voice.py` para blocos de 480, 1600, 3200 e 8000 amostras, NumPy (N,1) e listas, ordem de gravação e supressão durante saída de TTS.
+- Validação RED na branch temporária: focado Linux 8 failed/81 passed/6 skipped; focado Windows 8 failed/87 passed; suíte completa Linux 8 failed/464 passed/6 skipped.
+- Validação GREEN na branch temporária com a correção: focado Linux 89 passed/6 skipped; focado Windows 95 passed; suíte completa Linux 472 passed/6 skipped. PR temporária #97 apenas para executar o CI; não deve ser mesclada.
+- Nenhum parâmetro de latência, tamanho de bloco do PortAudio, pós-roll ou debounce foi alterado.
+- Teste de microfone real no Windows e avaliação de latência/overflow permanecem pendentes.
