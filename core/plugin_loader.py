@@ -142,6 +142,19 @@ class PluginRegistry:
                 )
                 continue
 
+            # O import executa codigo de topo. Exigir aprovacao ANTES de
+            # inspecionar dependencias ou executar o modulo, sem confiar em
+            # confirmacoes posteriores de uso da ferramenta.
+            if not aprovado:
+                self._reject(
+                    nome,
+                    path.name,
+                    "Plugin sem aprovacao explicita em plugins_aprovados.json; modulo nao foi importado.",
+                    enabled=True,
+                    approved=False,
+                )
+                continue
+
             if not _NAME_RE.match(str(nome)):
                 self._reject(nome, path.name, "Nome invalido: use letras, numeros e '_' e comece por letra/'_'.")
                 continue
@@ -261,7 +274,8 @@ def _approval_status(path: Path, name: str) -> tuple[bool, bool]:
     if isinstance(value, bool):
         return value, False
     if isinstance(value, dict):
-        return bool(value.get("habilitado", True)), bool(value.get("aprovado", False))
+        # Valores como "false", "true" ou 1 nao sao aprovacoes booleanas.
+        return value.get("habilitado", True) is True, value.get("aprovado", False) is True
     return True, False
 
 
