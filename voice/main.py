@@ -11,7 +11,10 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import auren  # noqa: E402
-from voice.confirmation import VoiceConfirmationChannel  # noqa: E402
+from voice.confirmation import (  # noqa: E402
+    VoiceConfirmationChannel,
+    normalizar_resposta_falada,
+)
 from voice.input import PushToTalkRecorder  # noqa: E402
 from voice.speech_response import SpeechResponseFormatter  # noqa: E402
 from voice.stt import LocalPortugueseASR  # noqa: E402
@@ -20,6 +23,12 @@ from core.harness import AurenHarness  # noqa: E402
 
 
 _INPUT_EOF = object()
+_COMANDOS_SAIDA = frozenset({"sair", "encerrar", "fechar o auren"})
+
+
+def _eh_comando_saida(mensagem: str) -> bool:
+    """Aceita pontuacao, mas exige um comando de saida completo."""
+    return normalizar_resposta_falada(mensagem) in _COMANDOS_SAIDA
 
 
 def _iniciar_leitor_texto(fila: Queue, stop_event: Event) -> Thread:
@@ -246,7 +255,7 @@ def main() -> int:
                 mensagem = str(valor or "").strip()
                 if mensagem:
                     print(f"Você: {mensagem}")
-                    if mensagem.lower() in {"sair", "encerrar", "fechar o auren"}:
+                    if _eh_comando_saida(mensagem):
                         print("Auren: Até mais.")
                         return 0
 
@@ -291,7 +300,7 @@ def main() -> int:
                 continue
 
             print(f"Você: {mensagem}")
-            if mensagem.lower() in {"sair", "encerrar", "fechar o auren"}:
+            if _eh_comando_saida(mensagem):
                 print("Auren: Até mais.")
                 return 0
 
