@@ -4,16 +4,17 @@
 > Antes de iniciar uma nova tarefa, compare este arquivo com a branch/PR, o head da main e o CI do GitHub.
 > Histórico, memórias da conversa e documentos arquivados não substituem este estado.
 
-Atualizado em: 2026-10-07
+Atualizado em: 2026-10-09
 
 ## Estado atual
 
 - **Versão estável:** V47
+- **Versão em validação:** V51
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** nenhuma
-- **Head da main:** `71ebe7b77826d1673f9abe6926e40eb9fb63d0f2`
-- **CI da implementação mais recente:** pytest, focused Linux e focused Windows verdes
-- **Fase atual:** Browser Intelligence
+- **Branch/PR ativa:** `feat/tarefa-10c-proactive` / PR #84
+- **Head da main:** `db35ca8426845ac94b0198bf7ddea1864f7d638d`
+- **CI da PR #84:** pytest completo 511 passed / 6 skipped, focused Linux 149 passed / 6 skipped e focused Windows 155 passed (GitHub Actions; HEAD anterior `8c2a10d`), com cobertura ampliada para Tarefas 8 e 10
+- **Fase atual:** Fechamento da Tarefa 10 — 10A + 10B + 10C
 
 ### O que já está concluído nesta fase
 
@@ -39,6 +40,114 @@ Atualizado em: 2026-10-07
 - rolagem: posição de rolagem já é verificada deterministicamente; confirmar automaticamente o conteúdo esperado continua como etapa posterior
 - qualquer verificação continua tratando conteúdo da página como dado não confiável, nunca como instrução
 
+## Correcoes integradas na PR #84 (09/10/2026)
+
+- **A01 + A03:** `tools/dispatcher.py` ativa a confirmacao extra apos leituras bem-sucedidas de paginas, arquivos, contexto do browser e `pesquisar_web`, mesmo quando o resultado ja vem marcado como nao confiavel. Testes de regressao verificam bloqueio de acao normalmente AUTO.
+- **A02:** `core/plugin_loader.py` agora exige `habilitado: true` e `aprovado: true` ANTES de importar qualquer plugin; entradas ausentes/inválidas nao importam. `PermissionManager` bloqueia imediatamente uso de plugin cuja aprovacao foi revogada, mesmo antes de reload. A correcao da PR #100 foi portada e ampliada aqui.
+- **Precedencia de seguranca:** `BLOCKED` vem antes de qualquer elevacao de `AUTO` para `CONFIRM` devido a fonte nao confiavel.
+- **Falha do CI:** `tools/windows.py` volta a exportar os helpers internos necessarios ao `core/facade.py`; elimina o `AttributeError` que quebrava `test_facade_version_matches_config`.
+- **Regressoes:** pytest completo verde com **511 passed, 6 skipped** na revisao com as correcoes; testes focused Linux/Windows passaram nas revisoes anteriores. Os testes de integracao de voz, navegador e agendador no Windows do usuario continuam **nao executados** aqui.
+- **Dependencias:** PRs #81, #99 e #100 ainda permanecem abertas e nao foram automaticamente mescladas/fechadas. Estas correcoes ja estao incluidas diretamente na branch da PR #84; antes de qualquer outro merge, conferir integracao/deduplicacao com essas PRs.
+- A `main` permanece inalterada. Nao confundir CI pytest com teste operacional live no Windows.
+
+## Tarefa 8 — Carregador de plugins que passa pelo Dispatcher
+
+- [x] carregador dedicado em `core/plugin_loader.py`
+- [x] `TOOL` + `CAPABILITY` + handler entram nos registries oficiais
+- [x] plugin so e importado com habilitacao e aprovacao booleanas explicitas; revogacao bloqueia uso imediato
+- [x] habilitar/desabilitar sem reiniciar via recarregamento
+- [x] dependências checadas com `find_spec` antes do import
+- [x] plugin desativado não é importado
+- [x] colisões, plugins inválidos e dependências ausentes são isolados com motivo legível
+- [x] retorno de plugin marcado como conteúdo não confiável
+- [x] prompt gera capacidades a partir do registry atual
+- [x] template e exemplo `hora_atual`
+- [x] testes específicos e extensão do caminho único
+- [x] portão final: `py -m pytest -q` verde no PR #81 — 457 passed, 6 skipped
+
+### Pendência herdada
+A execução manual do runner Browser Intelligence em Windows continua pendente da fase anterior e não foi alterada silenciosamente nesta tarefa.
+
+
+## Tarefa 10A — Lembretes persistentes
+
+- [x] `criar_lembrete` registrado no registry, contrato, capability, Router, permissao e Dispatcher
+- [x] `listar_lembretes` registrado no mesmo caminho oficial
+- [x] `cancelar_lembrete` registrado como reversao natural da criacao
+- [x] scheduler Windows baseado em Task Scheduler + XML, sem `shell=True`
+- [x] comando agendado usa lista de argumentos e chama `python(w) -m tools.reminders --disparar <id>`
+- [x] metadata local persistente em `%APPDATA%\\Auren\\lembretes.json`
+- [x] criar = CONFIRM; listar = AUTO; cancelar = CONFIRM
+- [x] IDs curtos e estaveis e nomes das tarefas derivados exclusivamente do ID validado
+- [x] rollback de metadata quando a criacao do agendamento falha
+- [x] runner interno limitado a `--disparar <id>`
+- [x] testes com scheduler simulado cobrindo criacao, listagem, cancelamento, XML, argumentos, permissao, Router e Dispatcher
+- [x] nenhuma dependencia nova adicionada
+- [x] portao automatizado: `py -m pytest -q` verde no CI da PR #84 — 492 passed, 6 skipped
+- [ ] runner live Windows `python testes_auren_live.py --rapido` — pendente porque este ambiente nao possui Windows; o focused-tests-windows do CI passou
+
+### Decisoes da 10A
+
+- O Agendador de Tarefas do Windows e a camada persistente de agendamento; o Auren nao precisa permanecer aberto para executar o runner do horario.
+- A acao de criacao e persistente, portanto exige confirmacao humana.
+- A listagem e somente leitura e consulta tambem a existencia da tarefa no scheduler para eliminar metadata obsoleta.
+- O cancelamento remove a tarefa agendada e a metadata. Ele e a reversao natural da criacao e nao foi ligado ao `core/undo.py`, porque essa pilha nao esta presente na linha base desta tarefa.
+- O XML usa `InteractiveToken` e `LeastPrivilege`; a tarefa foi desenhada para a sessao interativa do usuario, sem elevar privilegios.
+- O ID do lembrete e a unica autoridade para derivar o nome da tarefa do scheduler. Metadata local nao pode escolher arbitrariamente outro nome para cancelamento.
+- O runner envia notificacao por comandos do Windows sem shell e possui fallbacks locais; depois de notificar com sucesso, remove a ocorrencia unica e sua metadata.
+
+
+## Tarefa 10B — Pesquisa web em modos
+
+- [x] `pesquisar_web(consulta, modo)` registrado no Registry, Contrato, Capability, Router, Dispatcher e PermissionManager
+- [x] modos `news`, `research`, `price` e `compare`
+- [x] modo inferido pelo IntentResolver quando o TaskSpec nao informa o campo `modo`; pesquisa generica usa `research`
+- [x] usa o web search hospedado do Responses API do provider, sem criar executor paralelo do Browser
+- [x] Browser existente continua disponivel para tarefas interativas; o modelo recebe ambos quando a rota de pesquisa permitir escolha
+- [x] retorno estruturado com URL, titulo e trecho
+- [x] limite de ate 8 fontes, 600 caracteres por trecho e aproximadamente 5000 caracteres no conjunto
+- [x] todo retorno e marcado como `conteudo_nao_confiavel`
+- [x] resultados externos nao autorizam acoes automaticamente; prompt injection continua passando pela mesma guarda do PermissionManager
+- [x] nenhuma dependencia nova
+- [x] portao final automatizado: `py -m pytest -q` verde no CI da PR #84 (511 passed / 6 skipped)
+- [ ] `python testes_auren_live.py --rapido` apos a entrada em ambiente Windows real
+
+### Decisoes da 10B
+
+- A busca hospedada do provedor e usada como ferramenta de leitura; o Browser continua sendo a ferramenta para interacao com paginas.
+- A escolha entre `pesquisar_web` e Browser permanece com o modelo dentro do subconjunto seguro selecionado pelo Router.
+- `pesquisar_web` e AUTO porque somente consulta dados externos e nao altera o computador.
+- O resultado da web e explicitamente nao confiavel mesmo quando vem do provedor, pois titulo, trecho e pagina podem conter instrucoes maliciosas.
+- A ferramenta limita a quantidade e o tamanho das fontes antes de devolver o resultado ao modelo.
+- O modo `research` usa contexto de busca maior; os demais usam contexto medio para controlar custo/latencia.
+- O web search hospedado retorna as fontes consultadas via `include=["web_search_call.action.sources"]`.
+
+## Tarefa 10C — Abertura proativa
+
+- [x] resumo curto da sessão anterior usando os turnos persistidos da Tarefa 5
+- [x] resumo consumido atomicamente na abertura, evitando repetição
+- [x] resumo sem nova chamada ao modelo
+- [x] monitoramento de tópicos desligado por padrão
+- [x] tópicos persistidos separadamente da ativação global
+- [x] ativação/desativação persistente
+- [x] trava persistente de no máximo uma checagem por dia
+- [x] controles passam pelo Registry, Contrato, Router, Dispatcher e PermissionManager
+- [x] ativação e alteração de tópicos exigem CONFIRM; consulta de estado é AUTO
+- [x] nenhum caminho paralelo de execução foi criado
+- [x] testes de continuidade, consumo único, estado padrão, trava diária e tópicos adicionados
+- [x] portão final automatizado: `py -m pytest -q` verde no CI da PR #84 (511 passed / 6 skipped)
+- [ ] runner live `python testes_auren_live.py --rapido` em Windows real
+
+### Decisões da 10C
+
+- Abertura usa somente dados persistidos do mesmo sistema de contexto da Tarefa 5; não depende de Mark-LV em runtime.
+- A ideia de Mark-LV reaproveitada foi apenas o padrão de resumo curto consumível e a existência de uma trava diária para monitoramento.
+- O resumo é determinístico e curto para não gastar uma chamada de modelo na inicialização.
+- O monitoramento permanece opt-in e não roda quando desligado.
+- O projeto atual não possui UI gráfica de configurações própria; os controles foram expostos como capacidades do Auren para que a interface atual e uma UI futura usem o mesmo caminho seguro.
+- Nenhum código de Mark-LV foi copiado.
+
+
 ## Segurança e base estrutural concluídas
 
 - [x] allowlist de leitura/inspeção de arquivos
@@ -55,6 +164,10 @@ Atualizado em: 2026-10-07
 - [x] validação visual Windows com geometria/coordenadas protegidas
 
 ## PRs mais recentes
+- **#84** — Fechamento da Tarefa 10 (10A + 10B + 10C) — open
+- **#83** — Tarefa 10B: pesquisa web em modos — closed
+- **#82** — Tarefa 10A: lembretes persistentes — closed
+- **#81** — Tarefa 8: carregador de plugins via Dispatcher — open
 
 - **#48** — extração de Windows UI Automation — merged
 - **#49** — extração de status do Windows — merged
@@ -84,9 +197,9 @@ Atualizado em: 2026-10-07
 
 ## Próximas etapas
 
-A tarefa ativa permanece **Browser Intelligence** até que a verificação por tipo de ação esteja suficientemente robusta e coberta por testes.
+A Tarefa 8 e as Tarefas 10A, 10B e 10C ja estao implementadas na PR #84, incluindo A01/A02/A03 e os ajustes de seguranca/CI. A suite pytest passou; falta executar os testes live de integração real no Windows antes de declarar prontidao operacional.
 
-Próxima etapa: executar o runner live em Windows e registrar o resultado real das tarefas compostas. O CI atual valida o código do runner, mas não executa a bateria L4/L5 com navegador e modelo reais.
+Enquanto a Tarefa 10 não passar o portão final, não abrir novas frentes nem ampliar escopo.
 
 Depois disso, revisar novamente a estabilização e só então abrir novas frentes.
 

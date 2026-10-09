@@ -1,15 +1,42 @@
 from __future__ import annotations
 
 import json
+from typing import Callable
 
 from core.utils import normalizar_nome
 from core.tool_contracts import validate_tool_arguments
 from core.vision import transform_visual_tool_arguments
 from tools import applications, browser, browser_context, file_intelligence, files
-from tools import windows
+from tools import windows, reminders
+from core import proactive_controls
+from tools import web_search
 from tools.memory import salvar_memoria_persistente, consultar_memoria_persistente, esquecer_memoria_persistente
 
 from core.tool_result import LEGACY_FAILURE_MARKERS, ToolResult, from_legacy
+
+# Plugins ativos entram neste mesmo mapa; nao existe executor paralelo de plugins.
+PLUGIN_TOOL_NAMES: set[str] = set()
+
+
+def registrar_plugin_handler(nome: str, handler: Callable) -> None:
+    """Publica um handler de plugin no mesmo mapa de execucao das tools nativas.
+    O plugin so pode ser acionado porque o Dispatcher ja possui contrato e permissao antes dele.
+    Custo: insercao O(1) no mapa e no conjunto de nomes."""
+    nome = str(nome)
+    if nome in TOOL_HANDLERS:
+        raise ValueError(f"handler ja registrado: '{nome}'")
+    TOOL_HANDLERS[nome] = handler
+    PLUGIN_TOOL_NAMES.add(nome)
+
+
+def remover_plugin_handler(nome: str) -> None:
+    """Retira um handler de plugin sem tocar nas ferramentas nativas.
+    O nome sai simultaneamente do mapa e da marcacao de plugin ativo.
+    Custo: O(1) amortizado nas duas estruturas."""
+    nome = str(nome)
+    if nome in PLUGIN_TOOL_NAMES:
+        TOOL_HANDLERS.pop(nome, None)
+        PLUGIN_TOOL_NAMES.discard(nome)
 
 # Compatibilidade com testes/codigo legado. A nova fonte de verdade e
 # core.tool_result; novas ferramentas devem retornar ToolResult diretamente.
@@ -144,6 +171,15 @@ TOOL_HANDLERS = {
     "salvar_memoria_persistente": _com_memoria(salvar_memoria_persistente, "chave", "valor", "categoria"),
     "consultar_memoria_persistente": _com_memoria(consultar_memoria_persistente, "consulta", "limite"),
     "esquecer_memoria_persistente": _com_memoria(esquecer_memoria_persistente, "chave"),
+    "criar_lembrete": _sem_memoria(reminders.criar_lembrete, "mensagem", "data", "hora"),
+    "listar_lembretes": _sem_memoria(reminders.listar_lembretes),
+    "cancelar_lembrete": _sem_memoria(reminders.cancelar_lembrete, "id"),
+    "pesquisar_web": _sem_memoria(web_search.pesquisar_web, "consulta", "modo"),
+    "configurar_monitoramento_proativo": _com_memoria(proactive_controls.ativar, "ativo"),
+    "adicionar_topico_proativo": _com_memoria(proactive_controls.adicionar, "topico"),
+    "remover_topico_proativo": _com_memoria(proactive_controls.remover, "topico"),
+    "status_monitoramento_proativo": _com_memoria(proactive_controls.status),
+
     "listar_janelas_windows": _sem_memoria(windows.listar_janelas_windows),
     "focar_janela_windows": _sem_memoria(windows.focar_janela_windows, "alvo"),
     "minimizar_janela_windows": _sem_memoria(windows.minimizar_janela_windows, "alvo"),
@@ -304,21 +340,37 @@ def executar_ferramenta(item, permission_manager, memory_store) -> ToolResult:
 
     resultado_estruturado = from_legacy(resultado, tool_name=nome)
 
-    # Conteudo retornado por pagina/arquivo e dado nao confiavel: ele pode
-    # conter texto escrito para induzir o agente a executar outra acao.
+    # Todo retorno de plugin e dado nao confiavel: o plugin pode integrar
+    # dados externos ou texto arbitrario, entao a mesma guarda de pagina/arquivo
+    # prepara a confirmacao para a proxima acao com efeito externo.
+    if resultado_estruturado.ok and nome in PLUGIN_TOOL_NAMES:
+        if not resultado_estruturado.conteudo_nao_confiavel:
+            resultado_estruturado = ToolResult(
+                ok=resultado_estruturado.ok,
+                message=resultado_estruturado.message,
+                data=resultado_estruturado.data,
+                error_code=resultado_estruturado.error_code,
+                tool_name=resultado_estruturado.tool_name,
+                conteudo_nao_confiavel=True,
+            )
+        permission_manager.registrar_fonte_nao_confiavel(nome)
+
+    # Leituras externas devem sempre armar a guarda, mesmo quando a propria
+    # ferramenta ja devolveu ToolResult marcado como nao confiavel.
+    # Inclui pesquisa web: seus snippets tambem podem conter prompt injection.
     if (
         resultado_estruturado.ok
-        and nome in {"ler_pagina", "ler_arquivo", "obter_contexto_navegador"}
-        and not resultado_estruturado.conteudo_nao_confiavel
+        and nome in {"ler_pagina", "ler_arquivo", "obter_contexto_navegador", "pesquisar_web"}
     ):
-        resultado_estruturado = ToolResult(
-            ok=resultado_estruturado.ok,
-            message=resultado_estruturado.message,
-            data=resultado_estruturado.data,
-            error_code=resultado_estruturado.error_code,
-            tool_name=resultado_estruturado.tool_name,
-            conteudo_nao_confiavel=True,
-        )
+        if not resultado_estruturado.conteudo_nao_confiavel:
+            resultado_estruturado = ToolResult(
+                ok=resultado_estruturado.ok,
+                message=resultado_estruturado.message,
+                data=resultado_estruturado.data,
+                error_code=resultado_estruturado.error_code,
+                tool_name=resultado_estruturado.tool_name,
+                conteudo_nao_confiavel=True,
+            )
         permission_manager.registrar_fonte_nao_confiavel(nome)
 
     if vision_transform is not None:

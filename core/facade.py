@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from tools import applications, browser, browser_context, files, windows
+from tools import applications, browser, browser_context, files, reminders, windows
 
 
 def abrir_programa(programa): return applications.abrir_programa(programa)
@@ -69,3 +69,32 @@ _executar_ui_automation = windows._executar_ui_automation
 _pressionar_vk = windows._pressionar_vk
 _powershell_literal = applications._powershell_literal
 _WINDOW_TARGET_CACHE = windows._WINDOW_TARGET_CACHE
+
+
+def criar_lembrete(mensagem, data, hora):
+    """Expõe a criação de lembretes pela API pública de compatibilidade.
+    O wrapper encaminha para o mesmo executor usado pelo Dispatcher.
+    Custo: uma chamada direta à ferramenta de lembretes."""
+    return reminders.criar_lembrete(mensagem, data, hora)
+
+
+def listar_lembretes():
+    """Expõe a listagem de lembretes pela API pública de compatibilidade.
+    O wrapper encaminha para a ferramenta que consulta o scheduler e metadata local.
+    Custo: uma chamada direta à ferramenta de lembretes.""" 
+    return reminders.listar_lembretes()
+
+
+def cancelar_lembrete(id):
+    """Expõe o cancelamento de lembretes pela API pública de compatibilidade.
+    O wrapper encaminha para o mesmo cancelamento usado como reversao da criacao.
+    Custo: uma chamada direta à ferramenta de lembretes."""
+    return reminders.cancelar_lembrete(id)
+
+
+def pesquisar_web(consulta, modo):
+    """Expõe a pesquisa web pela API pública de compatibilidade.
+    O wrapper encaminha para o mesmo executor registrado no Dispatcher.
+    Custo: uma chamada ao provedor de web search."""
+    from tools.web_search import pesquisar_web as _pesquisar_web
+    return _pesquisar_web(consulta, modo)

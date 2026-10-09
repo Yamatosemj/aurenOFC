@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from config import (
     AUREN_VERSION as _CONFIG_AUREN_VERSION,
     MODEL as _CONFIG_MODEL,
@@ -10,10 +12,10 @@ from memory.store import PersistentMemoryStore
 
 # Mantemos esses literais no facade para ferramentas de compatibilidade que
 # descobrem a versao lendo o arquivo-fonte sem importar o modulo.
-AUREN_VERSION = 47
+AUREN_VERSION = 51
 MODEL = "gpt-5.6-luna"
 CACHE_KEY = f"auren-v{AUREN_VERSION}"
-ARCHITECTURE_NAME = "V47 ARI NATIVE VISUAL GEOMETRY"
+ARCHITECTURE_NAME = "V51 PROACTIVE CONTINUITY"
 if (AUREN_VERSION, MODEL, CACHE_KEY, ARCHITECTURE_NAME) != (_CONFIG_AUREN_VERSION, _CONFIG_MODEL, _CONFIG_CACHE_KEY, _CONFIG_ARCHITECTURE_NAME):
     raise RuntimeError("config.py e auren.py estao com versao/modelo incoerentes.")
 
@@ -22,8 +24,12 @@ from core import usage
 from core.capability_audio_runtime import try_execute as _try_experimental_audio
 from core.harness import AurenHarness
 from core.permission_manager import PermissionManager
+from core.plugin_loader import carregar_plugins as _carregar_plugins
+from core.plugin_loader import recarregar_plugins as _recarregar_plugins
 from core.response import criar_resposta, get_client, obter_metricas_roteamento
 from core.session import SessionContextManager
+from core.proactive import criar_resumo_sessao, preparar_abertura, salvar_fechamento, checar_topicos
+from types import SimpleNamespace
 from core.tools_registry import tools
 from skills.loader import SkillLibrary
 from tools import applications, browser, files, windows
@@ -45,6 +51,7 @@ from core.facade import (
     minimizar_janela_windows, maximizar_janela_windows, obter_geometria_janela_windows,
     mover_janela_windows, redimensionar_janela_windows, restaurar_janela_windows,
     fechar_janela_windows, obter_status_windows, listar_processos_windows,
+    criar_lembrete, listar_lembretes, cancelar_lembrete,
     encerrar_processo_windows, ler_area_transferencia_windows, definir_area_transferencia_windows,
     pressionar_tecla_windows, mover_mouse_windows, clicar_mouse_windows, obter_audio_windows,
     definir_volume_windows, definir_mudo_windows, controle_midia_windows,
@@ -60,6 +67,16 @@ from core.facade import (
     _WINDOW_TARGET_CACHE,
 )
 permission_manager = PermissionManager(max_actions=10)
+_plugin_registry = None
+
+
+def recarregar_plugins():
+    """Relê plugins e aplica liga/desliga sem reiniciar o processo do Auren.
+    O registry antigo e desmontado antes da nova descoberta e registro.
+    Custo: uma descoberta completa mais os imports dos plugins habilitados.""" 
+    global _plugin_registry
+    _plugin_registry = _recarregar_plugins()
+    return _plugin_registry
 memory_store = PersistentMemoryStore()
 client = None
 
@@ -114,8 +131,16 @@ def _client_lazy():
         client = get_client()
     return client
 
+def _garantir_plugins():
+    global _plugin_registry
+    if _plugin_registry is None:
+        _plugin_registry = _carregar_plugins()
+    return _plugin_registry
+
+
 def criar_harness(confirmation_channel=None) -> AurenHarness:
     """Unico ponto que monta o Harness. Todo canal (texto, voz, futuros) usa esta funcao."""
+    _garantir_plugins()
     task_permission_manager = permission_manager
 
     if confirmation_channel is not None:
@@ -163,9 +188,33 @@ def criar_harness(confirmation_channel=None) -> AurenHarness:
     globals()["harness"] = harness
     return harness
 
+def _pesquisar_proativo(consulta: str, modo: str):
+    """Executa a busca proativa pelo Dispatcher oficial do Auren.
+    A observação interna usa o mesmo contrato, permissão e handler da tool pública.
+    Custo: uma passagem pelo Dispatcher mais a chamada de web search."""
+    item = SimpleNamespace(
+        name="pesquisar_web",
+        arguments=json.dumps({"consulta": consulta, "modo": modo}, ensure_ascii=False),
+        call_id="proactive-search",
+    )
+    return _executar_ferramenta(item, permission_manager, memory_store)
+
 def iniciar_auren() -> None:
     print("Auren online.")
-    criar_harness().executar()
+    abertura = preparar_abertura(memory_store)
+    if abertura:
+        print("Auren:", abertura)
+    alertas = checar_topicos(memory_store, _pesquisar_proativo)
+    if alertas:
+        print("Auren:", " ".join(alertas))
+    harness = criar_harness()
+    chat_id = harness._garantir_sessao_chat()
+    try:
+        harness.executar()
+    finally:
+        resumo = criar_resumo_sessao(memory_store, chat_id, limite_turnos=8)
+        if resumo:
+            salvar_fechamento(memory_store, chat_id, resumo)
 
 if __name__ == "__main__":
     iniciar_auren()

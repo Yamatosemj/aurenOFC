@@ -64,6 +64,14 @@ class PermissionManager:
         "browser.scroll": PermissionLevel.AUTO,
         "browser.tabs.read": PermissionLevel.AUTO,
         "browser.tabs.control": PermissionLevel.AUTO,
+        "reminder.create": PermissionLevel.CONFIRM,
+        "reminder.read": PermissionLevel.AUTO,
+        "reminder.cancel": PermissionLevel.CONFIRM,
+        "web.search": PermissionLevel.AUTO,
+        "proactive.configure": PermissionLevel.CONFIRM,
+        "proactive.topic.add": PermissionLevel.CONFIRM,
+        "proactive.topic.remove": PermissionLevel.CONFIRM,
+        "proactive.status": PermissionLevel.AUTO,
     }
 
     # O orçamento de ações também é definido por capacidade. Capacidade de
@@ -93,6 +101,9 @@ class PermissionManager:
         "browser.scroll": "Rolar a pagina altera apenas a posicao local de visualizacao.",
         "browser.tabs.read": "Somente leitura da lista de abas.",
         "browser.tabs.control": "Abrir/trocar abas e reversivel; fechar aba exige CONFIRM para evitar perda de estado.",
+        "reminder.read": "Somente consulta lembretes futuros sem alterar o agendamento.",
+        "web.search": "Consulta fontes externas sem alterar o computador; todo resultado e tratado como nao confiavel.",
+        "proactive.status": "Somente consulta o estado do monitoramento proativo; nao altera configuracoes.",
     }
 
     REVERSIBLE_WINDOW_CONTROL_TOOLS = frozenset({
@@ -128,6 +139,8 @@ class PermissionManager:
         "windows.input",
         "windows.audio.control",
         "windows.ui.control",
+        "reminder.create",
+        "reminder.cancel",
     }
 
     # Ações cujo sucesso repetido com exatamente os mesmos argumentos pode
@@ -318,11 +331,15 @@ class PermissionManager:
 
     def conta_para_limite(self, nome_ferramenta: str) -> bool:
         """Indica se a capacidade da tool consome o orcamento de acoes."""
-        return self._capability(nome_ferramenta) in self.COUNTED_CAPABILITIES
+        return self._capability_conta(self._capability(nome_ferramenta))
+
+    @staticmethod
+    def _capability_conta(capacidade: str) -> bool:
+        return capacidade in PermissionManager.COUNTED_CAPABILITIES or capacidade.startswith("plugin.")
 
     def registrar_resultado(self, sucesso: bool, nome_ferramenta: str | None = None, argumentos: dict[str, Any] | None = None) -> None:
         """Registra o resultado da execucao e atualiza as travas anti-loop."""
-        if nome_ferramenta is not None and self._capability(nome_ferramenta) not in self.COUNTED_CAPABILITIES:
+        if nome_ferramenta is not None and not self._capability_conta(self._capability(nome_ferramenta)):
             return
 
         if nome_ferramenta is None and argumentos is None and self.last_authorized_action_signature:
@@ -384,6 +401,12 @@ class PermissionManager:
     def nivel(self, nome_ferramenta: str) -> PermissionLevel:
         """Retorna o nivel base resolvendo a tool pela sua capacidade."""
         capacidade = self._capability(nome_ferramenta)
+        if capacidade.startswith("plugin."):
+            from core.plugin_loader import plugin_aprovado
+            # A revogacao invalida o uso imediatamente, mesmo antes do reload
+            # que retirara o handler do registry. CONFIRM nao reautoriza codigo
+            # Python que perdeu sua aprovacao explicita.
+            return PermissionLevel.AUTO if plugin_aprovado(nome_ferramenta) else PermissionLevel.BLOCKED
         return self.policy.get(capacidade, PermissionLevel.BLOCKED)
 
     def capability(self, nome_ferramenta: str) -> str:
@@ -402,7 +425,7 @@ class PermissionManager:
         """Retorna (permitido, motivo) antes da execucao real."""
 
         capacidade = self._capability(nome_ferramenta)
-        conta_para_limite = capacidade in self.COUNTED_CAPABILITIES
+        conta_para_limite = self._capability_conta(capacidade)
 
         assinatura_atual = self._assinatura_acao(
             nome_ferramenta,
@@ -496,9 +519,20 @@ class PermissionManager:
         capacidade = self._capability(nome_ferramenta)
         nivel_base = self.nivel(nome_ferramenta)
 
+        # BLOQUEIO e absoluto. Uma leitura externa nunca deve transformar
+        # uma capacidade proibida em uma acao confirmavel pelo usuario.
+        if nivel_base == PermissionLevel.BLOCKED:
+            return (
+                PermissionLevel.BLOCKED,
+                (
+                    f"A ferramenta '{nome_ferramenta}' "
+                    "esta bloqueada pela politica de permissoes."
+                ),
+            )
+
         if (
             self._fonte_nao_confiavel_pendente is not None
-            and capacidade in self.COUNTED_CAPABILITIES
+            and self._capability_conta(capacidade)
         ):
             fonte = self._fonte_nao_confiavel_pendente
             return (
@@ -507,15 +541,6 @@ class PermissionManager:
                     "Esta acao foi solicitada apos a leitura de conteudo nao confiavel "
                     f"(fonte: {fonte}). Conteudo externo nunca e uma instrucao do usuario; "
                     "confirmacao explicita e obrigatoria antes de qualquer acao com efeito externo."
-                ),
-            )
-
-        if nivel_base == PermissionLevel.BLOCKED:
-            return (
-                PermissionLevel.BLOCKED,
-                (
-                    f"A ferramenta '{nome_ferramenta}' "
-                    "esta bloqueada pela politica de permissoes."
                 ),
             )
         if capacidade in {"file.read", "file.inspect"}:
@@ -757,6 +782,18 @@ class PermissionManager:
 
         if nome_ferramenta == "pressionar_tecla":
             return f"pressionar a tecla {argumentos.get('tecla', '')!r}"
+
+        if nome_ferramenta == "criar_lembrete":
+            mensagem = str(argumentos.get("mensagem", ""))
+            if len(mensagem) > 100:
+                mensagem = mensagem[:97] + "..."
+            return (
+                f"criar lembrete para {argumentos.get('data', '')} "
+                f"{argumentos.get('hora', '')}: {mensagem!r}"
+            )
+
+        if nome_ferramenta == "cancelar_lembrete":
+            return f"cancelar o lembrete {argumentos.get('id', '')!r}"
 
         if capacidade == "application.open":
             return f"abrir o programa {argumentos.get('programa', '')!r}"

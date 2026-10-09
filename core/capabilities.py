@@ -78,22 +78,41 @@ CAPABILITY_DEFINITIONS: tuple[Capability, ...] = (
         ),
     ),
     Capability(
-        id="pesquisar_web",
-        descricao="Executar uma pesquisa web direta, sem interpretar resultados complexos.",
+        id="monitoramento_proativo",
+        descricao="Configurar ou consultar monitoramento passivo de topicos, desligado por padrao e limitado a uma checagem diaria.",
         local=True,
         deterministica=True,
         multi_etapa=False,
         exige_raciocinio=False,
-        parametros_obrigatorios=("consulta",),
-        parametros_opcionais=("motor",),
+        parametros_obrigatorios=(),
+        parametros_opcionais=("ativo", "topico"),
+        politica_confirmacao="confirm",
+        resolver="proactive",
+        tools=("configurar_monitoramento_proativo", "adicionar_topico_proativo", "remover_topico_proativo", "status_monitoramento_proativo"),
+        prioridade=25,
+        padroes_objetivo=(r"\bmonitor(?:ar|amento|e)\b", r"\bproativ[oa]\b"),
+    ),
+
+    Capability(
+        id="pesquisar_web",
+        descricao="Pesquisar a web em modo news, research, price ou compare e devolver fontes externas limitadas.",
+        local=True,
+        deterministica=True,
+        multi_etapa=False,
+        exige_raciocinio=False,
+        parametros_obrigatorios=("consulta", "modo"),
+        parametros_opcionais=(),
         politica_confirmacao="never",
-        resolver="search_query",
-        tools=("navegar_navegador",),
+        resolver="web_search",
+        tools=("pesquisar_web", "navegar_navegador", "ler_pagina"),
         prioridade=20,
         padroes_objetivo=(
             r"\bpesquis(?:ar|e|a)\b",
             r"\bbusc(?:ar|e|a)\b",
             r"\bprocur(?:ar|e|a)\b",
+            r"\bnot[ií]cia(s)?\b",
+            r"\bpre[cç]o(s)?\b",
+            r"\bcompar(?:ar|e|a)\b.*\b(?:pre[cç]o|produto|op[cç][aã]o)\b",
         ),
     ),
     Capability(
@@ -366,6 +385,31 @@ CAPABILITY_DEFINITIONS: tuple[Capability, ...] = (
             r"\bguarde\b",
         ),
     ),
+    Capability(
+        id="gerenciar_lembretes",
+        descricao="Criar, listar e cancelar lembretes persistentes pelo Agendador de Tarefas do Windows.",
+        local=True,
+        deterministica=True,
+        multi_etapa=False,
+        exige_raciocinio=False,
+        parametros_obrigatorios=(),
+        parametros_opcionais=("mensagem", "data", "hora", "id"),
+        politica_confirmacao="core_policy",
+        resolver="reminders",
+        tools=(
+            "criar_lembrete",
+            "listar_lembretes",
+            "cancelar_lembrete",
+        ),
+        prioridade=65,
+        padroes_objetivo=(
+            r"\blembrete(s)?\b",
+            r"\blembr(?:ar|e|a|ou)\b.*\b(?:me|mim)\b",
+            r"\bme\s+lembre\b",
+            r"\b(?:avise|avisar|me avisa)\b.*\b(?:de|sobre|para)\b",
+        ),
+    ),
+
 )
 
 
@@ -386,4 +430,27 @@ class CapabilityRegistry:
         return tuple(item.id for item in self._definitions)
 
 
-CAPABILITY_REGISTRY = CapabilityRegistry()
+class _CapabilityRegistryDynamic(CapabilityRegistry):
+    """Extensao interna que permite plugins entrarem e sairem do registry."""
+
+    def registrar(self, capability: Capability) -> None:
+        """Adiciona uma capacidade de plugin ao catalogo em tempo de execucao.
+        O registry rejeita IDs duplicados antes de alterar seu estado interno.
+        Custo: insercao de um item no mapa e na tupla de definicoes."""
+        if capability.id in self._by_id:
+            raise ValueError(f"capacidade ja registrada: '{capability.id}'")
+        self._definitions = self._definitions + (capability,)
+        self._by_id[capability.id] = capability
+
+    def remover(self, capability_id: str) -> None:
+        """Remove somente uma capacidade dinamica pelo ID exato informado.
+        A operacao preserva todas as definicoes nativas do Auren.
+        Custo: O(n) para reconstruir a tupla de definicoes."""
+        capacidade = str(capability_id)
+        if capacidade not in self._by_id:
+            return
+        del self._by_id[capacidade]
+        self._definitions = tuple(item for item in self._definitions if item.id != capacidade)
+
+
+CAPABILITY_REGISTRY = _CapabilityRegistryDynamic()

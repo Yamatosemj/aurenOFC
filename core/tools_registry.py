@@ -919,6 +919,115 @@ tools = [
 
     {
         "type": "function",
+        "name": "criar_lembrete",
+        "description": "Cria um lembrete persistente no Agendador de Tarefas do Windows. O Auren deve pedir confirmacao antes de criar.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "mensagem": {
+                    "type": "string",
+                    "description": "Texto curto que sera exibido quando o lembrete disparar."
+                },
+                "data": {
+                    "type": "string",
+                    "description": "Data local no formato YYYY-MM-DD."
+                },
+                "hora": {
+                    "type": "string",
+                    "description": "Hora local no formato HH:MM, em 24 horas."
+                }
+            },
+            "required": ["mensagem", "data", "hora"],
+            "additionalProperties": False
+        },
+        "strict": True
+    },
+
+    {
+        "type": "function",
+        "name": "listar_lembretes",
+        "description": "Lista os lembretes futuros do Auren que continuam agendados no Windows.",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+            "additionalProperties": False
+        },
+        "strict": True
+    },
+
+    {
+        "type": "function",
+        "name": "cancelar_lembrete",
+        "description": "Cancela um lembrete futuro pelo ID exato retornado ao criar ou listar lembretes. A operacao exige confirmacao.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "ID exato do lembrete, por exemplo rem-a1b2c3d4e5."
+                }
+            },
+            "required": ["id"],
+            "additionalProperties": False
+        },
+        "strict": True
+    },
+
+    {
+        "type": "function",
+        "name": "configurar_monitoramento_proativo",
+        "description": "Liga ou desliga o monitoramento passivo de tópicos. Desligado por padrão.",
+        "parameters": {"type": "object", "properties": {"ativo": {"type": "boolean"}}, "required": ["ativo"], "additionalProperties": False},
+        "strict": True
+    },
+    {
+        "type": "function",
+        "name": "adicionar_topico_proativo",
+        "description": "Adiciona um tópico à lista de monitoramento passivo sem ativar o recurso.",
+        "parameters": {"type": "object", "properties": {"topico": {"type": "string"}}, "required": ["topico"], "additionalProperties": False},
+        "strict": True
+    },
+    {
+        "type": "function",
+        "name": "remover_topico_proativo",
+        "description": "Remove um tópico da lista de monitoramento passivo.",
+        "parameters": {"type": "object", "properties": {"topico": {"type": "string"}}, "required": ["topico"], "additionalProperties": False},
+        "strict": True
+    },
+    {
+        "type": "function",
+        "name": "status_monitoramento_proativo",
+        "description": "Mostra se o monitoramento está ativo, a última checagem e os tópicos configurados.",
+        "parameters": {"type": "object", "properties": {}, "required": [], "additionalProperties": False},
+        "strict": True
+    },
+
+    {
+        "type": "function",
+        "name": "pesquisar_web",
+        "description": "Pesquisa a web em modo news, research, price ou compare e devolve fontes externas como dados nao confiaveis. Para tarefas que exigem interacao com um site, o modelo pode preferir as ferramentas existentes do Browser.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "consulta": {
+                    "type": "string",
+                    "description": "Pergunta ou termos que devem ser pesquisados na web."
+                },
+                "modo": {
+                    "type": "string",
+                    "enum": ["news", "research", "price", "compare"],
+                    "description": "Tipo de pesquisa desejado."
+                }
+            },
+            "required": ["consulta", "modo"],
+            "additionalProperties": False
+        },
+        "strict": True
+    },
+
+    {
+        "type": "function",
         "name": "capturar_tela_windows",
         "description": (
             "Captura a tela inteira do Windows para que o Auren possa analisar visualmente o estado atual. "

@@ -1,0 +1,7 @@
+{
+  "_comentario": "Plugin nao aprovado nao sera importado; altere aprovado para true e recarregue os plugins para ativar",
+  "hora_atual": {
+    "habilitado": true,
+    "aprovado": false
+  }
+}
