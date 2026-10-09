@@ -4,7 +4,7 @@ from typing import Any
 import os
 
 from config import CACHE_KEY, MODEL
-from core.prompt import instrucoes
+from core.prompt import gerar_instrucoes
 from core import usage
 
 
@@ -48,7 +48,7 @@ class OpenAIProvider:
     ) -> Any:
         parametros = {
             "model": MODEL,
-            "instructions": instrucoes,
+            "instructions": gerar_instrucoes(),
             "tools": self._normalizar_tools(tools),
             "input": entrada,
             "parallel_tool_calls": False,

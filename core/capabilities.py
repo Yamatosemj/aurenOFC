@@ -386,4 +386,27 @@ class CapabilityRegistry:
         return tuple(item.id for item in self._definitions)
 
 
-CAPABILITY_REGISTRY = CapabilityRegistry()
+class _CapabilityRegistryDynamic(CapabilityRegistry):
+    """Extensao interna que permite plugins entrarem e sairem do registry."""
+
+    def registrar(self, capability: Capability) -> None:
+        """Adiciona uma capacidade de plugin ao catalogo em tempo de execucao.
+        O registry rejeita IDs duplicados antes de alterar seu estado interno.
+        Custo: insercao de um item no mapa e na tupla de definicoes."""
+        if capability.id in self._by_id:
+            raise ValueError(f"capacidade ja registrada: '{capability.id}'")
+        self._definitions = self._definitions + (capability,)
+        self._by_id[capability.id] = capability
+
+    def remover(self, capability_id: str) -> None:
+        """Remove somente uma capacidade dinamica pelo ID exato informado.
+        A operacao preserva todas as definicoes nativas do Auren.
+        Custo: O(n) para reconstruir a tupla de definicoes."""
+        capacidade = str(capability_id)
+        if capacidade not in self._by_id:
+            return
+        del self._by_id[capacidade]
+        self._definitions = tuple(item for item in self._definitions if item.id != capacidade)
+
+
+CAPABILITY_REGISTRY = _CapabilityRegistryDynamic()

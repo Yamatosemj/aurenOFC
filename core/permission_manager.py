@@ -318,11 +318,15 @@ class PermissionManager:
 
     def conta_para_limite(self, nome_ferramenta: str) -> bool:
         """Indica se a capacidade da tool consome o orcamento de acoes."""
-        return self._capability(nome_ferramenta) in self.COUNTED_CAPABILITIES
+        return self._capability_conta(self._capability(nome_ferramenta))
+
+    @staticmethod
+    def _capability_conta(capacidade: str) -> bool:
+        return capacidade in PermissionManager.COUNTED_CAPABILITIES or capacidade.startswith("plugin.")
 
     def registrar_resultado(self, sucesso: bool, nome_ferramenta: str | None = None, argumentos: dict[str, Any] | None = None) -> None:
         """Registra o resultado da execucao e atualiza as travas anti-loop."""
-        if nome_ferramenta is not None and self._capability(nome_ferramenta) not in self.COUNTED_CAPABILITIES:
+        if nome_ferramenta is not None and not self._capability_conta(self._capability(nome_ferramenta)):
             return
 
         if nome_ferramenta is None and argumentos is None and self.last_authorized_action_signature:
@@ -384,6 +388,9 @@ class PermissionManager:
     def nivel(self, nome_ferramenta: str) -> PermissionLevel:
         """Retorna o nivel base resolvendo a tool pela sua capacidade."""
         capacidade = self._capability(nome_ferramenta)
+        if capacidade.startswith("plugin."):
+            from core.plugin_loader import plugin_aprovado
+            return PermissionLevel.AUTO if plugin_aprovado(nome_ferramenta) else PermissionLevel.CONFIRM
         return self.policy.get(capacidade, PermissionLevel.BLOCKED)
 
     def capability(self, nome_ferramenta: str) -> str:
@@ -402,7 +409,7 @@ class PermissionManager:
         """Retorna (permitido, motivo) antes da execucao real."""
 
         capacidade = self._capability(nome_ferramenta)
-        conta_para_limite = capacidade in self.COUNTED_CAPABILITIES
+        conta_para_limite = self._capability_conta(capacidade)
 
         assinatura_atual = self._assinatura_acao(
             nome_ferramenta,
@@ -498,7 +505,7 @@ class PermissionManager:
 
         if (
             self._fonte_nao_confiavel_pendente is not None
-            and capacidade in self.COUNTED_CAPABILITIES
+            and self._capability_conta(capacidade)
         ):
             fonte = self._fonte_nao_confiavel_pendente
             return (

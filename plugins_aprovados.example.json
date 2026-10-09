@@ -1,0 +1,7 @@
+{
+  "_comentario": "hora_atual entra como CONFIRM ate aprovado; habilitado pode ser alterado para false",
+  "hora_atual": {
+    "habilitado": true,
+    "aprovado": false
+  }
+}

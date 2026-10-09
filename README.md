@@ -1,6 +1,6 @@
 # Auren
 
-Assistente desktop/voz para Windows, versão técnica **V47**, usando o modelo configurado em `config.py` (snapshot atual: `gpt-5.6-luna`).
+Assistente desktop/voz para Windows, versão técnica **V48**, usando o modelo configurado em `config.py` (snapshot atual: `gpt-5.6-luna`).
 
 > **Estado atual do projeto:** consulte [AUREN_STATE.md](AUREN_STATE.md) antes de iniciar ou continuar trabalho no Auren. O estado oficial registra a tarefa ativa, PRs em andamento, CI, próxima fase e backlog.
 
@@ -90,6 +90,20 @@ A capacidade de arquivos mantém `buscar_arquivo` como busca existente e adicion
 
 Origem e histórico são tratados como evidência: Zone.Identifier/URL só são reportados quando acessíveis; relação entre cópias é confirmada por SHA-256; trajetória completa permanece desconhecida. PDF pode ser identificado por assinatura, mas leitura de conteúdo ainda não está implementada. DOCX, XLSX e OCR continuam fora do escopo desta etapa.
 
+## Plugins de ferramentas (V48)
+
+Ferramentas locais podem ser adicionadas em `plugins/*.py` sem editar o runtime existente. Um plugin declara `TOOL`, `CAPABILITY`, `DEPENDENCIAS` e um handler que devolve `ToolResult`.
+
+A descoberta faz preflight estatico para plugins desativados, verifica dependencias com `importlib.util.find_spec` antes do import e rejeita nomes duplicados ou reservados pelas tools nativas. Falhas de um plugin isolado nao derrubam o boot.
+
+Todo plugin ativo e registrado simultaneamente no registry de tools, no registry de contratos, no registry de capacidades e no Dispatcher. A execucao continua sendo somente `Router -> Dispatcher -> Contrato -> Permissao -> Ferramenta -> ToolResult`.
+
+Por seguranca, plugin novo entra em `CONFIRM`. A aprovacao fica em `plugins_aprovados.json`, arquivo local ignorado pelo Git. Alterar `habilitado` e chamar `auren.recarregar_plugins()` liga/desliga sem reiniciar; alterar `aprovado` muda o nivel entre `CONFIRM` e `AUTO` sem reiniciar.
+
+O retorno de plugin e marcado como conteudo nao confiavel, assim como leituras de pagina/arquivo. Isso nunca concede permissao para outra acao.
+
+Use `plugins/_template.py` como modelo e `plugins/hora_atual.py` como exemplo completo.
+
 ## Arquitetura atual
 
 ```text
@@ -115,7 +129,7 @@ A captura de tela informa a área de trabalho virtual do Windows, incluindo orig
 
 ## Estado importante
 
-- **48 tools** no registry/contratos atuais
+- **48 tools nativas** no registry/contratos + plugins locais dinamicos
 - memória persistente em SQLite
 - browser e automação Windows integrados
 - visão pode observar a tela, executar clique ou arraste global do mouse com confirmação, manter a geometria da captura e da imagem entregue ao modelo e verificar o estado final em tarefas visuais compostas

@@ -6,7 +6,7 @@ from core.router import Router, get_router
 from core.tools_registry import tools as TOOL_REGISTRY
 from providers.openai_provider import OpenAIProvider
 from config import ARCHITECTURE_NAME, MODEL
-from core.prompt import instrucoes
+from core.prompt import gerar_instrucoes
 from agent.ari_native.response_cache import ResponseCache, build_response_cache_key
 
 
@@ -73,10 +73,10 @@ class AurenOrchestrator:
             entrada,
             provider=getattr(self.provider, "name", "openai"),
             model=MODEL,
-            system_prompt=instrucoes,
+            system_prompt=gerar_instrucoes(),
             personality=ARCHITECTURE_NAME,
             scenario=requested_brain or "auto",
-            history_instruction="Auren V46 safe response cache",
+            history_instruction="Auren V48 safe response cache",
             include_context=True,
         )
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from typing import Callable
 
 from core.utils import normalizar_nome
 from core.tool_contracts import validate_tool_arguments
@@ -10,6 +11,30 @@ from tools import windows
 from tools.memory import salvar_memoria_persistente, consultar_memoria_persistente, esquecer_memoria_persistente
 
 from core.tool_result import LEGACY_FAILURE_MARKERS, ToolResult, from_legacy
+
+# Plugins ativos entram neste mesmo mapa; nao existe executor paralelo de plugins.
+PLUGIN_TOOL_NAMES: set[str] = set()
+
+
+def registrar_plugin_handler(nome: str, handler: Callable) -> None:
+    """Publica um handler de plugin no mesmo mapa de execucao das tools nativas.
+    O plugin so pode ser acionado porque o Dispatcher ja possui contrato e permissao antes dele.
+    Custo: insercao O(1) no mapa e no conjunto de nomes."""
+    nome = str(nome)
+    if nome in TOOL_HANDLERS:
+        raise ValueError(f"handler ja registrado: '{nome}'")
+    TOOL_HANDLERS[nome] = handler
+    PLUGIN_TOOL_NAMES.add(nome)
+
+
+def remover_plugin_handler(nome: str) -> None:
+    """Retira um handler de plugin sem tocar nas ferramentas nativas.
+    O nome sai simultaneamente do mapa e da marcacao de plugin ativo.
+    Custo: O(1) amortizado nas duas estruturas."""
+    nome = str(nome)
+    if nome in PLUGIN_TOOL_NAMES:
+        TOOL_HANDLERS.pop(nome, None)
+        PLUGIN_TOOL_NAMES.discard(nome)
 
 # Compatibilidade com testes/codigo legado. A nova fonte de verdade e
 # core.tool_result; novas ferramentas devem retornar ToolResult diretamente.
@@ -303,6 +328,21 @@ def executar_ferramenta(item, permission_manager, memory_store) -> ToolResult:
         )
 
     resultado_estruturado = from_legacy(resultado, tool_name=nome)
+
+    # Todo retorno de plugin e dado nao confiavel: o plugin pode integrar
+    # dados externos ou texto arbitrario, entao a mesma guarda de pagina/arquivo
+    # prepara a confirmacao para a proxima acao com efeito externo.
+    if resultado_estruturado.ok and nome in PLUGIN_TOOL_NAMES:
+        if not resultado_estruturado.conteudo_nao_confiavel:
+            resultado_estruturado = ToolResult(
+                ok=resultado_estruturado.ok,
+                message=resultado_estruturado.message,
+                data=resultado_estruturado.data,
+                error_code=resultado_estruturado.error_code,
+                tool_name=resultado_estruturado.tool_name,
+                conteudo_nao_confiavel=True,
+            )
+        permission_manager.registrar_fonte_nao_confiavel(nome)
 
     # Conteudo retornado por pagina/arquivo e dado nao confiavel: ele pode
     # conter texto escrito para induzir o agente a executar outra acao.
