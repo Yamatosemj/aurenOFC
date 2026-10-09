@@ -87,4 +87,4 @@ Executar a bateria de voz no Windows real e medir exemplos curtos, comandos natu
 - A fila compartilhada é esvaziada com `get_nowait()` em loop antes do prompt. Não há limpeza após o TTS, para preservar uma resposta iniciada durante o prompt.
 - Só um item do formato `("audio", CapturedAudio)` é enviado ao ASR; erros de captura, itens crus, payloads vazios ou de outro tipo negam.
 - `core/confirmation.py` (canal textual), timeout e Echo Guard permanecem inalterados.
-- Testes de pontuação, lista fechada, prioridade da negação, fila antiga, fala nova durante o prompt, payload inválido e comandos de saída estão adicionados; resultado de CI e validação local pendentes.
+- Testes de pontuação, lista fechada, prioridade da negação, fila antiga, fala nova durante o prompt, payload inválido e comandos de saída estão adicionados. CI validado no commit de código `304b026`: suíte completa Linux com 499 passed/6 skipped; testes focados Linux com 124 passed/6 skipped e Windows com 130 passed. O teste local Windows desta tarefa ainda não foi executado pelo usuário.
