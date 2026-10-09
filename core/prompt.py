@@ -114,7 +114,7 @@ def _render_capacidades_dinamicas() -> str:
         if capacidade.id.startswith("plugin."):
             from core.plugin_loader import plugin_aprovado
             nome_tool = capacidade.tools[0] if capacidade.tools else capacidade.id.removeprefix("plugin.")
-            politica = "AUTO apos aprovacao local" if plugin_aprovado(nome_tool) else "CONFIRM ate aprovacao local"
+            politica = "AUTO apos aprovacao local" if plugin_aprovado(nome_tool) else "BLOCKED sem aprovacao local"
         linhas.append(
             f"- {capacidade.id}: {capacidade.descricao} | tools: {nomes} | permissao: {politica}"
         )
