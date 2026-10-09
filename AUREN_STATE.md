@@ -27,7 +27,7 @@ Atualizado em: 2026-10-09
 - `core/permission_manager.py` tinha precedencia incorreta: apos conteudo externo, uma capacidade `BLOCKED` contada podia virar `CONFIRM`.
 - `PermissionManager` agora aplica `BLOCKED` antes da guarda de origem externa; AUTO ainda sobe para CONFIRM apos leitura nao confiavel.
 - Testes para ambos os cenarios passaram na PR #104, assim como o teste A01 ajustado sem contornar a protecao de AppData no Windows.
-- Dependencias de plugins A02/A03 da PR #84 seguem fora da `main`; nao integrar pacote amplo sem revalidar conflitos e riscos.
+- A02 foi corrigido na branch da PR #81 por merge da PR #100 (`12b72d1`), com aprovacao obrigatoria antes do import. As PRs #81/#84 ainda nao foram incorporadas a `main` e seguem exigindo revisao de conflitos e integracao. A03 (pesquisa web) tambem permanece fora da `main`.
 
 ### CI de revisao de PRs (PR #104)
 
