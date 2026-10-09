@@ -14,5 +14,23 @@ def consultar_memoria_persistente(store: PersistentMemoryStore, consulta: str = 
     return json.dumps(store.consultar(consulta, limite), ensure_ascii=False, separators=(",", ":"))
 
 
+def listar_memoria(
+    store: PersistentMemoryStore,
+    chave: str = "",
+    categoria: str = "",
+    data: str = "",
+    limite: int = 100,
+) -> str:
+    """Lista memorias para o painel sem alterar o store persistente.
+    Os filtros vao diretamente para o SQLite e a resposta usa JSON no Dispatcher.
+    Custo O(n) no conjunto de memorias, limitado ao resultado solicitado.
+    """
+    return json.dumps(
+        store.listar_memorias(chave, categoria, data, limite),
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+
+
 def esquecer_memoria_persistente(store: PersistentMemoryStore, chave: str = "") -> str:
     return json.dumps(store.esquecer(chave), ensure_ascii=False, separators=(",", ":"))

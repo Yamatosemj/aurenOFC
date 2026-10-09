@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+import re
 import sqlite3
 import threading
 from datetime import datetime, timezone
@@ -10,6 +12,8 @@ from typing import Any
 class PersistentMemoryStore:
     """Memoria persistente local em SQLite, com bloqueio de credenciais."""
 
+    MAX_MEMORIAS = 5000
+    MAX_RESUMO_SESSAO_CHARS = 700
     BLOCKED_TERMS = {
         "senha", "password", "passcode", "token", "api key", "api_key",
         "apikey", "secret", "segredo", "chave privada", "private key",
@@ -38,6 +42,14 @@ class PersistentMemoryStore:
                     categoria TEXT NOT NULL DEFAULT 'geral',
                     criado_em TEXT NOT NULL,
                     atualizado_em TEXT NOT NULL
+                )"""
+            )
+            con.execute(
+                """CREATE TABLE IF NOT EXISTS resumos_sessao (
+                    id INTEGER PRIMARY KEY CHECK (id = 1),
+                    chat_id TEXT NOT NULL,
+                    resumo TEXT NOT NULL,
+                    criado_em TEXT NOT NULL
                 )"""
             )
             con.execute(
@@ -90,6 +102,21 @@ class PersistentMemoryStore:
 
         agora = self._agora()
         with self._lock, self._conexao() as con:
+            existente = con.execute(
+                "SELECT 1 FROM memorias WHERE chave = ? LIMIT 1",
+                (chave,),
+            ).fetchone()
+            if existente is None:
+                total = int(con.execute("SELECT COUNT(*) FROM memorias").fetchone()[0])
+                if total >= self.MAX_MEMORIAS:
+                    logging.getLogger("auren.memory").warning(
+                        "Limite de seguranca da memoria persistente atingido (%s); nova memoria rejeitada.",
+                        self.MAX_MEMORIAS,
+                    )
+                    return {
+                        "ok": False,
+                        "erro": f"Limite de seguranca da memoria atingido ({self.MAX_MEMORIAS} entradas).",
+                    }
             con.execute(
                 """INSERT INTO memorias (chave, valor, categoria, criado_em, atualizado_em)
                    VALUES (?, ?, ?, ?, ?)
@@ -98,9 +125,19 @@ class PersistentMemoryStore:
                 (chave, valor, categoria, agora, agora),
             )
             con.commit()
+            total_atual = int(con.execute("SELECT COUNT(*) FROM memorias").fetchone()[0])
+            if total_atual >= self.MAX_MEMORIAS:
+                logging.getLogger("auren.memory").warning(
+                    "Limite de seguranca da memoria persistente atingido (%s entradas).",
+                    self.MAX_MEMORIAS,
+                )
         return {"ok": True, "chave": chave, "categoria": categoria}
 
     def consultar(self, consulta: str = "", limite: int = 5) -> dict[str, Any]:
+        """Consulta por chave, valor ou categoria com ranking deterministico.
+        Correspondencia exata de chave recebe prioridade; valores continuam pesquisaveis por substring.
+        Custo O(n) sobre as memorias persistentes, limitado pelo teto de seguranca.
+        """
         consulta = str(consulta or "").strip()
         try:
             limite = max(1, min(50, int(limite)))
@@ -109,25 +146,36 @@ class PersistentMemoryStore:
 
         with self._lock, self._conexao() as con:
             rows = con.execute(
-                "SELECT chave, valor, categoria, criado_em, atualizado_em FROM memorias ORDER BY atualizado_em DESC"
+                "SELECT id, chave, valor, categoria, criado_em, atualizado_em FROM memorias "
+                "ORDER BY atualizado_em DESC, id DESC"
             ).fetchall()
 
         termos = [t.lower() for t in consulta.split() if t.strip()]
         resultados: list[tuple[int, sqlite3.Row]] = []
         for row in rows:
+            if self._contem_credencial(row["chave"], row["valor"], row["categoria"]):
+                continue
             if not termos:
                 score = 1
             else:
-                alvo = " ".join([row["chave"], row["valor"], row["categoria"]]).lower()
-                score = sum(1 for termo in termos if termo in alvo)
+                alvo_chave = row["chave"].lower()
+                alvo_valor = row["valor"].lower()
+                alvo_categoria = row["categoria"].lower()
+                score = 0
+                for termo in termos:
+                    if termo == alvo_chave:
+                        score += 100
+                    elif termo in alvo_chave:
+                        score += 50
+                    elif termo in alvo_valor:
+                        score += 10
+                    elif termo in alvo_categoria:
+                        score += 5
                 if score == 0:
                     continue
             resultados.append((score, row))
 
-        # Ordenacao estavel em duas passagens: primeiro as memorias mais novas,
-        # depois maior relevancia. Assim, empates de score permanecem do mais
-        # recente para o mais antigo.
-        resultados.sort(key=lambda item: item[1]["atualizado_em"], reverse=True)
+        resultados.sort(key=lambda item: (item[1]["atualizado_em"], item[1]["id"]), reverse=True)
         resultados.sort(key=lambda item: item[0], reverse=True)
         memorias = [
             {
@@ -140,6 +188,119 @@ class PersistentMemoryStore:
             for _, row in resultados[:limite]
         ]
         return {"ok": True, "consulta": consulta, "total": len(memorias), "memorias": memorias}
+
+    def listar_memorias(
+        self,
+        chave: str = "",
+        categoria: str = "",
+        data: str = "",
+        limite: int = 100,
+    ) -> dict[str, Any]:
+        """Lista memorias para leitura externa, painel e auditoria local.
+        Filtra por chave/categoria e por data, sem expor credenciais existentes.
+        Custo O(n) sobre as memorias persistentes, com resultado limitado pelo parametro.
+        """
+        chave = str(chave or "").strip().lower()
+        categoria = str(categoria or "").strip().lower()
+        data = str(data or "").strip()
+        try:
+            limite = max(1, min(200, int(limite)))
+        except (TypeError, ValueError):
+            limite = 100
+
+        if data and not re.fullmatch(r"\d{4}-\d{2}-\d{2}(?:T.*)?", data):
+            return {"ok": False, "erro": "Data invalida; use YYYY-MM-DD ou um prefixo ISO.", "memorias": []}
+
+        with self._lock, self._conexao() as con:
+            rows = con.execute(
+                "SELECT id, chave, valor, categoria, criado_em, atualizado_em "
+                "FROM memorias ORDER BY atualizado_em DESC, id DESC"
+            ).fetchall()
+
+        memorias = []
+        for row in rows:
+            if self._contem_credencial(row["chave"], row["valor"], row["categoria"]):
+                continue
+            if chave and chave not in row["chave"].lower():
+                continue
+            if categoria and categoria != row["categoria"].lower():
+                continue
+            if data and not (row["criado_em"].startswith(data) or row["atualizado_em"].startswith(data)):
+                continue
+            memorias.append(
+                {
+                    "chave": row["chave"],
+                    "valor": row["valor"],
+                    "categoria": row["categoria"],
+                    "data": row["atualizado_em"],
+                    "criado_em": row["criado_em"],
+                    "atualizado_em": row["atualizado_em"],
+                }
+            )
+            if len(memorias) >= limite:
+                break
+
+        return {
+            "ok": True,
+            "chave": chave,
+            "categoria": categoria,
+            "data_filtro": data,
+            "total": len(memorias),
+            "memorias": memorias,
+        }
+
+    def salvar_resumo_sessao(self, chat_id: str, resumo: str) -> dict[str, Any]:
+        """Guarda o unico resumo pendente da sessao encerrada.
+        Limita o tamanho com erro explicito e aplica o mesmo filtro de credenciais da memoria.
+        Custo O(1) de persistencia em SQLite.
+        """
+        chat_id = str(chat_id or "").strip()
+        resumo = " ".join(str(resumo or "").split())
+        if not chat_id or not resumo:
+            return {"ok": False, "erro": "Resumo de sessao invalido."}
+        if len(resumo) > self.MAX_RESUMO_SESSAO_CHARS:
+            logging.getLogger("auren.memory").warning(
+                "Resumo de sessao excede o limite de seguranca (%s); resumo rejeitado.",
+                self.MAX_RESUMO_SESSAO_CHARS,
+            )
+            return {"ok": False, "erro": f"Resumo de sessao excede o limite de {self.MAX_RESUMO_SESSAO_CHARS} caracteres."}
+        if self._contem_credencial(chat_id, resumo):
+            return {"ok": False, "erro": "Nao vou persistir credenciais ou segredos no resumo da sessao."}
+        agora = self._agora()
+        with self._lock, self._conexao() as con:
+            con.execute(
+                """INSERT INTO resumos_sessao (id, chat_id, resumo, criado_em)
+                   VALUES (1, ?, ?, ?)
+                   ON CONFLICT(id) DO UPDATE SET
+                     chat_id=excluded.chat_id, resumo=excluded.resumo, criado_em=excluded.criado_em""",
+                (chat_id, resumo, agora),
+            )
+            con.commit()
+        return {"ok": True, "chat_id": chat_id, "resumo": resumo}
+
+    def consumir_resumo_sessao(self) -> dict[str, Any]:
+        """Consome o resumo pendente exatamente uma vez.
+        A leitura e remocao ocorrem dentro do mesmo lock e da mesma transacao SQLite.
+        Custo O(1) para o unico registro pendente.
+        """
+        with self._lock, self._conexao() as con:
+            row = con.execute(
+                "SELECT chat_id, resumo, criado_em FROM resumos_sessao WHERE id = 1"
+            ).fetchone()
+            if row is None:
+                return {"ok": True, "resumo": ""}
+            if self._contem_credencial(row["chat_id"], row["resumo"]):
+                con.execute("DELETE FROM resumos_sessao WHERE id = 1")
+                con.commit()
+                return {"ok": False, "resumo": "", "erro": "Resumo pendente descartado pelo filtro de credenciais."}
+            con.execute("DELETE FROM resumos_sessao WHERE id = 1")
+            con.commit()
+            return {
+                "ok": True,
+                "chat_id": row["chat_id"],
+                "resumo": row["resumo"],
+                "criado_em": row["criado_em"],
+            }
 
     def registrar_conversa(self, chat_id: str, papel: str, conteudo: str) -> dict[str, Any]:
         chat_id = str(chat_id or "").strip()

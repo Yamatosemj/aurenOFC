@@ -110,6 +110,7 @@ TOOL_GROUPS = {
     "memory": {
         "salvar_memoria_persistente",
         "consultar_memoria_persistente",
+        "listar_memoria",
         "esquecer_memoria_persistente",
     },
 }
@@ -219,6 +220,7 @@ DOMAIN_PATTERNS: dict[str, tuple[str, ...]] = {
         r"\bdocumento\b",
     ),
     "memory": (
+        r"\b(?:listar|liste|mostre|mostrar)\b.*\bmem[oó]ria\b",
         r"\bmem[oó]ria\b.*\b(lembr|salv|esquec|apag)",
         r"\bguarde\b.*\bmem[oó]ria\b",
         r"\blembre(?:-me)?\b.*\bdisso\b",

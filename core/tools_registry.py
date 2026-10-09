@@ -144,6 +144,24 @@ tools = [
 
     {
         "type": "function",
+        "name": "listar_memoria",
+        "description": "Lista as memorias persistentes para alimentar um painel, com filtros opcionais por chave, categoria e data. Nunca altera a memoria.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "chave": {"type": "string", "description": "Filtro parcial pela chave da memoria."},
+                "categoria": {"type": "string", "description": "Filtro exato pela categoria."},
+                "data": {"type": "string", "description": "Filtro por data ISO, normalmente YYYY-MM-DD."},
+                "limite": {"type": "integer", "minimum": 1, "maximum": 200, "description": "Quantidade maxima de memorias retornadas."}
+            },
+            "required": ["chave", "categoria", "data", "limite"],
+            "additionalProperties": False
+        },
+        "strict": True
+    },
+
+    {
+        "type": "function",
         "name": "listar_janelas_windows",
         "description": "Lista as janelas visiveis do Windows e identifica a ativa.",
         "parameters": {
