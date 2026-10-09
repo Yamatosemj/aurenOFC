@@ -324,7 +324,7 @@ def test_ptt_pre_roll_keeps_exact_latest_samples(block_samples, as_list):
     )
     recorder._preparar_buffer(sample_rate)
     limit = recorder._pre_roll_limit_samples
-    all_audio = np.arange(block_samples * 5, dtype=np.float32)
+    all_audio = np.arange(block_samples * (limit // block_samples + 3), dtype=np.float32)
     for offset in range(0, len(all_audio), block_samples):
         original = all_audio[offset : offset + block_samples]
         block = original.tolist() if as_list else original.reshape(-1, 1)
