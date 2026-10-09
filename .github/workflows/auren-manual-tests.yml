@@ -1,0 +1,76 @@
+name: Auren - testes manuais
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/auren-manual-tests.yml'
+permissions:
+  contents: read
+concurrency:
+  group: auren-manual-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  pytest:
+    name: pytest (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    env:
+      PYTHONUTF8: '1'
+      PYTHONUNBUFFERED: '1'
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.13'
+      - name: Instalar dependencias
+        run: |
+          New-Item -ItemType Directory -Force reports | Out-Null
+          python -m pip install -r requirements.txt pytest==9.1.1 numpy==2.5.3 2>&1 | Tee-Object -FilePath reports/install.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m pip freeze | Out-File reports/dependencies.txt -Encoding utf8
+      - name: Executar suite automatizada
+        run: |
+          python -m pytest tests -q -ra --tb=short --basetemp="$env:RUNNER_TEMP/auren-pytest-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT" --junitxml=reports/pytest.xml 2>&1 | Tee-Object -FilePath reports/pytest.log
+          exit $LASTEXITCODE
+      - name: Resumo dos resultados
+        if: always()
+        env:
+          TEST_JOB_STATUS: ${{ job.status }}
+          TEST_OS: ${{ matrix.os }}
+        run: |
+          @'
+          import os
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          lines = [f"### pytest — {os.environ['TEST_OS']}", f"Estado: **{os.environ['TEST_JOB_STATUS']}**", f"Commit: `{os.environ['GITHUB_SHA']}`"]
+          report = Path("reports/pytest.xml")
+          if report.exists():
+              suites = ET.parse(report).getroot().iter("testsuite")
+              totals = {key: 0 for key in ("tests", "failures", "errors", "skipped")}
+              for suite in suites:
+                  for key in totals:
+                      totals[key] += int(suite.get(key, 0))
+              lines.append(" | ".join(f"{key}: {value}" for key, value in totals.items()))
+          else:
+              lines.append("JUnit não foi gerado. Consulte o log de instalação e os passos do job.")
+          lines.append("Logs e relatório JUnit: artifact deste sistema operacional. A falha mantém o job vermelho.")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as output:
+              output.write("\n\n".join(lines) + "\n")
+          '@ | python -
+      - name: Publicar logs e relatorios
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: auren-pytest-${{ matrix.os }}-${{ github.run_attempt }}
+          path: reports/
+          if-no-files-found: warn
+          retention-days: 14
