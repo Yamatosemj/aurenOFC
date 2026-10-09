@@ -76,4 +76,6 @@ Executar a bateria de voz no Windows real e medir exemplos curtos, comandos natu
 - Locks sao liberados mesmo quando um bloco de escrita falha.
 - Simulacao anterior demonstrou write bloqueante para chunk completo de 4 segundos.
 - Testes novos cobrem cancelamento, fallback, ordem das amostras e erros.
-- Latencia audivel de ESC/PTT com dispositivo real no Windows: pendente.
+- Validacao funcional no Windows, relatada pelo usuario: ESC cortou imediatamente; PTT cortou imediatamente; reproducao normal sem falhas; nenhuma observacao adicional.
+- Nao houve cronometro ou medida instrumental em milissegundos; comportamento com outros dispositivos/drivers continua nao verificado.
+- CI do commit `99452aeb`: pytest completo Linux 462 passed/6 skipped; focado Linux 79 passed/6 skipped; focado Windows 85 passed.

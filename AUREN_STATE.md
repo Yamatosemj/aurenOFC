@@ -149,5 +149,6 @@ Fluxo oficial:
 - [x] Em cancelamento, usar `stream.abort()` se existir ou `stop()` como fallback; `close()` garantido.
 - [x] Preservar chamada unica de `create_stream`, callback `on_audio_start` unico, locks e `output_session`.
 - [x] Reproduzir isoladamente comportamento anterior: 64.000 samples escritos de uma vez, sem abort.
-- [ ] Aguardar resultados dos testes focados e da suite completa no CI.
-- [ ] Verificar latencia audivel de cancelamento ESC/PTT e buffers no Windows real; nenhum teste simulado confirma desempenho do driver.
+- [x] CI do commit `99452aeb`: suite completa Linux 462 passed/6 skipped; testes focados Linux 79 passed/6 skipped e Windows 85 passed.
+- [x] Teste funcional com saida de audio real no Windows relatado pelo usuario: ESC cortou imediatamente, PTT cortou imediatamente, reproducao sem cancelamento ocorreu normalmente; nenhuma observacao adicional.
+- [ ] Medicao instrumental de latencia em milissegundos e teste de drivers/buffers alternativos nao realizados.
