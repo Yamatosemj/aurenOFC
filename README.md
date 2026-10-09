@@ -113,7 +113,7 @@ O Router escolhe o conjunto de ferramentas da rodada. Toda execução de ferrame
 
 A entrada de voz continua passando pelo mesmo `Harness` usado pela entrada textual. A camada de voz não cria uma segunda rota de execução nem executa ferramentas diretamente.
 
-O PTT abre o stream de entrada antes de Ctrl+Shift+Space ser pressionado, mas mantém somente uma janela curta em memória enquanto aguarda. Quando Ctrl+Shift+Space é segurado, esse pré-roll acompanha o início da fala; ao soltar a tecla, um pós-roll curto protege o final das palavras.
+O PTT abre o stream de entrada antes de Ctrl direito + Shift direito ser pressionado, mas mantém somente uma janela curta em memória enquanto aguarda. Quando Ctrl direito + Shift direito é segurado, esse pré-roll acompanha o início da fala; ao soltar a tecla, um pós-roll curto protege o final das palavras.
 
 A segmentação usa WebRTC VAD em frames curtos. Quando o backend não está disponível ou falha, o Auren usa um detector de energia simples como fallback. Silêncio quase puro é descartado antes do ASR.
 
@@ -130,7 +130,7 @@ A captura de tela informa a área de trabalho virtual do Windows, incluindo orig
 
 ## Estado importante
 
-- **48 tools** no registry/contratos atuais
+- **49 tools** no registry/contratos atuais
 - memória persistente em SQLite
 - browser e automação Windows integrados
 - visão pode observar a tela, executar clique ou arraste global do mouse com confirmação, manter a geometria da captura e da imagem entregue ao modelo e verificar o estado final em tarefas visuais compostas
@@ -138,7 +138,7 @@ A captura de tela informa a área de trabalho virtual do Windows, incluindo orig
 - captura PTT mantém uma janela curta de pré-roll em RAM, usa pós-roll na soltura e segmenta a fala localmente com WebRTC VAD
 - ASR Parakeet PT-BR TAGARELA recebe uma forma mono normalizada e uma taxa estável de 16 kHz
 - falhas do microfone ou do STT são isoladas da sessão principal e geram nova tentativa
-- `experimental/wake_word.py` existe, mas não faz parte do caminho normal de voz atual (PTT/Ctrl+Shift+Space)
+- `experimental/wake_word.py` existe, mas não faz parte do caminho normal de voz atual (PTT/Ctrl direito + Shift direito)
 - componentes históricos e relatórios antigos não fazem parte deste pacote runtime
 
 ## Licença
