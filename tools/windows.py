@@ -72,6 +72,10 @@ from tools.windows_processes import _nome_executavel_por_pid_windows, encerrar_p
 from tools.windows_system import _status_windows, obter_status_windows
 
 from tools.windows_window import (
+    _enumerar_janelas_windows,
+    _encontrar_janela_windows_sem_cache,
+    _titulo_atual_da_janela_windows,
+    _WINDOW_TARGET_CACHE,
     _encontrar_janela_windows,
     _processo_da_janela_windows,
     listar_janelas_windows,
@@ -86,6 +90,7 @@ from tools.windows_window import (
 )
 
 from tools.windows_uia import (
+    _ui_automation_hwnd_int,
     _executar_ui_automation,
     _ui_automation_janela,
     clicar_elemento_windows,

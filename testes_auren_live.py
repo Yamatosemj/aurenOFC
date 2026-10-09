@@ -1984,10 +1984,14 @@ def main() -> int:
     if not compatible:
         print("\nTeste interrompido antes dos testes funcionais para evitar falsos FAILs.")
     else:
-        if layer_enabled("L1") or layer_enabled("L2"):
-            run_smoke_tests()
-        if layer_enabled("L4") or layer_enabled("L5"):
-            run_model_suite()
+        try:
+            if layer_enabled("L1") or layer_enabled("L2"):
+                run_smoke_tests()
+            if layer_enabled("L4") or layer_enabled("L5"):
+                run_model_suite()
+        except Exception as exc:
+            # Startup/setup exceptions must still produce the result artifact.
+            record("Camadas funcionais interrompidas", False, type(exc).__name__)
 
     passed = sum(1 for r in RESULTS if r.ok)
     failed = sum(1 for r in RESULTS if not r.ok)

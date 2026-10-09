@@ -24,3 +24,17 @@ def test_live_discovery_rejects_bridge_without_password_protection(tmp_path, mon
     monkeypatch.setattr(live, "RESULTS", [])
     assert live.run_discovery_tests() is False
     assert any(result.name == "UI Automation bridge" and not result.ok for result in live.RESULTS)
+
+
+def test_functional_startup_failure_still_writes_result(tmp_path, monkeypatch):
+    live = importlib.import_module("testes_auren_live")
+    monkeypatch.setattr(live, "ROOT", tmp_path)
+    monkeypatch.setattr(live, "RESULTS", [])
+    monkeypatch.setattr(live, "ACTIVE_LAYERS", {"L0", "L1"})
+    monkeypatch.setattr(live, "run_discovery_tests", lambda: True)
+    def fail():
+        raise RuntimeError("simulated setup failure")
+    monkeypatch.setattr(live, "run_smoke_tests", fail)
+    assert live.main() == 1
+    report = tmp_path / "logs/testes/RESULTADO_TESTE_AUREN.txt"
+    assert "Camadas funcionais interrompidas" in report.read_text(encoding="utf-8")
