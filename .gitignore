@@ -29,3 +29,6 @@ data/voice/
 RELATORIOS/
 # Arquivos empacotados/artefatos locais
 *.zip
+
+# Relatorios remotos locais
+reports/

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+import os
 
 from config import CACHE_KEY, MODEL
 from core.prompt import instrucoes
@@ -22,7 +23,10 @@ class OpenAIProvider:
     def get_client(self):
         if self._client is None:
             from openai import OpenAI
-            self._client = OpenAI()
+            # Live tests must not multiply requests or wait the SDK's default
+            # ten minutes. Production configuration remains unchanged.
+            options = {"timeout": 45.0, "max_retries": 0} if os.getenv("AUREN_TEST_MODE") == "1" else {}
+            self._client = OpenAI(**options)
         return self._client
 
     @staticmethod

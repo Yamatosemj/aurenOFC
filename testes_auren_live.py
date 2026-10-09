@@ -339,7 +339,7 @@ def load_auren_module():
     # O smoke test nao precisa da API. Substituimos apenas a classe OpenAI
     # durante o import para evitar custo e dependencia da chave da API.
     fake_openai = types.ModuleType("openai")
-    fake_openai.OpenAI = lambda: object()
+    fake_openai.OpenAI = lambda **_kwargs: object()
     sys.modules["openai"] = fake_openai
 
     if str(ROOT) not in sys.path:
@@ -1468,21 +1468,17 @@ def _run_model_suite_layer(suite_layer: str) -> None:
     try:
         env = os.environ.copy()
         env["AUREN_TEST_MODE"] = "1"
-        with commands_file.open("r", encoding="utf-8") as comandos_entrada:
-            proc = subprocess.run(
-                [sys.executable, "-u", str(ROOT / "auren.py")],
-                cwd=ROOT,
-                stdin=comandos_entrada,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                timeout=240,
-                env=env,
-            )
-        output = proc.stdout
-        record("Execucao integrada terminou", proc.returncode == 0, f"codigo={proc.returncode}")
+        from remote_tests.windows_watchdog import supervise
+        integrated_log = ROOT / "reports" / f"integrated-{suite_layer}.log"
+        status = supervise(
+            [sys.executable, "-u", str(ROOT / "auren.py")],
+            cwd=ROOT, stdin_path=commands_file, log_path=integrated_log,
+            wall_seconds=240, idle_seconds=90,
+            stop_file=Path(os.environ["USERPROFILE"]) / "auren-remote" / "STOP-LIVE",
+        )
+        output = integrated_log.read_text(encoding="utf-8", errors="replace")
+        record("Execucao integrada terminou", status["exit_code"] == 0,
+               f"codigo={status['exit_code']}; watchdog={status['reason']}")
         # A janela dedicada e finalizada no bloco finally abaixo.
 
         # O Auren atual escreve cada conversa em logs/chats/<chat_id>/chat/chat.log.

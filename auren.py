@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 from config import (
     AUREN_VERSION as _CONFIG_AUREN_VERSION,
     MODEL as _CONFIG_MODEL,
@@ -159,6 +161,9 @@ def criar_harness(confirmation_channel=None) -> AurenHarness:
         fechar=fechar_navegador,
         obter_metricas_roteamento=obter_metricas_roteamento,
         context=session_context,
+        # Below DEFAULT_MAX_MODEL_ROUNDS this is a hard ceiling, including
+        # adaptive plans. Existing action/failure/repetition guards still apply.
+        max_model_rounds=8 if os.getenv("AUREN_TEST_MODE") == "1" else AurenHarness.DEFAULT_MAX_MODEL_ROUNDS,
     )
     globals()["harness"] = harness
     return harness

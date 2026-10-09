@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import builtins
+import os
 from dataclasses import dataclass
 from typing import Callable, Protocol
 
@@ -39,6 +40,12 @@ class TextConfirmationChannel:
     def confirmar(self, request: ConfirmationRequest) -> bool:
         output = self._output_fn or print
         input_fn = self._input_fn or builtins.input
+
+        # Never consume the next scripted test command as a confirmation or
+        # sit indefinitely on interactive input. Sensitive actions fail closed.
+        if os.getenv("AUREN_TEST_MODE") == "1":
+            output("[PERMISSAO] Confirmacao interativa indisponivel no teste; acao negada.")
+            return False
 
         output("\n[PERMISSAO] Auren quer executar uma acao que exige confirmacao.")
         output(f"Acao: {request.action}")
