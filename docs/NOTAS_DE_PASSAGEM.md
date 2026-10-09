@@ -97,3 +97,5 @@ Executar a bateria de voz no Windows real e medir exemplos curtos, comandos natu
 - O caminho existente em `voice/input.py` já descarta `None` e avisa o usuário, de forma que não foi alterado. `voice/main.py`, `voice/stt.py`, `voice/tts.py` e `voice/confirmation.py` seguem sem mudanças nesta tarefa.
 - O detector de energia mantém os mesmos parâmetros: percentil 20 para piso de ruído, energia de quadro ≥2× o piso (ou mínimo `silence_rms`) e pico ≥0,35× `silence_peak`. São critérios heurísticos para preservar fala baixa; não distinguem com garantia todos os tipos de ruído variável.
 - Novas regressões com ruído controlado, WebRTC falso/erro, tom modulado e fala baixa. Ajustes finos dependem de validação com microfone real no Windows.
+
+- CI da Tarefa 5: suíte completa Linux **510 passed/6 skipped**, conjunto focado Linux **135 passed/6 skipped**, conjunto focado Windows **141 passed**. Testes locais do usuário e calibração com microfone real permanecem pendentes.
