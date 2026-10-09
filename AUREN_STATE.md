@@ -10,9 +10,9 @@ Atualizado em: 2026-10-09
 
 - **Versão estável:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** `fix/windows-clipboard-user32-live-20261009` (correcao isolada de um erro na bateria real; PR e testes pendentes)
-- **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #106 (`d7b55026404a7c0331b48a36ee8d3346b586a95a`)
-- **CI:** PRs #105 e #106 com suite completa Linux e testes focados Linux/Windows verdes; validar separadamente os workflows de push e a bateria live no PC
+- **Branch/PR ativa:** nenhuma correção desta rodada em aberto; a PR #107 foi integrada
+- **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #107 (`7b91aa7896223bdfc2ea61bf8b846e8cdb5dbf96`)
+- **CI:** PR #107: suite completa Linux 497 passed/15 skipped, testes focados Linux 129 passed/6 skipped e Windows 135 passed; validar a leitura real do clipboard no PC
 - **Fase atual:** Browser Intelligence
 
 ### Primeira correcao da bateria Windows real — clipboard
@@ -20,7 +20,7 @@ Atualizado em: 2026-10-09
 - Relatorio real da bateria ALL: [execucao #37886243164](https://github.com/Yamatosemj/aurenOFC/actions/runs/37886243164), commit `394a8cd8`. O watchdog terminou sem travar (`completed`), mas a suite terminou com exit code 1; houve PASS em varias operacoes Windows e FAIL em clipboard, interacoes integradas e outras expectativas.
 - Falha reproduzivel de clipboard: leitura retornou `name '_user32' is not defined`. Causa: `tools/windows_clipboard.py` referenciava helper ausente; implementacao revisada usa `ctypes.windll.user32` diretamente na inicializacao da API, com assinaturas Win64 preservadas.
 - Regressao em `tests/test_windows_clipboard.py` simula as DLLs sem tocar a area de transferencia real e roda no CI focado Linux/Windows.
-- Esta etapa trata somente a inicializacao da API do clipboard. Ela nao resolve as outras falhas da bateria nem constitui validacao de leitura/escrita em Windows real; repetir teste real no SHA aprovado antes de declarar este item fechado.
+- A PR #107 foi incorporada na main e passou nos testes citados; esta etapa trata somente a inicializacao da API do clipboard. Ainda nao ha repeticao comprovada de leitura/escrita em Windows real no novo SHA. As demais falhas da bateria ficam para tarefas isoladas posteriores.
 
 ### Seguranca A01 — incorporada na main (PR #99)
 
