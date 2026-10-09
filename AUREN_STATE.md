@@ -4,7 +4,7 @@
 > Antes de iniciar uma nova tarefa, compare este arquivo com a branch/PR, o head da main e o CI do GitHub.
 > Histórico, memórias da conversa e documentos arquivados não substituem este estado.
 
-Atualizado em: 2026-10-08
+Atualizado em: 2026-10-09
 
 ## Estado atual
 
@@ -12,8 +12,8 @@ Atualizado em: 2026-10-08
 - **Versão em validação:** V51
 - **Modelo padrão:** `gpt-5.6-luna`
 - **Branch/PR ativa:** `feat/tarefa-10c-proactive` / PR #84
-- **Head da main:** `0a8304e1b097d458511f017ca1f0d9da19d86726`
-- **CI da PR #84:** pytest completo, focused Linux e focused Windows verdes após correções; auditoria final em andamento
+- **Head da main:** `db35ca8426845ac94b0198bf7ddea1864f7d638d`
+- **CI da PR #84:** pytest completo com 511 passed / 6 skipped; focused Linux e Windows verdes na revisão de correção de segurança (aguardar o último run após atualização documental)
 - **Fase atual:** Fechamento da Tarefa 10 — 10A + 10B + 10C
 
 ### O que já está concluído nesta fase
@@ -40,11 +40,21 @@ Atualizado em: 2026-10-08
 - rolagem: posição de rolagem já é verificada deterministicamente; confirmar automaticamente o conteúdo esperado continua como etapa posterior
 - qualquer verificação continua tratando conteúdo da página como dado não confiável, nunca como instrução
 
+## Correcoes integradas na PR #84 (09/10/2026)
+
+- **A01 + A03:** `tools/dispatcher.py` ativa a confirmacao extra apos leituras bem-sucedidas de paginas, arquivos, contexto do browser e `pesquisar_web`, mesmo quando o resultado ja vem marcado como nao confiavel. Testes de regressao verificam bloqueio de acao normalmente AUTO.
+- **A02:** `core/plugin_loader.py` agora exige `habilitado: true` e `aprovado: true` ANTES de importar qualquer plugin; entradas ausentes/inválidas nao importam. `PermissionManager` bloqueia imediatamente uso de plugin cuja aprovacao foi revogada, mesmo antes de reload. A correcao da PR #100 foi portada e ampliada aqui.
+- **Precedencia de seguranca:** `BLOCKED` vem antes de qualquer elevacao de `AUTO` para `CONFIRM` devido a fonte nao confiavel.
+- **Falha do CI:** `tools/windows.py` volta a exportar os helpers internos necessarios ao `core/facade.py`; elimina o `AttributeError` que quebrava `test_facade_version_matches_config`.
+- **Regressoes:** pytest completo verde com **511 passed, 6 skipped** na revisao com as correcoes; testes focused Linux/Windows passaram nas revisoes anteriores. Os testes de integracao de voz, navegador e agendador no Windows do usuario continuam **nao executados** aqui.
+- **Dependencias:** PRs #81, #99 e #100 ainda permanecem abertas e nao foram automaticamente mescladas/fechadas. Estas correcoes ja estao incluidas diretamente na branch da PR #84; antes de qualquer outro merge, conferir integracao/deduplicacao com essas PRs.
+- A `main` permanece inalterada. Nao confundir CI pytest com teste operacional live no Windows.
+
 ## Tarefa 8 — Carregador de plugins que passa pelo Dispatcher
 
 - [x] carregador dedicado em `core/plugin_loader.py`
 - [x] `TOOL` + `CAPABILITY` + handler entram nos registries oficiais
-- [x] novo plugin parte de `CONFIRM`; aprovação fica em `plugins_aprovados.json`
+- [x] plugin so e importado com habilitacao e aprovacao booleanas explicitas; revogacao bloqueia uso imediato
 - [x] habilitar/desabilitar sem reiniciar via recarregamento
 - [x] dependências checadas com `find_spec` antes do import
 - [x] plugin desativado não é importado
@@ -99,7 +109,7 @@ A execução manual do runner Browser Intelligence em Windows continua pendente 
 - [x] todo retorno e marcado como `conteudo_nao_confiavel`
 - [x] resultados externos nao autorizam acoes automaticamente; prompt injection continua passando pela mesma guarda do PermissionManager
 - [x] nenhuma dependencia nova
-- [ ] portao final: `py -m pytest -q` verde no CI da PR #84
+- [x] portao final automatizado: `py -m pytest -q` verde no CI da PR #84 (511 passed / 6 skipped)
 - [ ] `python testes_auren_live.py --rapido` apos a entrada em ambiente Windows real
 
 ### Decisoes da 10B
@@ -125,7 +135,7 @@ A execução manual do runner Browser Intelligence em Windows continua pendente 
 - [x] ativação e alteração de tópicos exigem CONFIRM; consulta de estado é AUTO
 - [x] nenhum caminho paralelo de execução foi criado
 - [x] testes de continuidade, consumo único, estado padrão, trava diária e tópicos adicionados
-- [ ] portão final: `py -m pytest -q` verde no CI da PR #84
+- [x] portão final automatizado: `py -m pytest -q` verde no CI da PR #84 (511 passed / 6 skipped)
 - [ ] runner live `python testes_auren_live.py --rapido` em Windows real
 
 ### Decisões da 10C
@@ -187,7 +197,7 @@ A execução manual do runner Browser Intelligence em Windows continua pendente 
 
 ## Próximas etapas
 
-A Tarefa 8 passou o portão final. A Tarefa 10A, 10B e 10C já estão implementadas na PR #84; resta somente fechar o portão automatizado e validar o que for aplicável no ambiente Windows real.
+A Tarefa 8 e as Tarefas 10A, 10B e 10C ja estao implementadas na PR #84, incluindo A01/A02/A03 e os ajustes de seguranca/CI. A suite pytest passou; falta executar os testes live de integração real no Windows antes de declarar prontidao operacional.
 
 Enquanto a Tarefa 10 não passar o portão final, não abrir novas frentes nem ampliar escopo.
 
