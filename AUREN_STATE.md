@@ -17,6 +17,8 @@ Atualizado em: 2026-10-08
 - **Head da main observado na revisão anterior:** `71ebe7b77826d1673f9abe6926e40eb9fb63d0f2`
 - **Validação da Tarefa 3:** CI verde — suíte completa 462 passed/6 skipped; V48 focado 83 passed/6 skipped Linux e 89 passed Windows; Windows local `tests/test_voice.py`: 18 passed; teste físico no Realtek concluído a 16.000 Hz, com captura e ASR funcionando; 1 aviso de input overflow a observar
 - **Fase atual:** Voice/STT — segmentação: bloquear áudio sem fala antes do ASR
+- **PR da Tarefa 5:** #95 (`fix/tarefa-5-silence-gate`), aberta sem merge
+- **CI Tarefa 5:** suíte completa Linux 510 passed/6 skipped; focado Linux 135 passed/6 skipped; focado Windows 141 passed
 - **Validação da Tarefa 4 no CI (commit de código `304b026`):** suíte completa Linux 499 passed/6 skipped; focado Linux 124 passed/6 skipped; focado Windows 130 passed
 
 ### Tarefa 1 — Voice/STT V4
@@ -177,5 +179,6 @@ Fluxo oficial:
 - [x] falta de limites de fala (`bounds=None`) retorna `None`, nunca a captura inteira com `speech_detected=False`
 - [x] constantes nomeadas para percentil do piso de ruído (20), relação mínima entre energia e ruído (2×) e fração mínima de pico (0,35), mantendo os valores anteriores
 - [x] novos testes sintéticos para ruído RMS 0,001/0,003/0,01, fala baixa e tom modulado, WebRTC negativo/positivo e erro de WebRTC
-- [ ] validar no CI Linux e Windows; validar testes focados no Windows local
+- [x] validar no CI: suíte completa Linux 510 passed/6 skipped; testes focados Linux 135 passed/6 skipped; Windows 141 passed
+- [ ] validar testes focados no Windows local
 - [ ] ajuste fino de limiares somente com dados de microfone, ruído ambiente e fala natural em Windows real; não considerar testes sintéticos suficientes para calibração
