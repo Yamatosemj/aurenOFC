@@ -190,3 +190,123 @@ def test_voice_main_does_not_use_spoken_cancel_keywords():
     assert "_eh_cancelamento" not in source
     assert "cancela isso" not in source
     assert "esquece" not in source
+
+
+def test_tts_barge_in_aborts_long_chunk():
+    import numpy as np
+    cancel = Event()
+
+    class Stream:
+        def __init__(self):
+            self.writes = []
+            self.aborted = self.stopped = self.closed = 0
+        def start(self): pass
+        def write(self, audio):
+            self.writes.append(len(audio))
+            cancel.set()
+        def abort(self): self.aborted += 1
+        def stop(self): self.stopped += 1
+        def close(self): self.closed += 1
+
+    stream = Stream()
+    class SD:
+        def OutputStream(self, **kwargs): return stream
+    class Model:
+        def __init__(self): self.calls = 0
+        async def create_stream(self, *args, **kwargs):
+            self.calls += 1
+            yield np.ones(64_000, dtype=np.float32), 16_000
+
+    model = Model()
+    LocalKokoroTTS(model=model, sounddevice_module=SD()).falar("teste", cancel_event=cancel)
+    assert model.calls == 1
+    assert stream.writes == [800]
+    assert stream.aborted == 1 and stream.stopped == 0 and stream.closed == 1
+
+
+def test_tts_barge_in_without_abort_uses_stop():
+    import numpy as np
+    cancel = Event()
+
+    class Stream:
+        def __init__(self): self.writes = []; self.stops = self.closed = 0
+        def start(self): pass
+        def write(self, audio):
+            self.writes.append(len(audio))
+            cancel.set()
+        def stop(self): self.stops += 1
+        def close(self): self.closed += 1
+
+    stream = Stream()
+    class SD:
+        def OutputStream(self, **kwargs): return stream
+    class Model:
+        async def create_stream(self, *args, **kwargs):
+            yield np.ones(32_000, dtype=np.float32), 16_000
+
+    LocalKokoroTTS(model=Model(), sounddevice_module=SD()).falar("teste", cancel_event=cancel)
+    assert stream.writes == [800] and stream.stops == 1 and stream.closed == 1
+
+
+def test_tts_barge_in_keeps_audio_order_and_single_start():
+    import numpy as np
+    data = np.arange(2501, dtype=np.float32)
+
+    class Stream:
+        def __init__(self): self.parts = []; self.stops = self.closed = 0
+        def start(self): pass
+        def write(self, audio): self.parts.append(np.array(audio, copy=True))
+        def stop(self): self.stops += 1
+        def close(self): self.closed += 1
+
+    stream = Stream()
+    class SD:
+        def OutputStream(self, **kwargs): return stream
+    class Model:
+        def __init__(self): self.calls = 0
+        async def create_stream(self, *args, **kwargs):
+            self.calls += 1
+            yield data[:1200], 16_000
+            yield data[1200:], 16_000
+
+    model = Model()
+    starts = []
+    LocalKokoroTTS(model=model, sounddevice_module=SD()).falar(
+        "teste", on_audio_start=lambda: starts.append("start")
+    )
+    assert model.calls == 1 and starts == ["start"]
+    assert stream.stops == 1 and stream.closed == 1
+    assert all(0 < len(part) <= 800 for part in stream.parts)
+    np.testing.assert_array_equal(np.concatenate(stream.parts), data)
+
+
+def test_tts_barge_in_releases_locks_after_write_error():
+    import numpy as np
+    import pytest
+    from agent.ari_native.audio_manager import get_audio_output_lock
+
+    class Stream:
+        def __init__(self): self.writes = self.stops = self.closed = 0
+        def start(self): pass
+        def write(self, audio):
+            self.writes += 1
+            if self.writes == 2: raise OSError("falha simulada")
+        def stop(self): self.stops += 1
+        def close(self): self.closed += 1
+
+    stream = Stream()
+    class SD:
+        def OutputStream(self, **kwargs): return stream
+    class Model:
+        async def create_stream(self, *args, **kwargs):
+            yield np.ones(3200, dtype=np.float32), 16_000
+
+    tts = LocalKokoroTTS(model=Model(), sounddevice_module=SD())
+    with pytest.raises(RuntimeError, match="falha simulada"):
+        tts.falar("teste")
+    assert stream.writes == 2 and stream.stops == 1 and stream.closed == 1
+    assert tts._lock.acquire(blocking=False)
+    tts._lock.release()
+    output_lock = get_audio_output_lock()
+    assert output_lock.acquire(blocking=False)
+    output_lock.release()

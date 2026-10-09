@@ -66,3 +66,14 @@ Executar a bateria de voz no Windows real e medir exemplos curtos, comandos natu
 - o literal padrão `gpt-5.6-luna` permanece reconhecível pelo leitor regex de `testes_auren_live.py`
 - a verificação de coerência de `AUREN_VERSION`, `CACHE_KEY` e `ARCHITECTURE_NAME` foi mantida
 - `tests/test_model_config.py` cobre os imports em subprocesso, a preservação do literal de compatibilidade e o restauro do módulo `config` após testes que alteram o ambiente
+
+
+## Tarefa 6 — barge-in Kokoro
+
+- Saida TTS usa blocos de aproximadamente 50 ms em cada chamada a write.
+- Checa cancelamento entre blocos e aborta o stream quando disponivel; sem abort, usa stop.
+- Reproducao normal mantem stop, close, callback unico e uma chamada ao modelo.
+- Locks sao liberados mesmo quando um bloco de escrita falha.
+- Simulacao anterior demonstrou write bloqueante para chunk completo de 4 segundos.
+- Testes novos cobrem cancelamento, fallback, ordem das amostras e erros.
+- Latencia audivel de ESC/PTT com dispositivo real no Windows: pendente.

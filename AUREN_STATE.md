@@ -141,3 +141,13 @@ Toda mudança relevante de arquitetura, comportamento, capacidade, versão ou pr
 Fluxo oficial:
 
 `AUREN_STATE.md → branch/PR → CI → implementação → testes → atualização do estado`
+
+
+### Tarefa 6 — interrupcao do TTS
+
+- [x] Dividir escrita de chunks Kokoro em blocos de aproximadamente 50 ms, verificando cancelamento antes de cada bloco.
+- [x] Em cancelamento, usar `stream.abort()` se existir ou `stop()` como fallback; `close()` garantido.
+- [x] Preservar chamada unica de `create_stream`, callback `on_audio_start` unico, locks e `output_session`.
+- [x] Reproduzir isoladamente comportamento anterior: 64.000 samples escritos de uma vez, sem abort.
+- [ ] Aguardar resultados dos testes focados e da suite completa no CI.
+- [ ] Verificar latencia audivel de cancelamento ESC/PTT e buffers no Windows real; nenhum teste simulado confirma desempenho do driver.
