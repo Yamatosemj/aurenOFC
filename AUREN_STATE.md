@@ -4,17 +4,26 @@
 > Antes de iniciar uma nova tarefa, compare este arquivo com a branch/PR, o head da main e o CI do GitHub.
 > Histórico, memórias da conversa e documentos arquivados não substituem este estado.
 
-Atualizado em: 2026-10-07
+Atualizado em: 2026-10-09
 
 ## Estado atual
 
 - **Versão estável:** V48
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** `tarefa-8-plugin-loader` / PR #81
-- **Head da main:** `0a8304e1b097d458511f017ca1f0d9da19d86726`
-- **Head da PR #81:** `4d177c5929bb21776bfbd675c8d354f7eae7fd0d`
+- **Branch/PR ativa:** `fix/a02-plugins-approval-before-import` / PR #100 (A02; base final: PR #81)
+- **Head da main:** `db35ca8426845ac94b0198bf7ddea1864f7d638d`
+- **Head da PR #81:** `20b52dbcf0cd4c2dea32a5f160ed188b3445f6e6`
 - **CI da implementação da tarefa 8:** em execução no PR #81; a implementação anterior tinha 438 testes passando
 - **Fase atual:** Plugin Infrastructure — Tarefa 8
+
+### Correcao de seguranca A02 — PR #100 (nao incorporada)
+
+- Origem: PR #81 e descendente PR #84 carregavam plugins com `habilitado: true` mesmo quando `aprovado: false`; um `import` pode executar codigo de topo antes de qualquer confirmacao de chamada.
+- Correcao proposta em `core/plugin_loader.py`: importar apenas plugins com habilitacao e aprovacao explicitamente booleanas `true`; demais plugins ficam fora dos registries e do Dispatcher.
+- Aprovar/revogar exige `auren.recarregar_plugins()` para aplicar entrada/saida do runtime; aprovar codigo Python nao equivale a isolar/sandboxar esse codigo.
+- Os testes de regressao cobrem ausencia/malformacao de aprovacao, tipos invalidos e recarga do registry. Os testes antigos de `CONFIRM` sem aprovacao foram atualizados para o novo limite de seguranca.
+- A PR #84 herda codigo anterior e precisara receber a correcao por atualizacao/rebase antes do merge. O A01 segue em PR #99 separada, sem inclusao nesta branch.
+- Validacao final em GitHub CI pendente nesta nota; nao declarar concluido na main sem merge.
 
 ### O que já está concluído nesta fase
 
