@@ -34,7 +34,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent
-TEST_SUITE_VERSION = 46
+TEST_SUITE_VERSION = 47
 TESTER_BUILD = 'V18-p0-3-bateria-fast-path-aware'
 MIN_REQUIRED_VERSION = 46
 REQUIRED_TOOLS = [
@@ -400,7 +400,9 @@ def run_discovery_tests() -> bool:
             "ConvertTo-Json",
             "FromBase64String",
         ]
-        source_text = (ROOT / "tools" / "windows.py").read_text(encoding="utf-8", errors="replace")
+        # The bridge moved out of the compatibility facade in V47. Validate
+        # its native implementation; do not waive the required safety tokens.
+        source_text = (ROOT / "tools" / "windows_uia.py").read_text(encoding="utf-8", errors="replace")
         bridge_ok = all(token in source_text for token in bridge_tokens)
         record("UI Automation bridge", bridge_ok, "componentes nativos e protecao IsPassword presentes" if bridge_ok else "Faltam componentes obrigatorios do bridge UIA")
     except Exception as exc:
@@ -485,7 +487,7 @@ def run_smoke_tests() -> None:
 
     try:
         source_text = (ROOT / "auren.py").read_text(encoding="utf-8", errors="replace")
-        windows_source_text = (ROOT / "tools" / "windows.py").read_text(encoding="utf-8", errors="replace")
+        windows_source_text = (ROOT / "tools" / "windows_uia.py").read_text(encoding="utf-8", errors="replace")
         uia_source_text = source_text + "\n" + windows_source_text
         pm = auren.PermissionManager(max_actions=10)
         pm.iniciar_tarefa()
@@ -1169,7 +1171,7 @@ def _testes_estaticos_v42() -> None:
     except Exception:
         pass
     metadata_ok = config_arquivo_versao == versao == TEST_SUITE_VERSION
-    record("Metadados V46 sincronizados", metadata_ok, f"AUREN_VERSION={versao}; config={config_arquivo_versao}; tester={TEST_SUITE_VERSION}")
+    record("Metadados do tester sincronizados", metadata_ok, f"AUREN_VERSION={versao}; config={config_arquivo_versao}; tester={TEST_SUITE_VERSION}")
     record("Loop principal isola excecao por tarefa", "TASK_EXCEPTION" in fonte_harness or "except Exception" in fonte_harness)
     record("Confirmacao de preenchimento mascara texto", all(t in fonte_pm for t in ("preencher_elemento_windows", '"texto"', '"conteudo"')))
     record("Clique por coordenada nao falha aberto", "Clique global por coordenada exige confirmacao" in fonte_pm)
