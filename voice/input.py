@@ -250,15 +250,19 @@ class PushToTalkRecorder:
 
             self._pre_roll.append(chunk)
             self._pre_roll_samples += chunk_samples
-            while (
-                self._pre_roll
-                and self._pre_roll_samples > self._pre_roll_limit_samples
-            ):
-                old = self._pre_roll.popleft()
-                try:
-                    self._pre_roll_samples -= int(getattr(old, "shape", [len(old)])[0])
-                except Exception:
-                    self._pre_roll_samples = 0
+            while self._pre_roll and self._pre_roll_samples > self._pre_roll_limit_samples:
+                excess = self._pre_roll_samples - self._pre_roll_limit_samples
+                oldest = self._pre_roll[0]
+                oldest_samples = len(oldest)
+                if oldest_samples <= excess:
+                    self._pre_roll.popleft()
+                    self._pre_roll_samples -= oldest_samples
+                else:
+                    # Preserve somente as amostras finais; funciona para arrays
+                    # (N, 1) e listas, sem copiar buffers no callback.
+                    self._pre_roll[0] = oldest[excess:]
+                    self._pre_roll_samples -= excess
+                    break
 
     def _preparar_buffer(self, sample_rate: int) -> None:
         with self._lock:
