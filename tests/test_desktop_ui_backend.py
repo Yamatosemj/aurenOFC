@@ -124,3 +124,17 @@ def test_gui_worker_does_not_duplicate_dispatcher():
     assert "harness.processar_mensagem(text)" in source
     assert "auren.criar_harness(confirmation_channel=channel)" in source
     assert "executar_ferramenta(" not in source
+
+def test_desktop_frontend_has_valid_python_syntax():
+    from pathlib import Path
+    ui_file = Path(__file__).parents[1] / "interface_auren.py"
+    compile(ui_file.read_text(encoding="utf-8"), str(ui_file), "exec")
+
+
+def test_timeout_confirmation_enqueues_close_dialog_event():
+    events: Queue[UiEvent] = Queue()
+    channel = GuiConfirmationChannel(events, lambda _choice: None, timeout=0.01)
+    assert channel.confirmar(_request()) is False
+    assert events.get_nowait().kind == "confirm"
+    assert events.get_nowait().kind == "notice"
+    assert events.get_nowait().kind == "confirm_done"
