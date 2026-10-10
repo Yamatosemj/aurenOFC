@@ -56,8 +56,8 @@ $newBlock = @'
 '@
 
 
-$oldBlock = $oldBlock.TrimEnd()
-$newBlock = $newBlock.TrimEnd()
+$oldBlock = $oldBlock.Replace("`r`n", "`n").TrimEnd()
+$newBlock = $newBlock.Replace("`r`n", "`n").TrimEnd()
 
 $normalized = $installed.Replace("`r`n", "`n")
 if (-not $normalized.Contains($oldBlock)) {
