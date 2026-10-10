@@ -1,6 +1,6 @@
 # Inventario tecnico e plano de documentacao do Auren
 
-> **Inventario das etapas 0 a 3.** Este documento e um mapa para orientar auditorias **uma por vez**; a presenca de um arquivo no repositorio nao comprova que a funcionalidade opera de ponta a ponta. Areas marcadas como **mapeadas** ainda nao foram auditadas em detalhe. As Etapas 1 a 3 documentam nucleo, caminho de ferramentas, modelo e memoria por leitura de codigo e testes; **isso nao comprova comportamento Live**.
+> **Inventario das etapas 0 a 4.** Este documento e um mapa para orientar auditorias **uma por vez**; a presenca de um arquivo no repositorio nao comprova que a funcionalidade opera de ponta a ponta. Areas marcadas como **mapeadas** ainda nao foram auditadas em detalhe. As Etapas 1 a 4 documentam nucleo, caminho de ferramentas, modelo, memoria, Windows e visao por leitura de codigo e testes; **isso nao comprova comportamento Live**.
 
 ## Escopo conferido
 
@@ -17,7 +17,7 @@
 | 1 | **Nucleo e execucao de tarefas** | `core/harness.py`, `core/harness_*.py`, `agent/orchestrator.py`, `core/orchestrator.py`, `core/task_manager.py`, `core/task_trace.py` | **Auditado estaticamente** em [architecture/01-nucleo.md](architecture/01-nucleo.md); testes pytest/CI e limites descritos; **Live nao validado** |
 | 2 | **Roteamento, ferramentas e seguranca** | `core/router.py`, `core/local_decision.py`, `core/tools_registry.py`, `core/tool_contracts.py`, `core/permission_manager.py`, `tools/dispatcher.py`, `core/tool_result.py` | **Auditado estaticamente** em [architecture/02-roteamento-seguranca.md](architecture/02-roteamento-seguranca.md); testes/limites explicados; **Live não validado** |
 | 3 | **Modelo, sessoes e memoria** | `providers/openai_provider.py`, `core/response.py`, `core/session.py`, `core/memory_context.py`, `memory/store.py`, `tools/memory.py` | **Auditado estaticamente** em [architecture/03-modelo-sessao-memoria.md](architecture/03-modelo-sessao-memoria.md); reproducoes locais e pytest focado; **API/Live nao validados** |
-| 4 | **Windows, arquivos e visao** | `tools/windows.py`, `tools/windows_*.py`, `tools/applications.py`, `tools/files.py`, `tools/file_intelligence.py`, `core/vision.py` | Mapeado; **auditoria detalhada pendente** |
+| 4 | **Windows, arquivos e visao** | `tools/windows.py`, `tools/windows_*.py`, `tools/applications.py`, `tools/files.py`, `tools/file_intelligence.py`, `core/vision.py` | **Auditado estaticamente** em [architecture/04-windows-arquivos-visao.md](architecture/04-windows-arquivos-visao.md); limites de UIA, caminhos, DPI e testes simulados; **Live nao validado** |
 | 5 | **Navegador** | `tools/browser.py`, `tools/browser_*.py`, `core/browser_verification.py` | Mapeado; **auditoria detalhada pendente** |
 | 6 | **Voz, STT e TTS** | `voice/*.py`, `requirements-voice.txt`, `scripts/iniciar/AUREN_VOZ.bat` | Mapeado; **teste fisico pendente** |
 | 7 | **Interface desktop** | `interface_auren.py`, `ui/backend.py`, `scripts/iniciar/ABRIR_AUREN_GUI.bat` | Mapeado; **auditoria detalhada pendente** |
@@ -68,9 +68,11 @@
 
 **Evidencia de CI da Etapa 2:** PR #122 aprovada nos GitHub Actions no SHA `a45d173fa99cd66ce6764a657838947a14389dfc`: Linux 556 passed /24 skipped; testes focados Windows hospedado 181 passed e modo seguro Windows 110 passed. Foram conferidos 70 links relativos sem erros. Nenhum teste Live ou no notebook pessoal foi solicitado.
 
-**Etapa 3 (documentacao na [PR #123](https://github.com/Yamatosemj/aurenOFC/pull/123), em revisao):** modelo/provider, sessao/contexto, memoria SQLite, cache e uso em [architecture/03-modelo-sessao-memoria.md](architecture/03-modelo-sessao-memoria.md). 66 testes locais focados aprovados; reproducoes sinteticas confirmaram override bloqueado na fachada, busca global sem chat_id e identidade incompleta no cache de chamadas diretas. CI da PR deve ser conferido no SHA efetivo; nenhuma alteracao de runtime.
+**Etapa 3 (integrada na [PR #123](https://github.com/Yamatosemj/aurenOFC/pull/123)):** modelo/provider, sessao/contexto, memoria SQLite, cache e uso em [architecture/03-modelo-sessao-memoria.md](architecture/03-modelo-sessao-memoria.md). 66 testes locais focados aprovados; reproducoes sinteticas confirmaram override bloqueado na fachada, busca global sem chat_id e identidade incompleta no cache de chamadas diretas. CI da PR deve ser conferido no SHA efetivo; nenhuma alteracao de runtime.
 
-**Proxima area documental:** Etapa 4 — Windows, arquivos e visao.
+**Etapa 4 (auditoria documental da [PR #124](https://github.com/Yamatosemj/aurenOFC/pull/124)):** Windows, arquivos, UI Automation, screenshot, conversao de coordenadas e limites de permissao em [architecture/04-windows-arquivos-visao.md](architecture/04-windows-arquivos-visao.md). Somente Markdown; 76 links relativos conferidos sem erros. Os checks hospedados do primeiro HEAD da PR passaram; conferir o SHA atual na PR antes de integrar. **Nao foi executada validacao fisica/Live.**
+
+**Proxima area documental:** Etapa 5 — navegador e Browser Intelligence.
 
 **Evidencia de CI da Etapa 1:** PR #121 aprovada no GitHub Actions, SHA de codigo documental antes do merge `9edb1ae7101fa9a3f1b6483a484ee3d4883a5014`: Linux 556 passed/24 skipped, Windows hospedado focado 181 passed e modo seguro 110 passed. **Sem execucao Live, microfone ou testes no notebook pessoal nessa PR documental.**
 
