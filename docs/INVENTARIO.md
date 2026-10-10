@@ -70,7 +70,7 @@
 
 **Etapa 3 (integrada na [PR #123](https://github.com/Yamatosemj/aurenOFC/pull/123)):** modelo/provider, sessao/contexto, memoria SQLite, cache e uso em [architecture/03-modelo-sessao-memoria.md](architecture/03-modelo-sessao-memoria.md). 66 testes locais focados aprovados; reproducoes sinteticas confirmaram override bloqueado na fachada, busca global sem chat_id e identidade incompleta no cache de chamadas diretas. CI da PR deve ser conferido no SHA efetivo; nenhuma alteracao de runtime.
 
-**Etapa 4 (auditoria documental nesta branch):** Windows, arquivos, UI Automation, screenshot, conversao de coordenadas e limites de permissao em [architecture/04-windows-arquivos-visao.md](architecture/04-windows-arquivos-visao.md). Somente Markdown; PR e checks hospedados ainda serao registrados. **Nao foi executada validacao fisica/Live.**
+**Etapa 4 (auditoria documental na [PR #124](https://github.com/Yamatosemj/aurenOFC/pull/124), em revisao):** Windows, arquivos, UI Automation, screenshot, conversao de coordenadas e limites de permissao em [architecture/04-windows-arquivos-visao.md](architecture/04-windows-arquivos-visao.md). Somente Markdown; 76 links relativos conferidos sem erros, checks hospedados ainda pendentes. **Nao foi executada validacao fisica/Live.**
 
 **Proxima area documental:** Etapa 5 — navegador e Browser Intelligence.
 
