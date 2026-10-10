@@ -11,11 +11,11 @@ Atualizado em: 2026-10-10
 ### Documentacao e continuidade — etapa 0 (2026-10-10)
 
 - **Prioridade decidida pelo proprietario:** documentar o Auren **subsistema por subsistema**, antes de abrir novas implementacoes; cada area deve ser mapeada, auditada no codigo, confrontada com seus testes e documentada em PR focalizada.
-- **PR documental ativa:** #120 (`docs/etapa-0-inventario-e-regras`). Inclui `AGENTS.md`, `docs/INVENTARIO.md`, links no `README.md` e este marco do estado. **Nao altera runtime, workflows nem politicas do runner.**
+- **Etapa 0 documentada e integrada:** [PR #120](https://github.com/Yamatosemj/aurenOFC/pull/120) adicionou `AGENTS.md`, `docs/INVENTARIO.md`, links no `README.md` e este marco do estado. CI Linux e Windows hospedado aprovados. **Nao alterou runtime, workflows nem politicas do runner.**
 - **Inventario inicial confirmado:** 220 arquivos versionados, 22 diretorios e 49 entradas de ferramenta em `core/tools_registry.py` na revisao da main de 2026-10-10. Dez areas foram **mapeadas, nao auditadas integralmente**.
 - **Proxima tarefa apos a etapa 0:** auditar com profundidade o nucleo de execucao (`core/harness.py`, `core/harness_*.py`, `agent/orchestrator.py`, gerenciamento de tarefas); documentar arquitetura real, limites e testes. Uma PR separada.
 - **Divida documental conhecida:** `AUREN_STATE.md` longo, com historico misturado; `docs/CONTROLE_REMOTO_GITHUB.md` e `docs/TESTES_GITHUB.md` contêm orientacoes e marcos antigos de testes que precisam ser reconciliados com a operacao comprovada do pytest remoto. Corrigir em PRs proprias sem enfraquecer seguranca.
-- **Importante:** a V48 de voz segue sem validacao fisica; este trabalho documental nao altera sua prontidao. A etapa 0 ainda depende de CI/merge e sua conclusao deve ser registrada depois.
+- **Importante:** a V48 de voz segue sem validacao fisica; este trabalho documental nao altera sua prontidao. **Proxima etapa: auditoria do nucleo de execucao**, em PR separada.
 
 
 ### Integracao V48 voz/STT - candidata (2026-10-10)
@@ -52,10 +52,10 @@ Atualizado em: 2026-10-10
 
 - **Versão estável:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** #120 para documentacao etapa 0; PR #119 integrada na `main`. Branches antigas #85/#90/#92/#95 continuam abertas, nao mesclar cegamente.
+- **Ultima PR de documentacao integrada:** #120 (inventario e guia AGENTS.md). PR #119 consolidou voz candidata V48. Consultar GitHub em tempo real para saber PRs abertas; branches antigas de voz nao devem ser mescladas cegamente.
 - **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #119 (`e9712ef5257b971c3aefc6ed1e6911ad4ae5b8d9`)
 - **CI:** PR #119 Linux completo 556 passed/24 skipped; Windows hospedado focado 181 passed, modo seguro Windows 110 passed. **Notebook pessoal PR #119: 579 passed, zero falhas, 1 skipped, 1 warning, run #38085000162.**
-- **Fase atual:** inventario e documentacao estruturada do Auren (etapa 0 PR #120). Voz candidata V48 consolidada na main mas ainda aguarda validacao fisica; testes Live adiados.
+- **Fase atual:** documentacao estruturada por subsistema. Etapa 0 concluida; proxima tarefa: auditar e documentar nucleo/Harness em PR independente. Voz candidata V48 aguarda validacao fisica e testes Live adiados.
 
 ### Primeiro teste desbloqueado no Windows, falha de parser ASCII (2026-10-10)
 
