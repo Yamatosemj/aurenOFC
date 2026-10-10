@@ -10,6 +10,7 @@ Assistente desktop/voz para Windows, versão técnica **V47**, usando o modelo c
 - [`docs/INVENTARIO.md`](docs/INVENTARIO.md) — mapa dos subsistemas e ordem das auditorias. **Mapeado nao significa auditado ou validado em hardware.**
 - [`docs/architecture/01-nucleo.md`](docs/architecture/01-nucleo.md) — auditoria estatica do Harness, orquestradores, estados de tarefa, rastreio, testes e limites conhecidos.
 - [`docs/architecture/02-roteamento-seguranca.md`](docs/architecture/02-roteamento-seguranca.md) — auditoria estática do Router, Dispatcher, contratos de ferramentas, políticas de confirmação, anti-loop e conteúdo não confiável.
+- [`docs/architecture/03-modelo-sessao-memoria.md`](docs/architecture/03-modelo-sessao-memoria.md) — provider, contexto, SQLite, isolamento por chat, cache e limites reproduzidos.
 - [`docs/TESTES_GITHUB.md`](docs/TESTES_GITHUB.md) e [`docs/CONTROLE_REMOTO_GITHUB.md`](docs/CONTROLE_REMOTO_GITHUB.md) — operacao e historico dos testes remotos; **algumas instrucoes antigas aguardam reconciliacao** com os runs atuais.
 
 A documentacao evolui em PRs pequenas por subsistema. Para decidir o status real de uma funcionalidade, confronte documentos com codigo, PRs e CI atuais.
@@ -109,16 +110,9 @@ do Auren continua V47 até a validação física de voz.
 
 ### Modelo
 
-Por padrão, o Auren usa `gpt-5.6-luna`. Para testar outro modelo sem alterar o código, defina a variável de ambiente `AUREN_MODEL` antes de iniciar o processo.
+Por padrão, o Auren usa `gpt-5.6-luna`. `config.py` lê `AUREN_MODEL` e usa o padrão quando o valor está vazio ou contém apenas espaços.
 
-PowerShell:
-
-```powershell
-$env:AUREN_MODEL = "gpt-5.6-luna"
-python main.py
-```
-
-Um valor vazio ou composto apenas por espaços volta automaticamente ao modelo padrão.
+**Limitação confirmada:** atualmente, definir um modelo diferente faz a validação de coerência em `auren.py` interromper a inicialização. O prompt também identifica o modelo por texto fixo. Portanto, a troca por variável de ambiente **ainda não funciona de ponta a ponta**; veja a [auditoria de modelo e memória](docs/architecture/03-modelo-sessao-memoria.md). A correção de código será tratada separadamente.
 
 ## Testes
 
