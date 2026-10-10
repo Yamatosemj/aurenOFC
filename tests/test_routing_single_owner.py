@@ -211,6 +211,8 @@ def test_capability_e_taskspec_nao_estao_no_caminho_ativo():
     permitidos = {
         "core/capability_resolver.py", "core/intent_resolver.py", "core/task_spec.py", "core/capabilities.py",
         "core/capability_audio_runtime.py", "core/capability_audio_experiment.py", "core/router.py",
+        # Ferramenta manual de diagnostico, fora do caminho de execucao do Auren.
+        "scripts/diagnosticos/testar_spotify_desktop_runtime.py",
     }
     marcas = ("CapabilityResolver", "IntentResolver", "validate_task_spec", "route_task_spec")
     usam = {rel for rel, src in _fontes_de_runtime().items() if any(m in src for m in marcas)}
