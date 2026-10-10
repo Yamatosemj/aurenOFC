@@ -4,6 +4,16 @@ Este controle opera no repositório **privado** `Yamatosemj/aurenOFC`, sem atual
 
 **Verificação real (2026-10-09):** a operação `atualizar_main` foi concluída com sucesso no runner Windows, conforme [execução #37890091132](https://github.com/Yamatosemj/aurenOFC/actions/runs/37890091132). Esta alteração documental serve também como teste de uma nova atualização remota. **Testar PR por número ainda requer uma validação separada no PC.**
 
+## Testes enviados pelo chat — configuracao em andamento
+
+Um usuario nao precisa abrir o GitHub: o assistente, via GitHub conectado, publica na conversa de uma **PR aberta e revisada** o comentario exato `AUREN_TESTE_V1 pytest <SHA40>`. O workflow da branch padrao `.github/workflows/auren-chat-tests.yml` recebe `issue_comment`, valida a autoria do proprio dono, projeto privado, PR interna, base `main`, SHA do HEAD congelado, e usa um controlador Windows fixado em commit imutavel.
+
+Quando autorizado na politica **local**, o runner baixa a PR para `pr-checkout` (sem atualizar o clone principal), roda pytest sob watchdog por no maximo 20 min e publica `pr-result.json`, `pr-test.log` e `pytest.xml`. Esses dados podem ser inspecionados pelo assistente via GitHub, sem links/formularios para o usuario. `OPENAI_API_KEY` nao e liberada nessa bateria.
+
+**Ainda nao operacional:** o hook `%USERPROFILE%\\auren-remote\\policy\\before-job.ps1` bloqueia novas familias de workflow por seguranca e so pode ser examinado e alterado no proprio notebook; e necessaria aprovacao local pontual do novo fluxo, mantendo as verificacoes de usuario sem admin, projeto, evento, workflow e permissoes. Nunca desative o hook para fazer o teste passar.
+
+O comentario pertence a uma PR; o assistente identifica o numero e SHA antes de comentar. Não aceita texto livre no shell, nem faz `git pull` automático na instalacao de uso diario. O workflow anterior `auren-update-pc.yml` permanece intacto e continua reservado ao uso manual enquanto a migracao e validada.
+
 ## O que foi preparado no GitHub
 
 Workflow: `.github/workflows/auren-update-pc.yml` (**Auren - controle remoto do PC**).
