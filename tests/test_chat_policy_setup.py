@@ -5,6 +5,7 @@ GitHub credentials, runner processes or workflows are touched.
 """
 from __future__ import annotations
 
+import base64
 import json
 import os
 from pathlib import Path
@@ -29,7 +30,7 @@ ORIGINAL_BLOCK = """    Test-RemoteControlRequest -Context $context -Event $even
 
 def test_permanent_workflow_and_policy_pins_match():
     import hashlib
-    blob = WORKFLOW.read_bytes()
+    blob = WORKFLOW.read_bytes().replace(b"\r\n", b"\n")  # Git Windows can checkout CRLF
     actual = hashlib.sha1(b"blob " + str(len(blob)).encode() + b"\0" + blob).hexdigest()
     assert actual == PINNED_BLOB
     assert PINNED_BLOB in FUNCTIONS.read_text(encoding="utf-8")
@@ -131,8 +132,9 @@ try {
                     .replace("__CTX__", json.dumps(context))
                     .replace("__EVENT__", json.dumps(event)))
     result = subprocess.run(
-        ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", "-"],
-        input=script, env=dict(os.environ, USERPROFILE=str(tmp_path)),
+        ["powershell.exe", "-NoProfile", "-NonInteractive", "-EncodedCommand",
+         base64.b64encode(script.encode("utf-16-le")).decode("ascii")],
+        env=dict(os.environ, USERPROFILE=str(tmp_path)),
         capture_output=True, text=True, timeout=25, check=False,
     )
     assert result.returncode == 0, result.stdout + "\n" + result.stderr
