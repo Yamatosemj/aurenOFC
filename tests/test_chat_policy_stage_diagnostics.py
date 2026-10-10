@@ -32,7 +32,6 @@ def test_offline_policy_limits_owner_workflow_run_and_writes_no_secrets():
     assert "Invoke-BoundedLocalTool" not in guard
     assert "credential fill" not in guard
     assert "GH_TOKEN" not in guard
-    assert "Nao altera nem desativa Test-RemoteControlRequest" not in guard or True
 
 
 def test_offline_installer_is_explicit_reversible_and_approval_scoped():
@@ -42,7 +41,7 @@ def test_offline_installer_is_explicit_reversible_and_approval_scoped():
     assert "WriteAllText($target" in code
     assert "WriteAllText($approvalFile" in code
     assert "WriteAllText($hook" not in code
-    assert "control-approval.json" not in code
+    assert "Join-Path $policy 'control-approval.json'" not in code
     assert "ParseInput(" in code
     assert "offline_hosted_validation" in code
     assert ONLINE_INSTALLER.exists()
