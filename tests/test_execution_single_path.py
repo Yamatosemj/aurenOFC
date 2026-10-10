@@ -8,7 +8,6 @@ Dispatcher sao trocados por registradores; contrato e permissao sao os reais.
 from __future__ import annotations
 
 import ast
-import builtins
 import json
 import pytest
 import sys
@@ -45,6 +44,16 @@ def _handler(chamadas, nome, retorno="ok"):
 
 def _executar(pm):
     return lambda item: dispatcher.executar_ferramenta(item, pm, None)
+
+
+class _FakeConfirmation:
+    """Confirmacao explicita somente em testes de handlers simulados."""
+
+    def __init__(self, allowed: bool):
+        self.allowed = allowed
+
+    def confirmar(self, _request):
+        return self.allowed
 
 
 # ------------------------------------------------------------ 1) caminho do Dispatcher
@@ -93,13 +102,15 @@ def test_confirmacao_aprovada_executa_e_negada_nao_executa(monkeypatch):
     monkeypatch.setitem(dispatcher.TOOL_HANDLERS, "encerrar_processo_windows", _handler(chamadas, "encerrar_processo_windows"))
     item = _item("encerrar_processo_windows", {"pid": 4321, "nome": ""})
 
-    monkeypatch.setattr(builtins, "input", lambda *_: "n")
-    r = dispatcher.executar_ferramenta(item, PermissionManager(), None)
+    r = dispatcher.executar_ferramenta(
+        item, PermissionManager(confirmation_channel=_FakeConfirmation(False)), None
+    )
     assert r.ok is False and r.error_code == "permission_denied" and "negou" in r.message.lower()
     assert chamadas == []
 
-    monkeypatch.setattr(builtins, "input", lambda *_: "s")
-    r = dispatcher.executar_ferramenta(item, PermissionManager(), None)
+    r = dispatcher.executar_ferramenta(
+        item, PermissionManager(confirmation_channel=_FakeConfirmation(True)), None
+    )
     assert r.ok is True
     assert chamadas == [("encerrar_processo_windows", {"pid": 4321, "nome": ""})]
 
@@ -137,7 +148,7 @@ def test_excecao_de_programacao_nao_e_silenciosamente_convertida(monkeypatch):
 def test_principais_ferramentas_do_registry_passam_por_contrato_permissao_e_handler(monkeypatch):
     """Cada tool do registry, com argumentos validos gerados do schema, chega ao handler."""
     assert dispatcher.validar_registry_handlers() == (True, "")
-    monkeypatch.setattr(builtins, "input", lambda *_: "s")  # tools com CONFIRM
+    # CONFIRM usa canal simulado; nenhuma entrada interativa ou acao Windows real.
 
     def valor(spec):
         if "enum" in spec:
@@ -156,7 +167,11 @@ def test_principais_ferramentas_do_registry_passam_por_contrato_permissao_e_hand
         monkeypatch.setitem(dispatcher.TOOL_HANDLERS, nome, _handler(chamadas, nome))
         props = tool["parameters"].get("properties", {})
         args = {k: valor(props[k]) for k in tool["parameters"].get("required", [])}
-        r = dispatcher.executar_ferramenta(_item(nome, args), PermissionManager(max_actions=50), None)
+        r = dispatcher.executar_ferramenta(
+            _item(nome, args),
+            PermissionManager(max_actions=50, confirmation_channel=_FakeConfirmation(True)),
+            None,
+        )
         assert r.ok, (nome, args, r)
         assert len(chamadas) == 1, nome
         executadas.append(nome)

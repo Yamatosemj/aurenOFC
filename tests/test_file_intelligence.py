@@ -158,7 +158,9 @@ def test_inspect_different_content_is_not_a_copy(tmp_path: Path, monkeypatch: py
 )
 def test_read_supported_formats(tmp_path: Path, suffix: str, content: str):
     path = tmp_path / f"arquivo{suffix}"
-    path.write_text(content, encoding="utf-8")
+    # Testa os bytes de entrada exatos em todos os sistemas: write_text
+    # converte LF para CRLF no Windows e muda o arquivo antes da leitura.
+    path.write_bytes(content.encode("utf-8"))
     result = read_file(str(path), 0, 200)
     assert result.ok
     assert result.data["file_content"]["conteudo"] == content

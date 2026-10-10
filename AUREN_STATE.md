@@ -8,6 +8,14 @@ Atualizado em: 2026-10-10
 
 ## Estado atual
 
+### Revisao das 11 falhas da PR-sonda (2026-10-10)
+
+- Escopo exclusivo da rodada: corrigir testes deterministas para rodarem no Windows real com `AUREN_TEST_MODE=1`; **sem mexer nas implementacoes de producao, nas protecoes do runner nem nas camadas Live**.
+- Testes de confirmacao interativa: `tests/test_confirmation.py` simula entrada apenas com `monkeypatch.delenv` dentro do proprio teste e acrescenta verificacao especifica de bloqueio no modo seguro; `tests/test_execution_single_path.py` e `tests/test_visual_coordinate_dispatcher_integration.py` recebem canais de confirmacao falsos injetados em `PermissionManager`, com handlers ja simulados.
+- Teste de arquivos `tests/test_file_intelligence.py` grava bytes UTF-8 exatos para impedir que `Path.write_text` converta LF em CRLF no Windows antes da leitura; implementacao de `read_file` permanece preservando bytes/quebras originais.
+- CI hospedado Linux e Windows agora executa as quatro familias focalizadas com `AUREN_TEST_MODE=1` em passo adicional e isolado. A suite normal continua sendo executada.
+- **Proximo passo:** conferir CI completo, criar PR e acionar pelo chat o pytest **no SHA da nova PR** (nao na PR-sonda #108, que usa commit antigo); inspecionar report e so entao concluir.
+
 ### Marco: primeira execucao completa do pytest no notebook (2026-10-10)
 
 - O proprietario confirmou aplicacao local de `scripts/instalar/ATUALIZAR_WORKFLOW_CHAT_ASCII.ps1`. ChatGPT publicou na PR #108 comentario #6101499200 com SHA `03ee21db3c4fecd0cab8385af4a72e7f74b935e9`.
@@ -21,7 +29,7 @@ Atualizado em: 2026-10-10
 
 - **Versão estável:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** nenhuma; PR #117 integrada; primeira sonda remota da PR #108 concluida com pytest executado e relatorios publicados (11 falhas de teste)
+- **Branch/PR ativa:** `fix/windows-remote-pytest-regressions` — correcoes dos 11 testes historicamente falhos no runner real, aguardando CI e nova sonda real.
 - **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #117 (`d56136e50e93bd6ece548d143728b4c68c180e70`)
 - **CI:** PR #117 Linux completo 533 passed/24 skipped; Windows hospedado focado 180 passed; **notebook real PR #108 run #38081143327: 500 passed, 11 failed, 1 skipped, com artefatos de relatorio**.
 - **Fase atual:** concluir testes reais no Windows via comando do chat; GUI MVP foi entregue e seu uso real foi confirmado pelo usuario, mas entrada textual precisa de melhoria posterior

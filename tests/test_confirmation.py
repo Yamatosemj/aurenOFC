@@ -91,7 +91,10 @@ def _voice_channel(
     return channel, tts, transcriber, queue
 
 
-def test_text_confirmation_channel_preserves_interactive_behavior():
+def test_text_confirmation_channel_preserves_interactive_behavior(monkeypatch):
+    # Apenas este teste simula uma sessao interativa: entrada e saida locais
+    # falsas. Nunca desativar o modo seguro global do runner para a suite.
+    monkeypatch.delenv("AUREN_TEST_MODE", raising=False)
     prompts = []
     channel = TextConfirmationChannel(
         input_fn=lambda prompt: (prompts.append(prompt) or "s"),
@@ -99,6 +102,19 @@ def test_text_confirmation_channel_preserves_interactive_behavior():
 
     assert channel.confirmar(_request()) is True
     assert prompts == ["Autorizar? [s/n]: "]
+
+
+def test_text_confirmation_channel_denies_in_runner_mode(monkeypatch):
+    monkeypatch.setenv("AUREN_TEST_MODE", "1")
+    prompts = []
+
+    def unsafe_prompt(prompt):
+        prompts.append(prompt)
+        raise AssertionError("O runner nunca deve pedir confirmacao interativa.")
+
+    channel = TextConfirmationChannel(input_fn=unsafe_prompt)
+    assert channel.confirmar(_request()) is False
+    assert prompts == []
 
 
 def test_permission_manager_delegates_confirmation_to_injected_channel(monkeypatch):
