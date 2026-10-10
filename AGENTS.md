@@ -5,6 +5,7 @@ Este arquivo e a **porta de entrada operacional** de IAs e mantenedores que trab
 ## Antes de qualquer mudanca
 
 1. Leia `README.md`, `AUREN_STATE.md` e [`docs/INVENTARIO.md`](docs/INVENTARIO.md).
+   - Se o trabalho alterar Router, registry de ferramentas, validação de contratos, Dispatcher, PermissionManager, confirmação ou ToolResult, leia também [`docs/architecture/02-roteamento-seguranca.md`](docs/architecture/02-roteamento-seguranca.md) e confirme contra o código atual.
    - Se a tarefa tocar o Harness, contexto, ciclo do modelo, cancelamento ou estados de tarefa, leia tambem [`docs/architecture/01-nucleo.md`](docs/architecture/01-nucleo.md); confirme contra o codigo atual.
 2. Confira **no GitHub atual** a `main`, a PR/branch ativa, os merges e resultados de CI; o estado documental pode estar atrasado.
 3. Leia **os arquivos completos relevantes**, testes e interfaces usados pela funcionalidade. Nao infira implementacao apenas do nome de arquivos ou da descricao de PRs.

@@ -15,7 +15,7 @@
 | Ordem sugerida | Subsistema | Fontes principais no repositorio | Situacao documental |
 | --- | --- | --- | --- |
 | 1 | **Nucleo e execucao de tarefas** | `core/harness.py`, `core/harness_*.py`, `agent/orchestrator.py`, `core/orchestrator.py`, `core/task_manager.py`, `core/task_trace.py` | **Auditado estaticamente** em [architecture/01-nucleo.md](architecture/01-nucleo.md); testes pytest/CI e limites descritos; **Live nao validado** |
-| 2 | **Roteamento, ferramentas e seguranca** | `core/router.py`, `core/local_decision.py`, `core/tools_registry.py`, `core/tool_contracts.py`, `core/permission_manager.py`, `tools/dispatcher.py`, `core/tool_result.py` | Mapeado; **auditoria detalhada pendente** |
+| 2 | **Roteamento, ferramentas e seguranca** | `core/router.py`, `core/local_decision.py`, `core/tools_registry.py`, `core/tool_contracts.py`, `core/permission_manager.py`, `tools/dispatcher.py`, `core/tool_result.py` | **Auditado estaticamente** em [architecture/02-roteamento-seguranca.md](architecture/02-roteamento-seguranca.md); testes/limites explicados; **Live não validado** |
 | 3 | **Modelo, sessoes e memoria** | `providers/openai_provider.py`, `core/response.py`, `core/session.py`, `core/memory_context.py`, `memory/store.py`, `tools/memory.py` | Mapeado; **auditoria detalhada pendente** |
 | 4 | **Windows, arquivos e visao** | `tools/windows.py`, `tools/windows_*.py`, `tools/applications.py`, `tools/files.py`, `tools/file_intelligence.py`, `core/vision.py` | Mapeado; **auditoria detalhada pendente** |
 | 5 | **Navegador** | `tools/browser.py`, `tools/browser_*.py`, `core/browser_verification.py` | Mapeado; **auditoria detalhada pendente** |
@@ -64,7 +64,9 @@
 
 **Etapa 1 (concluida na [PR #121](https://github.com/Yamatosemj/aurenOFC/pull/121)):** auditoria estatica de **nucleo de execucao** (Harness, **dois** Orchestrators com funcoes distintas, TaskManager, contexto, trace, fila pos-tarefa) em [architecture/01-nucleo.md](architecture/01-nucleo.md), confrontando codigo e contratos com testes. Registrar observacoes como hipoteses sem alterar runtime. Validacao fisica/Live continua pendente.
 
-**Etapa 2 (proxima area sugerida):** Router, ferramentas, Dispatcher, contratos e permissoes; documentar a fronteira de seguranca e executar testes automatizados, em PR independente.
+**Etapa 2 (documentacao em revisao):** Router, selecao/atalhos, registry, ToolContract, Dispatcher, PermissionManager, confirmacoes, ToolResult e protecao de origem nao confiavel, em [architecture/02-roteamento-seguranca.md](architecture/02-roteamento-seguranca.md). Auditoria estatica e verificacao dos testes existentes; **nao** inclui runtime, CI local ou hardware real.
+
+**Etapa 3 (proxima area sugerida):** modelo/provider, sessao/contexto e memoria, mantendo separadas as responsabilidades de persistencia e task management.
 
 **Evidencia de CI da Etapa 1:** PR #121 aprovada no GitHub Actions, SHA de codigo documental antes do merge `9edb1ae7101fa9a3f1b6483a484ee3d4883a5014`: Linux 556 passed/24 skipped, Windows hospedado focado 181 passed e modo seguro 110 passed. **Sem execucao Live, microfone ou testes no notebook pessoal nessa PR documental.**
 

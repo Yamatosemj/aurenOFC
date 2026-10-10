@@ -8,6 +8,16 @@ Atualizado em: 2026-10-10
 
 ## Estado atual
 
+### Etapa 2 — auditoria estatica do caminho de ferramentas e permissoes (2026-10-10)
+
+- **Escopo atual:** documentacao de `core/router.py`, `core/local_decision.py`, `core/tools_registry.py`, `core/tool_contracts.py`, `tools/dispatcher.py`, `core/permission_manager.py`, `core/confirmation.py`, `core/tool_result.py`, atalhos e entrada experimental de audio.
+- **Entrega em revisao:** `docs/architecture/02-roteamento-seguranca.md`, mais referencias em `AGENTS.md`, `README.md` e `docs/INVENTARIO.md`. Branch `docs/etapa-2-roteamento-contratos-permissoes` e PR desta tarefa a verificar no GitHub.
+- **Responsabilidades confirmadas estaticamente:** Router escolhe caminhos/tools, nao autoriza; fast path e chamadas do modelo convergem no Dispatcher; schema/contrato antes de autorizar; PermissionManager combina capacidade, argumentos e estado da tarefa; ToolResult fornece sucesso estruturado ao ciclo.
+- **Politica real:** AUTO/CONFIRM/BLOCKED; limite padrao de 10 tentativas contaveis, guard de falhas repetidas e protecao contra conteudo externo nao confiavel para proximas acoes contaveis. TextConfirmationChannel nega interacao no AUREN_TEST_MODE; nao assumir mesmo comportamento para todo canal injetado.
+- **Pontos para teste/decisao futuros, sem runtime alterado:** validador local implementa subconjunto de JSON Schema; marca de fonte nao confiavel permanece ate reiniciar tarefa (nao so ate primeira aprovacao); fast path ainda adapta retorno textual; heuristicas de alvo nao garantem semantica real da interface. Nao declarar vulnerabilidade exploravel sem reproduzir.
+- **Validacao prevista:** links/caminhos Markdown e CI hospedado Linux/Windows; **sem teste Live, API ou notebook** para PR exclusivamente documental. Proxima area depois desta: Etapa 3 — provider/modelo, sessao/contexto e memoria, sem sobrepor funcoes do TaskManager.
+
+
 ### Etapa 1 - auditoria estatica do nucleo (2026-10-10)
 
 - **Etapa 1 concluida:** [PR #121](https://github.com/Yamatosemj/aurenOFC/pull/121) integrada a `main` (merge `c6fdfa60e34dea6b72abaffc79844877d9061f11`), auditoria estatica do nucleo/Harness, dos dois Orchestrators, TaskManager, sessao/contexto, trace e fila de estrategia. Proxima prioridade documental: Etapa 2, Router/Dispatcher/contratos/permissoes, em PR separada.
@@ -65,7 +75,7 @@ Atualizado em: 2026-10-10
 - **Ultima PR documental integrada:** #121 (auditoria do nucleo/Harness); #120 (inventario e AGENTS.md). PR #119 consolidou voz candidata V48. Consultar GitHub em tempo real para saber PRs abertas; branches antigas de voz nao devem ser mescladas cegamente.
 - **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #119 (`e9712ef5257b971c3aefc6ed1e6911ad4ae5b8d9`)
 - **CI:** PR #119 Linux completo 556 passed/24 skipped; Windows hospedado focado 181 passed, modo seguro Windows 110 passed. **Notebook pessoal PR #119: 579 passed, zero falhas, 1 skipped, 1 warning, run #38085000162.**
-- **Fase atual:** Etapas 0 e 1 documentais concluidas e integradas. Proxima prioridade: Etapa 2, auditoria de Router/Dispatcher/contratos e permissoes; candidata de voz V48 ainda aguarda validacao fisica; testes Live adiados.
+- **Fase atual:** Etapa 2 de documentacao: Router/Dispatcher/contratos/permissoes auditados estaticamente em PR documental; CI a confirmar. Etapas 0 e 1 concluidas; voz V48 segue sem validacao fisica e testes Live adiados.
 
 ### Primeiro teste desbloqueado no Windows, falha de parser ASCII (2026-10-10)
 
