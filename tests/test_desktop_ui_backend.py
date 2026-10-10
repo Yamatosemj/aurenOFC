@@ -82,6 +82,8 @@ def test_gui_worker_lazy_harness_and_session_shutdown():
     assert created == []
     worker.start()
     try:
+        assert worker.submit("ola") is False  # comeca desligado
+        worker.activate()
         assert worker.submit("ola")
         received = []
         while "idle" not in received:
@@ -99,7 +101,9 @@ def test_gui_worker_lazy_harness_and_session_shutdown():
                 break
         assert created[0].closed
         assert created[0].session_closed
+        assert worker.submit("com o Auren desligado") is False
 
+        worker.activate()
         assert worker.submit("segunda conversa")
         while True:
             event = worker.events.get(timeout=3)
