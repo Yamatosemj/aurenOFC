@@ -10,10 +10,19 @@ Atualizado em: 2026-10-10
 
 - **Versão estável:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** nenhuma; PR #115 integrada, aguardando execucao pontual do instalador corrigido no Windows pessoal
+- **Branch/PR ativa:** `fix/chat-offline-hosted-trust` — autorizacao local sem GCM, aprovada explicitamente pelo proprietario; CI em validacao
 - **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #115 (`443fd28a61543228fdda636db024fa5911e9690b`)
 - **CI:** PR #115: suite Linux e testes focados Linux/Windows aprovados (focados Windows GitHub-hosted 175 passed). Instalador PowerShell executado com politica simulada em CI e confirmado sucesso, idempotencia e recusa segura; teste no notebook real ainda pendente.
 - **Fase atual:** concluir testes reais no Windows via comando do chat; GUI MVP foi entregue e seu uso real foi confirmado pelo usuario, mas entrada textual precisa de melhoria posterior
+
+### Decisao de risco explicita: autorizacao local offline (2026-10-10)
+
+- O proprietario deixou claro que prefere **reduzir atrito** e aceita um risco delimitado para concluir a automacao agora; nao quer mais ciclos de diagnosticos de GCM no Windows.
+- Antes desta tarefa, [run #38079480204](https://github.com/Yamatosemj/aurenOFC/actions/runs/38079480204) mostrou GCM falhando mesmo apos ajuste de cwd; nunca houve execucao de pytest no notebook.
+- Novo `remote_tests/chat-control-functions.ps1`: nao consulta Git/GCM/API. Validacao online de PR aberta interna, proprietario e SHA exato continua no job `validar` hospedado do workflow existente, com controlador Python de SHA fixo; o hook local confirma evento, origem privada, ator proprietario, workflow esperado, job `executar`, formato de comando, SHA de 40 caracteres, primeira tentativa, nao-admin e STOP-LIVE.
+- `scripts/instalar/AUTORIZAR_TESTES_CHAT_SEM_GCM.ps1` exige **execucao expressa no PC**: backup de `chat-control-functions.ps1` e `chat-control-approval.json`, copia apenas politica complementar e inclui `offline_hosted_validation=true` nessa aprovacao especifica. Preserva controle legado e `before-job.ps1`. Instalador nao altera o workflow.
+- **Risco assumido:** sem consulta remota a partir do Windows, uma alteracao maliciosa/comprometimento do workflow em `main` pode ficar fora do alcance da verificacao local. A checagem `workflow_blob` e a aprovacao local continuam como metadados, mas deixam de constituir atestacao remota do blob ativo; confiamos no GitHub e na conta do proprietario. Nao prometer isolamento perfeito do pytest: o codigo da PR roda como usuario runner, sem privilégios elevados.
+- Confirmar testes Linux/Windows hospedados antes do merge, depois pedir um unico comando local para instalar e testar PR #108 pelo chat. **Sistema ainda nao comprovado no notebook.**
 
 ### Bloqueio confirmado apos aplicar #115 (2026-10-10)
 
