@@ -8,13 +8,23 @@ Atualizado em: 2026-10-10
 
 ## Estado atual
 
+### Etapa 5 — Navegador e Browser Intelligence (2026-10-10)
+
+- **Etapa documental iniciada** na branch `docs/etapa-5-navegador-browser-intelligence` sobre a `main` `946f21e2b3d629ce4e8e157ded5dc97c4d1e65d4`. Novo `docs/architecture/05-navegador-browser-intelligence.md` e referências em README/AGENTS/INVENTARIO. Apenas Markdown; não alterar runtime, workflows, testes, políticas ou runner.
+- **Lido e confrontado:** `tools/browser.py`, `tools/browser_context.py`, `tools/browser_reading.py`, `tools/browser_elements.py`, `tools/browser_navigation.py`, `core/browser_verification.py`, `core/harness_heuristics.py`, `core/harness_multitab.py`, `core/harness_tools.py`, `core/harness_cycle.py`, `core/harness_guards.py`, Router/Dispatcher, contratos, PermissionManager e testes browser/Harness/segurança relevantes.
+- **Comportamentos e limites documentados:** Chromium Playwright em perfil persistente/global ao processo, 14 tools browser; leitura do DOM resumida/truncada e às vezes com rolagem; contexto unificado marcado não confiável; seleção heurística de elementos; verificação extra somente em objetivos compostos detectados e somente para algumas ações; uma mutação posterior substitui estado anterior; conteúdo do site nunca autoriza ação por si só.
+- **Pontos a investigar em tarefas específicas:** `ler_pagina` pode rolar mesmo como leitura; `obter_contexto_navegador` retorna `ok=True` quando `ler_pagina` devolve texto de erro; cliques/teclas/fechamento e outras ações não possuem comparador determinístico e podem esgotar guard em tarefas compostas; perfil não é isolado por chat. Não declarar vulnerabilidade comprovada sem reprodução.
+- **Validação desta PR:** links internos e CI do SHA final ainda pendentes neste momento; nenhum Playwright Live, site externo, API, login nem teste no notebook pessoal foi executado.
+- **Próximo subsistema após revisão/merge:** Etapa 6 — voz, STT e TTS, em PR separada.
+
+
 ### Etapa 4 — Windows, arquivos e visao (2026-10-10)
 
-- **Documentacao submetida na [PR #124](https://github.com/Yamatosemj/aurenOFC/pull/124):** branch `docs/etapa-4-windows-arquivos-visao` a partir da `main` `d0c9c991a3311127f59368d123020b2c065f1e1f`. Novo `docs/architecture/04-windows-arquivos-visao.md` e referencias em README, AGENTS e inventario. **Apenas Markdown**; nenhum runtime, workflow, politica ou runner alterado.
+- **Etapa 4 integrada na [PR #124](https://github.com/Yamatosemj/aurenOFC/pull/124), merge `946f21e2b3d629ce4e8e157ded5dc97c4d1e65d4`:** branch `docs/etapa-4-windows-arquivos-visao` a partir da `main` `d0c9c991a3311127f59368d123020b2c065f1e1f`. Novo `docs/architecture/04-windows-arquivos-visao.md` e referencias em README, AGENTS e inventario. **Apenas Markdown**; nenhum runtime, workflow, politica ou runner alterado.
 - **Fontes lidas:** fachadas e modulos Windows de janelas, UIA, input/DPI, screenshot, processos, audio, clipboard e status; applications, files, file_intelligence, Dispatcher, PermissionManager, core/vision e guards do Harness. Contratos confrontados com o registry de 49 tools e testes existentes.
 - **Limites:** buscar/inspecionar/ler arquivo nao implementam move/rename/undo; arquivo fora da allowlist pede confirmacao, caminho sensivel bloqueia; UIA e alvos de janelas dependem do provedor/interface real; imagem exige snapshot consistente e DPI validado para conversao segura; clique/arraste requerem politica e posterior verificacao quando aplicavel.
 - **Evidencia de validacao:** 76 links relativos conferidos sem caminhos ausentes. GitHub Actions do commit documental `c80aaadefb49a3455dd1294fb914e78c59561bf2`: [Linux completo](https://github.com/Yamatosemj/aurenOFC/actions/runs/38095610847) **556 passed/24 skipped**; [focados Linux/Windows](https://github.com/Yamatosemj/aurenOFC/actions/runs/38095610844) Linux **166 passed/15 skipped**, modo seguro Linux **110 passed**, Windows **181 passed** e modo seguro Windows **110 passed**. Checks devem ser conferidos novamente no HEAD efetivo antes de mesclar. Sem Live ou notebook pessoal. Nenhum teste Live, API, mouse, screenshot, UIA ou Windows pessoal executado nesta etapa documental.
-- **Proxima area apos revisao e merge:** Etapa 5 — navegador e Browser Intelligence. Nao implementar outra area na mesma PR.
+- **Proxima área já iniciada separadamente:** Etapa 5 — navegador e Browser Intelligence.
 
 
 ### Etapa 3 — modelo, sessao/contexto e memoria (2026-10-10)
