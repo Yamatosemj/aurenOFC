@@ -8,6 +8,7 @@ Assistente desktop/voz para Windows, versão técnica **V47**, usando o modelo c
 
 - [`AGENTS.md`](AGENTS.md) — regras para IAs e mantenedores: escopo, seguranca, testes e documentacao.
 - [`docs/INVENTARIO.md`](docs/INVENTARIO.md) — mapa dos subsistemas e ordem das auditorias. **Mapeado nao significa auditado ou validado em hardware.**
+- [`docs/architecture/01-nucleo.md`](docs/architecture/01-nucleo.md) — auditoria estatica do Harness, orquestradores, estados de tarefa, rastreio, testes e limites conhecidos.
 - [`docs/TESTES_GITHUB.md`](docs/TESTES_GITHUB.md) e [`docs/CONTROLE_REMOTO_GITHUB.md`](docs/CONTROLE_REMOTO_GITHUB.md) — operacao e historico dos testes remotos; **algumas instrucoes antigas aguardam reconciliacao** com os runs atuais.
 
 A documentacao evolui em PRs pequenas por subsistema. Para decidir o status real de uma funcionalidade, confronte documentos com codigo, PRs e CI atuais.
