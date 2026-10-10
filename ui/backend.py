@@ -61,6 +61,7 @@ class GuiConfirmationChannel:
             return bool(choice.approved)
         finally:
             self.register_pending(None)
+            self.events.put(UiEvent("confirm_done", payload=choice))
 
 
 class AurenUiWorker:
