@@ -10,9 +10,9 @@ Atualizado em: 2026-10-10
 
 - **Versão estável:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** `fix/remote-gcm-workdir` — ajuste pontual da consulta GCM sob o runner, aguardando CI e validacao no Windows pessoal
-- **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #113 (`28c91423f04e5ab0b63c07dea945aba1ff2a77b1`)
-- **CI:** PR #113: CI completo e focado Linux/Windows aprovado; diagnostico local ainda nao aplicado no notebook e teste remoto ainda pendente.
+- **Branch/PR ativa:** nenhuma; PR #114 integrada, aguardando aplicacao pelo proprietario no Windows e teste real
+- **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #114 (`b2def7937e495fc4bd4002dd8ca30d64cb1ba038`)
+- **CI:** PR #114: full Linux 532 passed/17 skipped, focado Linux 164 passed/8 skipped, focado Windows GitHub-hosted 172 passed. Teste remoto no notebook pessoal ainda pendente.
 - **Fase atual:** concluir testes reais no Windows via comando do chat; GUI MVP foi entregue e seu uso real foi confirmado pelo usuario, mas entrada textual precisa de melhoria posterior
 
 ### Ajuste de credenciais do runner (em validacao, 2026-10-10)
