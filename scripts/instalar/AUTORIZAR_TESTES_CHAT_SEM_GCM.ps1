@@ -12,7 +12,7 @@ $approvalFile = Join-Path $policy 'chat-control-approval.json'
 $hook = Join-Path $policy 'before-job.ps1'
 $backup = Join-Path $policy 'chat-control-functions.pre-offline.bak'
 $approvalBackup = Join-Path $policy 'chat-control-approval.pre-offline.bak'
-$blob = '90e3e3070f8b977bc328dc6ad72b112407ffeb3d'
+$blob = '52abfd109c06cdc458727337579984d91da879bc'
 
 foreach ($item in @($source, $target, $approvalFile, $hook)) {
     if (-not (Test-Path -LiteralPath $item -PathType Leaf)) {
