@@ -15,7 +15,9 @@ Atualizado em: 2026-10-10
 - Escopo: PTT Ctrl direito + Shift direito, pre/post-roll, VAD WebRTC + fallback de energia, nao enviar silencio ao ASR, fallback seguro de taxa nativa do microfone, ASR 16 kHz, aquecimento e recuperacao de falha de captura.
 - `webrtcvad-wheels==2.0.14.post1` permanece dependencia opcional do modo voz no requirements-voice separado e pinado.
 - **Somente pytest** hoje: executar CI Linux e Windows hospedado e testes unitarios de voz/microfone/VAD simulados, depois pytest remoto em PR via ChatGPT. Nao executar `testes_auren_live.py`, nao iniciar microfone, nao consumir API e nao alegar validação fisica de latencia/STT. V47 permanece versao estavel ate testar com hardware.
-- Se o CI falhar, corrigir isoladamente a integracao preservando seguranca. Revisar codigo antes de merge; PRs antigas permanecem abertas por enquanto e nao devem ser mescladas em cascata.
+- **CI e resultado remoto confirmados:** PR #119 integrada apos suite completa Linux **556 passed / 24 skipped**, Windows hospedado focado **181 passed**, modo seguro Windows **110 passed**, Linux focado **166 passed / 15 skipped**. No Windows pessoal, [run #38085000162](https://github.com/Yamatosemj/aurenOFC/actions/runs/38085000162), PR #119 commit `9fa20a4cb92dfead9a77fa9356d8677bcf559be8`: **579 passed, 1 skipped, 1 warning, zero falhas**, pytest 26.83 s, exit code 0; relatórios PR e XML entregues ao chat.
+- **Ainda nao validado:** latencia real, PTT Ctrl direito + Shift direito em hardware, captura de microfone fisico, qualidade STT e VAD com ambiente real; tambem testes Live/API. Nenhum foi executado nesta rodada.
+- **Proxima tarefa sugerida:** quando o proprietario tiver acesso ao PC, fazer teste pequeno de voz/PTT, sem expandir escopo; antes disso, no maximo auditoria pontual de static/pytest. Nao mesclar branches antigas em cascata.
 
 
 ### Revisao das 11 falhas da PR-sonda (2026-10-10)
@@ -40,10 +42,10 @@ Atualizado em: 2026-10-10
 
 - **Versão estável:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** `integrate/v48-voice-stt-ptt` - integracao da cadeia #85/#90/#92/#95 com pytest, sem Live; PR de integracao em preparacao.
-- **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #118 (`edff8ca264b1e4c830e7f6aca567506521a3669b`)
-- **CI:** PR #118 Linux completo 534 passed/24 skipped; Windows hospedado focado 181 passed e modo seguro 110 passed; Linux modo seguro 110 passed. **Notebok pessoal: 557 passed, 0 failed, 1 skipped, 1 warning no run #38082122839.**
-- **Fase atual:** consolidar voz/STT V48 no runtime da main atual, testando somente com pytest; validacao fisica de voz e tarefas Live ficam adiadas.
+- **Branch/PR ativa:** nenhuma; PR #119 integrada na `main`. Branches antigas #85/#90/#92/#95 seguem abertas apenas para reconciliação administrativa, nao mesclar cegamente.
+- **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #119 (`e9712ef5257b971c3aefc6ed1e6911ad4ae5b8d9`)
+- **CI:** PR #119 Linux completo 556 passed/24 skipped; Windows hospedado focado 181 passed, modo seguro Windows 110 passed. **Notebook pessoal PR #119: 579 passed, zero falhas, 1 skipped, 1 warning, run #38085000162.**
+- **Fase atual:** candidato de voz V48 consolidado na main apos pytest, sem alterar AUREN_VERSION=47; proximo passo futuro e validacao fisica de voz/PTT/latencia. Testes Live L0-L5 e novas capacidades adiados.
 
 ### Primeiro teste desbloqueado no Windows, falha de parser ASCII (2026-10-10)
 
