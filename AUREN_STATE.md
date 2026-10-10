@@ -10,9 +10,9 @@ Atualizado em: 2026-10-10
 
 - **Versão estável:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** `fix/remote-chat-stage-errors` — diagnostico seguro da etapa exata de falha do runner; testes em validacao
-- **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #112 (`dfb0074b183ca38c30341b39361ba8997cab7ccb`)
-- **CI:** PR #112: suite Linux completa e testes focados Linux/Windows verdes (Windows focado: 168 passed, Linux focado: 160 passed/8 skipped). Teste fisico no notebook ainda pendente.
+- **Branch/PR ativa:** nenhuma; PR #113 integrada, aguardando aplicacao local do diagnostico por parte do proprietario
+- **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #113 (`28c91423f04e5ab0b63c07dea945aba1ff2a77b1`)
+- **CI:** PR #113: CI completo e focado Linux/Windows aprovado; diagnostico local ainda nao aplicado no notebook e teste remoto ainda pendente.
 - **Fase atual:** concluir testes reais no Windows via comando do chat; GUI MVP foi entregue e seu uso real foi confirmado pelo usuario, mas entrada textual precisa de melhoria posterior
 
 ### Diagnostico de autenticacao do runner real (2026-10-10)
@@ -21,7 +21,7 @@ Atualizado em: 2026-10-10
 - A partir do chat, comentario na PR #108 iniciou [workflow #38077526737](https://github.com/Yamatosemj/aurenOFC/actions/runs/38077526737): `validar` passou, runner `auren-windows-authorized` recebeu o job, mas a verificacao local retornou `Verificacao remota indisponivel; job bloqueado` antes de executar pytest.
 - O proprietario executou verificacoes na sessao interativa do PowerShell: credencial Git e APIs `repo`, `PR` e `jobs` todas passaram; nao comprova que esses recursos funcionam com identidade/ambiente do processo do runner e nao cobriu a chamada `contents/.github/workflows/auren-chat-tests.yml?ref=<sha>`.
 - Proxima correcao: acrescentar mensagens **apenas com a etapa** da falha nas 4 chamadas ao helper da politica (GCM, conteudo de workflow, PR, validacao hospedada), sem registrar token nem liberar operacoes. `scripts/instalar/DIAGNOSTICAR_TESTES_CHAT.ps1` faz backup e substitui somente a funcao complementar do chat. `before-job.ps1`, approval original e workflow imutavel continuam intocados.
-- Executar verificacao de CI antes de merge; apos `git pull` e aprovacao do proprietario para instalar no proprio Windows, repetir PR #108 pelo comentario. **Ainda nao considerar testes reais operacionais.**
+- PR #113 integrada apos CI verde; apos `git pull` e execucao local expressa de `scripts/instalar/DIAGNOSTICAR_TESTES_CHAT.ps1`, repetir PR #108 pelo comentario. **Ainda nao considerar testes reais operacionais.**
 
 ### Configuracao pontual da politica Windows (2026-10-10)
 
