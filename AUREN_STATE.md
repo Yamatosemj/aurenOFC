@@ -15,6 +15,14 @@ Atualizado em: 2026-10-10
 - **CI:** PR #115: suite Linux e testes focados Linux/Windows aprovados (focados Windows GitHub-hosted 175 passed). Instalador PowerShell executado com politica simulada em CI e confirmado sucesso, idempotencia e recusa segura; teste no notebook real ainda pendente.
 - **Fase atual:** concluir testes reais no Windows via comando do chat; GUI MVP foi entregue e seu uso real foi confirmado pelo usuario, mas entrada textual precisa de melhoria posterior
 
+### Bloqueio confirmado apos aplicar #115 (2026-10-10)
+
+- O proprietario aplicou com sucesso `CORRIGIR_CREDENCIAL_CHAT.ps1`, com backup e verificacoes preservados, apos `git pull --ff-only` da main.
+- Sonda disparada pelo ChatGPT na PR #108 (comentario #6101265370), [run #38079480204](https://github.com/Yamatosemj/aurenOFC/actions/runs/38079480204): `validar=success`, GitHub encaminhou ao runner `auren-windows-authorized`, hook local recusou `executar` no `Set up runner`: **`Credencial Git/GCM do runner: processo terminou com erro.`** Nenhum pytest executou no PC.
+- Portanto, **ajuste de cwd e instalador nao resolveram**. Nao repetir `git pull`/instalador ou prometer automacao pronta sem rever a estrategia de credenciais.
+- Caminho tecnico a avaliar: mover toda verificacao online de comentario, PR, SHA e workflow para um controlador confiavel e fixado do GitHub Actions, mantendo no Windows uma politica local *offline* restrita a workflow/commit fixos. Assim o hook nao precisa recuperar credenciais Git no inicio de cada job. Precisa validar cuidadosamente eventos, autorizacao e integridade antes de alterar o hook.
+- A configuracao atual permanece com bloqueio fail-closed. Nenhuma nova permissao foi liberada.
+
 ### Bloqueio do instalador de credenciais (2026-10-10)
 
 - O proprietario fez `git pull` para a PR #114 integrada e executou `CORRIGIR_CREDENCIAL_CHAT.ps1`. O instalador abortou na verificacao de fonte anterior, com `Politica instalada nao corresponde a versao esperada; parada segura.`
