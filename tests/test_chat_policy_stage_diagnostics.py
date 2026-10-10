@@ -33,3 +33,26 @@ def test_diagnostic_installer_does_not_edit_old_hook_or_approvals():
     assert "Test-ChatControlRequest" in src
     assert "ParseInput(" in src
     assert LEGACY.exists()
+
+
+def test_gcm_lookup_isolated_from_runner_workspace_and_remains_noninteractive():
+    guard = GUARD.read_text(encoding="utf-8")
+    assert '$gitArgs = ' in guard
+    assert """'-C "' + $profileDirectory + '" -c credential.interactive=never credential fill'""" in guard
+    assert 'IsPathRooted($profileDirectory)' in guard
+    assert 'Test-Path -LiteralPath $profileDirectory -PathType Container' in guard
+    assert 'Invoke-BoundedLocalTool -Executable' in guard
+    assert "Credencial Git/GCM do runner: processo terminou com erro." in guard
+    assert "Credencial Git/GCM do runner: tempo limite excedido." in guard
+    assert "if ($pr.head.sha -cne $prSha)" not in guard
+    assert '$pr.head.sha -cne $prSha' in guard
+
+
+def test_gcm_fix_installer_preserves_gate_and_approval():
+    installer = (ROOT / 'scripts/instalar/CORRIGIR_CREDENCIAL_CHAT.ps1').read_text(encoding='utf-8')
+    assert "Copy-Item -LiteralPath $target -Destination $backup" in installer
+    assert "[IO.File]::WriteAllText($target, $replacement" in installer
+    assert "WriteAllText($hook" not in installer
+    assert "WriteAllText($approvalFile" not in installer
+    assert "90e3e3070f8b977bc328dc6ad72b112407ffeb3d" in installer
+    assert "ParseInput(" in installer
