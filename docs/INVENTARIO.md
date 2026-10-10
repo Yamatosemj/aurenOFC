@@ -1,6 +1,6 @@
 # Inventario tecnico e plano de documentacao do Auren
 
-> **Inventario das etapas 0 e 1.** Este documento e um mapa para orientar auditorias **uma por vez**; a presenca de um arquivo no repositorio nao comprova que a funcionalidade opera de ponta a ponta. Areas marcadas como **mapeadas** ainda nao foram auditadas em detalhe. A Etapa 1 documenta o nucleo por leitura de codigo e analise de testes; **isso nao comprova comportamento Live**.
+> **Inventario das etapas 0, 1 e 2.** Este documento e um mapa para orientar auditorias **uma por vez**; a presenca de um arquivo no repositorio nao comprova que a funcionalidade opera de ponta a ponta. Areas marcadas como **mapeadas** ainda nao foram auditadas em detalhe. As Etapas 1 e 2 documentam nucleo e caminho de ferramentas por leitura de codigo e testes; **isso nao comprova comportamento Live**.
 
 ## Escopo conferido
 
@@ -60,11 +60,13 @@
 
 ## Ordem de trabalho
 
-**Etapa 0 (esta PR):** mapear o repositorio, criar `AGENTS.md` e centralizar o indice de manutencao. Nenhuma mudanca de runtime.
+**Etapa 0 (concluida na [PR #120](https://github.com/Yamatosemj/aurenOFC/pull/120)):** mapeamento do repositorio, criacao de `AGENTS.md` e indice de manutencao. Nenhuma mudanca de runtime.
 
 **Etapa 1 (concluida na [PR #121](https://github.com/Yamatosemj/aurenOFC/pull/121)):** auditoria estatica de **nucleo de execucao** (Harness, **dois** Orchestrators com funcoes distintas, TaskManager, contexto, trace, fila pos-tarefa) em [architecture/01-nucleo.md](architecture/01-nucleo.md), confrontando codigo e contratos com testes. Registrar observacoes como hipoteses sem alterar runtime. Validacao fisica/Live continua pendente.
 
-**Etapa 2 (documentacao em revisao):** Router, selecao/atalhos, registry, ToolContract, Dispatcher, PermissionManager, confirmacoes, ToolResult e protecao de origem nao confiavel, em [architecture/02-roteamento-seguranca.md](architecture/02-roteamento-seguranca.md). Auditoria estatica e verificacao dos testes existentes; **nao** inclui runtime, CI local ou hardware real.
+**Etapa 2 (concluida na [PR #122](https://github.com/Yamatosemj/aurenOFC/pull/122)):** Router, selecao/atalhos, registry, ToolContract, Dispatcher, PermissionManager, confirmacoes, ToolResult e protecao de origem nao confiavel, documentados em [architecture/02-roteamento-seguranca.md](architecture/02-roteamento-seguranca.md). Auditoria estatica e testes hospedados; **nao** inclui runtime, notebook pessoal ou hardware real.
+
+**Evidencia de CI da Etapa 2:** PR #122 aprovada nos GitHub Actions no SHA `a45d173fa99cd66ce6764a657838947a14389dfc`: Linux 556 passed /24 skipped; testes focados Windows hospedado 181 passed e modo seguro Windows 110 passed. Foram conferidos 70 links relativos sem erros. Nenhum teste Live ou no notebook pessoal foi solicitado.
 
 **Etapa 3 (proxima area sugerida):** modelo/provider, sessao/contexto e memoria, mantendo separadas as responsabilidades de persistencia e task management.
 
