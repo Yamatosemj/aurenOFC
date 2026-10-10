@@ -10,9 +10,9 @@ Atualizado em: 2026-10-09
 
 - **Versão estável:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** `feat/auren-desktop-ui-mvp-v47` — interface grafica inicial, ainda aguardando CI e validacao de janela real
-- **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #107 (`7b91aa7896223bdfc2ea61bf8b846e8cdb5dbf96`)
-- **CI:** PR #107: suite completa Linux 497 passed/15 skipped, testes focados Linux 129 passed/6 skipped e Windows 135 passed; validar a leitura real do clipboard no PC
+- **Branch/PR ativa:** nenhuma nesta rodada; interface MVP integrada na main pela PR #109
+- **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #109 (`568a44daae24f1b151a06e1f06e36919af5e00f8`)
+- **CI:** PR #109: suite completa Linux 503 passed/15 skipped, testes focados Linux 135 passed/6 skipped e Windows 141 passed. Falta validacao visual da nova GUI no Windows real.
 - **Fase atual:** entrega visivel da interface desktop MVP (prioridade temporal do usuario); Browser Intelligence fica pausado, sem mudar sua implementacao
 
 ### Interface desktop — primeira entrega visivel (2026-10-10)
@@ -21,7 +21,7 @@ Atualizado em: 2026-10-09
 - `ui/backend.py` serializa comandos em uma thread e usa apenas `auren.criar_harness(confirmation_channel=...)` e `harness.processar_mensagem`, preservando Router/Dispatcher/PermissionManager e memoria/sessao existentes.
 - Confirmacoes sensiveis aparecem em janela autorizar/negar, com timeout que **nega**; fechar a UI pede cancelamento cooperativo, rejeita confirmacoes pendentes e encerra sessao ao concluir.
 - Voz/PTT permanece em `AUREN_VOZ.bat`; interface MVP e **texto somente**. Nao foi feito um redesenho do pipeline de voz.
-- Testes novos de ponte/sessao/confirmacao rodam no CI Linux/Windows; interface Tk completa exige teste visual em Windows real antes de declarar experiencia operacional validada.
+- PR #109 integrada na main; CI: suite completa Linux **503 passed/15 skipped**, testes focados Linux **135 passed/6 skipped** e Windows **141 passed**. Interface Tk completa exige teste visual em Windows real antes de declarar experiencia operacional validada.
 - Esta tarefa substitui temporariamente refinamentos de navegador e correcoes de runner como foco unico. **Nao** reabrir todas as PRs antigas nem expandir a UI antes da primeira validacao.
 
 ### Primeira correcao da bateria Windows real — clipboard
