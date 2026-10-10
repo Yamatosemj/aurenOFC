@@ -10,10 +10,10 @@ Atualizado em: 2026-10-10
 
 ### Etapa 4 — Windows, arquivos e visao (2026-10-10)
 
-- **Em preparacao documental:** branch `docs/etapa-4-windows-arquivos-visao` a partir da `main` `d0c9c991a3311127f59368d123020b2c065f1e1f`. Novo `docs/architecture/04-windows-arquivos-visao.md` e referencias em README, AGENTS e inventario. **Apenas Markdown**; nenhum runtime, workflow, politica ou runner alterado.
+- **Documentacao submetida na [PR #124](https://github.com/Yamatosemj/aurenOFC/pull/124):** branch `docs/etapa-4-windows-arquivos-visao` a partir da `main` `d0c9c991a3311127f59368d123020b2c065f1e1f`. Novo `docs/architecture/04-windows-arquivos-visao.md` e referencias em README, AGENTS e inventario. **Apenas Markdown**; nenhum runtime, workflow, politica ou runner alterado.
 - **Fontes lidas:** fachadas e modulos Windows de janelas, UIA, input/DPI, screenshot, processos, audio, clipboard e status; applications, files, file_intelligence, Dispatcher, PermissionManager, core/vision e guards do Harness. Contratos confrontados com o registry de 49 tools e testes existentes.
 - **Limites:** buscar/inspecionar/ler arquivo nao implementam move/rename/undo; arquivo fora da allowlist pede confirmacao, caminho sensivel bloqueia; UIA e alvos de janelas dependem do provedor/interface real; imagem exige snapshot consistente e DPI validado para conversao segura; clique/arraste requerem politica e posterior verificacao quando aplicavel.
-- **Validacao pendente nesta branch:** links relativos, CI no SHA final e PR. Nenhum teste Live, API, mouse, screenshot, UIA ou Windows pessoal executado nesta etapa documental.
+- **Validacao nesta PR:** 76 links relativos conferidos, nenhum ausente (árvore `main` + novo documento). CI no SHA final ainda pendente. Nenhum teste Live, API, mouse, screenshot, UIA ou Windows pessoal executado nesta etapa documental.
 - **Proxima area apos revisao e merge:** Etapa 5 — navegador e Browser Intelligence. Nao implementar outra area na mesma PR.
 
 
