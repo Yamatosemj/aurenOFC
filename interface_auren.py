@@ -249,6 +249,10 @@ class AurenDesktop:
                 self._append("Sistema", event.text, "notice")
             elif event.kind == "confirm":
                 self._confirm(event.payload)
+            elif event.kind == "confirm_done":
+                # Fecha tambem pedidos expirados sem deixar janela modal presa.
+                if self.dialog is not None and event.payload.decided.is_set():
+                    self._dismiss_confirmation(deny=False)
             elif event.kind == "busy":
                 self.busy = True
             elif event.kind == "idle":
