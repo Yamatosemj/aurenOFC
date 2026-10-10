@@ -69,11 +69,13 @@ class AurenUiWorker:
 
     def __init__(self, harness_factory: Callable[..., Any] | None = None) -> None:
         self.events: Queue[UiEvent] = Queue()
-        self._requests: Queue[tuple[str, str]] = Queue()
+        self._requests: Queue[tuple[str, str, int]] = Queue()
         self._harness_factory = harness_factory
         self._harness: Any = None
         self._pending: ConfirmationChoice | None = None
         self._lock = Lock()
+        self._enabled = False
+        self._generation = 0
         self._closing = Event()
         self._thread = Thread(target=self._run, name="auren-ui-worker", daemon=True)
 
@@ -84,11 +86,18 @@ class AurenUiWorker:
     def alive(self) -> bool:
         return self._thread.is_alive()
 
+    def activate(self) -> None:
+        with self._lock:
+            if not self._closing.is_set():
+                self._enabled = True
+
     def submit(self, text: str) -> bool:
         text = str(text or "").strip()
-        if not text or self._closing.is_set():
-            return False
-        self._requests.put(("message", text))
+        with self._lock:
+            if not text or self._closing.is_set() or not self._enabled:
+                return False
+            generation = self._generation
+        self._requests.put(("message", text, generation))
         return True
 
     def _set_pending(self, choice: ConfirmationChoice | None) -> None:
@@ -114,15 +123,23 @@ class AurenUiWorker:
     def go_off(self) -> None:
         if self._closing.is_set():
             return
+        with self._lock:
+            self._enabled = False
+            self._generation += 1
+            generation = self._generation
         self.cancel_current()
-        self._requests.put(("off", ""))
+        self._requests.put(("off", "", generation))
 
     def close(self) -> None:
         if self._closing.is_set():
             return
         self._closing.set()
+        with self._lock:
+            self._enabled = False
+            self._generation += 1
+            generation = self._generation
         self.cancel_current()
-        self._requests.put(("quit", ""))
+        self._requests.put(("quit", "", generation))
 
     def _make_harness(self) -> Any:
         channel = GuiConfirmationChannel(self.events, self._set_pending)
@@ -156,7 +173,7 @@ class AurenUiWorker:
     def _run(self) -> None:
         try:
             while True:
-                operation, text = self._requests.get()
+                operation, text, generation = self._requests.get()
                 if operation == "quit" or self._closing.is_set():
                     break
                 if operation == "off":
@@ -164,6 +181,10 @@ class AurenUiWorker:
                     self.events.put(UiEvent("off"))
                     continue
                 if operation != "message":
+                    continue
+                with self._lock:
+                    valid = self._enabled and generation == self._generation
+                if not valid:
                     continue
 
                 self.events.put(UiEvent("busy", "Processando..."))
@@ -174,6 +195,10 @@ class AurenUiWorker:
                         harness = self._make_harness()
                         with self._lock:
                             self._harness = harness
+                    with self._lock:
+                        still_valid = self._enabled and generation == self._generation
+                    if not still_valid or self._closing.is_set():
+                        continue
                     quick, response = harness.processar_mensagem(text)
                     answer = response if quick else getattr(response, "output_text", str(response))
                     answer = str(answer or "").strip() or "(Sem resposta textual.)"
