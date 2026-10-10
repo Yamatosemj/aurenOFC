@@ -10,17 +10,17 @@ Atualizado em: 2026-10-10
 
 ### Etapa 2 — auditoria estatica do caminho de ferramentas e permissoes (2026-10-10)
 
-- **Escopo atual:** documentacao de `core/router.py`, `core/local_decision.py`, `core/tools_registry.py`, `core/tool_contracts.py`, `tools/dispatcher.py`, `core/permission_manager.py`, `core/confirmation.py`, `core/tool_result.py`, atalhos e entrada experimental de audio.
-- **Entrega em revisao:** `docs/architecture/02-roteamento-seguranca.md`, mais referencias em `AGENTS.md`, `README.md` e `docs/INVENTARIO.md`. Branch `docs/etapa-2-roteamento-contratos-permissoes` e PR desta tarefa a verificar no GitHub.
+- **Escopo auditado:** documentacao de `core/router.py`, `core/local_decision.py`, `core/tools_registry.py`, `core/tool_contracts.py`, `tools/dispatcher.py`, `core/permission_manager.py`, `core/confirmation.py`, `core/tool_result.py`, atalhos e entrada experimental de audio.
+- **Etapa 2 integrada:** [PR #122](https://github.com/Yamatosemj/aurenOFC/pull/122), merge `01899563695e552a16f79852a21296b441575129`. Entrega: `docs/architecture/02-roteamento-seguranca.md`, mais referencias em `AGENTS.md`, `README.md` e `docs/INVENTARIO.md`. Exclusivamente Markdown, nenhum runtime/politica alterados.
 - **Responsabilidades confirmadas estaticamente:** Router escolhe caminhos/tools, nao autoriza; fast path e chamadas do modelo convergem no Dispatcher; schema/contrato antes de autorizar; PermissionManager combina capacidade, argumentos e estado da tarefa; ToolResult fornece sucesso estruturado ao ciclo.
 - **Politica real:** AUTO/CONFIRM/BLOCKED; limite padrao de 10 tentativas contaveis, guard de falhas repetidas e protecao contra conteudo externo nao confiavel para proximas acoes contaveis. TextConfirmationChannel nega interacao no AUREN_TEST_MODE; nao assumir mesmo comportamento para todo canal injetado.
 - **Pontos para teste/decisao futuros, sem runtime alterado:** validador local implementa subconjunto de JSON Schema; marca de fonte nao confiavel permanece ate reiniciar tarefa (nao so ate primeira aprovacao); fast path ainda adapta retorno textual; heuristicas de alvo nao garantem semantica real da interface. Nao declarar vulnerabilidade exploravel sem reproduzir.
-- **Validacao prevista:** links/caminhos Markdown e CI hospedado Linux/Windows; **sem teste Live, API ou notebook** para PR exclusivamente documental. Proxima area depois desta: Etapa 3 — provider/modelo, sessao/contexto e memoria, sem sobrepor funcoes do TaskManager.
+- **Validação concluída:** 70 links internos verificados sem caminhos quebrados. CI da PR #122 no SHA `a45d173fa99cd66ce6764a657838947a14389dfc`: Linux **556 passed, 24 skipped**, Windows hospedado focado **181 passed**, modo seguro Windows **110 passed**; Linux focado **166 passed, 15 skipped** e modo seguro **110 passed**. **Nao houve testes Live/API ou pytest no notebook pessoal**, pois esta PR so altera Markdown. **Proxima area:** Etapa 3 — provider/modelo, sessao/contexto e memoria.
 
 
 ### Etapa 1 - auditoria estatica do nucleo (2026-10-10)
 
-- **Etapa 1 concluida:** [PR #121](https://github.com/Yamatosemj/aurenOFC/pull/121) integrada a `main` (merge `c6fdfa60e34dea6b72abaffc79844877d9061f11`), auditoria estatica do nucleo/Harness, dos dois Orchestrators, TaskManager, sessao/contexto, trace e fila de estrategia. Proxima prioridade documental: Etapa 2, Router/Dispatcher/contratos/permissoes, em PR separada.
+- **Etapa 1 concluida:** [PR #121](https://github.com/Yamatosemj/aurenOFC/pull/121) integrada a `main` (merge `c6fdfa60e34dea6b72abaffc79844877d9061f11`), auditoria estatica do nucleo/Harness, dos dois Orchestrators, TaskManager, sessao/contexto, trace e fila de estrategia. Etapa 2 posteriormente concluida na PR #122; proxima etapa 3.
 - **Entrega:** `docs/architecture/01-nucleo.md`, com fluxo rastreado no codigo real, mapa de responsabilidades, estados/transicoes, fast path, guards de visao/browser, limites, mecanismos de contexto/persistencia, matriz de testes e orientacoes de manutencao. `docs/INVENTARIO.md`, `README.md` e `AGENTS.md` atualizados.
 - **Escopo estrito:** apenas Markdown, **sem alterar runtime, segurança, politicas do Windows, workflow ou API**.
 - **Evidencia de auditoria e CI confirmada:** leitura dos arquivos do ciclo e testes de ownership, ferramenta, guard, estados, session, trace, cancelamento, execucao unica e roteamento. PR #121 HEAD `9edb1ae7101fa9a3f1b6483a484ee3d4883a5014`, GitHub Actions completo Linux **556 passed / 24 skipped**, testes focados Windows hospedado **181 passed**, seguro Windows **110 passed**; testes Linux focados **166 passed / 15 skipped** e seguro **110 passed**. **Sem pytest no notebook pessoal e sem testes Live nesta PR**, pois somente Markdown foi alterado.
@@ -72,10 +72,10 @@ Atualizado em: 2026-10-10
 
 - **Versão estável:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Ultima PR documental integrada:** #121 (auditoria do nucleo/Harness); #120 (inventario e AGENTS.md). PR #119 consolidou voz candidata V48. Consultar GitHub em tempo real para saber PRs abertas; branches antigas de voz nao devem ser mescladas cegamente.
+- **Ultima PR documental integrada:** #122 (Router, Dispatcher, contratos e permissoes), apos #121 (nucleo/Harness) e #120 (inventario/AGENTS.md). PR #119 consolidou voz candidata V48. Consultar GitHub para PRs abertas; branches antigas de voz nao devem ser mescladas cegamente.
 - **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #119 (`e9712ef5257b971c3aefc6ed1e6911ad4ae5b8d9`)
 - **CI:** PR #119 Linux completo 556 passed/24 skipped; Windows hospedado focado 181 passed, modo seguro Windows 110 passed. **Notebook pessoal PR #119: 579 passed, zero falhas, 1 skipped, 1 warning, run #38085000162.**
-- **Fase atual:** Etapa 2 de documentacao: Router/Dispatcher/contratos/permissoes auditados estaticamente em PR documental; CI a confirmar. Etapas 0 e 1 concluidas; voz V48 segue sem validacao fisica e testes Live adiados.
+- **Fase atual:** Etapas documentais **0, 1 e 2 concluidas**, com auditoria estatica e CI hospedado verde. **Proxima etapa proposta: 3 (provider/modelo, sessao/contexto e memoria)**, em PR separada. Voz V48 ainda sem validacao fisica; testes Live adiados.
 
 ### Primeiro teste desbloqueado no Windows, falha de parser ASCII (2026-10-10)
 
