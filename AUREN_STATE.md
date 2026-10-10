@@ -10,10 +10,18 @@ Atualizado em: 2026-10-10
 
 - **Versão estável:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** nenhuma; PR #113 integrada, aguardando aplicacao local do diagnostico por parte do proprietario
+- **Branch/PR ativa:** `fix/remote-gcm-workdir` — ajuste pontual da consulta GCM sob o runner, aguardando CI e validacao no Windows pessoal
 - **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #113 (`28c91423f04e5ab0b63c07dea945aba1ff2a77b1`)
 - **CI:** PR #113: CI completo e focado Linux/Windows aprovado; diagnostico local ainda nao aplicado no notebook e teste remoto ainda pendente.
 - **Fase atual:** concluir testes reais no Windows via comando do chat; GUI MVP foi entregue e seu uso real foi confirmado pelo usuario, mas entrada textual precisa de melhoria posterior
+
+### Ajuste de credenciais do runner (em validacao, 2026-10-10)
+
+- `AurenAuthorizedRunner` executa com usuario `victo`, `LogonType=Interactive` e `RunLevel=Limited`; nao alterar para admin ou para outro tipo de logon para contornar a falha.
+- Hipotese tecnica: o pre-job herda cwd/configuracao Git diferente da sessao PowerShell, possivelmente um checkout anterior. Em `chat-control-functions.ps1`, a consulta nao-interativa de credencial passa a usar `git -C <USERPROFILE> ... credential fill`, fora do checkout do runner; nao adiciona credenciais nem altera validacoes.
+- Se GCM ainda falhar, erro seguro discrimina processo encerrado com falha de timeout (sem imprimir tokens ou mensagens sensiveis).
+- `scripts/instalar/CORRIGIR_CREDENCIAL_CHAT.ps1`: copia so a politica complementar, cria backup e valida autorizacao existente; requer execucao unica autorizada pelo proprietario.
+- **Nao declarar corrigido ate teste de ponta a ponta no notebook.** GitHub-hosted Windows/CI nao equivale ao runner real.
 
 ### Diagnostico de autenticacao do runner real (2026-10-10)
 
