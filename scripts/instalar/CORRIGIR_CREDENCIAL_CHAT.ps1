@@ -27,7 +27,7 @@ if (-not $hookSource.Contains('Test-ChatControlRequest')) {
 
 $prior = [IO.File]::ReadAllText($target)
 $replacement = [IO.File]::ReadAllText($source)
-$marker = "credencial.interactive=never credential fill"
+$marker = "credential.interactive=never credential fill"
 $changeMarker = '$gitArgs = ' + "'-C "
 $markers = @('function Test-ChatControlRequest', 'Runner elevado ou parada de emergencia ativa.',
     '90e3e3070f8b977bc328dc6ad72b112407ffeb3d', $marker)
