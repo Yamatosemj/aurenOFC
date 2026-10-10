@@ -1,6 +1,6 @@
 @echo off
 setlocal
-cd /d "%~dp0"
+cd /d "%~dp0..\.."
 
 rem Sem argumento, executamos a regressao diaria sem L5 live para economizar API.
 rem Use --completo para a congelacao completa incluindo L5.
@@ -27,7 +27,7 @@ rem Preflight de dependencias obrigatorias antes de carregar o Auren.
 if errorlevel 1 (
     echo.
     echo [ERRO] Dependencias Python ausentes ou incompletas.
-    echo Execute INSTALAR_AUREN.bat e rode este teste novamente.
+    echo Execute scripts\instalar\INSTALAR_AUREN.bat e rode este teste novamente.
     echo.
     exit /b 1
 )
