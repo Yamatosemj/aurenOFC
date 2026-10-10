@@ -1,6 +1,6 @@
 # Inventario tecnico e plano de documentacao do Auren
 
-> **Etapa 0 — levantamento inicial.** Este documento e um mapa para orientar auditorias **uma por vez**; a presenca de um arquivo no repositorio nao comprova que a funcionalidade opera de ponta a ponta. Areas marcadas como **mapeadas** ainda nao foram auditadas em detalhe. A Etapa 1 documenta o nucleo por leitura de codigo e analise de testes; **isso nao comprova comportamento Live**.
+> **Inventario das etapas 0 e 1.** Este documento e um mapa para orientar auditorias **uma por vez**; a presenca de um arquivo no repositorio nao comprova que a funcionalidade opera de ponta a ponta. Areas marcadas como **mapeadas** ainda nao foram auditadas em detalhe. A Etapa 1 documenta o nucleo por leitura de codigo e analise de testes; **isso nao comprova comportamento Live**.
 
 ## Escopo conferido
 
@@ -62,9 +62,11 @@
 
 **Etapa 0 (esta PR):** mapear o repositorio, criar `AGENTS.md` e centralizar o indice de manutencao. Nenhuma mudanca de runtime.
 
-**Etapa 1 (esta PR):** auditar estaticamente **nucleo de execucao** (Harness, **dois** Orchestrators com funcoes distintas, TaskManager, contexto, trace, fila pos-tarefa) em [architecture/01-nucleo.md](architecture/01-nucleo.md), confrontando codigo e contratos com testes. Registrar observacoes como hipoteses sem alterar runtime. Validacao fisica/Live continua pendente.
+**Etapa 1 (concluida na [PR #121](https://github.com/Yamatosemj/aurenOFC/pull/121)):** auditoria estatica de **nucleo de execucao** (Harness, **dois** Orchestrators com funcoes distintas, TaskManager, contexto, trace, fila pos-tarefa) em [architecture/01-nucleo.md](architecture/01-nucleo.md), confrontando codigo e contratos com testes. Registrar observacoes como hipoteses sem alterar runtime. Validacao fisica/Live continua pendente.
 
 **Etapa 2 (proxima area sugerida):** Router, ferramentas, Dispatcher, contratos e permissoes; documentar a fronteira de seguranca e executar testes automatizados, em PR independente.
+
+**Evidencia de CI da Etapa 1:** PR #121 aprovada no GitHub Actions, SHA de codigo documental antes do merge `9edb1ae7101fa9a3f1b6483a484ee3d4883a5014`: Linux 556 passed/24 skipped, Windows hospedado focado 181 passed e modo seguro 110 passed. **Sem execucao Live, microfone ou testes no notebook pessoal nessa PR documental.**
 
 **Etapas posteriores:** seguir a ordem da tabela, ajustando prioridades com o proprietario quando necessario. A reorganizacao de `AUREN_STATE.md` e a correcao da documentacao de testes remotos devem receber PRs proprias, separadas de mudancas no runtime.
 
