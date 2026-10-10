@@ -10,7 +10,7 @@ Atualizado em: 2026-10-10
 
 ### Etapa 1 - auditoria estatica do nucleo (2026-10-10)
 
-- **Tarefa ativa:** documentacao de Harness, ciclo, duas camadas chamadas Orchestrator, TaskManager, contexto de sessao, trace e fila de estrategia. Branch `docs/etapa-1-auditoria-nucleo`; PR sera criada para revisao e CI.
+- **Tarefa ativa:** documentacao de Harness, ciclo, duas camadas chamadas Orchestrator, TaskManager, contexto de sessao, trace e fila de estrategia. [PR #121](https://github.com/Yamatosemj/aurenOFC/pull/121), branch `docs/etapa-1-auditoria-nucleo`; revisao e CI em andamento.
 - **Entrega:** `docs/architecture/01-nucleo.md`, com fluxo rastreado no codigo real, mapa de responsabilidades, estados/transicoes, fast path, guards de visao/browser, limites, mecanismos de contexto/persistencia, matriz de testes e orientacoes de manutencao. `docs/INVENTARIO.md`, `README.md` e `AGENTS.md` atualizados.
 - **Escopo estrito:** apenas Markdown, **sem alterar runtime, segurança, politicas do Windows, workflow ou API**.
 - **Evidencia de auditoria:** leitura dos arquivos do ciclo e dos testes de ownership, ferramenta, guard, states, session, trace, cancelamento, execucao unica e roteamento. Aprovacao de CI desta PR ainda precisa ser verificada e registrada apos executar.
