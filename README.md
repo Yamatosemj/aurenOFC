@@ -82,6 +82,21 @@ scripts/instalar/INSTALAR_VOZ.bat
 
 A camada de voz usa dependências separadas de `requirements-voice.txt`.
 
+### Evolução de voz V48 (candidata, ainda sem validação física)
+
+O modo de voz em `scripts/iniciar/AUREN_VOZ.bat` usa push-to-talk
+**Ctrl direito + Shift direito**, pré-roll/pós-roll de áudio, detecção local de
+fala (WebRTC VAD com fallback de energia), tratamento de silêncio e
+recuperação de falhas transitórias do microfone. A captura tenta 16 kHz e,
+quando o dispositivo não aceita, usa sua taxa nativa; o ASR normaliza para
+16 kHz. O dispositivo pode ser indicado por nome em `AUREN_MIC_DEVICE`.
+
+`requirements-voice.txt` inclui `webrtcvad-wheels` em versão fixa.
+Os testes pytest simulam captura, VAD, microfones e transcrição; **não**
+comprovam qualidade, latência nem PTT com hardware real. A versão estável
+do Auren continua V47 até a validação física de voz.
+
+
 ### Modelo
 
 Por padrão, o Auren usa `gpt-5.6-luna`. Para testar outro modelo sem alterar o código, defina a variável de ambiente `AUREN_MODEL` antes de iniciar o processo.
@@ -157,7 +172,7 @@ A captura de tela informa a área de trabalho virtual do Windows, incluindo orig
 - browser e automação Windows integrados
 - visão pode observar a tela, executar clique ou arraste global do mouse com confirmação, manter a geometria da captura e da imagem entregue ao modelo e verificar o estado final em tarefas visuais compostas
 - voice local-first para ASR/TTS
-- `experimental/wake_word.py` existe, mas não faz parte do caminho normal de voz atual (PTT/F8)
+- `experimental/wake_word.py` existe, mas não faz parte do caminho normal de voz atual (PTT Ctrl direito + Shift direito)
 - componentes históricos e relatórios antigos não fazem parte deste pacote runtime
 
 ## Licença
