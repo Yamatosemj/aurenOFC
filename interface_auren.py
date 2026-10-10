@@ -181,8 +181,9 @@ class AurenDesktop:
         self.busy = True
         self._update_mode()
 
-    def _dismiss_confirmation(self) -> None:
-        self.worker.deny_pending()
+    def _dismiss_confirmation(self, *, deny: bool = True) -> None:
+        if deny:
+            self.worker.deny_pending()
         if self.dialog is not None:
             try:
                 self.dialog.destroy()
@@ -194,7 +195,8 @@ class AurenDesktop:
         if self.closing or self.mode == "off" or choice.decided.is_set():
             choice.answer(False)
             return
-        self._dismiss_confirmation()
+        # O novo pedido deve continuar pendente; limpar apenas dialogos antigos.
+        self._dismiss_confirmation(deny=False)
         window = tk.Toplevel(self.root, bg=PANEL)
         self.dialog = window
         window.title("Auren · Confirmar ação")
