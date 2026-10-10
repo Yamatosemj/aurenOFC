@@ -70,7 +70,7 @@ def test_installer_preserves_old_hook_and_is_idempotent(tmp_path):
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="PowerShell tests require Windows")
-def test_local_guard_only_accepts_exact_owner_pr_commit(tmp_path):
+def test_local_guard_requires_owner_and_correct_comment_format(tmp_path):
     gh = tmp_path / "auren-remote/gh/bin/gh.exe"
     gh.parent.mkdir(parents=True)
     gh.write_text("dummy", encoding="utf-8")  # checked with Test-Path; never run
@@ -116,17 +116,17 @@ function Invoke-BoundedLocalTool {
 }
 $ctx = '__CTX__' | ConvertFrom-Json
 $ev = '__EVENT__' | ConvertFrom-Json
-$approval = '{"enabled":true,"workflow_blob":"__BLOB__"}' | ConvertFrom-Json
+$approval = '{"enabled":true,"workflow_blob":"__BLOB__","offline_hosted_validation":true}' | ConvertFrom-Json
 Test-ChatControlRequest -Context $ctx -Event $ev -ChatApproval $approval -Elevated $false -Stopped $false -RunId '123' -Attempt '1'
-$ev.comment.body = 'AUREN_TESTE_V1 pytest ' + ('b' * 40)
+$ev.comment.body = 'AUREN_TESTE_V1 shell ' + ('b' * 40)
 $rejected = $false
 try {
     Test-ChatControlRequest -Context $ctx -Event $ev -ChatApproval $approval -Elevated $false -Stopped $false -RunId '123' -Attempt '1'
 } catch {
     $rejected = $true
 }
-if (-not $rejected) { throw 'Accepted mismatched SHA' }
-Write-Output 'REJECTED_SHA'
+if (-not $rejected) { throw 'Accepted invalid command format' }
+Write-Output 'REJECTED_BAD_COMMAND'
 exit 0
 """
     script = (script.replace("__POLICY__", str(FUNCTIONS).replace("'", "''"))
@@ -142,4 +142,4 @@ exit 0
     )
     assert result.returncode == 0, result.stdout + "\n" + result.stderr
     assert "Politica do chat aprovada" in result.stdout
-    assert "REJECTED_SHA" in result.stdout
+    assert "REJECTED_BAD_COMMAND" in result.stdout
