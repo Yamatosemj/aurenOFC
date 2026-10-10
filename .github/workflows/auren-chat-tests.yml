@@ -34,10 +34,11 @@ jobs:
       pr_number: ${{ steps.check.outputs.pr_number }}
       pr_sha: ${{ steps.check.outputs.pr_sha }}
     steps:
-      - name: Obter validador revisado da main
+      - name: Obter validador revisado e fixo
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: ${{ github.sha }}
+          # Codigo validador imutavel: nao confiar em mudancas futuras da main.
+          ref: b695fad7cc668d9a47e4dfc72f11a74b152d9cac
           persist-credentials: false
       - name: Conferir comentario, autor, PR e commit
         id: check
