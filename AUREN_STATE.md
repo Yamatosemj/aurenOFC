@@ -8,6 +8,16 @@ Atualizado em: 2026-10-10
 
 ## Estado atual
 
+### Integracao V48 voz/STT - candidata (2026-10-10)
+
+- Prioridade ativa: reconciliar PRs encadeadas **#85, #90, #92, #95** sobre a `main` atual, **sem** merge cego das branches antigas e sem reverter as correcoes de seguranca e UI posteriores.
+- Nova branch `integrate/v48-voice-stt-ptt`: transplante de `voice/input.py`, `voice/segmentation.py`, `voice/stt.py`, `voice/main.py`, `voice/list_devices.py`, `voice/__init__.py`, `tests/test_voice.py` e `requirements-voice.txt` da ponta da cadeia #95. `voice/confirmation.py` e TTS foram comparados e ja coincidem com a `main`; `config.py`, `auren.py`, Dispatcher, permissoes, CI de autorizacao e interface permanecem como estao na `main`.
+- Escopo: PTT Ctrl direito + Shift direito, pre/post-roll, VAD WebRTC + fallback de energia, nao enviar silencio ao ASR, fallback seguro de taxa nativa do microfone, ASR 16 kHz, aquecimento e recuperacao de falha de captura.
+- `webrtcvad-wheels==2.0.14.post1` permanece dependencia opcional do modo voz no requirements-voice separado e pinado.
+- **Somente pytest** hoje: executar CI Linux e Windows hospedado e testes unitarios de voz/microfone/VAD simulados, depois pytest remoto em PR via ChatGPT. Nao executar `testes_auren_live.py`, nao iniciar microfone, nao consumir API e nao alegar validação fisica de latencia/STT. V47 permanece versao estavel ate testar com hardware.
+- Se o CI falhar, corrigir isoladamente a integracao preservando seguranca. Revisar codigo antes de merge; PRs antigas permanecem abertas por enquanto e nao devem ser mescladas em cascata.
+
+
 ### Revisao das 11 falhas da PR-sonda (2026-10-10)
 
 - Escopo exclusivo da rodada: corrigir testes deterministas para rodarem no Windows real com `AUREN_TEST_MODE=1`; **sem mexer nas implementacoes de producao, nas protecoes do runner nem nas camadas Live**.
@@ -30,10 +40,10 @@ Atualizado em: 2026-10-10
 
 - **Versão estável:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** nenhuma; PR #118 integrada com os 11 erros anteriores resolvidos.
+- **Branch/PR ativa:** `integrate/v48-voice-stt-ptt` - integracao da cadeia #85/#90/#92/#95 com pytest, sem Live; PR de integracao em preparacao.
 - **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #118 (`edff8ca264b1e4c830e7f6aca567506521a3669b`)
 - **CI:** PR #118 Linux completo 534 passed/24 skipped; Windows hospedado focado 181 passed e modo seguro 110 passed; Linux modo seguro 110 passed. **Notebok pessoal: 557 passed, 0 failed, 1 skipped, 1 warning no run #38082122839.**
-- **Fase atual:** concluir testes reais no Windows via comando do chat; GUI MVP foi entregue e seu uso real foi confirmado pelo usuario, mas entrada textual precisa de melhoria posterior
+- **Fase atual:** consolidar voz/STT V48 no runtime da main atual, testando somente com pytest; validacao fisica de voz e tarefas Live ficam adiadas.
 
 ### Primeiro teste desbloqueado no Windows, falha de parser ASCII (2026-10-10)
 
@@ -234,11 +244,11 @@ Atualizado em: 2026-10-10
 
 ## Próximas etapas
 
-A tarefa ativa permanece **Browser Intelligence** até que a verificação por tipo de ação esteja suficientemente robusta e coberta por testes.
+**Prioridade atual:** consolidar as PRs encadeadas da V48 de voz/STT por testes deterministas e integrar sem regressões em segurança.
 
-Próxima etapa: executar o runner live em Windows e registrar o resultado real das tarefas compostas. O CI atual valida o código do runner, mas não executa a bateria L4/L5 com navegador e modelo reais.
+**Fica pendente:** execução de testes Live com microfone, PTT, latência, navegador/modelo e L4/L5 quando o proprietário estiver disponível. Não confundir pytest com validação física.
 
-Depois disso, revisar novamente a estabilização e só então abrir novas frentes.
+**Browser Intelligence:** refinamentos por tipo de ação permanecem no backlog da tarefa anterior; não abrir uma segunda frente simultaneamente.
 
 ## Backlog
 
