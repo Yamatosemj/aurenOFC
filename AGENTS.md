@@ -8,6 +8,7 @@ Este arquivo e a **porta de entrada operacional** de IAs e mantenedores que trab
    - Se o trabalho alterar Router, registry de ferramentas, validação de contratos, Dispatcher, PermissionManager, confirmação ou ToolResult, leia também [`docs/architecture/02-roteamento-seguranca.md`](docs/architecture/02-roteamento-seguranca.md) e confirme contra o código atual.
    - Se a tarefa tocar o Harness, contexto, ciclo do modelo, cancelamento ou estados de tarefa, leia tambem [`docs/architecture/01-nucleo.md`](docs/architecture/01-nucleo.md); confirme contra o codigo atual.
    - Se a tarefa tocar provider/modelo, sessão, contexto, memória ou cache, leia também [`docs/architecture/03-modelo-sessao-memoria.md`](docs/architecture/03-modelo-sessao-memoria.md); confira os limites de escopo por chat e configuração antes de alterar o runtime.
+   - Se a tarefa tocar Windows, UI Automation, leitura de arquivos, clipboard, screenshot ou coordenadas visuais, leia também [`docs/architecture/04-windows-arquivos-visao.md`](docs/architecture/04-windows-arquivos-visao.md); confira autorização, limites de caminho, DPI e evidência pós-ação.
 2. Confira **no GitHub atual** a `main`, a PR/branch ativa, os merges e resultados de CI; o estado documental pode estar atrasado.
 3. Leia **os arquivos completos relevantes**, testes e interfaces usados pela funcionalidade. Nao infira implementacao apenas do nome de arquivos ou da descricao de PRs.
 4. Identifique quais mudancas ja estao na `main`; PRs antigas ou encadeadas nao devem ser integradas automaticamente.
