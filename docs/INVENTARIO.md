@@ -1,6 +1,6 @@
 # Inventario tecnico e plano de documentacao do Auren
 
-> **Etapa 0 — levantamento inicial.** Este documento e um mapa para orientar auditorias **uma por vez**; a presenca de um arquivo no repositorio nao comprova que a funcionalidade opera de ponta a ponta. As areas listadas como `mapeadas` **ainda nao foram auditadas integralmente**.
+> **Etapa 0 — levantamento inicial.** Este documento e um mapa para orientar auditorias **uma por vez**; a presenca de um arquivo no repositorio nao comprova que a funcionalidade opera de ponta a ponta. Areas marcadas como **mapeadas** ainda nao foram auditadas em detalhe. A Etapa 1 documenta o nucleo por leitura de codigo e analise de testes; **isso nao comprova comportamento Live**.
 
 ## Escopo conferido
 
@@ -14,7 +14,7 @@
 
 | Ordem sugerida | Subsistema | Fontes principais no repositorio | Situacao documental |
 | --- | --- | --- | --- |
-| 1 | **Nucleo e execucao de tarefas** | `core/harness.py`, `core/harness_*.py`, `agent/orchestrator.py`, `core/task_manager.py`, `core/task_trace.py` | Mapeado; **auditoria detalhada pendente** |
+| 1 | **Nucleo e execucao de tarefas** | `core/harness.py`, `core/harness_*.py`, `agent/orchestrator.py`, `core/orchestrator.py`, `core/task_manager.py`, `core/task_trace.py` | **Auditado estaticamente** em [architecture/01-nucleo.md](architecture/01-nucleo.md); testes pytest/CI e limites descritos; **Live nao validado** |
 | 2 | **Roteamento, ferramentas e seguranca** | `core/router.py`, `core/local_decision.py`, `core/tools_registry.py`, `core/tool_contracts.py`, `core/permission_manager.py`, `tools/dispatcher.py`, `core/tool_result.py` | Mapeado; **auditoria detalhada pendente** |
 | 3 | **Modelo, sessoes e memoria** | `providers/openai_provider.py`, `core/response.py`, `core/session.py`, `core/memory_context.py`, `memory/store.py`, `tools/memory.py` | Mapeado; **auditoria detalhada pendente** |
 | 4 | **Windows, arquivos e visao** | `tools/windows.py`, `tools/windows_*.py`, `tools/applications.py`, `tools/files.py`, `tools/file_intelligence.py`, `core/vision.py` | Mapeado; **auditoria detalhada pendente** |
@@ -62,7 +62,9 @@
 
 **Etapa 0 (esta PR):** mapear o repositorio, criar `AGENTS.md` e centralizar o indice de manutencao. Nenhuma mudanca de runtime.
 
-**Etapa 1 (proxima PR):** auditar o **nucleo de execucao** (Harness, Orchestrator, ciclo de tarefas) e criar a primeira secao de arquitetura baseada em codigo, testes e limites reais.
+**Etapa 1 (esta PR):** auditar estaticamente **nucleo de execucao** (Harness, **dois** Orchestrators com funcoes distintas, TaskManager, contexto, trace, fila pos-tarefa) em [architecture/01-nucleo.md](architecture/01-nucleo.md), confrontando codigo e contratos com testes. Registrar observacoes como hipoteses sem alterar runtime. Validacao fisica/Live continua pendente.
+
+**Etapa 2 (proxima area sugerida):** Router, ferramentas, Dispatcher, contratos e permissoes; documentar a fronteira de seguranca e executar testes automatizados, em PR independente.
 
 **Etapas posteriores:** seguir a ordem da tabela, ajustando prioridades com o proprietario quando necessario. A reorganizacao de `AUREN_STATE.md` e a correcao da documentacao de testes remotos devem receber PRs proprias, separadas de mudancas no runtime.
 
