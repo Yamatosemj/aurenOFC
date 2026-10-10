@@ -10,11 +10,11 @@ Atualizado em: 2026-10-10
 
 ### Etapa 5 — Navegador e Browser Intelligence (2026-10-10)
 
-- **Etapa documental iniciada** na branch `docs/etapa-5-navegador-browser-intelligence` sobre a `main` `946f21e2b3d629ce4e8e157ded5dc97c4d1e65d4`. Novo `docs/architecture/05-navegador-browser-intelligence.md` e referências em README/AGENTS/INVENTARIO. Apenas Markdown; não alterar runtime, workflows, testes, políticas ou runner.
+- **Etapa documental submetida na [PR #125](https://github.com/Yamatosemj/aurenOFC/pull/125)**, branch `docs/etapa-5-navegador-browser-intelligence` sobre a `main` `946f21e2b3d629ce4e8e157ded5dc97c4d1e65d4`. Novo `docs/architecture/05-navegador-browser-intelligence.md` e referências em README/AGENTS/INVENTARIO. Apenas Markdown; não alterar runtime, workflows, testes, políticas ou runner.
 - **Lido e confrontado:** `tools/browser.py`, `tools/browser_context.py`, `tools/browser_reading.py`, `tools/browser_elements.py`, `tools/browser_navigation.py`, `core/browser_verification.py`, `core/harness_heuristics.py`, `core/harness_multitab.py`, `core/harness_tools.py`, `core/harness_cycle.py`, `core/harness_guards.py`, Router/Dispatcher, contratos, PermissionManager e testes browser/Harness/segurança relevantes.
 - **Comportamentos e limites documentados:** Chromium Playwright em perfil persistente/global ao processo, 14 tools browser; leitura do DOM resumida/truncada e às vezes com rolagem; contexto unificado marcado não confiável; seleção heurística de elementos; verificação extra somente em objetivos compostos detectados e somente para algumas ações; uma mutação posterior substitui estado anterior; conteúdo do site nunca autoriza ação por si só.
 - **Pontos a investigar em tarefas específicas:** `ler_pagina` pode rolar mesmo como leitura; `obter_contexto_navegador` retorna `ok=True` quando `ler_pagina` devolve texto de erro; cliques/teclas/fechamento e outras ações não possuem comparador determinístico e podem esgotar guard em tarefas compostas; perfil não é isolado por chat. Não declarar vulnerabilidade comprovada sem reprodução.
-- **Validação desta PR:** links internos e CI do SHA final ainda pendentes neste momento; nenhum Playwright Live, site externo, API, login nem teste no notebook pessoal foi executado.
+- **Validação documental:** 76 links relativos entre cinco Markdown conferidos na árvore (0 quebrados). CI GitHub Actions do HEAD final ainda pendente. Nenhum Playwright Live, site externo, API, login nem teste no notebook pessoal foi executado.
 - **Próximo subsistema após revisão/merge:** Etapa 6 — voz, STT e TTS, em PR separada.
 
 
