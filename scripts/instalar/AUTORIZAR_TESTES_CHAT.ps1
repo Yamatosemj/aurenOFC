@@ -39,7 +39,8 @@ $oldBlock = @'
         $resolved = Get-ResolvedReviewedPrSha -RunId $env:GITHUB_RUN_ID -Attempt $env:GITHUB_RUN_ATTEMPT -PrNumber $event.inputs.numero_pr
         Test-RemoteControlRequest -Context $context -Event $event -Approval $approval -Elevated $elevated -Stopped $stopped -ResolvedPrSha $resolved
     }
-'@.TrimEnd()
+'@
+
 $newBlock = @'
     if ($context.event_name -ceq 'issue_comment') {
         . (Join-Path $PSScriptRoot 'chat-control-functions.ps1')
@@ -52,7 +53,11 @@ $newBlock = @'
             Test-RemoteControlRequest -Context $context -Event $event -Approval $approval -Elevated $elevated -Stopped $stopped -ResolvedPrSha $resolved
         }
     }
-'@.TrimEnd()
+'@
+
+
+$oldBlock = $oldBlock.TrimEnd()
+$newBlock = $newBlock.TrimEnd()
 
 $normalized = $installed.Replace("`r`n", "`n")
 if (-not $normalized.Contains($oldBlock)) {
@@ -69,16 +74,18 @@ $revised = $revised.Replace(
 
 # Validar sintaxe PowerShell antes de escrever no hook ativo.
 $parseErrors = $null
+$tokens = $null
 [void][System.Management.Automation.Language.Parser]::ParseInput(
-    $revised, [ref]$null, [ref]$parseErrors
+    $revised, [ref]$tokens, [ref]$parseErrors
 )
 if ($parseErrors -and @($parseErrors).Count -gt 0) {
     throw 'Novo hook nao passou na validacao sintatica do PowerShell.'
 }
 $chatSource = [IO.File]::ReadAllText($source)
 $parseErrors = $null
+$tokens = $null
 [void][System.Management.Automation.Language.Parser]::ParseInput(
-    $chatSource, [ref]$null, [ref]$parseErrors
+    $chatSource, [ref]$tokens, [ref]$parseErrors
 )
 if ($parseErrors -and @($parseErrors).Count -gt 0) {
     throw 'Politica complementar nao passou na validacao sintatica.'
