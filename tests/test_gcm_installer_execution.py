@@ -65,30 +65,14 @@ def test_installer_text_uses_exact_git_credential_name():
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Needs Windows PowerShell")
-def test_installer_on_real_windows_powershell_with_mock_policy(tmp_path):
+def test_historical_gcm_installer_fails_closed_with_offline_policy_source(tmp_path):
     policy = prepare_temp_runner(tmp_path)
     first = invoke_installer(tmp_path)
-    assert first.returncode == 0, first.stdout + "\n" + first.stderr
-    assert "Consulta Git/GCM ajustada ao perfil Windows" in first.stdout
-
-    current = (policy / "chat-control-functions.ps1").read_text(encoding="utf-8")
-    expected = GUARD.read_text(encoding="utf-8")
-    assert current == expected
-    assert (policy / "chat-control-functions.pre-gcm-cwd.bak").read_text(
+    assert first.returncode != 0  # Historical installer must not install offline gate by mistake.
+    assert (policy / "chat-control-functions.ps1").read_text(
         encoding="utf-8"
     ) == PRIOR_POLICY
-    assert (policy / "before-job.ps1").read_text(encoding="utf-8") == (
-        "Test-ChatControlRequest\n"
-    )
-    approval = json.loads(
-        (policy / "chat-control-approval.json").read_text(encoding="utf-8")
-    )
-    assert approval == {"enabled": True, "workflow_blob": BLOB}
-
-    second = invoke_installer(tmp_path)
-    assert second.returncode == 0, second.stdout + "\n" + second.stderr
-    assert "Ajuste de credencial ja instalado" in second.stdout
-
+    assert not (policy / "chat-control-functions.pre-gcm-cwd.bak").exists()
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Needs Windows PowerShell")
 def test_installer_rejects_unapproved_policy_without_mutation(tmp_path):
