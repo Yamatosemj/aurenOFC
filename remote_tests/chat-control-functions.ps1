@@ -51,10 +51,26 @@ function Test-ChatControlRequest {
 
     # Usa a verificacao limitada e sem prompts do controle preexistente.
     # Nao registra nem imprime tokens ou respostas sensiveis no log.
+    # O cwd do hook pode ser um checkout deixado pelo runner. Executar a
+    # consulta de credenciais fora desse repositorio impede que uma configuracao
+    # local do Git interfira no helper (ou seja executada como credencial).
+    $profileDirectory = $env:USERPROFILE
+    if (-not $profileDirectory -or
+        -not [System.IO.Path]::IsPathRooted($profileDirectory) -or
+        -not (Test-Path -LiteralPath $profileDirectory -PathType Container)) {
+        throw 'Perfil Windows nao encontrado para consulta Git segura.'
+    }
+    $gitArgs = '-C "' + $profileDirectory + '" -c credential.interactive=never credential fill'
     try {
         $credential = Invoke-BoundedLocalTool -Executable 'C:\Program Files\Git\cmd\git.exe' `
-            -Arguments '-c credential.interactive=never credential fill' -InputText "protocol=https`nhost=github.com`n`n"
+            -Arguments $gitArgs -InputText "protocol=https`nhost=github.com`n`n"
     } catch {
+        if ($_.Exception.Message -eq 'Timeout na verificacao de autorizacao.') {
+            throw 'Credencial Git/GCM do runner: tempo limite excedido.'
+        }
+        if ($_.Exception.Message -eq 'Verificacao remota indisponivel; job bloqueado.') {
+            throw 'Credencial Git/GCM do runner: processo terminou com erro.'
+        }
         throw 'Etapa credencial Git/GCM indisponivel no contexto do runner.'
     }
     $line = $credential -split "`n" | Where-Object { $_ -like 'password=*' } | Select-Object -First 1
