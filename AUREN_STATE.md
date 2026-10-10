@@ -10,10 +10,19 @@ Atualizado em: 2026-10-10
 
 - **Versão estável:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** nenhuma; PR #116 integrada, aguardando instalacao unica pelo proprietario e teste real no notebook
+- **Branch/PR ativa:** `fix/chat-workflow-powershell-ascii` — reparo de parser PowerShell do job Windows, pin de workflow e instalador local em validacao
 - **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #116 (`52781bfc889a4dc7b75fedba971527dd16ebf142`)
 - **CI:** PR #116: Linux completo 532 passed/21 skipped, Windows hospedado focado 176 passed, Linux focado 164 passed/12 skipped. Instalador de aprovacao offline executado em Windows hospedado com mock local e testado em sucesso/idempotencia/rejeicao. Teste no notebook real ainda pendente.
 - **Fase atual:** concluir testes reais no Windows via comando do chat; GUI MVP foi entregue e seu uso real foi confirmado pelo usuario, mas entrada textual precisa de melhoria posterior
+
+### Primeiro teste desbloqueado no Windows, falha de parser ASCII (2026-10-10)
+
+- O proprietario informou a instalacao do fluxo sem GCM. ChatGPT comentou na PR #108 e disparou [run #38080418175](https://github.com/Yamatosemj/aurenOFC/actions/runs/38080418175). O job hospedado `validar` passou, o runner pessoal autorizou o job local e clonou controlador fixado e SHA da PR.
+- O pytest **nao foi iniciado**: Windows PowerShell 5.1 nao analisou a linha do workflow `"### Auren no Windows — PR #$env:PR_NUMBER"`, que apareceu como `â€”` e levantou `UnexpectedToken` antes da execucao do watchdog.
+- Alteracao pontual: trocar travessao Unicode por hifen ASCII na linha de resumo; workflow muda de blob SHA `90e3e3070f8b977bc328dc6ad72b112407ffeb3d` para `52abfd109c06cdc458727337579984d91da879bc`. Preservar estrutura de jobs, autorizacao e controller fixado.
+- `scripts/instalar/ATUALIZAR_WORKFLOW_CHAT_ASCII.ps1`: migrar **uma vez por aprovacao local** politica offline e `chat-control-approval.json` para novo blob, criar backups e preservar hook principal, controle manual e STOP-LIVE.
+- Testes no Windows hospedado executam o instalador real contra diretorio isolado (incluindo idempotencia e rejeicao de aprovacao invalida). Apos CI e merge, usuario roda um unico `git pull` + instalador e ChatGPT repete sonda na PR #108.
+- A falha original de GCM foi superada; ainda falta validacao real do pytest no notebook.
 
 ### Decisao de risco explicita: autorizacao local offline (2026-10-10)
 

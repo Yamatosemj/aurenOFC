@@ -15,7 +15,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 INSTALLER = ROOT / "scripts/instalar/AUTORIZAR_TESTES_CHAT_SEM_GCM.ps1"
 OFFLINE_POLICY = ROOT / "remote_tests/chat-control-functions.ps1"
-BLOB = "90e3e3070f8b977bc328dc6ad72b112407ffeb3d"
+BLOB = "52abfd109c06cdc458727337579984d91da879bc"
 
 OLDER_POLICY = (
     "function Test-ChatControlRequest {\n"

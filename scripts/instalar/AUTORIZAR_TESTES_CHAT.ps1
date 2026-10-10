@@ -10,7 +10,7 @@ $legacyApproval = Join-Path $policy 'control-approval.json'
 $chatFunctions = Join-Path $policy 'chat-control-functions.ps1'
 $chatApproval = Join-Path $policy 'chat-control-approval.json'
 $backup = Join-Path $policy 'before-job.pre-chat.bak'
-$approvedBlob = '90e3e3070f8b977bc328dc6ad72b112407ffeb3d'
+$approvedBlob = '52abfd109c06cdc458727337579984d91da879bc'
 
 foreach ($file in @($source, $hook, $legacyFunctions, $legacyApproval)) {
     if (-not (Test-Path -LiteralPath $file -PathType Leaf)) {

@@ -95,7 +95,7 @@ jobs:
           }
           & $python $trusted --project $project --output $reports --camada pytest
           $result = $LASTEXITCODE
-          "### Auren no Windows — PR #$env:PR_NUMBER" | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          "### Auren no Windows - PR #$env:PR_NUMBER" | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
           "Commit: $env:PR_SHA" | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
           if (Test-Path (Join-Path $reports 'pr-result.json')) {
             Get-Content (Join-Path $reports 'pr-result.json') |

@@ -10,7 +10,7 @@ function Test-ChatControlRequest {
     $owner = 'Yamatosemj'
     $repository = 'Yamatosemj/aurenOFC'
     $workflow = 'Yamatosemj/aurenOFC/.github/workflows/auren-chat-tests.yml@refs/heads/main'
-    $workflowBlob = '90e3e3070f8b977bc328dc6ad72b112407ffeb3d'
+    $workflowBlob = '52abfd109c06cdc458727337579984d91da879bc'
 
     if ($Elevated -or $Stopped) { throw 'Runner elevado ou parada de emergencia ativa.' }
     if ($ChatApproval.enabled -ne $true -or
