@@ -119,12 +119,15 @@ $ev = '__EVENT__' | ConvertFrom-Json
 $approval = '{"enabled":true,"workflow_blob":"__BLOB__"}' | ConvertFrom-Json
 Test-ChatControlRequest -Context $ctx -Event $ev -ChatApproval $approval -Elevated $false -Stopped $false -RunId '123' -Attempt '1'
 $ev.comment.body = 'AUREN_TESTE_V1 pytest ' + ('b' * 40)
+$rejected = $false
 try {
     Test-ChatControlRequest -Context $ctx -Event $ev -ChatApproval $approval -Elevated $false -Stopped $false -RunId '123' -Attempt '1'
-    throw 'Accepted mismatched SHA'
 } catch {
-    if ($_.Exception.Message -eq 'Accepted mismatched SHA') { throw }
+    $rejected = $true
 }
+if (-not $rejected) { throw 'Accepted mismatched SHA' }
+Write-Output 'REJECTED_SHA'
+exit 0
 """
     script = (script.replace("__POLICY__", str(FUNCTIONS).replace("'", "''"))
                     .replace("__BLOB__", PINNED_BLOB)
@@ -139,3 +142,4 @@ try {
     )
     assert result.returncode == 0, result.stdout + "\n" + result.stderr
     assert "Politica do chat aprovada" in result.stdout
+    assert "REJECTED_SHA" in result.stdout
