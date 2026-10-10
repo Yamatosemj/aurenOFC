@@ -36,6 +36,29 @@ Para voz:
 AUREN_VOZ.bat
 ```
 
+## Interface desktop (primeira versao)
+
+No Windows, abra `ABRIR_AUREN_GUI.bat` (ou rode `python interface_auren.py`).
+
+A interface usa **Tkinter**, que acompanha a instalacao padrao do Python no Windows.
+A janela abre em **Desligado**; clique em **Ativo** para enviar mensagens.
+**Standby** pausa novos envios e **Desligado** encerra a sessao do Harness.
+Ações sensíveis exibem uma janela com **Autorizar / Negar**; se nao houver
+resposta, a acao e negada automaticamente. Fechar a janela solicita
+cancelamento cooperativo de tarefas em andamento e encerramento da sessao.
+
+A tela **nao usa um segundo executor**: envia mensagens ao `criar_harness()`
+existente, portanto Router, Dispatcher, contratos e PermissionManager
+continuam sendo o caminho normal. O processamento ocorre numa thread de
+trabalho para a janela permanecer responsiva.
+
+**Limites desta versao:** conversa por texto apenas; voz/PTT continua em
+`AUREN_VOZ.bat`. Nao ha garantia de cancelamento instantaneo de uma
+operacao externa que esteja bloqueada. A interface ainda precisa de um
+teste com janela real no Windows; pytest valida o backend e os contratos,
+nao a interacao visual. A chave/API ja configurada no sistema continua
+necessaria para pedidos ao modelo.
+
 ## Instalação
 
 ```powershell
@@ -115,7 +138,7 @@ A captura de tela informa a área de trabalho virtual do Windows, incluindo orig
 
 ## Estado importante
 
-- **48 tools** no registry/contratos atuais
+- **49 tools** no registry/contratos atuais
 - memória persistente em SQLite
 - browser e automação Windows integrados
 - visão pode observar a tela, executar clique ou arraste global do mouse com confirmação, manter a geometria da captura e da imagem entregue ao modelo e verificar o estado final em tarefas visuais compostas
