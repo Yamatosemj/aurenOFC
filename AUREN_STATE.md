@@ -8,11 +8,22 @@ Atualizado em: 2026-10-10
 
 ## Estado atual
 
+### Marco: primeira execucao completa do pytest no notebook (2026-10-10)
+
+- O proprietario confirmou aplicacao local de `scripts/instalar/ATUALIZAR_WORKFLOW_CHAT_ASCII.ps1`. ChatGPT publicou na PR #108 comentario #6101499200 com SHA `03ee21db3c4fecd0cab8385af4a72e7f74b935e9`.
+- [GitHub Actions run #38081143327](https://github.com/Yamatosemj/aurenOFC/actions/runs/38081143327): `validar=success`; o job `executar` rodou no notebook, hook local autorizou, checkouts controlador/PR foram feitos e `pytest` **executou de verdade** por 25,25 s. Publicados como artifact os arquivos `pr-result.json`, `pr-test.log`, `pytest.xml`.
+- Resultado remoto da PR-sonda **naquele commit**: **500 passed, 11 failed, 1 skipped** (512 coletados), exit code 1. `pr-result.json` registra `reason=completed`, `duration_seconds=26.74`. O workflow foi marcado failure porque a suite da PR falhou; **isso nao e falha de disparo/runner**.
+- Das 11 falhas, 9 sao testes que esperam confirmacao interativa aprovada, mas a politica segura do runner executa `AUREN_TEST_MODE=1` e nega a acao; 2 sao diferencas de quebras de linha `\\n` versus `\\r\\n` em testes de leitura de MD/CSV no Windows. Um teste de symlink foi pulado por ausencia de privilegio de criar symlink; manter usuario com `RunLevel=Limited`.
+- Esta PR-sonda e antiga, de alteracao documental; nao concluir a partir dela que o `main` atual tem exatamente 11 falhas. Ajustar os testes/harness sem afrouxar politica de autorizacao antes de considerar o pytest **verde** no notebook.
+- **Marco atingido:** objetivo de disparar teste pelo chat e receber resultado real automaticamente no Windows esta operacional para pytest de PR aberta. **Nao equivale a suite 100% verde nem valida ferramentas live/API.**
+
+
+
 - **Versão estável:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** nenhuma; PR #117 integrada, aguardando migracao explicita da aprovacao local e nova sonda real no notebook
+- **Branch/PR ativa:** nenhuma; PR #117 integrada; primeira sonda remota da PR #108 concluida com pytest executado e relatorios publicados (11 falhas de teste)
 - **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #117 (`d56136e50e93bd6ece548d143728b4c68c180e70`)
-- **CI:** PR #117: Linux completo 533 passed/24 skipped; Windows hospedado focado 180 passed; Linux focado 165 passed/15 skipped. Migrador PowerShell de autorizacao do workflow ASCII passou em Windows hospedado com fixture simulada. Teste real no notebook ainda pendente.
+- **CI:** PR #117 Linux completo 533 passed/24 skipped; Windows hospedado focado 180 passed; **notebook real PR #108 run #38081143327: 500 passed, 11 failed, 1 skipped, com artefatos de relatorio**.
 - **Fase atual:** concluir testes reais no Windows via comando do chat; GUI MVP foi entregue e seu uso real foi confirmado pelo usuario, mas entrada textual precisa de melhoria posterior
 
 ### Primeiro teste desbloqueado no Windows, falha de parser ASCII (2026-10-10)
