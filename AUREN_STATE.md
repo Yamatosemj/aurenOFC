@@ -8,6 +8,16 @@ Atualizado em: 2026-10-10
 
 ## Estado atual
 
+### Etapa 1 - auditoria estatica do nucleo (2026-10-10)
+
+- **Tarefa ativa:** documentacao de Harness, ciclo, duas camadas chamadas Orchestrator, TaskManager, contexto de sessao, trace e fila de estrategia. Branch `docs/etapa-1-auditoria-nucleo`; PR sera criada para revisao e CI.
+- **Entrega:** `docs/architecture/01-nucleo.md`, com fluxo rastreado no codigo real, mapa de responsabilidades, estados/transicoes, fast path, guards de visao/browser, limites, mecanismos de contexto/persistencia, matriz de testes e orientacoes de manutencao. `docs/INVENTARIO.md`, `README.md` e `AGENTS.md` atualizados.
+- **Escopo estrito:** apenas Markdown, **sem alterar runtime, segurança, politicas do Windows, workflow ou API**.
+- **Evidencia de auditoria:** leitura dos arquivos do ciclo e dos testes de ownership, ferramenta, guard, states, session, trace, cancelamento, execucao unica e roteamento. Aprovacao de CI desta PR ainda precisa ser verificada e registrada apos executar.
+- **Observacoes nao reproduzidas:** (1) docstring de input da rodada cita reasoning, mas construcao examinada anexa function_call + outputs, (2) sinalizador de falha nao recuperada e atualizado por chamada e pode perder falha anterior da mesma rodada, (3) retries internos nao devem ser confundidos com limite absoluto de chamadas ao provider, (4) fase do AgentOrchestrator nao e estado terminal operacional. Registrar como hipoteses para testes focados futuros, nao como bugs confirmados.
+- **Validacao adiada:** qualquer teste Live, modelo real, Windows, UI, voz, API e rollback de efeitos ja feitos. **Proxima area sugerida:** Etapa 2 (Router, Dispatcher, contratos e permissoes), apos concluir e integrar a documentacao atual.
+
+
 ### Documentacao e continuidade — etapa 0 (2026-10-10)
 
 - **Prioridade decidida pelo proprietario:** documentar o Auren **subsistema por subsistema**, antes de abrir novas implementacoes; cada area deve ser mapeada, auditada no codigo, confrontada com seus testes e documentada em PR focalizada.
@@ -55,7 +65,7 @@ Atualizado em: 2026-10-10
 - **Ultima PR de documentacao integrada:** #120 (inventario e guia AGENTS.md). PR #119 consolidou voz candidata V48. Consultar GitHub em tempo real para saber PRs abertas; branches antigas de voz nao devem ser mescladas cegamente.
 - **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #119 (`e9712ef5257b971c3aefc6ed1e6911ad4ae5b8d9`)
 - **CI:** PR #119 Linux completo 556 passed/24 skipped; Windows hospedado focado 181 passed, modo seguro Windows 110 passed. **Notebook pessoal PR #119: 579 passed, zero falhas, 1 skipped, 1 warning, run #38085000162.**
-- **Fase atual:** documentacao estruturada por subsistema. Etapa 0 concluida; proxima tarefa: auditar e documentar nucleo/Harness em PR independente. Voz candidata V48 aguarda validacao fisica e testes Live adiados.
+- **Fase atual:** documentacao da Etapa 1: nucleo/Harness auditado estaticamente, PR em preparacao. Etapa 0 concluida. Candidata de voz V48 aguarda validacao fisica; testes Live adiados.
 
 ### Primeiro teste desbloqueado no Windows, falha de parser ASCII (2026-10-10)
 
