@@ -10,10 +10,19 @@ Atualizado em: 2026-10-10
 
 - **Versão estável:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** nenhuma alteracao desta rodada em aberto; PR #111 integrada, aguardando autorizacao pontual do hook local
+- **Branch/PR ativa:** `fix/remote-chat-local-policy-setup` — configuracao local unica para liberar pytest por chat, validacao automatizada pendente
 - **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #111 (`b695fad7cc668d9a47e4dfc72f11a74b152d9cac`)
 - **CI:** PR #111: suite completa Linux 526 passed/15 skipped, testes focados Linux 139 passed/6 skipped e Windows 145 passed; workflow via comentario validou PR #108 mas o hook Windows bloqueou antes do pytest.
 - **Fase atual:** concluir testes reais no Windows via comando do chat; GUI MVP foi entregue e seu uso real foi confirmado pelo usuario, mas entrada textual precisa de melhoria posterior
+
+### Configuracao pontual da politica Windows (2026-10-10)
+
+- `remote_tests/chat-control-functions.ps1`: controle complementar exclusivo de `issue_comment`, negacao por padrao, runner nao-administrador, proprietario, projeto privado, comentario exato, PR aberta no mesmo repositorio com SHA imutavel e job hospedado `validar` bem-sucedido.
+- Workflow `auren-chat-tests.yml`: validador agora fixo no commit imutavel `b695fad7cc668d9a47e4dfc72f11a74b152d9cac`. Conteudo do workflow no Git tem blob SHA aprovado `90e3e3070f8b977bc328dc6ad72b112407ffeb3d`; a politica local verifica esse SHA para evitar aprovar automaticamente alteracoes futuras da main.
+- Instalador `scripts/instalar/AUTORIZAR_TESTES_CHAT.ps1` modifica apenas `before-job.ps1` no Windows apos criar backup, copia as regras extras e gravacao de aprovacao separada; preserva a funcao de controle manual antiga. Exige uma execucao explicita pelo usuario no PC.
+- Testes em `tests/test_chat_policy_setup.py` verificam conteudo imutavel e, em hosted Windows, sintaxe/comportamento com caminho temporario. Nao modifica a politica pessoal durante testes.
+- **Ainda nao operacional** ate a instalacao pontual pelo proprietario e uma execucao no runner real com o comentario no GitHub; nao alegar sucesso apenas por CI hosted.
+- Testar PR no Windows pessoal nao e sandbox. Rodar somente PR propria revisada, sem reintroduzir acesso a chaves API e sem rodar em administrador.
 
 ### Testes Windows solicitados diretamente pelo chat (em preparacao, 2026-10-10)
 
