@@ -40,11 +40,53 @@ function Test-ChatControlRequest {
 
     $prNumber = [string]$Event.issue.number
     $body = [string]$Event.comment.body
-    if ($prNumber -cnotmatch '^[1-9][0-9]{0,5}$' -or
-        $body -cnotmatch '\AAUREN_TESTE_V1 pytest ([a-f0-9]{40})\z') {
-        throw 'Comando ou numero de PR invalido.'
+    if ($prNumber -cnotmatch '^[1-9][0-9]{0,5}
+
+    # Usa a verificacao limitada e sem prompts do controle preexistente.
+    # Nao registra nem imprime tokens ou respostas sensiveis no log.
+    $credential = Invoke-BoundedLocalTool -Executable 'C:\Program Files\Git\cmd\git.exe' `
+        -Arguments '-c credential.interactive=never credential fill' -InputText "protocol=https`nhost=github.com`n`n"
+    $line = $credential -split "`n" | Where-Object { $_ -like 'password=*' } | Select-Object -First 1
+    if (-not $line) { throw 'Credencial nao interativa indisponivel.' }
+    $token = $line.Substring(9).TrimEnd("`r")
+    $gh = Join-Path $env:USERPROFILE 'auren-remote\gh\bin\gh.exe'
+    if (-not (Test-Path -LiteralPath $gh -PathType Leaf)) { throw 'CLI de verificacao nao instalada.' }
+
+    # A main pode evoluir: autorizamos SOMENTE o conteudo imutavel do workflow
+    # revisado (blob Git), mesmo que o commit da main tenha mudado.
+    $path = "repos/$repository/contents/.github/workflows/auren-chat-tests.yml?ref=$($Context.sha)"
+    $observedBlob = Invoke-BoundedLocalTool -Executable $gh -Token $token `
+        -Arguments "api $path --jq .sha"
+    if ($observedBlob.Trim() -cne $workflowBlob) {
+        throw 'Workflow foi modificado desde a aprovacao local.'
     }
-    $prSha = $Matches[1]
+
+    $prJson = Invoke-BoundedLocalTool -Executable $gh -Token $token `
+        -Arguments "api repos/$repository/pulls/$prNumber"
+    $pr = $prJson | ConvertFrom-Json
+    if ($pr.number -ne [int]$prNumber -or $pr.state -cne 'open' -or $pr.draft -or
+        $pr.base.ref -cne 'main' -or $pr.base.repo.full_name -cne $repository -or
+        $pr.head.repo.full_name -cne $repository -or $pr.head.sha -cne $prSha) {
+        throw 'PR fechada, de fork ou alterada apos aprovacao.'
+    }
+
+    $jobsJson = Invoke-BoundedLocalTool -Executable $gh -Token $token `
+        -Arguments "api repos/$repository/actions/runs/$RunId/attempts/$Attempt/jobs?per_page=100"
+    $jobs = @((($jobsJson | ConvertFrom-Json).jobs))
+    $validation = @($jobs | Where-Object { $_.name -ceq 'validar' -and $_.conclusion -ceq 'success' })
+    if ($validation.Count -ne 1) {
+        throw 'Validacao hospedada nao confirmada.'
+    }
+    Write-Output 'Politica do chat aprovada: workflow fixo, PR interna, SHA exato, pytest sem API e usuario nao elevado.'
+}
+) {
+        throw 'Numero da PR invalido.'
+    }
+    if ($body -cmatch '\AAUREN_TESTE_V1 pytest ([a-f0-9]{40})\z') {
+        $prSha = $Matches[1]
+    } else {
+        throw 'Comando de teste invalido.'
+    }
 
     # Usa a verificacao limitada e sem prompts do controle preexistente.
     # Nao registra nem imprime tokens ou respostas sensiveis no log.
