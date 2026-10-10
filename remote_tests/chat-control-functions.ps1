@@ -13,7 +13,9 @@ function Test-ChatControlRequest {
     $workflowBlob = '90e3e3070f8b977bc328dc6ad72b112407ffeb3d'
 
     if ($Elevated -or $Stopped) { throw 'Runner elevado ou parada de emergencia ativa.' }
-    if ($ChatApproval.enabled -ne $true -or $ChatApproval.workflow_blob -cne $workflowBlob) {
+    if ($ChatApproval.enabled -ne $true -or
+        $ChatApproval.workflow_blob -cne $workflowBlob -or
+        $ChatApproval.offline_hosted_validation -ne $true) {
         throw 'Workflow do chat nao autorizado pelo proprietario local.'
     }
     if ($Context.repository -cne $repository -or
@@ -49,72 +51,13 @@ function Test-ChatControlRequest {
         throw 'Comando de teste invalido.'
     }
 
-    # Usa a verificacao limitada e sem prompts do controle preexistente.
-    # Nao registra nem imprime tokens ou respostas sensiveis no log.
-    # O cwd do hook pode ser um checkout deixado pelo runner. Executar a
-    # consulta de credenciais fora desse repositorio impede que uma configuracao
-    # local do Git interfira no helper (ou seja executada como credencial).
-    $profileDirectory = $env:USERPROFILE
-    if (-not $profileDirectory -or
-        -not [System.IO.Path]::IsPathRooted($profileDirectory) -or
-        -not (Test-Path -LiteralPath $profileDirectory -PathType Container)) {
-        throw 'Perfil Windows nao encontrado para consulta Git segura.'
-    }
-    $gitArgs = '-C "' + $profileDirectory + '" -c credential.interactive=never credential fill'
-    try {
-        $credential = Invoke-BoundedLocalTool -Executable 'C:\Program Files\Git\cmd\git.exe' `
-            -Arguments $gitArgs -InputText "protocol=https`nhost=github.com`n`n"
-    } catch {
-        if ($_.Exception.Message -eq 'Timeout na verificacao de autorizacao.') {
-            throw 'Credencial Git/GCM do runner: tempo limite excedido.'
-        }
-        if ($_.Exception.Message -eq 'Verificacao remota indisponivel; job bloqueado.') {
-            throw 'Credencial Git/GCM do runner: processo terminou com erro.'
-        }
-        throw 'Etapa credencial Git/GCM indisponivel no contexto do runner.'
-    }
-    $line = $credential -split "`n" | Where-Object { $_ -like 'password=*' } | Select-Object -First 1
-    if (-not $line) { throw 'Credencial nao interativa indisponivel.' }
-    $token = $line.Substring(9).TrimEnd("`r")
-    $gh = Join-Path $env:USERPROFILE 'auren-remote\gh\bin\gh.exe'
-    if (-not (Test-Path -LiteralPath $gh -PathType Leaf)) { throw 'CLI de verificacao nao instalada.' }
-
-    # A main pode evoluir: autorizamos SOMENTE o conteudo imutavel do workflow
-    # revisado (blob Git), mesmo que o commit da main tenha mudado.
-    $path = "repos/$repository/contents/.github/workflows/auren-chat-tests.yml?ref=$($Context.sha)"
-    try {
-        $observedBlob = Invoke-BoundedLocalTool -Executable $gh -Token $token `
-            -Arguments "api $path --jq .sha"
-    } catch {
-        throw 'Etapa consultar conteudo SHA do workflow falhou no runner.'
-    }
-    if ($observedBlob.Trim() -cne $workflowBlob) {
-        throw 'Workflow foi modificado desde a aprovacao local.'
-    }
-
-    try {
-        $prJson = Invoke-BoundedLocalTool -Executable $gh -Token $token `
-            -Arguments "api repos/$repository/pulls/$prNumber"
-    } catch {
-        throw 'Etapa consultar PR via GitHub API falhou no runner.'
-    }
-    $pr = $prJson | ConvertFrom-Json
-    if ($pr.number -ne [int]$prNumber -or $pr.state -cne 'open' -or $pr.draft -or
-        $pr.base.ref -cne 'main' -or $pr.base.repo.full_name -cne $repository -or
-        $pr.head.repo.full_name -cne $repository -or $pr.head.sha -cne $prSha) {
-        throw 'PR fechada, de fork ou alterada apos aprovacao.'
-    }
-
-    try {
-        $jobsJson = Invoke-BoundedLocalTool -Executable $gh -Token $token `
-            -Arguments "api repos/$repository/actions/runs/$RunId/attempts/$Attempt/jobs?per_page=100"
-    } catch {
-        throw 'Etapa consultar validacao hospedada via GitHub API falhou no runner.'
-    }
-    $jobs = @((($jobsJson | ConvertFrom-Json).jobs))
-    $validation = @($jobs | Where-Object { $_.name -ceq 'validar' -and $_.conclusion -ceq 'success' })
-    if ($validation.Count -ne 1) {
-        throw 'Validacao hospedada nao confirmada.'
-    }
-    Write-Output 'Politica do chat aprovada: workflow fixo, PR interna, SHA exato, pytest sem API e usuario nao elevado.'
+    # RISCO EXPLICITO ACEITO PELO PROPRIETARIO:
+    # O job 'validar' do workflow fixo confere o estado da PR na API usando o
+    # token efemero do GitHub antes de agendar 'executar'. Aqui nao existe
+    # consulta de credenciais/API: confiamos no workflow de main e nos dados
+    # de evento fornecidos pelo runner. Se alguem alterar esse workflow em main
+    # ou comprometer a conta do proprietario, a protecao local nao detecta.
+    # Mantemos evento, ator, repo privado, PR, SHA/commit do pedido, tentativa,
+    # runner nao elevado e parada de emergencia.
+    Write-Output 'Politica do chat aprovada (offline): proprietario, PR interna, commit declarado, pytest e usuario nao elevado.'
 }
