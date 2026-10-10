@@ -10,9 +10,9 @@ Atualizado em: 2026-10-10
 
 ### Etapa 3 — modelo, sessao/contexto e memoria (2026-10-10)
 
-- **Entrega em revisao:** `docs/architecture/03-modelo-sessao-memoria.md`, com referencias em AGENTS/README/INVENTARIO. Base auditada `a4ddb8a9f01b0cefa0d7233ac8714d4539a8502b`; apenas Markdown, sem alterar runtime, testes, workflows ou permissoes.
+- **Entrega em revisao na [PR #123](https://github.com/Yamatosemj/aurenOFC/pull/123):** `docs/architecture/03-modelo-sessao-memoria.md`, com referencias em AGENTS/README/INVENTARIO. Base auditada `a4ddb8a9f01b0cefa0d7233ac8714d4539a8502b`; apenas Markdown, sem alterar runtime, testes, workflows ou permissoes.
 - **Escopo concluido da leitura:** provider/Responses, config/fachada/prompt, contexto e continuacao das rodadas, SQLite e migracao, fatos globais versus chats, escrita automatica, esquecimento, cache e metricas.
-- **Validacao local:** 66 testes focados aprovados no Linux do ambiente de trabalho (Python 3.12, pytest 8.3.5, jsonschema 4.26.0). Reproducoes adicionais com banco temporario e provider/cliente falsos. CI hospedado da PR ainda deve ser conferido no SHA publicado. Nao e teste no notebook pessoal; sem Live/API/microfone.
+- **Validacao local:** 66 testes focados aprovados no Linux do ambiente de trabalho (Python 3.12, pytest 8.3.5, jsonschema 4.26.0). Reproducoes adicionais com banco temporario e provider/cliente falsos. Resultados do CI hospedado estao nos checks e na descricao da PR #123, associados ao SHA efetivo. Nao e teste no notebook pessoal; sem Live/API/microfone.
 - **Pendencias reproduzidas, nao corrigidas:** (1) AUREN_MODEL diferente do padrao aborta import auren; README agora explica a limitacao, (2) context.build sem chat_id recupera conversas/estrategias globais embora turnos seja vazio; Harness normal fornece ID, (3) cache de chamadas diretas nao diferencia response_id; estado normal do Harness e inelegivel ao cache.
 - **Limites documentados:** esquecer remove apenas fato pela chave; filtro de credenciais e lexical; proveniencia de conteudo externo nao e preservada estruturalmente na memoria; recusas ok=False do store podem nao gerar diagnostico; custo usa coeficientes fixos, nao cotacao.
 - **Proximo passo:** conferir CI e integrar a PR documental conforme revisao; depois Etapa 4 (Windows, arquivos e visao). Correcoes de runtime exigem tarefas proprias.

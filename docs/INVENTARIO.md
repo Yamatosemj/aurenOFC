@@ -68,7 +68,7 @@
 
 **Evidencia de CI da Etapa 2:** PR #122 aprovada nos GitHub Actions no SHA `a45d173fa99cd66ce6764a657838947a14389dfc`: Linux 556 passed /24 skipped; testes focados Windows hospedado 181 passed e modo seguro Windows 110 passed. Foram conferidos 70 links relativos sem erros. Nenhum teste Live ou no notebook pessoal foi solicitado.
 
-**Etapa 3 (documentacao em revisao):** modelo/provider, sessao/contexto, memoria SQLite, cache e uso em [architecture/03-modelo-sessao-memoria.md](architecture/03-modelo-sessao-memoria.md). 66 testes locais focados aprovados; reproducoes sinteticas confirmaram override bloqueado na fachada, busca global sem chat_id e identidade incompleta no cache de chamadas diretas. CI da PR deve ser conferido no SHA efetivo; nenhuma alteracao de runtime.
+**Etapa 3 (documentacao na [PR #123](https://github.com/Yamatosemj/aurenOFC/pull/123), em revisao):** modelo/provider, sessao/contexto, memoria SQLite, cache e uso em [architecture/03-modelo-sessao-memoria.md](architecture/03-modelo-sessao-memoria.md). 66 testes locais focados aprovados; reproducoes sinteticas confirmaram override bloqueado na fachada, busca global sem chat_id e identidade incompleta no cache de chamadas diretas. CI da PR deve ser conferido no SHA efetivo; nenhuma alteracao de runtime.
 
 **Proxima area documental:** Etapa 4 — Windows, arquivos e visao.
 
