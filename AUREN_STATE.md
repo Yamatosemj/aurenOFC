@@ -10,16 +10,16 @@ Atualizado em: 2026-10-10
 
 - **Versão estável:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** `fix/remote-gcm-installer-typo-test` — erro no instalador GCM: grafia `credencial.interactive` no marcador; correcao e regressao Windows em andamento
-- **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #114 (`b2def7937e495fc4bd4002dd8ca30d64cb1ba038`)
-- **CI:** PR #114: full Linux 532 passed/17 skipped, focado Linux 164 passed/8 skipped, focado Windows GitHub-hosted 172 passed. Teste remoto no notebook pessoal ainda pendente.
+- **Branch/PR ativa:** nenhuma; PR #115 integrada, aguardando execucao pontual do instalador corrigido no Windows pessoal
+- **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #115 (`443fd28a61543228fdda636db024fa5911e9690b`)
+- **CI:** PR #115: suite Linux e testes focados Linux/Windows aprovados (focados Windows GitHub-hosted 175 passed). Instalador PowerShell executado com politica simulada em CI e confirmado sucesso, idempotencia e recusa segura; teste no notebook real ainda pendente.
 - **Fase atual:** concluir testes reais no Windows via comando do chat; GUI MVP foi entregue e seu uso real foi confirmado pelo usuario, mas entrada textual precisa de melhoria posterior
 
 ### Bloqueio do instalador de credenciais (2026-10-10)
 
 - O proprietario fez `git pull` para a PR #114 integrada e executou `CORRIGIR_CREDENCIAL_CHAT.ps1`. O instalador abortou na verificacao de fonte anterior, com `Politica instalada nao corresponde a versao esperada; parada segura.`
 - Erro confirmado no instalador: marcador foi escrito `credencial.interactive=never credential fill`, mas Git usa `credential.interactive=never credential fill`. A rejeicao aconteceu antes de copiar backup/modificar arquivo; nenhuma correcao GCM foi instalada por essa tentativa.
-- Corrigir somente o marcador, adicionar teste integrado que exercita o instalador real contra politica temporaria no Windows hospedado, incluindo sucesso/idempotencia/rejeicao sem mutacao.
+- Corrigido o marcador na PR #115 e testado no Windows hospedado executando o instalador real contra politica temporaria, incluindo sucesso/idempotencia/rejeicao sem mutacao. Instalacao no PC do proprietario e execucao remota real ainda pendentes.
 - **Nao alegar que o runner remoto esta pronto**: apos CI e aplicacao local pontual, repetir PR-sonda. `AUREN_STATE.md` registra esse bloqueio e a solucao.
 
 ### Ajuste de credenciais do runner (em validacao, 2026-10-10)
