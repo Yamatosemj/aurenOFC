@@ -14,7 +14,8 @@ Atualizado em: 2026-10-10
 - Testes de confirmacao interativa: `tests/test_confirmation.py` simula entrada apenas com `monkeypatch.delenv` dentro do proprio teste e acrescenta verificacao especifica de bloqueio no modo seguro; `tests/test_execution_single_path.py` e `tests/test_visual_coordinate_dispatcher_integration.py` recebem canais de confirmacao falsos injetados em `PermissionManager`, com handlers ja simulados.
 - Teste de arquivos `tests/test_file_intelligence.py` grava bytes UTF-8 exatos para impedir que `Path.write_text` converta LF em CRLF no Windows antes da leitura; implementacao de `read_file` permanece preservando bytes/quebras originais.
 - CI hospedado Linux e Windows agora executa as quatro familias focalizadas com `AUREN_TEST_MODE=1` em passo adicional e isolado. A suite normal continua sendo executada.
-- **Proximo passo:** conferir CI completo, criar PR e acionar pelo chat o pytest **no SHA da nova PR** (nao na PR-sonda #108, que usa commit antigo); inspecionar report e so entao concluir.
+- **Pendencias menores:** um teste de symlink ignorado por falta de privilegio de criacao de link simbolico no runner Limited; um warning `PytestUnhandledThreadExceptionWarning` por decodificacao UTF-8 do subprocesso PowerShell em `tests/test_chat_policy_setup.py`. Sem justificativa para ampliar permissoes do runner; registrar para ajuste futuro.
+- **Resultado:** GitHub Actions [run #38082122839](https://github.com/Yamatosemj/aurenOFC/actions/runs/38082122839) realizou pytest no notebook do proprietario para PR #118 (commit `b3950b628818ed64381c1d64dff750bf2cbda9a8`): 557 aprovados, 0 falhas, 1 ignorado, 1 aviso, exit_code 0. Artefatos `pr-result.json`, `pr-test.log`, `pytest.xml` publicados e analisados diretamente pelo chat. PR #118 integrada na main.
 
 ### Marco: primeira execucao completa do pytest no notebook (2026-10-10)
 
@@ -29,9 +30,9 @@ Atualizado em: 2026-10-10
 
 - **Versão estável:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** `fix/windows-remote-pytest-regressions` — correcoes dos 11 testes historicamente falhos no runner real, aguardando CI e nova sonda real.
-- **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #117 (`d56136e50e93bd6ece548d143728b4c68c180e70`)
-- **CI:** PR #117 Linux completo 533 passed/24 skipped; Windows hospedado focado 180 passed; **notebook real PR #108 run #38081143327: 500 passed, 11 failed, 1 skipped, com artefatos de relatorio**.
+- **Branch/PR ativa:** nenhuma; PR #118 integrada com os 11 erros anteriores resolvidos.
+- **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #118 (`edff8ca264b1e4c830e7f6aca567506521a3669b`)
+- **CI:** PR #118 Linux completo 534 passed/24 skipped; Windows hospedado focado 181 passed e modo seguro 110 passed; Linux modo seguro 110 passed. **Notebok pessoal: 557 passed, 0 failed, 1 skipped, 1 warning no run #38082122839.**
 - **Fase atual:** concluir testes reais no Windows via comando do chat; GUI MVP foi entregue e seu uso real foi confirmado pelo usuario, mas entrada textual precisa de melhoria posterior
 
 ### Primeiro teste desbloqueado no Windows, falha de parser ASCII (2026-10-10)
