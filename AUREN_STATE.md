@@ -8,14 +8,23 @@ Atualizado em: 2026-10-10
 
 ## Estado atual
 
+### Etapa 4 — Windows, arquivos e visao (2026-10-10)
+
+- **Em preparacao documental:** branch `docs/etapa-4-windows-arquivos-visao` a partir da `main` `d0c9c991a3311127f59368d123020b2c065f1e1f`. Novo `docs/architecture/04-windows-arquivos-visao.md` e referencias em README, AGENTS e inventario. **Apenas Markdown**; nenhum runtime, workflow, politica ou runner alterado.
+- **Fontes lidas:** fachadas e modulos Windows de janelas, UIA, input/DPI, screenshot, processos, audio, clipboard e status; applications, files, file_intelligence, Dispatcher, PermissionManager, core/vision e guards do Harness. Contratos confrontados com o registry de 49 tools e testes existentes.
+- **Limites:** buscar/inspecionar/ler arquivo nao implementam move/rename/undo; arquivo fora da allowlist pede confirmacao, caminho sensivel bloqueia; UIA e alvos de janelas dependem do provedor/interface real; imagem exige snapshot consistente e DPI validado para conversao segura; clique/arraste requerem politica e posterior verificacao quando aplicavel.
+- **Validacao pendente nesta branch:** links relativos, CI no SHA final e PR. Nenhum teste Live, API, mouse, screenshot, UIA ou Windows pessoal executado nesta etapa documental.
+- **Proxima area apos revisao e merge:** Etapa 5 — navegador e Browser Intelligence. Nao implementar outra area na mesma PR.
+
+
 ### Etapa 3 — modelo, sessao/contexto e memoria (2026-10-10)
 
-- **Entrega em revisao na [PR #123](https://github.com/Yamatosemj/aurenOFC/pull/123):** `docs/architecture/03-modelo-sessao-memoria.md`, com referencias em AGENTS/README/INVENTARIO. Base auditada `a4ddb8a9f01b0cefa0d7233ac8714d4539a8502b`; apenas Markdown, sem alterar runtime, testes, workflows ou permissoes.
+- **Etapa 3 integrada na [PR #123](https://github.com/Yamatosemj/aurenOFC/pull/123), merge `d0c9c991a3311127f59368d123020b2c065f1e1f`:** `docs/architecture/03-modelo-sessao-memoria.md`, com referencias em AGENTS/README/INVENTARIO. Base auditada `a4ddb8a9f01b0cefa0d7233ac8714d4539a8502b`; apenas Markdown, sem alterar runtime, testes, workflows ou permissoes.
 - **Escopo concluido da leitura:** provider/Responses, config/fachada/prompt, contexto e continuacao das rodadas, SQLite e migracao, fatos globais versus chats, escrita automatica, esquecimento, cache e metricas.
 - **Validacao local:** 66 testes focados aprovados no Linux do ambiente de trabalho (Python 3.12, pytest 8.3.5, jsonschema 4.26.0). Reproducoes adicionais com banco temporario e provider/cliente falsos. Resultados do CI hospedado estao nos checks e na descricao da PR #123, associados ao SHA efetivo. Nao e teste no notebook pessoal; sem Live/API/microfone.
 - **Pendencias reproduzidas, nao corrigidas:** (1) AUREN_MODEL diferente do padrao aborta import auren; README agora explica a limitacao, (2) context.build sem chat_id recupera conversas/estrategias globais embora turnos seja vazio; Harness normal fornece ID, (3) cache de chamadas diretas nao diferencia response_id; estado normal do Harness e inelegivel ao cache.
 - **Limites documentados:** esquecer remove apenas fato pela chave; filtro de credenciais e lexical; proveniencia de conteudo externo nao e preservada estruturalmente na memoria; recusas ok=False do store podem nao gerar diagnostico; custo usa coeficientes fixos, nao cotacao.
-- **Proximo passo:** conferir CI e integrar a PR documental conforme revisao; depois Etapa 4 (Windows, arquivos e visao). Correcoes de runtime exigem tarefas proprias.
+- **Proximo passo historico cumprido:** PR #123 passou CI e foi integrada; Etapa 4 iniciada separadamente. Correcoes de runtime exigem tarefas proprias.
 
 ### Etapa 2 — auditoria estatica do caminho de ferramentas e permissoes (2026-10-10)
 
