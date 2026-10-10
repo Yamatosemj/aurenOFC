@@ -51,8 +51,12 @@ function Test-ChatControlRequest {
 
     # Usa a verificacao limitada e sem prompts do controle preexistente.
     # Nao registra nem imprime tokens ou respostas sensiveis no log.
-    $credential = Invoke-BoundedLocalTool -Executable 'C:\Program Files\Git\cmd\git.exe' `
-        -Arguments '-c credential.interactive=never credential fill' -InputText "protocol=https`nhost=github.com`n`n"
+    try {
+        $credential = Invoke-BoundedLocalTool -Executable 'C:\Program Files\Git\cmd\git.exe' `
+            -Arguments '-c credential.interactive=never credential fill' -InputText "protocol=https`nhost=github.com`n`n"
+    } catch {
+        throw 'Etapa credencial Git/GCM indisponivel no contexto do runner.'
+    }
     $line = $credential -split "`n" | Where-Object { $_ -like 'password=*' } | Select-Object -First 1
     if (-not $line) { throw 'Credencial nao interativa indisponivel.' }
     $token = $line.Substring(9).TrimEnd("`r")
@@ -62,14 +66,22 @@ function Test-ChatControlRequest {
     # A main pode evoluir: autorizamos SOMENTE o conteudo imutavel do workflow
     # revisado (blob Git), mesmo que o commit da main tenha mudado.
     $path = "repos/$repository/contents/.github/workflows/auren-chat-tests.yml?ref=$($Context.sha)"
-    $observedBlob = Invoke-BoundedLocalTool -Executable $gh -Token $token `
-        -Arguments "api $path --jq .sha"
+    try {
+        $observedBlob = Invoke-BoundedLocalTool -Executable $gh -Token $token `
+            -Arguments "api $path --jq .sha"
+    } catch {
+        throw 'Etapa consultar conteudo SHA do workflow falhou no runner.'
+    }
     if ($observedBlob.Trim() -cne $workflowBlob) {
         throw 'Workflow foi modificado desde a aprovacao local.'
     }
 
-    $prJson = Invoke-BoundedLocalTool -Executable $gh -Token $token `
-        -Arguments "api repos/$repository/pulls/$prNumber"
+    try {
+        $prJson = Invoke-BoundedLocalTool -Executable $gh -Token $token `
+            -Arguments "api repos/$repository/pulls/$prNumber"
+    } catch {
+        throw 'Etapa consultar PR via GitHub API falhou no runner.'
+    }
     $pr = $prJson | ConvertFrom-Json
     if ($pr.number -ne [int]$prNumber -or $pr.state -cne 'open' -or $pr.draft -or
         $pr.base.ref -cne 'main' -or $pr.base.repo.full_name -cne $repository -or
@@ -77,8 +89,12 @@ function Test-ChatControlRequest {
         throw 'PR fechada, de fork ou alterada apos aprovacao.'
     }
 
-    $jobsJson = Invoke-BoundedLocalTool -Executable $gh -Token $token `
-        -Arguments "api repos/$repository/actions/runs/$RunId/attempts/$Attempt/jobs?per_page=100"
+    try {
+        $jobsJson = Invoke-BoundedLocalTool -Executable $gh -Token $token `
+            -Arguments "api repos/$repository/actions/runs/$RunId/attempts/$Attempt/jobs?per_page=100"
+    } catch {
+        throw 'Etapa consultar validacao hospedada via GitHub API falhou no runner.'
+    }
     $jobs = @((($jobsJson | ConvertFrom-Json).jobs))
     $validation = @($jobs | Where-Object { $_.name -ceq 'validar' -and $_.conclusion -ceq 'success' })
     if ($validation.Count -ne 1) {
