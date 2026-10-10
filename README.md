@@ -4,6 +4,14 @@ Assistente desktop/voz para Windows, versão técnica **V47**, usando o modelo c
 
 > **Estado atual do projeto:** consulte [AUREN_STATE.md](AUREN_STATE.md) antes de iniciar ou continuar trabalho no Auren. O estado oficial registra a tarefa ativa, PRs em andamento, CI, próxima fase e backlog.
 
+## Para continuar a manutencao
+
+- [`AGENTS.md`](AGENTS.md) — regras para IAs e mantenedores: escopo, seguranca, testes e documentacao.
+- [`docs/INVENTARIO.md`](docs/INVENTARIO.md) — mapa dos subsistemas e ordem das auditorias. **Mapeado nao significa auditado ou validado em hardware.**
+- [`docs/TESTES_GITHUB.md`](docs/TESTES_GITHUB.md) e [`docs/CONTROLE_REMOTO_GITHUB.md`](docs/CONTROLE_REMOTO_GITHUB.md) — operacao e historico dos testes remotos; **algumas instrucoes antigas aguardam reconciliacao** com os runs atuais.
+
+A documentacao evolui em PRs pequenas por subsistema. Para decidir o status real de uma funcionalidade, confronte documentos com codigo, PRs e CI atuais.
+
 ## Estrutura
 
 ```text
