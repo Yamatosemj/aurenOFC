@@ -10,12 +10,12 @@ Atualizado em: 2026-10-10
 
 ### Etapa 1 - auditoria estatica do nucleo (2026-10-10)
 
-- **Tarefa ativa:** documentacao de Harness, ciclo, duas camadas chamadas Orchestrator, TaskManager, contexto de sessao, trace e fila de estrategia. [PR #121](https://github.com/Yamatosemj/aurenOFC/pull/121), branch `docs/etapa-1-auditoria-nucleo`; revisao e CI em andamento.
+- **Etapa 1 concluida:** [PR #121](https://github.com/Yamatosemj/aurenOFC/pull/121) integrada a `main` (merge `c6fdfa60e34dea6b72abaffc79844877d9061f11`), auditoria estatica do nucleo/Harness, dos dois Orchestrators, TaskManager, sessao/contexto, trace e fila de estrategia. Proxima prioridade documental: Etapa 2, Router/Dispatcher/contratos/permissoes, em PR separada.
 - **Entrega:** `docs/architecture/01-nucleo.md`, com fluxo rastreado no codigo real, mapa de responsabilidades, estados/transicoes, fast path, guards de visao/browser, limites, mecanismos de contexto/persistencia, matriz de testes e orientacoes de manutencao. `docs/INVENTARIO.md`, `README.md` e `AGENTS.md` atualizados.
 - **Escopo estrito:** apenas Markdown, **sem alterar runtime, segurança, politicas do Windows, workflow ou API**.
-- **Evidencia de auditoria:** leitura dos arquivos do ciclo e dos testes de ownership, ferramenta, guard, states, session, trace, cancelamento, execucao unica e roteamento. Aprovacao de CI desta PR ainda precisa ser verificada e registrada apos executar.
+- **Evidencia de auditoria e CI confirmada:** leitura dos arquivos do ciclo e testes de ownership, ferramenta, guard, estados, session, trace, cancelamento, execucao unica e roteamento. PR #121 HEAD `9edb1ae7101fa9a3f1b6483a484ee3d4883a5014`, GitHub Actions completo Linux **556 passed / 24 skipped**, testes focados Windows hospedado **181 passed**, seguro Windows **110 passed**; testes Linux focados **166 passed / 15 skipped** e seguro **110 passed**. **Sem pytest no notebook pessoal e sem testes Live nesta PR**, pois somente Markdown foi alterado.
 - **Observacoes nao reproduzidas:** (1) docstring de input da rodada cita reasoning, mas construcao examinada anexa function_call + outputs, (2) sinalizador de falha nao recuperada e atualizado por chamada e pode perder falha anterior da mesma rodada, (3) retries internos nao devem ser confundidos com limite absoluto de chamadas ao provider, (4) fase do AgentOrchestrator nao e estado terminal operacional. Registrar como hipoteses para testes focados futuros, nao como bugs confirmados.
-- **Validacao adiada:** qualquer teste Live, modelo real, Windows, UI, voz, API e rollback de efeitos ja feitos. **Proxima area sugerida:** Etapa 2 (Router, Dispatcher, contratos e permissoes), apos concluir e integrar a documentacao atual.
+- **Validacao adiada:** teste Live, modelo real, interface/desktop, voz, API, interrompimento de operacoes externas e rollback. **Proxima etapa:** documentacao do caminho de ferramentas e seguranca (Router, Dispatcher, contratos e permissoes), sem nova funcionalidade fora do escopo.
 
 
 ### Documentacao e continuidade — etapa 0 (2026-10-10)
@@ -62,10 +62,10 @@ Atualizado em: 2026-10-10
 
 - **Versão estável:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Ultima PR de documentacao integrada:** #120 (inventario e guia AGENTS.md). PR #119 consolidou voz candidata V48. Consultar GitHub em tempo real para saber PRs abertas; branches antigas de voz nao devem ser mescladas cegamente.
+- **Ultima PR documental integrada:** #121 (auditoria do nucleo/Harness); #120 (inventario e AGENTS.md). PR #119 consolidou voz candidata V48. Consultar GitHub em tempo real para saber PRs abertas; branches antigas de voz nao devem ser mescladas cegamente.
 - **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #119 (`e9712ef5257b971c3aefc6ed1e6911ad4ae5b8d9`)
 - **CI:** PR #119 Linux completo 556 passed/24 skipped; Windows hospedado focado 181 passed, modo seguro Windows 110 passed. **Notebook pessoal PR #119: 579 passed, zero falhas, 1 skipped, 1 warning, run #38085000162.**
-- **Fase atual:** documentacao da Etapa 1: nucleo/Harness auditado estaticamente, PR em preparacao. Etapa 0 concluida. Candidata de voz V48 aguarda validacao fisica; testes Live adiados.
+- **Fase atual:** Etapas 0 e 1 documentais concluidas e integradas. Proxima prioridade: Etapa 2, auditoria de Router/Dispatcher/contratos e permissoes; candidata de voz V48 ainda aguarda validacao fisica; testes Live adiados.
 
 ### Primeiro teste desbloqueado no Windows, falha de parser ASCII (2026-10-10)
 
