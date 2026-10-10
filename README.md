@@ -12,6 +12,7 @@ Assistente desktop/voz para Windows, versão técnica **V47**, usando o modelo c
 - [`docs/architecture/02-roteamento-seguranca.md`](docs/architecture/02-roteamento-seguranca.md) — auditoria estática do Router, Dispatcher, contratos de ferramentas, políticas de confirmação, anti-loop e conteúdo não confiável.
 - [`docs/architecture/03-modelo-sessao-memoria.md`](docs/architecture/03-modelo-sessao-memoria.md) — provider, contexto, SQLite, isolamento por chat, cache e limites reproduzidos.
 - [`docs/architecture/04-windows-arquivos-visao.md`](docs/architecture/04-windows-arquivos-visao.md) — Windows/UIA, leitura de arquivos, políticas de caminhos e geometria de visão.
+- [`docs/architecture/05-navegador-browser-intelligence.md`](docs/architecture/05-navegador-browser-intelligence.md) — Playwright, leitura do DOM, abas, ações, permissões e limites da verificação posterior.
 - [`docs/TESTES_GITHUB.md`](docs/TESTES_GITHUB.md) e [`docs/CONTROLE_REMOTO_GITHUB.md`](docs/CONTROLE_REMOTO_GITHUB.md) — operacao e historico dos testes remotos; **algumas instrucoes antigas aguardam reconciliacao** com os runs atuais.
 
 A documentacao evolui em PRs pequenas por subsistema. Para decidir o status real de uma funcionalidade, confronte documentos com codigo, PRs e CI atuais.
