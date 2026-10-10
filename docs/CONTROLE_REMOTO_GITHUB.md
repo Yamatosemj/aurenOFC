@@ -4,6 +4,16 @@ Este controle opera no repositório **privado** `Yamatosemj/aurenOFC`, sem atual
 
 **Verificação real (2026-10-09):** a operação `atualizar_main` foi concluída com sucesso no runner Windows, conforme [execução #37890091132](https://github.com/Yamatosemj/aurenOFC/actions/runs/37890091132). Esta alteração documental serve também como teste de uma nova atualização remota. **Testar PR por número ainda requer uma validação separada no PC.**
 
+## Autorizacao unica no Windows (novos testes por chat)
+
+Ja existe o workflow que aceita comentario em PR; para o runner permitir esses testes, o proprietario precisa executar **uma unica vez**, depois de atualizar a main, o instalador `scripts/instalar/AUTORIZAR_TESTES_CHAT.ps1` no seu proprio Windows. Ele identifica o `before-job.ps1` antigo, cria `before-job.pre-chat.bak`, instala `chat-control-functions.ps1` e `chat-control-approval.json` ao lado dele, sem mexer no fluxo manual existente.
+
+O controle local recusa executores administradores, emergencia ativa, comentario de terceiros, PRs de forks, workflows modificados, SHAs diferentes e reexecucoes da tentativa do runner. Confere o **blob exato do arquivo workflow** aprovado no GitHub (nao somente branch `main`), de modo que futuros commits na `main` nao exigem reconfiguracao se o workflow continuar exatamente igual. O validador hospedado tambem utiliza commit imutavel.
+
+Para atualizar o clone principal configurado anteriormente, rode o instalador apenas apos um `git pull --ff-only` bem-sucedido. Se a instalacao responder que o hook local diverge do esperado, **pare**: nao force substituicao nem remova a politica. Esta automacao so aceita pytest sem chave de API e baixa a versao para uma pasta de testes, preservando o Auren em uso.
+
+Apos instalar, o assistente pode comentar `AUREN_TESTE_V1 pytest SHA40` em uma PR e recuperar o relatorio sem precisar do usuario entrar no GitHub. **Ainda precisa de prova end-to-end no seu Windows real para ser declarada concluida.** O PC continua precisando estar ligado, conectado e com o runner online durante cada teste.
+
 ## Testes enviados pelo chat — configuracao em andamento
 
 Um usuario nao precisa abrir o GitHub: o assistente, via GitHub conectado, publica na conversa de uma **PR aberta e revisada** o comentario exato `AUREN_TESTE_V1 pytest <SHA40>`. O workflow da branch padrao `.github/workflows/auren-chat-tests.yml` recebe `issue_comment`, valida a autoria do proprio dono, projeto privado, PR interna, base `main`, SHA do HEAD congelado, e usa um controlador Windows fixado em commit imutavel.
