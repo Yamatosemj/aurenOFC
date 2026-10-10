@@ -1,7 +1,7 @@
 """Mede rodadas e tokens por TASK em um chat.log do Auren.
 
 Uso:
-    py medir_custo_modelo.py
+    py scripts/diagnosticos/medir_custo_modelo.py
     py medir_custo_modelo.py logs/chats/<chat_id>/chat/chat.log
 
 Este utilitario nao chama OpenAI. Ele serve para decidir quais cenarios
@@ -25,7 +25,7 @@ TOKEN_RE = re.compile(
 def find_log(argv: list[str]) -> Path:
     if len(argv) > 1:
         return Path(argv[1])
-    logs = sorted(Path("logs/chats").glob("*/chat/chat.log"), key=lambda p: p.stat().st_mtime)
+    logs = sorted((Path(__file__).resolve().parents[2] / "logs/chats").glob("*/chat/chat.log"), key=lambda p: p.stat().st_mtime)
     if not logs:
         raise SystemExit("Nenhum chat.log encontrado em logs/chats.")
     return logs[-1]

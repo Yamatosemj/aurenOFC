@@ -4,23 +4,31 @@
 > Antes de iniciar uma nova tarefa, compare este arquivo com a branch/PR, o head da main e o CI do GitHub.
 > Histórico, memórias da conversa e documentos arquivados não substituem este estado.
 
-Atualizado em: 2026-10-09
+Atualizado em: 2026-10-10
 
 ## Estado atual
 
 - **Versão estável:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** nenhuma nesta rodada; interface MVP integrada na main pela PR #109
+- **Branch/PR ativa:** `chore/organizar-raiz-launchers` — organizar atalhos e diagnosticos, sem alterar o runtime
 - **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #109 (`568a44daae24f1b151a06e1f06e36919af5e00f8`)
 - **CI:** PR #109: suite completa Linux 503 passed/15 skipped, testes focados Linux 135 passed/6 skipped e Windows 141 passed. Falta validacao visual da nova GUI no Windows real.
 - **Fase atual:** entrega visivel da interface desktop MVP (prioridade temporal do usuario); Browser Intelligence fica pausado, sem mudar sua implementacao
 
+### Organizacao da raiz (2026-10-10)
+
+- 11 arquivos `.bat` realocados para `scripts/iniciar`, `scripts/instalar`, `scripts/testar`, `scripts/diagnosticos` e `scripts/experimentos`.
+- Todos os atalhos agora fixam cwd na raiz via `%~dp0..\\..` para preservar paths de `.venv`, `requirements*.txt`, `tests/` e `voice/`.
+- Tres scripts Python auxiliares independentes de diagnostico movidos para `scripts/diagnosticos`, com bootstrap corrigido.
+- `testes_auren.py`, `testes_auren_live.py`, `medir_metricas_router.py` e `medir_router_baseline.py` permanecem como entradas Python legadas utilizadas por outros modulos/testes, para nao quebrar integracoes; `README.md` aponta para os novos atalhos.
+- Nenhuma mudanca no Harness, Dispatcher, Router ou voz. CI e verificacao manual dos atalhos ainda requeridos antes do merge.
+
 ### Interface desktop — primeira entrega visivel (2026-10-10)
 
-- Nova entrada opcional `ABRIR_AUREN_GUI.bat` -> `interface_auren.py`, com Tkinter da biblioteca padrao, escuro, chat por texto, estado inicial Desligado e botoes Ativo/Standby/Desligado.
+- Nova entrada opcional `scripts/iniciar/ABRIR_AUREN_GUI.bat` -> `interface_auren.py`, com Tkinter da biblioteca padrao, escuro, chat por texto, estado inicial Desligado e botoes Ativo/Standby/Desligado.
 - `ui/backend.py` serializa comandos em uma thread e usa apenas `auren.criar_harness(confirmation_channel=...)` e `harness.processar_mensagem`, preservando Router/Dispatcher/PermissionManager e memoria/sessao existentes.
 - Confirmacoes sensiveis aparecem em janela autorizar/negar, com timeout que **nega**; fechar a UI pede cancelamento cooperativo, rejeita confirmacoes pendentes e encerra sessao ao concluir.
-- Voz/PTT permanece em `AUREN_VOZ.bat`; interface MVP e **texto somente**. Nao foi feito um redesenho do pipeline de voz.
+- Voz/PTT permanece em `scripts/iniciar/AUREN_VOZ.bat`; interface MVP e **texto somente**. Nao foi feito um redesenho do pipeline de voz.
 - PR #109 integrada na main; CI: suite completa Linux **503 passed/15 skipped**, testes focados Linux **135 passed/6 skipped** e Windows **141 passed**. Interface Tk completa exige teste visual em Windows real antes de declarar experiencia operacional validada.
 - Esta tarefa substitui temporariamente refinamentos de navegador e correcoes de runner como foco unico. **Nao** reabrir todas as PRs antigas nem expandir a UI antes da primeira validacao.
 

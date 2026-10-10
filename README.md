@@ -18,6 +18,20 @@ voice/       STT/TTS/entrada de voz
 tests/       suíte pytest
 ```
 
+## Atalhos e utilitarios
+
+Arquivos de comando para Windows agora estao organizados por finalidade em `scripts/`:
+
+- `scripts/iniciar/ABRIR_AUREN_GUI.bat` — abrir a interface (uso recomendado)
+- `scripts/iniciar/AUREN_VOZ.bat` — abrir o modo de voz
+- `scripts/instalar/` — instalar dependencias gerais e de voz
+- `scripts/testar/` — executar baterias de teste
+- `scripts/diagnosticos/` — inspecionar microfones, metricas, custos e outros diagnosticos
+- `scripts/experimentos/` — ativar ou desativar experimentos locais
+
+Os `.bat` sempre mudam para a raiz do projeto antes de rodar, mesmo abertos por duplo clique a partir da subpasta.
+Os scripts `testes_auren.py` e `testes_auren_live.py` permanecem na raiz como interfaces publicas usadas pelos testes e automacoes existentes, evitando quebrar imports legados.
+
 ## Executar
 
 ```powershell
@@ -33,12 +47,12 @@ python auren.py
 Para voz:
 
 ```powershell
-AUREN_VOZ.bat
+scripts/iniciar/AUREN_VOZ.bat
 ```
 
 ## Interface desktop (primeira versao)
 
-No Windows, abra `ABRIR_AUREN_GUI.bat` (ou rode `python interface_auren.py`).
+No Windows, abra `scripts/iniciar/ABRIR_AUREN_GUI.bat` (ou rode `python interface_auren.py`).
 
 A interface usa **Tkinter**, que acompanha a instalacao padrao do Python no Windows.
 A janela abre em **Desligado**; clique em **Ativo** para enviar mensagens.
@@ -53,7 +67,7 @@ continuam sendo o caminho normal. O processamento ocorre numa thread de
 trabalho para a janela permanecer responsiva.
 
 **Limites desta versao:** conversa por texto apenas; voz/PTT continua em
-`AUREN_VOZ.bat`. Nao ha garantia de cancelamento instantaneo de uma
+`scripts/iniciar/AUREN_VOZ.bat`. Nao ha garantia de cancelamento instantaneo de uma
 operacao externa que esteja bloqueada. A interface ainda precisa de um
 teste com janela real no Windows; pytest valida o backend e os contratos,
 nao a interacao visual. A chave/API ja configurada no sistema continua
@@ -62,8 +76,8 @@ necessaria para pedidos ao modelo.
 ## Instalação
 
 ```powershell
-INSTALAR_AUREN.bat
-INSTALAR_VOZ.bat
+scripts/instalar/INSTALAR_AUREN.bat
+scripts/instalar/INSTALAR_VOZ.bat
 ```
 
 A camada de voz usa dependências separadas de `requirements-voice.txt`.
