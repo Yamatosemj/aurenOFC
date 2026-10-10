@@ -10,9 +10,9 @@ Atualizado em: 2026-10-10
 
 - **Versão estável:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** `feat/remote-tests-via-chat-comment` — disparo de pytest Windows por comentario autenticado em PR; aguardando CI e aprovacao pontual da politica local do runner
-- **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #110 (`e6f7f0de6d4296a5e55a05c107d97b545d6dc482`)
-- **CI:** PR #110: suite completa Linux 507 passed/15 skipped, testes focados Linux 139 passed/6 skipped e Windows 145 passed. Movimentacao dos launchers ainda necessita de exercicio manual por duplo clique no Windows.
+- **Branch/PR ativa:** nenhuma alteracao desta rodada em aberto; PR #111 integrada, aguardando autorizacao pontual do hook local
+- **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #111 (`b695fad7cc668d9a47e4dfc72f11a74b152d9cac`)
+- **CI:** PR #111: suite completa Linux 526 passed/15 skipped, testes focados Linux 139 passed/6 skipped e Windows 145 passed; workflow via comentario validou PR #108 mas o hook Windows bloqueou antes do pytest.
 - **Fase atual:** concluir testes reais no Windows via comando do chat; GUI MVP foi entregue e seu uso real foi confirmado pelo usuario, mas entrada textual precisa de melhoria posterior
 
 ### Testes Windows solicitados diretamente pelo chat (em preparacao, 2026-10-10)
@@ -22,7 +22,8 @@ Atualizado em: 2026-10-10
 - Validacao roda em runner hospedado: confere evento, privacidade, proprietario, PR nao-draft, base main, repositorio sem fork e SHA exato do HEAD.
 - Job Windows baixa controlador do commit imutavel `448a1f87a672278471d1d8dcc08a2a621e10b77c`, baixa PR em pasta separada e roda apenas `pytest` pelo watchdog limitado, sem OPENAI_API_KEY.
 - Logs e JUnit sao artefatos do GitHub e o assistente pode buscar os resultados pelo conector.
-- **BLOQUEIO DE ATIVACAO:** `before-job.ps1` e configurado exclusivamente no Windows e ainda nao foi atualizado para permitir o novo workflow/evento. Nao considerar pronto ate verificar e aprovar localmente a politica, sem diminuir os bloqueios existentes, e realizar teste final real com PR inofensiva.
+- **BLOQUEIO DE ATIVACAO CONFIRMADO:** `before-job.ps1` e configurado exclusivamente no Windows e ainda nao foi atualizado para permitir o novo workflow/evento. Nao considerar pronto ate verificar e aprovar localmente a politica, sem diminuir os bloqueios existentes, e realizar teste final real com PR inofensiva.
+- **Execucao de verificacao:** [run #38076073679](https://github.com/Yamatosemj/aurenOFC/actions/runs/38076073679) — comentario pelo ChatGPT na PR #108 (#6100813538), `validar=success`, runner `auren-windows-authorized` iniciou o job, mas `before-job.ps1` bloqueou a execucao antes dos passos. A politica local ainda precisa ser inspecionada/atualizada pelo proprietario.
 - O teste de PR nao altera a instalacao principal do Auren. Atualizacao da main principal e um fluxo separado, para nao substituir o Auren em uso por codigo nao aprovado.
 
 ### Organizacao da raiz (2026-10-10)
