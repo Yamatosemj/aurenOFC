@@ -8,14 +8,24 @@ Atualizado em: 2026-10-10
 
 ## Estado atual
 
+### Etapa 6 — Voz, STT e TTS (2026-10-10)
+
+- **Auditoria documental em andamento:** branch `docs/etapa-6-voz-stt-tts` criada sobre a `main` `7a13c412463ad55ef7fe5562ad2e757feb2cebde`. Novo documento `docs/architecture/06-voz-stt-tts.md` e links de manutenção em README, AGENTS e inventário. **Somente Markdown**, nenhum runtime, workflow, dependência, política ou runner alterado.
+- **Código confrontado:** entrada `voice/main.py`, captura `input.py`, segmento `segmentation.py`, ASR `stt.py`, TTS `tts.py`, formatação e confirmação falada; locks de áudio, script de inicialização/instalação/diagnóstico, factory do Harness, testes `test_voice.py`, `test_voice_v3.py`, `test_confirmation.py` e scripts.
+- **Estado real:** Voice Engine interno V4 com evolução candidata V48 integrada via PR #119; versão técnica global continua V47. Hotkey ativa Ctrl direito + Shift direito; PTT, pré/pós-roll, VAD WebRTC/fallback energia, Parakeet INT8 e Kokoro ONNX locais. O Harness usa o mesmo Router/Dispatcher e canal de autorização por voz.
+- **Limites notáveis para tarefas futuras:** stream do microfone aberto antes da hotkey; primeiras cargas podem baixar modelos; VAD/STT/TTS não avaliados fisicamente; métricas de latência são parciais; scripts exibem V3 enquanto engine se intitula V4; docstring de interrupção ainda cita F8, mas modo ativo usa Ctrl direito + Shift direito; instalador apaga diretório ASR completo se existente apesar de texto sobre cache incompleto. Registrar como diferenças/hipóteses, não corrigir nesta PR.
+- **Validação pendente:** conferência de links e CI da PR no SHA exato. **Nenhum teste físico de microfone, áudio, PTT, tempo real, API ou Live realizado**. Não elevar V48 a validada.
+- **Próximo subsistema após revisão/merge:** Etapa 7 — interface desktop/GUI, em PR separada.
+
+
 ### Etapa 5 — Navegador e Browser Intelligence (2026-10-10)
 
-- **Etapa documental submetida na [PR #125](https://github.com/Yamatosemj/aurenOFC/pull/125)**, branch `docs/etapa-5-navegador-browser-intelligence` sobre a `main` `946f21e2b3d629ce4e8e157ded5dc97c4d1e65d4`. Novo `docs/architecture/05-navegador-browser-intelligence.md` e referências em README/AGENTS/INVENTARIO. Apenas Markdown; não alterar runtime, workflows, testes, políticas ou runner.
+- **Etapa 5 integrada na [PR #125](https://github.com/Yamatosemj/aurenOFC/pull/125), merge `7a13c412463ad55ef7fe5562ad2e757feb2cebde`**, branch `docs/etapa-5-navegador-browser-intelligence` sobre a `main` `946f21e2b3d629ce4e8e157ded5dc97c4d1e65d4`. Novo `docs/architecture/05-navegador-browser-intelligence.md` e referências em README/AGENTS/INVENTARIO. Apenas Markdown; não alterar runtime, workflows, testes, políticas ou runner.
 - **Lido e confrontado:** `tools/browser.py`, `tools/browser_context.py`, `tools/browser_reading.py`, `tools/browser_elements.py`, `tools/browser_navigation.py`, `core/browser_verification.py`, `core/harness_heuristics.py`, `core/harness_multitab.py`, `core/harness_tools.py`, `core/harness_cycle.py`, `core/harness_guards.py`, Router/Dispatcher, contratos, PermissionManager e testes browser/Harness/segurança relevantes.
 - **Comportamentos e limites documentados:** Chromium Playwright em perfil persistente/global ao processo, 14 tools browser; leitura do DOM resumida/truncada e às vezes com rolagem; contexto unificado marcado não confiável; seleção heurística de elementos; verificação extra somente em objetivos compostos detectados e somente para algumas ações; uma mutação posterior substitui estado anterior; conteúdo do site nunca autoriza ação por si só.
 - **Pontos a investigar em tarefas específicas:** `ler_pagina` pode rolar mesmo como leitura; `obter_contexto_navegador` retorna `ok=True` quando `ler_pagina` devolve texto de erro; cliques/teclas/fechamento e outras ações não possuem comparador determinístico e podem esgotar guard em tarefas compostas; perfil não é isolado por chat. Não declarar vulnerabilidade comprovada sem reprodução.
 - **Validação documental:** 76 links relativos entre cinco Markdown conferidos na árvore (0 quebrados). Checks hospedados do primeiro HEAD revisado `e3ac3a9e2640309a90e2f7f4473d2236fe2b29ae` aprovados: [Linux completo](https://github.com/Yamatosemj/aurenOFC/actions/runs/38096229205) **556 passed/24 skipped**, [focados Linux/Windows](https://github.com/Yamatosemj/aurenOFC/actions/runs/38096229199) Linux **166 passed/15 skipped**, Windows **181 passed**, modo seguro **110 passed** em cada sistema. Verificar CI novamente no HEAD efetivo antes do merge; sem Playwright Live, site externo, API, login ou teste no notebook pessoal.
-- **Próximo subsistema após revisão/merge:** Etapa 6 — voz, STT e TTS, em PR separada.
+- **Próximo subsistema já iniciado em branch separada:** Etapa 6 — voz, STT e TTS.
 
 
 ### Etapa 4 — Windows, arquivos e visao (2026-10-10)
