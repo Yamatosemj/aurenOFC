@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 INSTALLER = ROOT / "scripts/instalar/AUTORIZAR_TESTES_CHAT.ps1"
 FUNCTIONS = ROOT / "remote_tests/chat-control-functions.ps1"
 WORKFLOW = ROOT / ".github/workflows/auren-chat-tests.yml"
-PINNED_BLOB = "90e3e3070f8b977bc328dc6ad72b112407ffeb3d"
+PINNED_BLOB = "52abfd109c06cdc458727337579984d91da879bc"
 KNOWN_SHA = "a" * 40
 
 ORIGINAL_BLOCK = """    Test-RemoteControlRequest -Context $context -Event $event -Approval $approval -Elevated $elevated -Stopped $stopped
