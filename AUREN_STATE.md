@@ -10,9 +10,9 @@ Atualizado em: 2026-10-10
 
 - **Versão estável:** V47
 - **Modelo padrão:** `gpt-5.6-luna`
-- **Branch/PR ativa:** `chore/organizar-raiz-launchers` — organizar atalhos e diagnosticos, sem alterar o runtime
-- **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #109 (`568a44daae24f1b151a06e1f06e36919af5e00f8`)
-- **CI:** PR #109: suite completa Linux 503 passed/15 skipped, testes focados Linux 135 passed/6 skipped e Windows 141 passed. Falta validacao visual da nova GUI no Windows real.
+- **Branch/PR ativa:** nenhuma nesta rodada; PR #110 integrada na main
+- **Head da main:** consultar GitHub antes de cada tarefa; ultimo merge de codigo confirmado: PR #110 (`e6f7f0de6d4296a5e55a05c107d97b545d6dc482`)
+- **CI:** PR #110: suite completa Linux 507 passed/15 skipped, testes focados Linux 139 passed/6 skipped e Windows 145 passed. Movimentacao dos launchers ainda necessita de exercicio manual por duplo clique no Windows.
 - **Fase atual:** entrega visivel da interface desktop MVP (prioridade temporal do usuario); Browser Intelligence fica pausado, sem mudar sua implementacao
 
 ### Organizacao da raiz (2026-10-10)
@@ -21,7 +21,7 @@ Atualizado em: 2026-10-10
 - Todos os atalhos agora fixam cwd na raiz via `%~dp0..\\..` para preservar paths de `.venv`, `requirements*.txt`, `tests/` e `voice/`.
 - Tres scripts Python auxiliares independentes de diagnostico movidos para `scripts/diagnosticos`, com bootstrap corrigido.
 - `testes_auren.py`, `testes_auren_live.py`, `medir_metricas_router.py` e `medir_router_baseline.py` permanecem como entradas Python legadas utilizadas por outros modulos/testes, para nao quebrar integracoes; `README.md` aponta para os novos atalhos.
-- Nenhuma mudanca no Harness, Dispatcher, Router ou voz. CI e verificacao manual dos atalhos ainda requeridos antes do merge.
+- Nenhuma mudanca no Harness, Dispatcher, Router ou voz. PR #110 incorporada; CI Linux/Windows passou, mas os atalhos ainda precisam ser abertos manualmente no Windows para validar a experiencia real.
 
 ### Interface desktop — primeira entrega visivel (2026-10-10)
 
