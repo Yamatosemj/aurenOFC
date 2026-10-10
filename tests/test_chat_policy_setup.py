@@ -30,7 +30,7 @@ ORIGINAL_BLOCK = """    Test-RemoteControlRequest -Context $context -Event $even
 def test_permanent_workflow_and_policy_pins_match():
     import hashlib
     blob = WORKFLOW.read_bytes()
-    actual = hashlib.sha1(b"blob " + str(len(blob)).encode() + b"\\0" + blob).hexdigest()
+    actual = hashlib.sha1(b"blob " + str(len(blob)).encode() + b"\0" + blob).hexdigest()
     assert actual == PINNED_BLOB
     assert PINNED_BLOB in FUNCTIONS.read_text(encoding="utf-8")
     assert PINNED_BLOB in INSTALLER.read_text(encoding="utf-8")
