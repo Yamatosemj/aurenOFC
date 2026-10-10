@@ -1,7 +1,6 @@
 """Integracao da origem visual ate a execucao Windows pelo Dispatcher."""
 from __future__ import annotations
 
-import builtins
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -18,6 +17,13 @@ from core.vision import (
     prepare_image_input,
     set_active_vision_geometry,
 )
+
+
+class _FakeConfirmation:
+    """Aprova somente handlers simulados pelos testes, sem entrada real."""
+
+    def confirmar(self, _request):
+        return True
 
 
 def _item(nome: str, argumentos: dict) -> SimpleNamespace:
@@ -73,7 +79,6 @@ def test_visao_integrada_imagem_ate_clique_no_windows(monkeypatch, tmp_path):
         return ToolResult.success("clique executado")
 
     monkeypatch.setitem(dispatcher.TOOL_HANDLERS, "clicar_mouse_windows", fake_handler)
-    monkeypatch.setattr(builtins, "input", lambda *_: "s")
 
     result = dispatcher.executar_ferramenta(
         _item(
@@ -87,7 +92,7 @@ def test_visao_integrada_imagem_ate_clique_no_windows(monkeypatch, tmp_path):
                 "vision_snapshot_id": geometry["vision_snapshot_id"],
             },
         ),
-        PermissionManager(max_actions=50),
+        PermissionManager(max_actions=50, confirmation_channel=_FakeConfirmation()),
         None,
     )
 
@@ -120,7 +125,6 @@ def test_visao_integrada_origem_negativa_e_arraste(monkeypatch, tmp_path):
         return ToolResult.success("arraste executado")
 
     monkeypatch.setitem(dispatcher.TOOL_HANDLERS, "arrastar_mouse_windows", fake_handler)
-    monkeypatch.setattr(builtins, "input", lambda *_: "s")
 
     result = dispatcher.executar_ferramenta(
         _item(
@@ -137,7 +141,7 @@ def test_visao_integrada_origem_negativa_e_arraste(monkeypatch, tmp_path):
                 "vision_snapshot_id": geometry["vision_snapshot_id"],
             },
         ),
-        PermissionManager(max_actions=50),
+        PermissionManager(max_actions=50, confirmation_channel=_FakeConfirmation()),
         None,
     )
 
@@ -158,7 +162,6 @@ def test_coordenadas_windows_diretas_nao_sao_transformadas(monkeypatch, tmp_path
         return ToolResult.success("clique direto")
 
     monkeypatch.setitem(dispatcher.TOOL_HANDLERS, "clicar_mouse_windows", fake_handler)
-    monkeypatch.setattr(builtins, "input", lambda *_: "s")
 
     result = dispatcher.executar_ferramenta(
         _item(
@@ -171,7 +174,7 @@ def test_coordenadas_windows_diretas_nao_sao_transformadas(monkeypatch, tmp_path
                 "coordinate_space": "windows",
             },
         ),
-        PermissionManager(max_actions=50),
+        PermissionManager(max_actions=50, confirmation_channel=_FakeConfirmation()),
         None,
     )
 
@@ -196,7 +199,7 @@ def test_snapshot_antigo_e_rejeitado_antes_da_permissao(monkeypatch, tmp_path):
         chamadas.append(dict(args))
         return ToolResult.success("nao deveria executar")
 
-    pm = PermissionManager(max_actions=50)
+    pm = PermissionManager(max_actions=50, confirmation_channel=_FakeConfirmation())
     original = pm.autorizar
 
     def observar_autorizacao(nome, args):
@@ -206,7 +209,6 @@ def test_snapshot_antigo_e_rejeitado_antes_da_permissao(monkeypatch, tmp_path):
     pm.autorizar = observar_autorizacao
 
     monkeypatch.setitem(dispatcher.TOOL_HANDLERS, "clicar_mouse_windows", fake_handler)
-    monkeypatch.setattr(builtins, "input", lambda *_: "s")
 
     result = dispatcher.executar_ferramenta(
         _item(
@@ -236,8 +238,7 @@ def test_harness_exige_nova_observacao_apos_acao_visual(monkeypatch, tmp_path):
 
     image_path = _png(tmp_path, "screen.png", (960, 540))
     calls = []
-    pm = PermissionManager(max_actions=50)
-    monkeypatch.setattr(builtins, "input", lambda *_: "s")
+    pm = PermissionManager(max_actions=50, confirmation_channel=_FakeConfirmation())
 
     def fake_capture(_args, _memory, _context):
         calls.append(("captura", None))
@@ -382,7 +383,6 @@ def test_geometria_sem_dpi_verificado_nao_pode_clicar(monkeypatch, tmp_path):
         lambda args, _memory, _context: chamadas.append(dict(args))
         or ToolResult.success("nao deveria executar"),
     )
-    monkeypatch.setattr(builtins, "input", lambda *_: "s")
 
     result = dispatcher.executar_ferramenta(
         _item(
@@ -396,7 +396,7 @@ def test_geometria_sem_dpi_verificado_nao_pode_clicar(monkeypatch, tmp_path):
                 "vision_snapshot_id": geometry["vision_snapshot_id"],
             },
         ),
-        PermissionManager(max_actions=50),
+        PermissionManager(max_actions=50, confirmation_channel=_FakeConfirmation()),
         None,
     )
 
@@ -430,7 +430,7 @@ def test_coordenada_visual_fora_da_imagem_e_rejeitada_antes_da_execucao(
                 "vision_snapshot_id": geometry["vision_snapshot_id"],
             },
         ),
-        PermissionManager(max_actions=50),
+        PermissionManager(max_actions=50, confirmation_channel=_FakeConfirmation()),
         None,
     )
 
@@ -464,7 +464,6 @@ def test_visual_transform_preserves_untrusted_provenance(monkeypatch, tmp_path, 
         )
 
     monkeypatch.setitem(dispatcher.TOOL_HANDLERS, "clicar_mouse_windows", fake_handler)
-    monkeypatch.setattr(builtins, "input", lambda *_: "s")
 
     result = dispatcher.executar_ferramenta(
         _item(
@@ -478,7 +477,7 @@ def test_visual_transform_preserves_untrusted_provenance(monkeypatch, tmp_path, 
                 "vision_snapshot_id": geometry["vision_snapshot_id"],
             },
         ),
-        PermissionManager(max_actions=10),
+        PermissionManager(max_actions=10, confirmation_channel=_FakeConfirmation()),
         None,
     )
 
