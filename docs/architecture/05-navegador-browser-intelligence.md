@@ -136,7 +136,7 @@ Se o modelo tentar finalizar com pendência, [`harness_guards.py`](../../core/ha
 | [`test_router_tool_selection.py`](../../tests/test_router_tool_selection.py), [`test_routing_single_owner.py`](../../tests/test_routing_single_owner.py) | Conjunto de tools selecionado e caminho único de roteamento |
 | [`test_browser_reading_module_boundary.py`](../../tests/test_browser_reading_module_boundary.py), [`test_browser_elements_module_boundary.py`](../../tests/test_browser_elements_module_boundary.py), [`test_browser_navigation_module_boundary.py`](../../tests/test_browser_navigation_module_boundary.py) | Separação de módulos, **não** a qualidade de leitura em páginas reais |
 
-Esses testes foram **lidos**, não executados localmente nesta revisão. O CI hospedado da PR documental deve ser conferido no **SHA exato** e registrado antes de merge. Nenhum teste Playwright Live, clique em site público, login, download, API paga ou notebook do proprietário foi acionado por esta etapa.
+Esses testes foram **lidos**, não executados localmente nesta revisão. Na PR #125, o primeiro HEAD revisado `e3ac3a9e2640309a90e2f7f4473d2236fe2b29ae` passou no CI hospedado: [Linux completo](https://github.com/Yamatosemj/aurenOFC/actions/runs/38096229205) (**556 passed, 24 skipped**) e [focados Linux/Windows](https://github.com/Yamatosemj/aurenOFC/actions/runs/38096229199) (Linux **166 passed/15 skipped**, Windows **181 passed**, modo seguro **110 passed** em cada sistema). **O SHA final após registrar esta evidência deve ter checks próprios aprovados antes do merge.** Nenhum teste Playwright Live, clique em site público, login, download, API paga ou notebook do proprietário foi acionado por esta etapa.
 
 ## 8. Lacunas, sem alteração de runtime
 
