@@ -1,0 +1,114 @@
+# Chat-issued, owner-only command, posted as PR Conversation comment.
+# Unlike the manual control branch, this is event-driven on the default branch.
+# The local before-job hook MUST be explicitly updated once to allow this
+# reviewed workflow. Never remove its non-admin, repository or job checks.
+name: Auren - testes pedidos no chat
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: auren-chat-tests-windows
+  cancel-in-progress: false
+
+jobs:
+  validar:
+    if: >-
+      github.event_name == 'issue_comment' &&
+      github.event.action == 'created' &&
+      github.event.repository.private == true &&
+      github.repository == 'Yamatosemj/aurenOFC' &&
+      github.actor == github.repository_owner &&
+      github.triggering_actor == github.repository_owner &&
+      github.run_attempt == '1' &&
+      github.event.issue.pull_request != null &&
+      startsWith(github.event.comment.body, 'AUREN_TESTE_V1 pytest ')
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      pr_number: ${{ steps.check.outputs.pr_number }}
+      pr_sha: ${{ steps.check.outputs.pr_sha }}
+    steps:
+      - name: Obter validador revisado da main
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Conferir comentario, autor, PR e commit
+        id: check
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 remote_tests/chat_request.py
+
+  executar:
+    needs: validar
+    if: ${{ needs.validar.result == 'success' }}
+    environment: auren-windows
+    runs-on: [self-hosted, Windows, X64, auren-isolated]
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - name: Baixar exclusivamente controlador fixo e revisado
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: 448a1f87a672278471d1d8dcc08a2a621e10b77c
+          path: control
+          clean: true
+          persist-credentials: false
+      - name: Conferir SHA do controlador confiavel
+        run: |
+          $actual = (& git.exe -C control rev-parse HEAD | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0 -or $actual -ne '448a1f87a672278471d1d8dcc08a2a621e10b77c') {
+            throw 'Controlador remoto nao corresponde ao SHA revisado'
+          }
+      - name: Baixar versao exata da PR em pasta isolada
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.validar.outputs.pr_sha }}
+          path: pr-checkout
+          clean: true
+          persist-credentials: false
+      - name: Executar pytest limitado pelo watchdog
+        env:
+          PR_SHA: ${{ needs.validar.outputs.pr_sha }}
+          PR_NUMBER: ${{ needs.validar.outputs.pr_number }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Remove-Item Env:OPENAI_API_KEY -ErrorAction SilentlyContinue
+          $python = Join-Path $env:USERPROFILE 'auren-remote\venv\Scripts\python.exe'
+          if (-not (Test-Path -LiteralPath $python)) { throw 'Python isolado ausente' }
+          $trusted = Join-Path $env:GITHUB_WORKSPACE 'control\remote_tests\pr_job.py'
+          $project = Join-Path $env:GITHUB_WORKSPACE 'pr-checkout'
+          $reports = Join-Path $env:GITHUB_WORKSPACE 'reports'
+          $actual = (& git.exe -C $project rev-parse HEAD | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0 -or $actual -ne $env:PR_SHA) {
+            throw 'PR nao corresponde ao SHA autorizado'
+          }
+          & $python $trusted --project $project --output $reports --camada pytest
+          $result = $LASTEXITCODE
+          "### Auren no Windows — PR #$env:PR_NUMBER" | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          "Commit: $env:PR_SHA" | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          if (Test-Path (Join-Path $reports 'pr-result.json')) {
+            Get-Content (Join-Path $reports 'pr-result.json') |
+              Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          }
+          exit $result
+      - name: Publicar os relatorios do Windows
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: auren-chat-pr-${{ needs.validar.outputs.pr_number }}-${{ github.run_id }}
+          path: |
+            reports/pr-result.json
+            reports/pr-test.log
+            reports/pytest.xml
+          if-no-files-found: warn
+          retention-days: 7
