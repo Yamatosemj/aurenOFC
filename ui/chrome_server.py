@@ -24,6 +24,7 @@ from ui.backend import AurenUiWorker, ConfirmationChoice
 
 
 INDEX_PATH = Path(__file__).with_name("chrome.html")
+THREE_SCRIPT_PATH = Path(__file__).resolve().parent / "vendor" / "three-r128.min.js"
 MAX_REQUEST_BYTES = 8192
 MAX_MESSAGE_CHARS = 4000
 MAX_EVENTS = 160
@@ -228,6 +229,14 @@ class ChromeRequestHandler(BaseHTTPRequestHandler):
                 json.dumps(self.server.app.token)[1:-1],
             )
             self._bytes(200, html.encode("utf-8"), "text/html; charset=utf-8")
+            return
+        if path == "/assets/three-r128.min.js":
+            # Dependencia WebGL fixa: nunca expor caminhos arbitrarios do projeto.
+            self._bytes(
+                200,
+                THREE_SCRIPT_PATH.read_bytes(),
+                "application/javascript; charset=utf-8",
+            )
             return
         if path == "/api/events":
             if not self._authorized():
