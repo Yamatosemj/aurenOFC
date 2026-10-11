@@ -153,23 +153,26 @@ class ReminderStore:
 
     def retirar_vencidos(self, limite: int = 30) -> list[dict]:
         """Marca em lote sob lock SQLite; uma instancia diferente nao duplica o aviso."""
-        now = self._now().timestamp()
+        if type(limite) is not int or not 1 <= limite <= 100:
+            raise ValueError("Limite de vencimentos invalido.")
+        now = self._now().isoformat(timespec="seconds")
         with self._lock, self._connect() as con:
             con.execute("BEGIN IMMEDIATE")
+            # Comparar instante UTC, nao ordenar texto ISO com fusos diferentes.
             rows = con.execute(
                 "SELECT id, texto, horario, status FROM lembretes "
-                "WHERE status='pendente' ORDER BY horario ASC LIMIT ?",
-                (limite,),
+                "WHERE status='pendente' AND julianday(horario) <= julianday(?) "
+                "ORDER BY julianday(horario), id LIMIT ?",
+                (now, limite),
             ).fetchall()
-            vencidos = [row for row in rows if datetime.fromisoformat(row["horario"]).timestamp() <= now]
-            stamp = self._now().isoformat(timespec="seconds")
-            for row in vencidos:
+            stamp = now
+            for row in rows:
                 con.execute(
                     "UPDATE lembretes SET status='notificado', atualizado_em=? "
                     "WHERE id=? AND status='pendente'",
                     (stamp, row["id"]),
                 )
-            return [{**self._record(row), "status": "notificado"} for row in vencidos]
+            return [{**self._record(row), "status": "notificado"} for row in rows]
 
 
     def avisos_nao_entregues(self, limite: int = 50) -> list[dict]:
