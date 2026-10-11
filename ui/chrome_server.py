@@ -156,7 +156,7 @@ class LocalChromeApp:
         with self.lock:
             self._drain()
             self._maybe_standby()
-            if message.casefold().strip(" \\t\\r\\n.!?") in EXIT_COMMANDS:
+            if message.casefold().strip(" .!?") in EXIT_COMMANDS:
                 self._push("you", message)
                 if self.mode != "off":
                     self._go_off()
