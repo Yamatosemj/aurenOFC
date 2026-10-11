@@ -107,6 +107,11 @@ TOOL_GROUPS = {
         "pressionar_tecla_windows",
         "controle_midia_windows",
     },
+    "reminders": {
+        "criar_lembrete",
+        "listar_lembretes",
+        "gerenciar_lembrete",
+    },
     "memory": {
         "salvar_memoria_persistente",
         "consultar_memoria_persistente",
@@ -217,6 +222,13 @@ DOMAIN_PATTERNS: dict[str, tuple[str, ...]] = {
         r"\bpdf\b",
         r"\bpasta\b",
         r"\bdocumento\b",
+    ),
+    "reminders": (
+        r"\\blembret[es]\\b",
+        r"\\blembra(?:r|ndo)?\\b.*\\b(?:hoje|amanh[aã]|depois|daqui|\\d{1,2}:\\d{2})\\b",
+        r"\\bme lembre\\b",
+        r"\\bme lembra\\b",
+        r"\\bavis[ae]\\b.*\\b(?:hoje|amanh[aã]|daqui)\\b",
     ),
     "memory": (
         r"\bmem[oó]ria\b.*\b(lembr|salv|esquec|apag)",
