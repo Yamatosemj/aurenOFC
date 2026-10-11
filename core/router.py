@@ -224,11 +224,11 @@ DOMAIN_PATTERNS: dict[str, tuple[str, ...]] = {
         r"\bdocumento\b",
     ),
     "reminders": (
-        r"\\blembret[es]\\b",
-        r"\\blembra(?:r|ndo)?\\b.*\\b(?:hoje|amanh[aã]|depois|daqui|\\d{1,2}:\\d{2})\\b",
-        r"\\bme lembre\\b",
-        r"\\bme lembra\\b",
-        r"\\bavis[ae]\\b.*\\b(?:hoje|amanh[aã]|daqui)\\b",
+        r"\blembret(?:e|es)\b",
+        r"\blembra(?:r|ndo)?\b.*\b(?:hoje|amanh[aã]|depois|daqui|\d{1,2}:\d{2})\b",
+        r"\bme lembre\b",
+        r"\bme lembra\b",
+        r"\bavis[ae]\b.*\b(?:hoje|amanh[aã]|daqui)\b",
     ),
     "memory": (
         r"\bmem[oó]ria\b.*\b(lembr|salv|esquec|apag)",
