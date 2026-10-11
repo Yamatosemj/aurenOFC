@@ -202,6 +202,15 @@ class AurenUiWorker:
                     quick, response = harness.processar_mensagem(text)
                     answer = response if quick else getattr(response, "output_text", str(response))
                     answer = str(answer or "").strip() or "(Sem resposta textual.)"
+                    # Desligar/reativar invalida resultados da geracao anterior.
+                    with self._lock:
+                        still_current = (
+                            self._enabled
+                            and generation == self._generation
+                            and not self._closing.is_set()
+                        )
+                    if not still_current:
+                        continue
                     snapshot = harness.current_task()
                     status = getattr(getattr(snapshot, "state", None), "value", "")
                     if status == "failed":
