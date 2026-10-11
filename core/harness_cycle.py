@@ -11,7 +11,7 @@ from core.harness_round_input import _montar_input_e_estado_da_rodada
 from core.harness_tools import _executar_chamadas_rodada as _executar_chamadas_rodada_impl
 from core.browser_verification import verificar_resultado_navegador
 from core.vision import clear_active_vision_geometry, get_active_vision_geometry, prepare_vision_result_content
-from core.intent_verification import precisa_verificar
+from core.harness_intent_guard import verificar_antes_de_agir
 
 
 def executar_ciclo(
@@ -158,62 +158,17 @@ def executar_ciclo(
             )
             return False, resposta
 
-        # Revisao semantica independente da proposta, antes de qualquer efeito externo.
-        # Nao cria uma nova via de execucao; o Dispatcher e as permissoes continuam intactos.
-        if harness.verificar_intencao is not None and precisa_verificar(chamadas):
-            if harness.task_manager.should_cancel(harness._task_id):
-                return harness._encerrar_cancelado("cancelado antes da revisao de intencao", rodada)
-            write_log(
-                "INTENT_VERIFICATION_REQUEST",
-                task_id=harness._task_id,
-                rodada=rodada,
-                quantidade=len(chamadas),
-            )
-            try:
-                decisao = harness.verificar_intencao(objetivo, chamadas, historico)
-                if getattr(decisao, "decisao", None) not in {"aprovar", "esclarecer", "bloquear"}:
-                    raise ValueError("Decisao semantica desconhecida.")
-            except Exception as exc:
-                write_log(
-                    "INTENT_VERIFICATION_ERROR",
-                    task_id=harness._task_id,
-                    rodada=rodada,
-                    erro=str(exc),
-                )
-                return harness._encerrar_falha(
-                    "intent_verification_unavailable",
-                    "Nao consegui verificar com seguranca a acao proposta. Nada foi executado nesta etapa.",
-                    rodada,
-                )
-            write_log(
-                "INTENT_VERIFICATION_RESULT",
-                task_id=harness._task_id,
-                rodada=rodada,
-                decisao=decisao.decisao,
-            )
-            if decisao.decisao != "aprovar":
-                if decisao.decisao == "esclarecer":
-                    pergunta = str(decisao.pergunta or "").strip()
-                    if not pergunta:
-                        return harness._encerrar_falha(
-                            "intent_verification_empty_question",
-                            "Preciso de um esclarecimento antes de agir, mas nao consegui formular a pergunta.",
-                            rodada,
-                        )
-                    if harness.task_manager.should_cancel(harness._task_id):
-                        return harness._encerrar_cancelado("cancelado antes do esclarecimento", rodada)
-                    harness.task_manager.complete(pergunta, task_id=harness._task_id)
-                    harness._registrar_turno("assistant", pergunta)
-                    write_log("TASK_END", task_id=harness._task_id, status="needs_clarification", rodada=rodada)
-                    return False, resposta_wrapper(pergunta)
-                return harness._encerrar_falha(
-                    "intent_verification_blocked",
-                    "Nao executei a acao proposta porque ela nao corresponde com seguranca ao seu pedido. "
-                    "Pode reformular o que voce deseja fazer?",
-                    rodada,
-                )
-            if harness.task_manager.should_cancel(harness._task_id):
-                return harness._encerrar_cancelado("cancelado apos revisao de intencao", rodada)
+        resultado_revisao = verificar_antes_de_agir(
+            harness,
+            objetivo,
+            chamadas,
+            historico,
+            rodada=rodada,
+            resposta_wrapper=resposta_wrapper,
+            write_log=write_log,
+        )
+        if resultado_revisao is not None:
+            return resultado_revisao
 
         browser_verification_enabled = harness._parece_tarefa_browser_verificavel(objetivo)
         if browser_verification_enabled:
