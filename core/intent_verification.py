@@ -147,7 +147,8 @@ def proposta_simples_exata(
     """
     import re
 
-    from core.local_decision import LocalDecisionEngine, SITES_CONHECIDOS
+    from core.local_decision import SITES_CONHECIDOS
+    from core.router import get_router
     from core.utils import normalizar_nome
 
     if historico or not chamadas or len(chamadas) > 5 or len(objetivo) > 220:
@@ -167,7 +168,7 @@ def proposta_simples_exata(
             return False
         propostas.append((nome, args))
 
-    decisao = LocalDecisionEngine().choice(objetivo)
+    decisao = get_router().decidir_local(objetivo)
     escolha = decisao.choice
     args = decisao.arguments
 
