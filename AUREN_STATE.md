@@ -13,7 +13,7 @@
 - **Documentação:** inventário inicial **Etapas 0–10 auditado estaticamente**, com referências em [`docs/architecture/`](docs/architecture/01-nucleo.md) e [`docs/INVENTARIO.md`](docs/INVENTARIO.md). Isso **não** comprova funcionamento Live nem encerra o desenvolvimento do Auren.
 - **Foco da consolidação:** separar estado operacional de histórico **somente em Markdown**, sem alterar runtime, ferramentas, workflows, runner, permissões ou segredos. **Nenhuma implementação seguinte foi autorizada automaticamente**; selecionar o próximo escopo com o proprietário.
 
-- **Em desenvolvimento nesta PR:** revisão semântica independente de ações propostas pelo modelo (API sem ferramentas, antes do Dispatcher). Ela pode aprovar, solicitar esclarecimento ou bloquear; falhas impedem a ação. Acrescenta uma chamada cobrada de API por rodada com ação verificável; atalhos locais com ações conhecidas também passam por uma prévia sem efeitos e pela mesma revisão. Não substitui permissões nem comprova resultado depois da execução.\n\n## 2. Implementado no repositório — não confundir com validado
+- **Verificação de intenção integrada na PR #132:** o mesmo modelo pode revisar ações mutáveis antes do Dispatcher (aprovar, esclarecer ou bloquear); falhas impedem a execução. **Correção em andamento:** a segunda chamada fica dispensada somente quando uma proposta curta bate exatamente com o pedido explícito, incluindo ferramenta, argumentos e ausência de passos extras. Qualquer desvio, composição ou ambiguidade mantém a revisão por IA. Permissões e evidências pós-execução continuam independentes.
 
 | Área | Estado verificável na revisão | Documento |
 | --- | --- | --- |
