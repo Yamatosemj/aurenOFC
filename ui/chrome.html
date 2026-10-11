@@ -29,7 +29,7 @@ canvas{flex:1;width:100%;min-height:0;display:block}
 #estados{position:absolute;z-index:3;top:8px;left:16px;right:16px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:12px;border:1px solid var(--line);border-radius:18px;background:var(--card);backdrop-filter:blur(10px)}
 #overlay{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;gap:10px;padding:0 16px 8px;pointer-events:none}
 #overlay>*{pointer-events:auto}
-#cards{display:flex;flex-direction:column;gap:8px;width:min(100%,420px)}
+#cards{display:flex;flex-direction:column;gap:8px;width:min(100%,420px);max-height:65vh;overflow-y:auto;scrollbar-width:thin}
 .card{display:flex;align-items:center;gap:12px;padding:10px 12px 10px 14px;border:1px solid var(--line);border-radius:16px;background:var(--card);backdrop-filter:blur(10px);animation:in .45s ease both}
 .card .txt{flex:1;min-width:0}
 .card small{display:block;color:var(--mute);font-size:.74rem;letter-spacing:.08em;text-transform:uppercase}
@@ -165,7 +165,6 @@ function addCard(c){
   ad.onclick=()=>{if(Number.isInteger(c.id)){mt.textContent="Solicitando adiamento...";void conversar("Adie o lembrete de ID "+c.id+" por 10 minutos")}
    else mt.textContent="Use o chat para adiar este lembrete."};ac.prepend(ad)}
  el.append(ac);cardsEl.prepend(el);
- while(cardsEl.children.length>3)cardsEl.lastChild.remove();
 }
 async function agir(estado,fala){const s=++seq;clearTimeout(idle);define("falando");await say(fala,s);if(s!==seq)return;define(estado);await wait(3500);if(s!==seq)return;define("normal");repouso()}
 
