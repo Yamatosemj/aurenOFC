@@ -17,6 +17,7 @@ Assistente desktop/voz para Windows, versão técnica **V47**, usando o modelo c
 - [`docs/architecture/07-interface-desktop-gui.md`](docs/architecture/07-interface-desktop-gui.md) — Tkinter, worker/filas, modos Ativo/Standby/Desligado, confirmação, sessão e cancelamento.
 - [`docs/architecture/08-skills-capacidades-extensibilidade.md`](docs/architecture/08-skills-capacidades-extensibilidade.md) — carregamento local de skills, catálogo de capacidades, atalhos, flags experimentais e limites de segurança.
 - [`docs/architecture/09-testes-ci-controle-remoto.md`](docs/architecture/09-testes-ci-controle-remoto.md) — matriz de testes, CI hospedado, runner Windows, validação de PR via comentário, watchdog e evidências reais.
+- [`docs/architecture/10-entradas-config-instalacao-distribuicao.md`](docs/architecture/10-entradas-config-instalacao-distribuicao.md) — canais de entrada, Python escolhido por cada atalho, variáveis, dependências, instalação, dados e limites de distribuição.
 - [`docs/TESTES_GITHUB.md`](docs/TESTES_GITHUB.md) e [`docs/CONTROLE_REMOTO_GITHUB.md`](docs/CONTROLE_REMOTO_GITHUB.md) — operação e histórico dos testes remotos, com [evidência de pytest por comentário já executado no Windows](https://github.com/Yamatosemj/aurenOFC/actions/runs/38085000162); consulte sempre o SHA e a política local vigentes.
 
 A documentacao evolui em PRs pequenas por subsistema. Para decidir o status real de uma funcionalidade, confronte documentos com codigo, PRs e CI atuais.
@@ -98,6 +99,8 @@ scripts/instalar/INSTALAR_VOZ.bat
 ```
 
 A camada de voz usa dependências separadas de `requirements-voice.txt`.
+
+**Atenção:** os instaladores não criam automaticamente `.venv`. O atalho da GUI usa `py -3`/`python` global mesmo quando existe uma `.venv`, enquanto o de voz prefere `.venv` e depois `py -3`. Use o [guia técnico da Etapa 10](docs/architecture/10-entradas-config-instalacao-distribuicao.md) antes de diagnosticar erro de dependência. A instalação de `playwright` via pip não instala automaticamente o Chromium.
 
 ### Evolução de voz V48 (candidata, ainda sem validação física)
 
