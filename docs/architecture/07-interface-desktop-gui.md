@@ -107,7 +107,7 @@ A fila de estratégias em background recebe `shutdown(cancel_pending=False)` no 
 | [`tests/test_scripts_layout.py`](../../tests/test_scripts_layout.py) | Existência e caminho dos atalhos de inicialização | Execução bem-sucedida de Tkinter em Windows configurado |
 | [`tests/test_routing_single_owner.py`](../../tests/test_routing_single_owner.py) | Ausência de segundo dono da decisão/execução | Qualidade da resposta do modelo em ambiente Live |
 
-**Natureza da evidência:** os testes e o código foram **lidos** nesta auditoria; executar suíte completa e focados pelo GitHub Actions no SHA da PR ainda depende dos checks. Os testes no Windows do CI hospedado não são, por si, um teste de janela Tk real, interação visual, API paga ou execução no notebook pessoal.
+**Natureza da evidência:** os testes e o código foram **lidos** nesta auditoria. No primeiro HEAD revisado da PR #127 (`0a3f24fa884e2531ba38544852ad4cf385d4e48e`), o [CI Linux completo](https://github.com/Yamatosemj/aurenOFC/actions/runs/38097470177) aprovou **556 passed/24 skipped** e o [CI focado Linux/Windows](https://github.com/Yamatosemj/aurenOFC/actions/runs/38097470147) aprovou Linux **166 passed/15 skipped**, Windows **181 passed** e modo seguro **110 passed** por plataforma. O **SHA final da PR deve ter CI próprio concluído antes do merge**. Os testes no Windows do CI hospedado não são, por si, um teste de janela Tk real, interação visual, API paga ou execução no notebook pessoal.
 
 ## 8. Backlog documental/operacional para PRs separadas
 
