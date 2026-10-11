@@ -192,7 +192,13 @@ def test_http_ack_requer_token_e_so_confirma_id_valido(store, clock):
     from http.client import HTTPConnection
     from threading import Thread
     from ui.chrome_server import ChromeServer
-    from tests.test_chrome_ui import FakeWorker
+
+    class FakeWorker:
+        def __init__(self):
+            self.events = Queue()
+        def start(self): pass
+        def close(self): pass
+        def go_off(self): pass
 
     fake = FakeWorker()
     app = LocalChromeApp(worker=fake, reminder_store=store)
