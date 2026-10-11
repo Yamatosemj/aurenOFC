@@ -1,6 +1,6 @@
 # Inventario tecnico e plano de documentacao do Auren
 
-> **Inventario das etapas 0 a 6.** Este documento e um mapa para orientar auditorias **uma por vez**; a presenca de um arquivo no repositorio nao comprova que a funcionalidade opera de ponta a ponta. Areas marcadas como **mapeadas** ainda nao foram auditadas em detalhe. As Etapas 1 a 6 documentam nucleo, caminho de ferramentas, modelo, memoria, Windows, visao, navegador e voz por leitura de codigo e testes; **isso nao comprova comportamento Live**.
+> **Inventario das etapas 0 a 7.** Este documento e um mapa para orientar auditorias **uma por vez**; a presenca de um arquivo no repositorio nao comprova que a funcionalidade opera de ponta a ponta. Areas marcadas como **mapeadas** ainda nao foram auditadas em detalhe. As Etapas 1 a 7 documentam nucleo, caminho de ferramentas, modelo, memoria, Windows, visao, navegador, voz e interface desktop por leitura de codigo e testes; **isso nao comprova comportamento Live**.
 
 ## Escopo conferido
 
@@ -20,7 +20,7 @@
 | 4 | **Windows, arquivos e visao** | `tools/windows.py`, `tools/windows_*.py`, `tools/applications.py`, `tools/files.py`, `tools/file_intelligence.py`, `core/vision.py` | **Auditado estaticamente** em [architecture/04-windows-arquivos-visao.md](architecture/04-windows-arquivos-visao.md); limites de UIA, caminhos, DPI e testes simulados; **Live nao validado** |
 | 5 | **Navegador** | `tools/browser.py`, `tools/browser_*.py`, `core/browser_verification.py`, `core/harness_*.py` | **Auditado estaticamente** em [architecture/05-navegador-browser-intelligence.md](architecture/05-navegador-browser-intelligence.md); Playwright, DOM, abas, política e verificação parcial; **Live não validado** |
 | 6 | **Voz, STT e TTS** | `voice/*.py`, `requirements-voice.txt`, `scripts/iniciar/AUREN_VOZ.bat`, `agent/ari_native/audio_manager.py` | **Auditado estaticamente** em [architecture/06-voz-stt-tts.md](architecture/06-voz-stt-tts.md): PTT, captura, VAD, ASR, TTS, confirmações e limites; **teste físico pendente** |
-| 7 | **Interface desktop** | `interface_auren.py`, `ui/backend.py`, `scripts/iniciar/ABRIR_AUREN_GUI.bat` | Mapeado; **auditoria detalhada pendente** |
+| 7 | **Interface desktop** | `interface_auren.py`, `ui/backend.py`, `scripts/iniciar/ABRIR_AUREN_GUI.bat` | **Auditado estaticamente** em [architecture/07-interface-desktop-gui.md](architecture/07-interface-desktop-gui.md); modos/filas/Harness/confirmacao/cancelamento; **Tk real/Live nao validado** |
 | 8 | **Skills, recursos experimentais e extensibilidade** | `skills/loader.py`, `core/capabilities.py`, `core/capability_audio_*.py`, `experimental/` | Mapeado; **nao presumir recursos habilitados** |
 | 9 | **Testes, CI e controle remoto** | `tests/`, `pytest.ini`, `testes_auren_live.py`, `remote_tests/`, `.github/workflows/` | Mapeado; **documentacao operacional desatualizada em partes** |
 | 10 | **Entradas, configuracao e distribuicao** | `main.py`, `auren.py`, `config.py`, `scripts/`, `requirements*.txt`, `README.md` | Mapeado; **auditoria detalhada pendente** |
@@ -74,9 +74,11 @@
 
 **Etapa 5 (integrada na [PR #125](https://github.com/Yamatosemj/aurenOFC/pull/125), merge `7a13c412463ad55ef7fe5562ad2e757feb2cebde`):** navegador Playwright/Chromium, perfil persistente, leitura DOM, abas, Router/Dispatcher, proteção de origem, Browser Intelligence e guards em [architecture/05-navegador-browser-intelligence.md](architecture/05-navegador-browser-intelligence.md). Auditoria estática; 76 links relativos conferidos (0 quebrados). Checks do primeiro HEAD revisado `e3ac3a9e2640309a90e2f7f4473d2236fe2b29ae` aprovados: Linux completo 556 passed/24 skipped, Linux focado 166 passed/15 skipped, Windows 181 passed, modo seguro 110 passed por sistema. Verificar novamente HEAD final; sem Live.
 
-**Etapa 6 (auditoria documental na [PR #126](https://github.com/Yamatosemj/aurenOFC/pull/126), em revisão):** pipeline PTT, VAD, Parakeet local, Kokoro, canal de confirmação, modelos, scripts de instalação e limites dos testes em [architecture/06-voz-stt-tts.md](architecture/06-voz-stt-tts.md). Somente Markdown; 72 links relativos verificados, 0 quebrados. CI do primeiro HEAD `371418434518a050c822e7edf3c473c53dd152dc` aprovado: Linux completo **556 passed/24 skipped**, Linux focado **166 passed/15 skipped**, Windows **181 passed**, modo seguro **110 passed** por sistema. Conferir checks no HEAD final; sem teste físico.
+**Etapa 6 (integrada na [PR #126](https://github.com/Yamatosemj/aurenOFC/pull/126), merge `89755a2705b08b241e9f5e019b62f41ccda3d30d`):** pipeline PTT, VAD, Parakeet local, Kokoro, canal de confirmação, modelos, scripts de instalação e limites dos testes em [architecture/06-voz-stt-tts.md](architecture/06-voz-stt-tts.md). Somente Markdown; 72 links relativos verificados, 0 quebrados. CI do primeiro HEAD `371418434518a050c822e7edf3c473c53dd152dc` aprovado: Linux completo **556 passed/24 skipped**, Linux focado **166 passed/15 skipped**, Windows **181 passed**, modo seguro **110 passed** por sistema. Conferir checks no HEAD final; sem teste físico.
 
-**Proxima area documental:** Etapa 7 — interface desktop e GUI.
+**Etapa 7 (auditoria documental nesta branch):** modo inicial desligado, estados GUI versus worker/Harness, backend em thread, duas filas, autorizacoes, teardown e limites de teste documentados em [architecture/07-interface-desktop-gui.md](architecture/07-interface-desktop-gui.md). Somente Markdown; CI e revisao da PR ainda pendentes; nenhum Tk real/Live.
+
+**Proxima area documental:** Etapa 8 — skills, recursos experimentais e extensibilidade.
 
 **Evidencia de CI da Etapa 1:** PR #121 aprovada no GitHub Actions, SHA de codigo documental antes do merge `9edb1ae7101fa9a3f1b6483a484ee3d4883a5014`: Linux 556 passed/24 skipped, Windows hospedado focado 181 passed e modo seguro 110 passed. **Sem execucao Live, microfone ou testes no notebook pessoal nessa PR documental.**
 
