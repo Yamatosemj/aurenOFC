@@ -10,11 +10,11 @@ Atualizado em: 2026-10-10
 
 ### Etapa 6 — Voz, STT e TTS (2026-10-10)
 
-- **Auditoria documental em andamento:** branch `docs/etapa-6-voz-stt-tts` criada sobre a `main` `7a13c412463ad55ef7fe5562ad2e757feb2cebde`. Novo documento `docs/architecture/06-voz-stt-tts.md` e links de manutenção em README, AGENTS e inventário. **Somente Markdown**, nenhum runtime, workflow, dependência, política ou runner alterado.
+- **Auditoria documental submetida na [PR #126](https://github.com/Yamatosemj/aurenOFC/pull/126):** branch `docs/etapa-6-voz-stt-tts` criada sobre a `main` `7a13c412463ad55ef7fe5562ad2e757feb2cebde`. Novo documento `docs/architecture/06-voz-stt-tts.md` e links de manutenção em README, AGENTS e inventário. **Somente Markdown**, nenhum runtime, workflow, dependência, política ou runner alterado.
 - **Código confrontado:** entrada `voice/main.py`, captura `input.py`, segmento `segmentation.py`, ASR `stt.py`, TTS `tts.py`, formatação e confirmação falada; locks de áudio, script de inicialização/instalação/diagnóstico, factory do Harness, testes `test_voice.py`, `test_voice_v3.py`, `test_confirmation.py` e scripts.
 - **Estado real:** Voice Engine interno V4 com evolução candidata V48 integrada via PR #119; versão técnica global continua V47. Hotkey ativa Ctrl direito + Shift direito; PTT, pré/pós-roll, VAD WebRTC/fallback energia, Parakeet INT8 e Kokoro ONNX locais. O Harness usa o mesmo Router/Dispatcher e canal de autorização por voz.
 - **Limites notáveis para tarefas futuras:** stream do microfone aberto antes da hotkey; primeiras cargas podem baixar modelos; VAD/STT/TTS não avaliados fisicamente; métricas de latência são parciais; scripts exibem V3 enquanto engine se intitula V4; docstring de interrupção ainda cita F8, mas modo ativo usa Ctrl direito + Shift direito; instalador apaga diretório ASR completo se existente apesar de texto sobre cache incompleto. Registrar como diferenças/hipóteses, não corrigir nesta PR.
-- **Validação pendente:** conferência de links e CI da PR no SHA exato. **Nenhum teste físico de microfone, áudio, PTT, tempo real, API ou Live realizado**. Não elevar V48 a validada.
+- **Validação documental:** 72 links relativos conferidos (0 quebrados). CI hospedado no SHA efetivo ainda pendente. **Nenhum teste físico de microfone, áudio, PTT, tempo real, API ou Live realizado**. Não elevar V48 a validada.
 - **Próximo subsistema após revisão/merge:** Etapa 7 — interface desktop/GUI, em PR separada.
 
 
