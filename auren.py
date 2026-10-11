@@ -24,7 +24,7 @@ from core import usage
 from core.capability_audio_runtime import try_execute as _try_experimental_audio
 from core.harness import AurenHarness
 from core.permission_manager import PermissionManager
-from core.response import criar_resposta, get_client, obter_metricas_roteamento
+from core.response import criar_resposta, get_client, obter_metricas_roteamento, verificar_intencao
 from core.session import SessionContextManager
 from core.tools_registry import tools
 from skills.loader import SkillLibrary
@@ -160,6 +160,7 @@ def criar_harness(confirmation_channel=None) -> AurenHarness:
         apos_tarefa=None,
         fechar=fechar_navegador,
         obter_metricas_roteamento=obter_metricas_roteamento,
+        verificar_intencao=verificar_intencao,
         context=session_context,
         # Below DEFAULT_MAX_MODEL_ROUNDS this is a hard ceiling, including
         # adaptive plans. Existing action/failure/repetition guards still apply.
