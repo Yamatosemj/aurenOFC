@@ -90,6 +90,9 @@ def _matches_json_type(value: Any, expected: str) -> bool:
 # As categorias abaixo descrevem capacidades, nao aplicativos.
 # Alvos futuros continuam sendo apenas argumentos dessas capacidades.
 _CAPABILITY_RULES: tuple[tuple[str, str], ...] = (
+    ("criar_lembrete", "reminder.write"),
+    ("listar_lembretes", "reminder.read"),
+    ("gerenciar_lembrete", "reminder.write"),
     ("salvar_memoria_persistente", "memory.write"),
     ("consultar_memoria_persistente", "memory.read"),
     ("esquecer_memoria_persistente", "memory.write"),

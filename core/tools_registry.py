@@ -3,6 +3,61 @@ from __future__ import annotations
 tools = [
     {
         "type": "function",
+        "name": "criar_lembrete",
+        "description": (
+            "Cria um lembrete local persistente com notificacao quando chegar a hora. "
+            "Copie o horario mencionado pelo usuario: 'hoje 13:40', 'amanha 08:00', "
+            "'em 10 minutos' ou uma data ISO 8601. Nao invente horarios."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "texto": {"type": "string", "description": "Acao concreta que o usuario quer lembrar."},
+                "quando": {"type": "string", "description": "Quando avisar em horario local, intervalo ou ISO 8601."}
+            },
+            "required": ["texto", "quando"],
+            "additionalProperties": False
+        },
+        "strict": True
+    },
+    {
+        "type": "function",
+        "name": "listar_lembretes",
+        "description": "Consulta lembretes salvos e seus IDs, horarios e estados.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "enum": ["ativos", "todos", "pendente", "notificado", "concluido", "cancelado"]
+                },
+                "limite": {"type": "integer", "minimum": 1, "maximum": 50}
+            },
+            "required": ["status", "limite"],
+            "additionalProperties": False
+        },
+        "strict": True
+    },
+    {
+        "type": "function",
+        "name": "gerenciar_lembrete",
+        "description": "Conclui, cancela ou adia por minutos um lembrete existente, identificado pelo ID retornado na lista.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "id": {"type": "integer", "minimum": 1},
+                "acao": {"type": "string", "enum": ["concluir", "cancelar", "adiar"]},
+                "minutos": {"type": "integer", "minimum": 0, "maximum": 10080,
+                            "description": "Para adiar, precisa ser maior que zero; nas demais acoes use 0."}
+            },
+            "required": ["id", "acao", "minutos"],
+            "additionalProperties": False
+        },
+        "strict": True
+    },
+
+    {
+        "type": "function",
         "name": "abrir_programa",
         "description": (
             "Procura e abre um programa instalado no Windows."

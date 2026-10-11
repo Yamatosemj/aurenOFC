@@ -39,6 +39,8 @@ class PermissionManager:
     # Politica base por capacidade. O detalhe de uma acao real continua sendo
     # classificado por nivel_da_acao() quando necessario.
     CAPABILITY_POLICY = {
+        "reminder.write": PermissionLevel.AUTO,
+        "reminder.read": PermissionLevel.AUTO,
         "memory.write": PermissionLevel.CONFIRM,
         "memory.read": PermissionLevel.AUTO,
         "application.open": PermissionLevel.AUTO,
@@ -71,6 +73,8 @@ class PermissionManager:
     # Justificativas escritas para toda capacidade mantida em AUTO.
     # O teste de politica exige que esta tabela acompanhe CAPABILITY_POLICY.
     AUTO_CAPABILITY_JUSTIFICATIONS = {
+        "reminder.read": "Consulta somente registros locais de lembretes.",
+        "reminder.write": "Lembretes e alteracoes locais reversiveis, sem envio de dados a terceiros.",
         "memory.read": "Somente consulta memoria; nao altera estado.",
         "application.open": "Abrir um programa e reversivel e nao publica nem envia dados por si so; programas administrativos sao elevados para CONFIRM.",
         "file.search": "Pesquisa nomes/metadados locais sem modificar arquivos.",
@@ -118,6 +122,7 @@ class PermissionManager:
     })
 
     COUNTED_CAPABILITIES = {
+        "reminder.write",
         "application.open",
         "memory.write",
         "browser.navigation",

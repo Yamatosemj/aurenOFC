@@ -85,6 +85,14 @@ Limitações: somente texto por enquanto (sem integrar PTT, STT ou TTS); cartõe
 
 A GUI Tkinter original continua disponível em `scripts/iniciar/ABRIR_AUREN_GUI.bat` e não foi removida.
 
+## Lembretes locais (candidatos — PR em validacao)
+
+No Chrome local, o Auren agora tem ferramentas reais para `criar_lembrete`, `listar_lembretes` e `gerenciar_lembrete`. Pedidos naturais como **"me lembre de beber agua hoje as 13:40"**, **"me lembre em 10 minutos"**, **"quais lembretes tenho?"** e **"adie o lembrete 1 por 10 minutos"** passam pelo Router, contratos, PermissionManager, Dispatcher e retornam `ToolResult`. O agendador usa SQLite local, sem consulta periodica a API: `data/reminders/auren_reminders.sqlite3`.
+
+O servidor Chrome verifica os vencimentos em segundo plano e envia alertas para a interface mesmo em Standby ou com o Harness desligado. Cada alerta fica **pendente no SQLite ate o Chrome confirmar o recebimento visual**, para que a aba fechada/recarregada ou uma queda de conexao nao descarte o aviso; varios cartoes podem ficar visiveis numa area com rolagem. Com permissao de notificacoes do Chrome, tenta mostrar uma notificacao do navegador; sem permissao, aparece um cartao visual, que so fica evidente quando a aba estiver visivel. **O Chrome/servidor precisam permanecer em execucao**; nao ha servico em segundo plano instalado no Windows, e nao ha garantia de notificacao se o computador dormir/desligar. Lembretes vencidos enquanto o Auren ficou fechado sao recuperados ao reiniciar o servidor. Acoes dos cartoes usam pedidos ao Harness, nao alteram SQLite diretamente.
+
+O banco local **nao esta versionado no GitHub**. Ao remover ou reinstalar a pasta do Auren, preserve `data/reminders/` e `data/memory/` ou faca backup desses dados. Testes automatizados nao equivalem a teste Live da permissao do Chrome ou do Windows.
+
 ## Interface desktop (primeira versao)
 
 No Windows, abra `scripts/iniciar/ABRIR_AUREN_GUI.bat` (ou rode `python interface_auren.py`).
@@ -197,7 +205,7 @@ A captura de tela informa a área de trabalho virtual do Windows, incluindo orig
 
 ## Estado importante
 
-- **49 tools** no registry/contratos atuais
+- **52 tools** no registry/contratos atuais (incluindo três ferramentas de lembretes)
 - memória persistente em SQLite
 - browser e automação Windows integrados
 - visão pode observar a tela, executar clique ou arraste global do mouse com confirmação, manter a geometria da captura e da imagem entregue ao modelo e verificar o estado final em tarefas visuais compostas

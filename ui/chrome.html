@@ -29,7 +29,7 @@ canvas{flex:1;width:100%;min-height:0;display:block}
 #estados{position:absolute;z-index:3;top:8px;left:16px;right:16px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:12px;border:1px solid var(--line);border-radius:18px;background:var(--card);backdrop-filter:blur(10px)}
 #overlay{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;gap:10px;padding:0 16px 8px;pointer-events:none}
 #overlay>*{pointer-events:auto}
-#cards{display:flex;flex-direction:column;gap:8px;width:min(100%,420px)}
+#cards{display:flex;flex-direction:column;gap:8px;width:min(100%,420px);max-height:65vh;overflow-y:auto;scrollbar-width:thin}
 .card{display:flex;align-items:center;gap:12px;padding:10px 12px 10px 14px;border:1px solid var(--line);border-radius:16px;background:var(--card);backdrop-filter:blur(10px);animation:in .45s ease both}
 .card .txt{flex:1;min-width:0}
 .card small{display:block;color:var(--mute);font-size:.74rem;letter-spacing:.08em;text-transform:uppercase}
@@ -156,12 +156,15 @@ function addCard(c){
  t.append(sm,st,mt);el.append(t);
  const ac=document.createElement("div");ac.className="acoes";
  const ok=document.createElement("button");ok.type="button";ok.className="main";ok.textContent=c.tipo==="lembrete"?"Feito":"Dispensar";
- ok.onclick=()=>{if(c.tipo==="lembrete"){el.classList.add("done");mt.textContent="Concluído";ac.remove();agir("orgulhosa","Marquei como feito.")}else el.remove()};
+ ok.onclick=()=>{if(c.tipo==="lembrete"&&Number.isInteger(c.id)){
+   mt.textContent="Solicitando conclusão...";void conversar("Conclua o lembrete de ID "+c.id);
+  }else if(c.tipo==="lembrete"){mt.textContent="Use o chat para concluir este lembrete."}
+  else el.remove()};
  ac.append(ok);
  if(c.tipo==="lembrete"){const ad=document.createElement("button");ad.type="button";ad.textContent="Adiar 10 min";
-  ad.onclick=()=>{mt.textContent="Adiado em 10 min";agir("normal","Certo, volto a te lembrar em 10 minutos.")};ac.prepend(ad)}
+  ad.onclick=()=>{if(Number.isInteger(c.id)){mt.textContent="Solicitando adiamento...";void conversar("Adie o lembrete de ID "+c.id+" por 10 minutos")}
+   else mt.textContent="Use o chat para adiar este lembrete."};ac.prepend(ad)}
  el.append(ac);cardsEl.prepend(el);
- while(cardsEl.children.length>3)cardsEl.lastChild.remove();
 }
 async function agir(estado,fala){const s=++seq;clearTimeout(idle);define("falando");await say(fala,s);if(s!==seq)return;define(estado);await wait(3500);if(s!==seq)return;define("normal");repouso()}
 
@@ -180,7 +183,10 @@ async function conversar(texto){
 const busca=$("busca"),inp=$("msg");
 function abre(){busca.hidden=false;if(atual==="fundo"&&modoAtual!=="off"){seq++;define("normal")}inp.focus()}
 function fecha(){busca.hidden=true;inp.value=""}
-cv.addEventListener("click",()=>busca.hidden?abre():fecha());
+function pedirPermissaoAvisos(){
+ if("Notification" in window&&Notification.permission==="default")void Notification.requestPermission();
+}
+cv.addEventListener("click",()=>{pedirPermissaoAvisos();busca.hidden?abre():fecha()});
 cv.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();abre()}});
 busca.addEventListener("submit",e=>{e.preventDefault();const v=inp.value.trim();if(!v)return;fecha();conversar(v)});
 inp.addEventListener("keydown",e=>{if(e.key==="Escape"){fecha();cv.focus()}});
@@ -338,6 +344,29 @@ function evento(e){
  else if(e.kind==="confirm_done"){pedidoPendente=null;$("authPanel").hidden=true}
  else if(e.kind==="off"){if(modoAtual==="off")pintaModo()}
 }
+// Avisos sobrevivem a recarregamentos ate que a propria interface confirme
+// que exibiu o cartao. O ACK nao conclui nem cancela o lembrete.
+const avisosExibidos=new Set(),avisosAckEmAndamento=new Set();
+function mostrarAviso(reminder){
+ const id=reminder&&reminder.id;
+ if(!Number.isSafeInteger(id)||id<1)return;
+ if(!avisosExibidos.has(id)){
+  avisosExibidos.add(id);
+  const title=String(reminder.texto||"Lembrete");
+  addCard({tipo:"lembrete",titulo:title,meta:"Hora de lembrar",id});
+  seq++;define("lembrete");cap.textContent="Lembrete: "+title;
+  document.title="🔔 Lembrete • Auren";
+  if("Notification" in window&&Notification.permission==="granted"){
+   try{new Notification("Lembrete do Auren",{body:title})}catch(err){console.warn("Notificação indisponível",err)}
+  }
+ }
+ if(!avisosAckEmAndamento.has(id)){
+  avisosAckEmAndamento.add(id);
+  void postApi("/api/reminders/ack",{id}).catch(err=>{
+   console.warn("Confirmacao do aviso pendente de nova tentativa",err);
+  }).finally(()=>avisosAckEmAndamento.delete(id));
+ }
+}
 async function eventos(){
  if(consultando)return;consultando=true;
  try{
@@ -349,6 +378,8 @@ async function eventos(){
   if(d.gap)cap.textContent="Alguns eventos antigos não estão disponíveis. Confira o estado atual.";
   if(previous!==modoAtual)pintaModo();
   if(d.events.length&&modoAtual==="off")pintaModo();
+  // Renderizar por ultimo evita que o modo Desligado apague o aviso.
+  for(const reminder of (d.alerts||[]))mostrarAviso(reminder);
   $("connection").textContent="Auren local • "+(ocupado?"processando":modoAtual);
  }catch(err){$("connection").textContent="Sem conexão com o Auren local."}
  finally{consultando=false}
