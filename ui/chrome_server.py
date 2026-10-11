@@ -16,6 +16,7 @@ import secrets
 import shutil
 import subprocess
 from threading import Lock
+from time import monotonic
 from typing import Any
 from urllib.parse import urlsplit
 import webbrowser
@@ -28,6 +29,8 @@ THREE_SCRIPT_PATH = Path(__file__).resolve().parent / "vendor" / "three-r128.min
 MAX_REQUEST_BYTES = 8192
 MAX_MESSAGE_CHARS = 4000
 MAX_EVENTS = 160
+STANDBY_AFTER_SECONDS = 120
+EXIT_COMMANDS = {"sair", "desligar auren", "desligue auren", "encerrar auren", "fechar auren"}
 
 
 class LocalChromeApp:
@@ -37,6 +40,7 @@ class LocalChromeApp:
         self.worker = worker or AurenUiWorker()
         self.mode = "off"
         self.busy = False
+        self.last_activity = monotonic()
         self.token = secrets.token_urlsafe(36)
         self.lock = Lock()
         self.counter = 0
@@ -85,14 +89,35 @@ class LocalChromeApp:
                 self.busy = True
             if event.kind == "idle":
                 self.busy = False
+                self.last_activity = monotonic()
             if event.kind == "closed":
                 self.mode = "off"
                 self.busy = False
             self._push(event.kind, str(event.text or "")[:10000])
 
+    def _maybe_standby(self) -> None:
+        """Chamado com lock: nunca interrompe tarefa ou confirmação pendente."""
+        if (
+            self.mode == "active"
+            and not self.busy
+            and self.pending is None
+            and monotonic() - self.last_activity >= STANDBY_AFTER_SECONDS
+        ):
+            self.mode = "standby"
+
+    def _go_off(self) -> None:
+        """Chamado com lock: encerra a sessão sem finalizar o servidor local."""
+        self.worker.go_off()
+        self.mode = "off"
+        self.busy = False
+        if self.pending is not None:
+            self.pending[1].answer(False)
+            self.pending = None
+
     def snapshot(self, after: int = 0) -> dict[str, Any]:
         with self.lock:
             self._drain()
+            self._maybe_standby()
             after = max(0, after)
             # Caso o navegador tenha perdido eventos, notificar da lacuna.
             gap = bool(self.history and after and after < self.history[0]["seq"] - 1)
@@ -111,17 +136,13 @@ class LocalChromeApp:
             if mode == "active":
                 self.worker.activate()
                 self.mode = "active"
+                self.last_activity = monotonic()
             elif mode == "standby":
                 if self.mode == "off":
                     raise ValueError("Ative o Auren antes de entrar em standby.")
                 self.mode = "standby"
             elif mode == "off":
-                self.worker.go_off()
-                self.mode = "off"
-                self.busy = False
-                if self.pending is not None:
-                    self.pending[1].answer(False)
-                    self.pending = None
+                self._go_off()
             else:
                 raise ValueError("Modo desconhecido.")
             return {"mode": self.mode}
@@ -134,13 +155,24 @@ class LocalChromeApp:
             raise ValueError("Envie uma mensagem entre 1 e 4000 caracteres.")
         with self.lock:
             self._drain()
-            if self.mode != "active" or self.busy:
-                raise ValueError("Ative o Auren e aguarde a tarefa atual terminar.")
+            self._maybe_standby()
+            if message.casefold().strip(" \\t\\r\\n.!?") in EXIT_COMMANDS:
+                self._push("you", message)
+                if self.mode != "off":
+                    self._go_off()
+                return {"accepted": True, "mode": "off"}
+            if self.busy:
+                raise ValueError("Aguarde a tarefa atual terminar.")
+            # Qualquer mensagem comum acorda o Auren sem seleção manual.
+            if self.mode != "active":
+                self.worker.activate()
+                self.mode = "active"
             if not self.worker.submit(message):
                 raise ValueError("O Auren nao aceitou a mensagem.")
             self.busy = True
+            self.last_activity = monotonic()
             self._push("you", message)
-            return {"accepted": True}
+            return {"accepted": True, "mode": self.mode}
 
     def confirm(self, request_id: int, approved: bool) -> dict[str, Any]:
         with self.lock:
