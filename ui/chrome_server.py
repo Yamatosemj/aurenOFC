@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 from queue import Empty
 import secrets
+import sqlite3
 import shutil
 import subprocess
 from threading import Event, Lock, Thread
@@ -42,6 +43,7 @@ class LocalChromeApp:
         self.worker = worker or AurenUiWorker()
         self.reminder_store = reminder_store or get_reminder_store()
         self._reminder_stop = Event()
+        self._reminder_last_error: str | None = None
         self._reminder_thread = Thread(target=self._poll_reminders, daemon=True, name="auren-reminders")
         self.mode = "off"
         self.busy = False
@@ -59,10 +61,15 @@ class LocalChromeApp:
         while not self._reminder_stop.is_set():
             try:
                 self.poll_due_reminders()
-            except (OSError, ValueError) as exc:
-                # Falha em banco/relogio nao derruba a interface.
-                with self.lock:
-                    self._push("notice", f"Falha ao verificar lembretes: {exc}")
+                self._reminder_last_error = None
+            except (OSError, ValueError, sqlite3.Error) as exc:
+                # Falhas temporarias do banco nao matam o agendador; evitar
+                # repetir a mesma mensagem a cada segundo no historico.
+                error = f"{type(exc).__name__}: {exc}"
+                if error != self._reminder_last_error:
+                    with self.lock:
+                        self._push("notice", f"Falha ao verificar lembretes: {error}")
+                    self._reminder_last_error = error
             self._reminder_stop.wait(1.0)
 
     def poll_due_reminders(self) -> list[dict[str, Any]]:
@@ -158,7 +165,16 @@ class LocalChromeApp:
                 "seq": self.counter,
                 "gap": gap,
                 "events": items,
+                # Alertas sobrevivem a recarregamentos, lacunas na fila
+                # de eventos e reinicios do processo.
+                "alerts": self.reminder_store.avisos_nao_entregues(),
             }
+
+    def confirmar_aviso(self, reminder_id: int) -> dict[str, Any]:
+        delivered = self.reminder_store.confirmar_aviso(reminder_id)
+        if not delivered:
+            raise ValueError("Aviso inexistente ou nao esta aguardando entrega.")
+        return {"recorded": True}
 
     def change_mode(self, mode: str) -> dict[str, Any]:
         with self.lock:
@@ -342,6 +358,10 @@ class ChromeRequestHandler(BaseHTTPRequestHandler):
                 if set(obj) != {"text"}:
                     raise ValueError("Mensagem invalida.")
                 result = self.server.app.submit(obj["text"])
+            elif path == "/api/reminders/ack":
+                if set(obj) != {"id"} or type(obj["id"]) is not int:
+                    raise ValueError("ID de aviso invalido.")
+                result = self.server.app.confirmar_aviso(obj["id"])
             elif path == "/api/confirm":
                 if (
                     set(obj) != {"id", "approved"}
@@ -353,7 +373,7 @@ class ChromeRequestHandler(BaseHTTPRequestHandler):
             else:
                 self._bad(404, "Rota inexistente.")
                 return
-        except (ValueError, TypeError, UnicodeDecodeError) as exc:
+        except (ValueError, TypeError, UnicodeDecodeError, sqlite3.Error) as exc:
             self._bad(400, str(exc))
             return
         self._json(200, result)
