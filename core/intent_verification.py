@@ -175,7 +175,7 @@ def proposta_simples_exata(
         return propostas == [("definir_volume_windows", {"percentual": args["percentual"]})]
     if escolha == "set_mute":
         return propostas == [("definir_mudo_windows", {"ativado": args["ativado"]})]
-    if escolha == "control_media":
+    if escolha == "control_media" and args["acao"] in {"proxima", "anterior", "parar"}:
         return propostas == [("controle_midia_windows", {"acao": args["acao"]})]
     if escolha in {"open_known_site", "open_url"}:
         url = args["url"] if escolha == "open_url" else SITES_CONHECIDOS[args["site"]]
