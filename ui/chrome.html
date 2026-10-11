@@ -103,6 +103,7 @@ canvas{cursor:pointer}
 </div>
 
 
+<script src="/assets/three-r128.min.js" nonce="__AUREN_SCRIPT_NONCE__"></script>
 <script nonce="__AUREN_SCRIPT_NONCE__">
 const E={
  fundo:{n:"em segundo plano",hue:215,sat:38,lig:62,scale:.36,amp:.05,lobes:3,speed:.45,spike:0,glow:.25,squash:1,down:0,alpha:.55,voice:0,ring:0,orbit:0,bounce:0,shake:0,pulse:0},
@@ -199,77 +200,106 @@ window.Auren={estado:k=>{if(E[k]){seq++;define(k)}},falar:(t,k)=>agir(E[k]?k:"no
  tarefa:titulo=>addCard({tipo:"tarefa",titulo,meta:"Adicionada agora"})};
 
 
-/* Orbe leve, sem bibliotecas ou codigo remoto. Mantem a identidade do
-   prototipo original; uma versao WebGL refinada podera vir depois. */
-const ctx=cv.getContext("2d",{alpha:true});
-const estrelas=Array.from({length:170},(_,i)=>({x:(Math.sin(i*127.1)*43758.54)%1,y:(Math.sin(i*73.4)*27431.95)%1,r:.6+(i%7)/6,v:.18+(i%5)*.07}));
-const circ = (x,y,r)=>{ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2)};
-let ultimoTempo=0;
-function desenhar(agora){
- requestAnimationFrame(desenhar);
- if(!ctx)return;
- const dt=Math.min(.05,Math.max(0,(agora-ultimoTempo)/1000));ultimoTempo=agora;
- const w=cv.clientWidth,h=cv.clientHeight;
- if(!w||!h)return;
- const dpr=Math.min(devicePixelRatio||1,2),W=Math.round(w*dpr),H=Math.round(h*dpr);
- if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H}
- ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
- if(from){
-  const p=Math.min(1,Math.max(0,(agora-tI)/tD)),ease=p*p*(3-2*p);
-  for(const key of Object.keys(alvo)){
-   if(typeof alvo[key]!=="number")continue;
-   if(key==="hue"){cur.hue=from.hue+(((alvo.hue-from.hue+540)%360)-180)*ease}
-   else cur[key]=from[key]+(alvo[key]-from[key])*ease;
-  }
-  if(p>=1){if(fila.length)inicia(fila.shift());else from=null}
+/* ---------- orbe 3D ---------- */
+const VS=`uniform float uTime,uAmp,uFreq,uSpeed,uSpike,uVoice,uThorn,uTremor;varying vec3 vN;varying vec3 vP;
+float disp(vec3 p){float t=uTime*uSpeed;
+ float n=sin(p.x*uFreq+t)*sin(p.y*uFreq*1.13-t*1.1)*sin(p.z*uFreq*.87+t*.7);
+ float m=sin(p.x*uFreq*2.3-t*1.7)*sin(p.y*uFreq*2.1+t*1.4)*sin(p.z*uFreq*2.7-t*1.2);
+ float s=sin(p.x*13.+t*3.)*sin(p.y*11.-t*2.6)*sin(p.z*12.+t*2.2);
+ float th=sin(p.x*6.5+t*.8)*sin(p.y*6.+-t*.7)*sin(p.z*6.8+t*.6);
+ float tr=sin(p.x*31.+uTime*38.)*sin(p.y*27.-uTime*33.)*sin(p.z*29.+uTime*41.);
+ return uAmp*(n+.5*m)+uSpike*s+uVoice*.12*m+uThorn*.24*pow(max(1.-length(fract(p*4.2+vec3(0.,t*.3,0.))-.5)*2.4,0.),1.4)+uTremor*.03*tr;}
+void main(){vec3 n0=normalize(position);vec3 up=abs(n0.y)>.99?vec3(1.,0.,0.):vec3(0.,1.,0.);
+ vec3 a=normalize(cross(n0,up));vec3 b=cross(n0,a);float e=.02;
+ vec3 q1=normalize(n0+a*e);vec3 q2=normalize(n0+b*e);
+ vec3 p0=n0*(1.+disp(n0));vec3 p1=q1*(1.+disp(q1));vec3 p2=q2*(1.+disp(q2));
+ vec3 nn=normalize(cross(p1-p0,p2-p0));if(dot(nn,n0)<0.)nn=-nn;
+ vN=normalize(normalMatrix*nn);vec4 mv=modelViewMatrix*vec4(p0,1.);vP=mv.xyz;gl_Position=projectionMatrix*mv;}`;
+const FS=`uniform vec3 uC1,uC2;uniform float uAlpha,uGlow,uDark;varying vec3 vN;varying vec3 vP;
+void main(){vec3 N=normalize(vN);vec3 V=normalize(-vP);
+ float fr=pow(1.-max(dot(N,V),0.),2.4);vec3 L=normalize(vec3(-.5,.7,.8));
+ float df=max(dot(N,L),0.);float sp=pow(max(dot(reflect(-L,N),V),0.),40.);
+ vec3 base=mix(uC1,uC2,.5+.5*N.y+.3*fr);
+ vec3 col=base*(.42+.7*df)*(1.-uDark*.6)+uC2*fr*(.5+uGlow*.8+uDark*1.4)+vec3(1.)*sp*.55*(1.-uDark*.75);
+ gl_FragColor=vec4(col,uAlpha);}`;
+const GV=`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`;
+const GF=`uniform vec3 uC;uniform float uA;varying vec2 vUv;
+void main(){float d=length(vUv-.5)*2.;float a=smoothstep(1.,0.,d);a*=a;gl_FragColor=vec4(uC,a*uA*.55);}`;
+
+try{
+ const R=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
+ R.setPixelRatio(Math.min(devicePixelRatio||1,2));R.setClearColor(0x000000,0);
+ const scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(40,1,.1,50);
+ const U={uThorn:{value:0},uTremor:{value:0},uDark:{value:0},uTime:{value:0},uAmp:{value:0},uFreq:{value:3},uSpeed:{value:1},uSpike:{value:0},uVoice:{value:0},
+  uC1:{value:new THREE.Color()},uC2:{value:new THREE.Color()},uAlpha:{value:1},uGlow:{value:.5}};
+ const root=new THREE.Group();scene.add(root);
+ const orb=new THREE.Mesh(new THREE.IcosahedronGeometry(1,28),new THREE.ShaderMaterial({uniforms:U,vertexShader:VS,fragmentShader:FS,transparent:true}));
+ root.add(orb);
+ const glowU={uC:{value:U.uC1.value},uA:{value:0}};
+ const glow=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.ShaderMaterial({uniforms:glowU,vertexShader:GV,fragmentShader:GF,transparent:true,depthWrite:false}));
+ glow.position.z=-1.2;root.add(glow);
+ const ringG=new THREE.Group();ringG.rotation.x=-1.15;root.add(ringG);
+ const rings=[0,1,2].map(()=>{const m=new THREE.Mesh(new THREE.RingGeometry(.985,1,128),new THREE.MeshBasicMaterial({transparent:true,side:THREE.DoubleSide,depthWrite:false}));ringG.add(m);return m});
+ const orbG=new THREE.Group();orbG.rotation.x=.55;root.add(orbG);
+ const dots=[0,1,2].map(()=>{const m=new THREE.Mesh(new THREE.SphereGeometry(.07,16,16),new THREE.MeshBasicMaterial({transparent:true}));orbG.add(m);return m});
+ const NP=380,pp=new Float32Array(NP*3),pv=new Float32Array(NP);
+ const reset=(i,r)=>{const a=Math.random()*6.283,b=Math.acos(2*Math.random()-1);pp[i*3]=r*Math.sin(b)*Math.cos(a);pp[i*3+1]=r*Math.cos(b);pp[i*3+2]=r*Math.sin(b)*Math.sin(a)};
+ for(let i=0;i<NP;i++){reset(i,1.5+Math.random()*4.5);pv[i]=.3+Math.random()*.7}
+ const pg=new THREE.BufferGeometry();pg.setAttribute("position",new THREE.BufferAttribute(pp,3));
+ const pm=new THREE.PointsMaterial({size:.05,transparent:true,depthWrite:false});root.add(new THREE.Points(pg,pm));
+ const shell=new THREE.Mesh(new THREE.IcosahedronGeometry(1.4,2),new THREE.MeshBasicMaterial({wireframe:true,transparent:true,depthWrite:false}));root.add(shell);
+ const gyros=[[1.2,.3,0],[.4,1.1,.5],[.9,-.6,1.2]].map(r=>{const m=new THREE.Mesh(new THREE.TorusGeometry(1.7,.008,8,180),new THREE.MeshBasicMaterial({transparent:true}));m.rotation.set(r[0],r[1],r[2]);root.add(m);return m});
+ function ajusta(){const w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;R.setSize(w,h,false);cam.aspect=w/h;cam.position.z=5.4*Math.max(1,.85/cam.aspect);cam.updateProjectionMatrix()}
+ addEventListener("resize",ajusta);ajusta();
+ let px=0,py=0;
+ addEventListener("pointermove",e=>{px=e.clientX/innerWidth*2-1;py=e.clientY/innerHeight*2-1});
+ const c1=new THREE.Color(),c2=new THREE.Color();
+ let t=0,ph=0,ult=performance.now();
+ function frame(now){
+  const dt=Math.min(.05,(now-ult)/1000);ult=now;t+=dt*(reduz?.4:1);ph+=dt*cur.pf;
+  if(from){const p=Math.min(1,Math.max(0,(now-tI)/tD));
+   for(const k in alvo){if(typeof alvo[k]!=="number")continue;
+    const dl=LAG[k]||0,q=Math.min(1,Math.max(0,(p-dl)/(1-dl))),e=q*q*q*(q*(q*6-15)+10);
+    if(k==="hue")cur.hue=from.hue+(((alvo.hue-from.hue+540)%360)-180)*e;else cur[k]=from[k]+(alvo[k]-from[k])*e}
+   if(p>=1){if(fila.length)inicia(fila.shift());else from=null}}
+  const h=((cur.hue%360)+360)%360/360,s=cur.sat/100,l=cur.lig/100;
+  c1.setHSL(h,s,l);c2.setHSL(((h+cur.hs)%1+1)%1,s,Math.min(.9,l+.12));
+  U.uC1.value.copy(c1);U.uC2.value.copy(c2);
+  const voz=cur.voice*(.5+.5*Math.sin(t*7.3))*(.55+.45*Math.sin(t*2.7+1));
+  U.uTime.value=t;U.uAmp.value=cur.amp*(reduz?.5:1);U.uFreq.value=cur.lobes*.7+.8;
+  U.uSpeed.value=cur.speed;U.uSpike.value=cur.spike;U.uThorn.value=cur.thorn;U.uTremor.value=cur.tremor*(reduz?.3:1);U.uDark.value=cur.dark;U.uVoice.value=voz;U.uAlpha.value=cur.alpha;U.uGlow.value=cur.glow;
+  const sc=cur.scale*(1+cur.pulse*.07*Math.sin(ph));
+  root.position.set(cur.shake*.025*Math.sin(t*47),.25-cur.down+cur.bounce*Math.abs(Math.sin(t*3))*.14+cur.shake*.025*Math.cos(t*39),0);
+  root.rotation.y+=((px*.35)-root.rotation.y)*.05;root.rotation.x+=((py*.2)-root.rotation.x)*.05;
+  orb.scale.set(sc,sc*cur.squash,sc);orb.rotation.y+=dt*.2;
+  glow.scale.setScalar(sc*5.2);glowU.uA.value=cur.glow*cur.alpha;
+  ringG.visible=cur.ring>.02;
+  rings.forEach((m,i)=>{const p=(t*.45+i/3)%1;m.scale.setScalar(sc*(1.1+p*1.1));m.material.opacity=(1-p)*.55*cur.ring;m.material.color.copy(c2)});
+  orbG.visible=cur.orbit>.02;
+  dots.forEach((m,i)=>{const a=t*1.8+i*2.094;m.position.set(Math.cos(a)*1.55*sc,0,Math.sin(a)*1.55*sc);m.material.opacity=.9*cur.orbit;m.material.color.copy(c2)});
+  for(let i=0;i<NP;i++){const k=pv[i],a=cur.swirl*dt*k,c=Math.cos(a),n=Math.sin(a),f=1+cur.flow*dt*.5*k;
+   let x=pp[i*3],y=pp[i*3+1],z=pp[i*3+2];
+   const nx=(x*c-z*n)*f,nz=(x*n+z*c)*f;y=y*f+cur.rise*dt*.7*k;
+   x=nx+(Math.random()-.5)*cur.tremor*dt*2;z=nz+(Math.random()-.5)*cur.tremor*dt*2;
+   const L=Math.hypot(x,y,z);
+   if(L>6.5||L<1.3||Math.abs(y)>4){reset(i,cur.flow<0?5.8:1.5+Math.random()*1.5);continue}
+   pp[i*3]=x;pp[i*3+1]=y;pp[i*3+2]=z}
+  pg.attributes.position.needsUpdate=true;
+  pm.color.copy(c2);pm.opacity=(.35+cur.glow*.4)*(.4+.6*Math.min(1,cur.scale));
+  shell.scale.setScalar(sc);shell.rotation.y-=dt*(.15+cur.swirl*.3);shell.rotation.x+=dt*.07;
+  shell.material.color.copy(c2);shell.material.opacity=(.1+cur.dark*.22+cur.glow*.06)*cur.alpha;
+  gyros.forEach((g,i)=>{g.scale.setScalar(sc);g.rotation.y+=dt*(.25+cur.swirl*.7)*(i%2?-1:1);g.rotation.z+=dt*.1*(i+1);
+   g.material.color.copy(c2);g.material.opacity=(.22+cur.dark*.3)*cur.alpha});
+  document.documentElement.style.setProperty("--tint","hsla("+Math.round(h*360)+","+Math.round(cur.sat)+"%,"+Math.round(cur.lig)+"%,"+((.1+cur.glow*.16+cur.dark*.22)*cur.alpha).toFixed(3)+")");
+  R.render(scene,cam);requestAnimationFrame(frame);
  }
- const time=agora/1000,hue=((cur.hue%360)+360)%360,
-  cy=h*.43 + cur.down*h*.06,cx=w*.5,
-  pulse=1+cur.pulse*.025*Math.sin(time*4),
-  radius=Math.min(w*.25,h*.235,165)*Math.max(.3,cur.scale)*pulse;
- for(const v of estrelas){
-   const sx=Math.abs(v.x)*w,sy=Math.abs(v.y)*h;
-   ctx.fillStyle="rgba(157,171,244,"+(.16+.3*(.5+.5*Math.sin(time*v.v+sx)))+")";
-   ctx.fillRect(sx,sy,v.r,v.r);
- }
- const haze=ctx.createRadialGradient(cx,cy,radius*.6,cx,cy,radius*2.55);
- haze.addColorStop(0,"hsla("+hue+",75%,68%,"+(.09+cur.glow*.16)+")");
- haze.addColorStop(1,"hsla("+hue+",70%,55%,0)");
- ctx.fillStyle=haze;circ(cx,cy,radius*2.6);ctx.fill();
- const ringR=radius*1.46;
- ctx.lineWidth=1;ctx.strokeStyle="hsla("+hue+",65%,77%,"+(.09+cur.glow*.17)+")";
- for(let i=0;i<3;i++){
-  const a=time*(reduz?.04:.10)*(i%2?1:-1)+i*1.05;
-  ctx.save();ctx.translate(cx,cy);ctx.rotate(a);ctx.beginPath();
-  ctx.ellipse(0,0,ringR*(1+.1*i),ringR*(.3+.15*i),0,0,Math.PI*2);ctx.stroke();ctx.restore();
- }
- ctx.save();ctx.translate(cx,cy);ctx.rotate(time*(reduz?.02:.075));
- const sides=13,rad=radius*1.25;
- ctx.beginPath();for(let i=0;i<=sides;i++){
-  const a=i*2*Math.PI/sides,x=Math.cos(a)*rad,y=Math.sin(a)*rad;
-  if(!i)ctx.moveTo(x,y);else ctx.lineTo(x,y);
- }ctx.stroke();
- for(let i=0;i<sides;i++){
-  const a=i*2*Math.PI/sides,b=((i+5)%sides)*2*Math.PI/sides;
-  ctx.beginPath();ctx.moveTo(Math.cos(a)*rad,Math.sin(a)*rad);
-  ctx.lineTo(Math.cos(b)*rad,Math.sin(b)*rad);ctx.stroke();
- }ctx.restore();
- const bubble=ctx.createRadialGradient(cx-radius*.30,cy-radius*.43,radius*.03,cx,cy,radius*1.05);
- bubble.addColorStop(0,"hsla("+hue+",90%,92%,"+cur.alpha+")");
- bubble.addColorStop(.22,"hsla("+hue+",65%,79%,"+cur.alpha+")");
- bubble.addColorStop(.64,"hsla("+(hue+14)+",40%,61%,"+cur.alpha+")");
- bubble.addColorStop(1,"hsla("+(hue+17)+",45%,38%,"+cur.alpha+")");
- ctx.fillStyle=bubble;circ(cx,cy,radius);ctx.fill();
- ctx.lineWidth=2;ctx.strokeStyle="hsla("+hue+",85%,88%,"+(cur.alpha*.50)+")";ctx.stroke();
- ctx.save();ctx.translate(cx-radius*.20,cy-radius*.23);ctx.rotate(-.55);
- const shine=ctx.createRadialGradient(0,0,0,0,0,radius*.47);
- shine.addColorStop(0,"rgba(255,255,255,.6)");
- shine.addColorStop(1,"rgba(255,255,255,0)");
- ctx.fillStyle=shine;ctx.beginPath();ctx.ellipse(0,0,radius*.35,radius*.16,0,0,Math.PI*2);ctx.fill();
- ctx.restore();
- document.documentElement.style.setProperty("--tint","hsla("+hue+",65%,52%,"+(.08+cur.glow*.13)+")");
+ define("fundo");requestAnimationFrame(frame);
+ }catch(e){
+  const erro="Não foi possível iniciar o orbe 3D. Verifique se a aceleração de hardware/WebGL está ativada no Chrome.";
+  lab.textContent=erro;
+  cap.textContent=erro;
+  console.warn("Auren WebGL indisponível",e);
 }
-define("fundo");requestAnimationFrame(desenhar);
 
 /* Ponte HTTP local. Não há ações simuladas nem endpoint genérico de tools. */
 const AUREN_TOKEN="__AUREN_LOCAL_TOKEN__";
