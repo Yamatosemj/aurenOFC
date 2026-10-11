@@ -96,7 +96,7 @@ def test_invalid_verifier_decision_fails_closed():
         verifier=lambda *_: SimpleNamespace(decisao="maybe"),
         calls=[_call()],
     )
-    _, response = harness.processar_mensagem("defina o volume em 30")
+    _, response = harness.processar_mensagem("mude o audio daqui")
     assert dispatched == []
     assert "Nao consegui verificar" in response.output_text
 
