@@ -76,7 +76,7 @@
 
 **Etapa 6 (integrada na [PR #126](https://github.com/Yamatosemj/aurenOFC/pull/126), merge `89755a2705b08b241e9f5e019b62f41ccda3d30d`):** pipeline PTT, VAD, Parakeet local, Kokoro, canal de confirmação, modelos, scripts de instalação e limites dos testes em [architecture/06-voz-stt-tts.md](architecture/06-voz-stt-tts.md). Somente Markdown; 72 links relativos verificados, 0 quebrados. CI do primeiro HEAD `371418434518a050c822e7edf3c473c53dd152dc` aprovado: Linux completo **556 passed/24 skipped**, Linux focado **166 passed/15 skipped**, Windows **181 passed**, modo seguro **110 passed** por sistema. Conferir checks no HEAD final; sem teste físico.
 
-**Etapa 7 (auditoria documental nesta branch):** modo inicial desligado, estados GUI versus worker/Harness, backend em thread, duas filas, autorizacoes, teardown e limites de teste documentados em [architecture/07-interface-desktop-gui.md](architecture/07-interface-desktop-gui.md). Somente Markdown; CI e revisao da PR ainda pendentes; nenhum Tk real/Live.
+**Etapa 7 (auditoria documental na [PR #127](https://github.com/Yamatosemj/aurenOFC/pull/127), em revisão):** modo inicial desligado, estados GUI versus worker/Harness, backend em thread, duas filas, autorizacoes, teardown e limites de teste documentados em [architecture/07-interface-desktop-gui.md](architecture/07-interface-desktop-gui.md). Somente Markdown; 65 links internos conferidos (0 quebrados); CI do SHA final pendente; nenhum Tk real/Live.
 
 **Proxima area documental:** Etapa 8 — skills, recursos experimentais e extensibilidade.
 
