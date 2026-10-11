@@ -8,14 +8,23 @@ Atualizado em: 2026-10-10
 
 ## Estado atual
 
+### Etapa 7 — Interface desktop e GUI (2026-10-10)
+
+- **Auditoria documental em andamento:** branch `docs/etapa-7-interface-desktop-gui` sobre a `main` `89755a2705b08b241e9f5e019b62f41ccda3d30d`. Novo documento `docs/architecture/07-interface-desktop-gui.md` e referências em README, AGENTS e inventário. **Apenas Markdown**, sem alterar runtime, dependências, testes, runner nem políticas.
+- **Código confrontado:** `interface_auren.py`, `ui/backend.py`, `core/confirmation.py`, `auren.py`, `core/harness.py`, `core/task_manager.py`, `core/session.py`, launcher da GUI; testes `tests/test_desktop_ui_backend.py`, `tests/test_confirmation.py`, `tests/test_cancellation_harness.py`, `tests/test_scripts_layout.py` e regressões de Router.
+- **Limites anotados:** GUI Tkinter é texto e canal do mesmo Harness; worker serializado por filas e geração de sessão; Ativo habilita envio, Standby bloqueia só UI (não cancela atividade nem desabilita worker), Desligado solicita cancelamento cooperativo e descarte enfileirado; confirmação modal expira em 45 s e nega por padrão; resposta de tarefa em andamento pode chegar após Desligado, pois não é filtrada por geração depois da execução; conversa visível não é apagada ao desligar.
+- **Validação pendente:** links internos, PR e CI no SHA efetivo. Não foi executada janela Tk real, teste físico Windows, API, Live ou notebook pessoal. Não interpretar pytest de backend como prova do layout/fechamento físico.
+- **Próxima área após merge:** Etapa 8 — skills, recursos experimentais e extensibilidade, PR própria.
+
+
 ### Etapa 6 — Voz, STT e TTS (2026-10-10)
 
-- **Auditoria documental submetida na [PR #126](https://github.com/Yamatosemj/aurenOFC/pull/126):** branch `docs/etapa-6-voz-stt-tts` criada sobre a `main` `7a13c412463ad55ef7fe5562ad2e757feb2cebde`. Novo documento `docs/architecture/06-voz-stt-tts.md` e links de manutenção em README, AGENTS e inventário. **Somente Markdown**, nenhum runtime, workflow, dependência, política ou runner alterado.
+- **Etapa 6 integrada na [PR #126](https://github.com/Yamatosemj/aurenOFC/pull/126), merge `89755a2705b08b241e9f5e019b62f41ccda3d30d`:** branch `docs/etapa-6-voz-stt-tts` criada sobre a `main` `7a13c412463ad55ef7fe5562ad2e757feb2cebde`. Novo documento `docs/architecture/06-voz-stt-tts.md` e links de manutenção em README, AGENTS e inventário. **Somente Markdown**, nenhum runtime, workflow, dependência, política ou runner alterado.
 - **Código confrontado:** entrada `voice/main.py`, captura `input.py`, segmento `segmentation.py`, ASR `stt.py`, TTS `tts.py`, formatação e confirmação falada; locks de áudio, script de inicialização/instalação/diagnóstico, factory do Harness, testes `test_voice.py`, `test_voice_v3.py`, `test_confirmation.py` e scripts.
 - **Estado real:** Voice Engine interno V4 com evolução candidata V48 integrada via PR #119; versão técnica global continua V47. Hotkey ativa Ctrl direito + Shift direito; PTT, pré/pós-roll, VAD WebRTC/fallback energia, Parakeet INT8 e Kokoro ONNX locais. O Harness usa o mesmo Router/Dispatcher e canal de autorização por voz.
 - **Limites notáveis para tarefas futuras:** stream do microfone aberto antes da hotkey; primeiras cargas podem baixar modelos; VAD/STT/TTS não avaliados fisicamente; métricas de latência são parciais; scripts exibem V3 enquanto engine se intitula V4; docstring de interrupção ainda cita F8, mas modo ativo usa Ctrl direito + Shift direito; instalador apaga diretório ASR completo se existente apesar de texto sobre cache incompleto. Registrar como diferenças/hipóteses, não corrigir nesta PR.
 - **Evidência de validação:** 72 links relativos conferidos sem erros. No primeiro HEAD revisado `371418434518a050c822e7edf3c473c53dd152dc`, [Linux completo](https://github.com/Yamatosemj/aurenOFC/actions/runs/38096946269) aprovou **556 passed/24 skipped**; [Linux/Windows focados](https://github.com/Yamatosemj/aurenOFC/actions/runs/38096946329) aprovaram Linux **166 passed/15 skipped**, Windows **181 passed** e modo seguro **110 passed** em cada sistema. Revalidar os checks no SHA final após registrar esta evidência. **Nenhum teste físico de microfone, áudio, PTT, tempo real, API ou Live realizado**. Não elevar V48 a validada.
-- **Próximo subsistema após revisão/merge:** Etapa 7 — interface desktop/GUI, em PR separada.
+- **Próximo subsistema já iniciado separadamente:** Etapa 7 — interface desktop/GUI.
 
 
 ### Etapa 5 — Navegador e Browser Intelligence (2026-10-10)
