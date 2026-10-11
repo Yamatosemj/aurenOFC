@@ -80,16 +80,16 @@ def auth(app):
     return {"X-Auren-Token": app.token}
 
 
-def test_starts_off_and_only_submits_when_active():
+def test_first_message_activates_automatically_and_preserves_worker_events():
     with running_server() as (app, worker, port):
         assert app.snapshot()["mode"] == "off"
-        status, _, _ = request(port, "POST", "/api/message", {"text": "oi"}, auth(app))
-        assert status == 400
-        status, _, _ = request(port, "POST", "/api/mode", {"mode": "active"}, auth(app))
+        status, _, content = request(port, "POST", "/api/message", {"text": "oi"}, auth(app))
         assert status == 200
-        status, _, _ = request(port, "POST", "/api/message", {"text": "oi"}, auth(app))
-        assert status == 200
+        assert json.loads(content) == {"accepted": True, "mode": "active"}
+        assert app.snapshot()["mode"] == "active"
         assert worker.messages == ["oi"]
+
+        # Nao admite pedidos concorrentes enquanto o worker esta ocupado.
         status, _, _ = request(port, "POST", "/api/message", {"text": "duplo"}, auth(app))
         assert status == 400
         worker.events.put(UiEvent("busy", "Processando..."))
@@ -103,16 +103,62 @@ def test_starts_off_and_only_submits_when_active():
         assert app.snapshot()["busy"] is False
 
 
-def test_standby_disallows_new_messages_and_off_disposes_session():
+def test_standby_after_120_seconds_and_automatic_wake(monkeypatch):
+    clock = [1000.0]
+    monkeypatch.setattr("ui.chrome_server.monotonic", lambda: clock[0])
     with running_server() as (app, worker, port):
-        app.change_mode("active")
-        app.change_mode("standby")
-        status, _, _ = request(port, "POST", "/api/message", {"text": "oi"}, auth(app))
-        assert status == 400
-        app.change_mode("active")
-        app.change_mode("off")
-        assert worker.off_calls == 1
+        app.submit("oi")
+        assert app.snapshot()["mode"] == "active"
+
+        # O contador nao interrompe uma tarefa que ainda esta rodando.
+        clock[0] += 300
+        assert app.snapshot()["mode"] == "active"
+        worker.events.put(UiEvent("reply", "Olá!"))
+        worker.events.put(UiEvent("idle"))
+        assert app.snapshot()["busy"] is False
+
+        clock[0] += 119
+        assert app.snapshot()["mode"] == "active"
+        clock[0] += 1
+        assert app.snapshot()["mode"] == "standby"
+        assert worker.off_calls == 0  # nao perde a sessao em standby
+
+        status, _, content = request(port, "POST", "/api/message", {"text": "voltei"}, auth(app))
+        assert status == 200
+        assert json.loads(content)["mode"] == "active"
+        assert worker.messages == ["oi", "voltei"]
+        assert app.snapshot()["mode"] == "active"
+
+
+def test_sair_desliga_sem_passar_ao_modelo_e_nova_mensagem_religa():
+    with running_server() as (app, worker, port):
+        app.submit("oi")
+        status, _, content = request(port, "POST", "/api/message", {"text": "SAIR!"}, auth(app))
+        assert status == 200
+        assert json.loads(content)["mode"] == "off"
         assert app.snapshot()["mode"] == "off"
+        assert worker.off_calls == 1
+        assert worker.messages == ["oi"]  # o comando nao vai para o Harness
+
+        status, _, _ = request(port, "POST", "/api/message", {"text": "como sair?"}, auth(app))
+        assert status == 200  # nao e comando de desligamento
+        assert app.snapshot()["mode"] == "active"
+        assert worker.messages == ["oi", "como sair?"]
+
+
+def test_desligar_nega_confirmacao_pendente():
+    with running_server() as (app, worker, port):
+        app.submit("excluir arquivo")
+        choice = ConfirmationChoice("Excluir arquivo", "Acao sensivel", "excluir_arquivo")
+        worker.events.put(UiEvent("confirm", payload=choice))
+        event = next(e for e in app.snapshot()["events"] if e["kind"] == "confirm")
+        assert app.submit("sair")["mode"] == "off"
+        assert choice.decided.is_set() and not choice.approved
+        status, _, _ = request(
+            port, "POST", "/api/confirm",
+            {"id": event["payload"]["id"], "approved": True}, auth(app),
+        )
+        assert status == 400
 
 
 def test_confirmation_preserves_explicit_approval_and_can_be_denied():
@@ -207,6 +253,9 @@ def test_html_is_prototype_derived_real_ui_and_nonce_is_bound_to_csp():
     assert "cdnjs.cloudflare" not in source
     assert "__AUREN_LOCAL_TOKEN__" in source
     assert "__AUREN_SCRIPT_NONCE__" in source
+    assert 'id="bEstados" role="status"' in source
+    assert 'id="estados"' not in source
+    assert "trocarModo(" not in source
     with running_server() as (app, worker, port):
         status, headers, content = request(port, "GET", "/")
         page = content.decode("utf-8")
