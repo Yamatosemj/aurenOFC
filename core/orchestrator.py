@@ -118,5 +118,9 @@ class AurenOrchestrator:
 
         return resposta
 
+    def verify_intent(self, objetivo, chamadas, historico):
+        """Revisa semanticamente a proposta, sem toolset e sem cache de respostas."""
+        return self.provider.verify_intent(objetivo, chamadas, historico)
+
     def get_response_cache_stats(self) -> dict[str, int]:
         return self.response_cache.stats()
