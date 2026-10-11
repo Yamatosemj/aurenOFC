@@ -57,6 +57,18 @@ def test_horarios_falados_com_h_e_minutos_opcionais(store):
         assert store.criar("teste", quando)["horario"].startswith(expected)
 
 
+
+def test_fuso_diferente_nao_esconde_lembrete_vencido_com_limite_1(store, clock):
+    # O ISO da primeira linha ordena antes da segunda como texto,
+    # mas o seu instante UTC ocorre depois. LIMIT nao pode ocultar atrasos.
+    store.criar("futuro em outro fuso", "2026-10-11T12:00:00-05:00")
+    due = store.criar("vencido", "em 1 minuto")
+    clock[0] += timedelta(minutes=1)
+    found = store.retirar_vencidos(limite=1)
+    assert [r["id"] for r in found] == [due["id"]]
+    assert [r["texto"] for r in store.listar(status="pendente")] == ["futuro em outro fuso"]
+
+
 def test_relativos_amanha_adiamento_e_falhas(store, clock):
     one = store.criar("consulta", "em 10 minutos")
     two = store.criar("cafe", "amanha 08:00")
