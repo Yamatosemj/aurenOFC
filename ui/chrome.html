@@ -156,10 +156,14 @@ function addCard(c){
  t.append(sm,st,mt);el.append(t);
  const ac=document.createElement("div");ac.className="acoes";
  const ok=document.createElement("button");ok.type="button";ok.className="main";ok.textContent=c.tipo==="lembrete"?"Feito":"Dispensar";
- ok.onclick=()=>{if(c.tipo==="lembrete"){el.classList.add("done");mt.textContent="Concluído";ac.remove();agir("orgulhosa","Marquei como feito.")}else el.remove()};
+ ok.onclick=()=>{if(c.tipo==="lembrete"&&Number.isInteger(c.id)){
+   mt.textContent="Solicitando conclusão...";void conversar("Conclua o lembrete de ID "+c.id);
+  }else if(c.tipo==="lembrete"){mt.textContent="Use o chat para concluir este lembrete."}
+  else el.remove()};
  ac.append(ok);
  if(c.tipo==="lembrete"){const ad=document.createElement("button");ad.type="button";ad.textContent="Adiar 10 min";
-  ad.onclick=()=>{mt.textContent="Adiado em 10 min";agir("normal","Certo, volto a te lembrar em 10 minutos.")};ac.prepend(ad)}
+  ad.onclick=()=>{if(Number.isInteger(c.id)){mt.textContent="Solicitando adiamento...";void conversar("Adie o lembrete de ID "+c.id+" por 10 minutos")}
+   else mt.textContent="Use o chat para adiar este lembrete."};ac.prepend(ad)}
  el.append(ac);cardsEl.prepend(el);
  while(cardsEl.children.length>3)cardsEl.lastChild.remove();
 }
@@ -180,7 +184,10 @@ async function conversar(texto){
 const busca=$("busca"),inp=$("msg");
 function abre(){busca.hidden=false;if(atual==="fundo"&&modoAtual!=="off"){seq++;define("normal")}inp.focus()}
 function fecha(){busca.hidden=true;inp.value=""}
-cv.addEventListener("click",()=>busca.hidden?abre():fecha());
+function pedirPermissaoAvisos(){
+ if("Notification" in window&&Notification.permission==="default")void Notification.requestPermission();
+}
+cv.addEventListener("click",()=>{pedirPermissaoAvisos();busca.hidden?abre():fecha()});
 cv.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();abre()}});
 busca.addEventListener("submit",e=>{e.preventDefault();const v=inp.value.trim();if(!v)return;fecha();conversar(v)});
 inp.addEventListener("keydown",e=>{if(e.key==="Escape"){fecha();cv.focus()}});
@@ -327,6 +334,16 @@ function evento(e){
  if(e.kind==="you"){eco.textContent="Você: "+e.text;cap.textContent="";define("pensando")}
  else if(e.kind==="busy"){ocupado=true;if(modoAtual==="active")define("pensando")}
  else if(e.kind==="idle"){ocupado=false}
+ else if(e.kind==="reminder_due"){
+  const id=Number(e.payload&&e.payload.id);
+  const title=String(e.text||"Lembrete");
+  addCard({tipo:"lembrete",titulo:title,meta:"Hora de lembrar",id:Number.isSafeInteger(id)&&id>0?id:null});
+  seq++;define("lembrete");cap.textContent="Lembrete: "+title;
+  document.title="🔔 Lembrete • Auren";
+  if("Notification" in window&&Notification.permission==="granted"){
+   try{new Notification("Lembrete do Auren",{body:title})}catch(err){console.warn("Notificação indisponível",err)}
+  }
+ }
  else if(e.kind==="reply"&&modoAtual!=="off"){void agir("normal",e.text)}
  else if(e.kind==="error"&&modoAtual!=="off"){void agir("confusa",e.text)}
  else if(e.kind==="confirm"){
