@@ -7,6 +7,8 @@ import json
 from pathlib import Path
 from queue import Queue
 import re
+import shutil
+import subprocess
 from threading import Thread
 
 import pytest
@@ -212,3 +214,18 @@ def test_html_is_prototype_derived_real_ui_and_nonce_is_bound_to_csp():
         assert 'frame-ancestors ' in headers["Content-Security-Policy"]
         assert headers["Cache-Control"] == "no-store"
         assert headers["X-Frame-Options"] == "DENY"
+
+
+def test_browser_script_syntax_if_node_installed():
+    """Verifica o JavaScript embutido, sem iniciar Chrome nem chamar API."""
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("Node nao instalado neste runner")
+    html = INDEX_PATH.read_text(encoding="utf-8")
+    scripts = re.findall(r"<script[^>]*>([\s\S]*?)</script>", html, re.I)
+    assert len(scripts) == 1
+    check = subprocess.run(
+        [node, "--check", "-"], input=scripts[0],
+        capture_output=True, text=True, timeout=10, check=False,
+    )
+    assert check.returncode == 0, check.stderr
