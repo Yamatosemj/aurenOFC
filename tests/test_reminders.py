@@ -130,5 +130,99 @@ def test_chrome_notifica_mesmo_desligado_sem_chamar_modelo(store, clock):
         app.poll_due_reminders()
         assert len([x for x in app.snapshot()["events"] if x["kind"] == "reminder_due"]) == 1
         assert fake.messages == []  # sem chamadas ao modelo
+        assert app.snapshot()["alerts"][0]["id"] == 1
+        # Antes do navegador confirmar, o aviso segue pendente mesmo apos
+        # desligar/reiniciar o processo e o banco ser reaberto.
+        restored = reminders.ReminderStore(store.path, clock=lambda: clock[0])
+        assert restored.avisos_nao_entregues()[0]["texto"] == "agua"
+        assert app.confirmar_aviso(1) == {"recorded": True}
+        assert app.snapshot()["alerts"] == []
+        assert app.confirmar_aviso(1) == {"recorded": True}  # ACK idempotente
     finally:
         app.shutdown()
+
+
+def test_reagendamento_reabre_avisos_sem_duplicar_entrega(store, clock):
+    reminder = store.criar("medicacao", "em 2 minutos")
+    clock[0] += timedelta(minutes=2)
+    assert len(store.retirar_vencidos()) == 1
+    assert len(store.avisos_nao_entregues()) == 1
+    assert store.confirmar_aviso(reminder["id"])
+    assert store.avisos_nao_entregues() == []
+    store.alterar(reminder["id"], "adiar", minutos=3)
+    clock[0] += timedelta(minutes=3)
+    assert [a["id"] for a in store.retirar_vencidos()] == [reminder["id"]]
+    assert [a["id"] for a in store.avisos_nao_entregues()] == [reminder["id"]]
+    assert store.retirar_vencidos() == []
+
+
+def test_cancelamento_antes_do_ack_remove_alerta(store, clock):
+    reminder = store.criar("agua", "em 1 minuto")
+    clock[0] += timedelta(minutes=1)
+    assert len(store.retirar_vencidos()) == 1
+    store.alterar(reminder["id"], "cancelar")
+    assert store.avisos_nao_entregues() == []
+    assert store.confirmar_aviso(reminder["id"]) is False
+    with pytest.raises(ValueError):
+        store.confirmar_aviso(True)
+
+
+def test_migracao_sqlite_preserva_lembretes_antigos(tmp_path, clock):
+    import sqlite3
+    path = tmp_path / "legacy.sqlite3"
+    with sqlite3.connect(path) as con:
+        con.execute("""CREATE TABLE lembretes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, texto TEXT NOT NULL,
+            horario TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pendente',
+            criado_em TEXT NOT NULL, atualizado_em TEXT NOT NULL
+        )""")
+        con.execute("""INSERT INTO lembretes(texto, horario, status, criado_em, atualizado_em)
+                       VALUES (?, ?, ?, ?, ?)""", (
+                           "lembrete antigo", "2026-10-11T13:25:00-03:00",
+                           "notificado", "2026-10-11T13:00:00-03:00",
+                           "2026-10-11T13:25:00-03:00",
+                       ))
+    store = reminders.ReminderStore(path, clock=lambda: clock[0])
+    assert [a["texto"] for a in store.avisos_nao_entregues()] == ["lembrete antigo"]
+    assert store.confirmar_aviso(1)
+    assert store.avisos_nao_entregues() == []
+
+
+def test_http_ack_requer_token_e_so_confirma_id_valido(store, clock):
+    from http.client import HTTPConnection
+    from threading import Thread
+    from ui.chrome_server import ChromeServer
+    from tests.test_chrome_ui import FakeWorker
+
+    fake = FakeWorker()
+    app = LocalChromeApp(worker=fake, reminder_store=store)
+    server = ChromeServer(app)
+    runner = Thread(target=server.serve_forever, daemon=True)
+    runner.start()
+    try:
+        store.criar("revisar projeto", "em 1 minuto")
+        clock[0] += timedelta(minutes=1)
+        app.poll_due_reminders()
+        def post(body, token):
+            con = HTTPConnection("127.0.0.1", server.server_port, timeout=5)
+            try:
+                con.request("POST", "/api/reminders/ack", body=json.dumps(body),
+                            headers={"Content-Type": "application/json",
+                                     "X-Auren-Token": token})
+                resp = con.getresponse()
+                code, data = resp.status, json.loads(resp.read())
+                return code, data
+            finally:
+                con.close()
+        assert post({"id": 1}, "token-invalido")[0] == 403
+        assert post({"id": True}, app.token)[0] == 400
+        assert post({"id": 999}, app.token)[0] == 400
+        assert len(store.avisos_nao_entregues()) == 1
+        assert post({"id": 1}, app.token) == (200, {"recorded": True})
+        assert store.avisos_nao_entregues() == []
+        assert post({"id": 1}, app.token) == (200, {"recorded": True})
+    finally:
+        server.shutdown()
+        server.server_close()
+        app.shutdown()
+        runner.join(timeout=3)
