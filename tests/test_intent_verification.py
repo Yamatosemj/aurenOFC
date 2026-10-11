@@ -11,6 +11,7 @@ from core.intent_verification import (
     criar_entrada_verificacao,
     interpretar_decisao,
     precisa_verificar,
+    proposta_simples_exata,
 )
 from core.task_manager import TaskState
 from providers.openai_provider import OpenAIProvider
@@ -49,8 +50,8 @@ def test_model_approves_before_dispatch():
         return IntentDecision("aprovar", "alvo coerente")
 
     harness, dispatched = _harness(verifier=verifier, calls=[_call()])
-    _, response = harness.processar_mensagem("defina o volume em 30")
-    assert verifications == [("defina o volume em 30", ["definir_volume_windows"], [])]
+    _, response = harness.processar_mensagem("quero que o som fique mais baixo")
+    assert verifications == [("quero que o som fique mais baixo", ["definir_volume_windows"], [])]
     assert dispatched == ["definir_volume_windows"]
     assert harness.current_task().state is TaskState.COMPLETED
     assert "volume definido" in response.output_text
@@ -84,7 +85,7 @@ def test_verifier_unavailable_fails_closed_without_dispatch():
         raise TimeoutError("offline")
 
     harness, dispatched = _harness(verifier=unavailable, calls=[_call()])
-    _, response = harness.processar_mensagem("defina o volume em 30")
+    _, response = harness.processar_mensagem("mude o audio daqui")
     assert dispatched == []
     assert "Nao consegui verificar" in response.output_text
     assert harness.current_task().state is TaskState.FAILED
@@ -183,7 +184,7 @@ def test_fast_path_is_blocked_before_it_can_act():
         apos_tarefa=None,
         fechar=lambda: None,
         verificar_intencao=lambda *_: IntentDecision("bloquear", "site errado"),
-        planejar_atalho=planejar_comando_rapido,
+        planejar_atalho=lambda _: [_call("fechar_aba", '{"indice":1}')],
     )
     _, response = harness.processar_mensagem("abra o YouTube")
     assert executed == []
@@ -191,7 +192,7 @@ def test_fast_path_is_blocked_before_it_can_act():
     assert harness.current_task().state is TaskState.FAILED
 
 
-def test_fast_path_is_executed_after_ai_approval():
+def test_fast_path_simple_command_does_not_use_paid_verification():
     from tools.fast_paths import planejar_comando_rapido
 
     executed = []
@@ -204,7 +205,7 @@ def test_fast_path_is_executed_after_ai_approval():
         iniciar_tarefa=lambda: None,
         apos_tarefa=None,
         fechar=lambda: None,
-        verificar_intencao=lambda *_: IntentDecision("aprovar", "pedido claro"),
+        verificar_intencao=lambda *_: (_ for _ in ()).throw(AssertionError("simple site must skip verification")),
         planejar_atalho=planejar_comando_rapido,
     )
     handled, response = harness.processar_mensagem("abra o YouTube")
@@ -245,3 +246,82 @@ def test_fast_path_plan_matches_dispatch_name_and_arguments():
     proposals = planejar_comando_rapido("abra duas abas")
     assert len(proposals) == 2
     assert all(p.name == "abrir_nova_aba" for p in proposals)
+
+
+@pytest.mark.parametrize("pedido,tool,args", [
+    ("defina o volume em 30", "definir_volume_windows", '{"percentual":30}'),
+    ("coloque o volume em 0%", "definir_volume_windows", '{"percentual":0}'),
+    ("ative o mudo", "definir_mudo_windows", '{"ativado":true}'),
+    ("desative o mudo", "definir_mudo_windows", '{"ativado":false}'),
+    ("pausa a musica", "controle_midia_windows", '{"acao":"play_pause"}'),
+    ("proxima", "controle_midia_windows", '{"acao":"proxima"}'),
+    ("abra o YouTube", "navegar_navegador", '{"url":"https://www.youtube.com","modo":"visivel"}'),
+    ("abra o aplicativo Spotify", "abrir_programa", '{"programa":"Spotify"}'),
+    ("abra o Chrome", "navegar_navegador", '{"url":"https://www.google.com","modo":"visivel"}'),
+])
+def test_exact_simple_intent_needs_no_extra_verifier(pedido, tool, args):
+    # "abra o Chrome" intentionally does NOT qualify: site vs installed app is ambiguous.
+    expected = pedido != "abra o Chrome"
+    assert proposta_simples_exata(pedido, [_call(tool, args)], []) is expected
+
+
+@pytest.mark.parametrize("pedido,tool,args", [
+    ("defina o volume em 30", "definir_volume_windows", '{"percentual":80}'),
+    ("defina o volume em 30", "definir_volume_windows", '{"percentual":"30"}'),
+    ("defina o volume em 30", "definir_mudo_windows", '{"ativado":true}'),
+    ("abra o YouTube", "navegar_navegador", '{"url":"https://github.com","modo":"visivel"}'),
+    ("abra o YouTube", "navegar_navegador", '{"url":"https://www.youtube.com","modo":"oculto"}'),
+    ("abra o aplicativo Spotify", "abrir_programa", '{"programa":"Discord"}'),
+    ("abra o aplicativo Spotify e feche a janela", "abrir_programa", '{"programa":"Spotify"}'),
+    ("pausa a musica", "controle_midia_windows", '{"acao":"proxima"}'),
+    ("abra o YouTube", "fechar_aba", '{"indice":1}'),
+    ("abra o YouTube", "navegar_navegador", '{"url":"https://www.youtube.com","modo":"visivel","extra":1}'),
+    ("defina o volume em 30", "definir_volume_windows", "not json"),
+])
+def test_changed_or_ambiguous_action_requires_verifier(pedido, tool, args):
+    assert proposta_simples_exata(pedido, [_call(tool, args)], []) is False
+
+
+def test_even_simple_action_requires_verifier_with_prior_steps_or_extra_actions():
+    first = _call("definir_volume_windows", '{"percentual":30}')
+    extra = _call("fechar_aba", '{"indice":1}')
+    assert not proposta_simples_exata("defina o volume em 30", [first, extra], [])
+    assert not proposta_simples_exata(
+        "defina o volume em 30", [first], [{"ferramenta": "listar_abas", "resultado": "ok"}]
+    )
+
+
+def test_semantic_reviewer_not_called_for_exact_volume_action():
+    calls = []
+    harness, dispatched = _harness(
+        verifier=lambda *_: calls.append("extra_api") or IntentDecision("bloquear", "nao deveria chamar"),
+        calls=[_call("definir_volume_windows", '{"percentual":30}')],
+    )
+    _, response = harness.processar_mensagem("defina o volume em 30")
+    assert calls == []
+    assert dispatched == ["definir_volume_windows"]
+    assert harness.current_task().state is TaskState.COMPLETED
+    assert "volume definido" in response.output_text
+
+
+def test_semantic_reviewer_still_blocks_wrong_volume_value():
+    calls = []
+    harness, dispatched = _harness(
+        verifier=lambda *_: calls.append("extra_api") or IntentDecision("bloquear", "valor diferente"),
+        calls=[_call("definir_volume_windows", '{"percentual":80}')],
+    )
+    _, response = harness.processar_mensagem("defina o volume em 30")
+    assert calls == ["extra_api"]
+    assert dispatched == []
+    assert harness.current_task().state is TaskState.FAILED
+    assert "Nao executei" in response.output_text
+
+
+def test_semantic_reviewer_fails_closed_on_complex_command():
+    harness, dispatched = _harness(
+        verifier=lambda *_: (_ for _ in ()).throw(TimeoutError("sem conexao")),
+        calls=[_call("definir_volume_windows", '{"percentual":30}')],
+    )
+    _, response = harness.processar_mensagem("defina o volume em 30 e depois abra outra janela")
+    assert dispatched == []
+    assert "Nao consegui verificar" in response.output_text
