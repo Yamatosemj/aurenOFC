@@ -44,6 +44,19 @@ def test_criar_consultar_persistir_e_nao_duplicar_alerta(store, clock):
     assert store.listar(status="notificado")[0]["id"] == one["id"]
 
 
+def test_horarios_falados_com_h_e_minutos_opcionais(store):
+    horarios = {
+        "amanhã às 8h": "2026-10-12T08:00",
+        "amanha as 08": "2026-10-12T08:00",
+        "hoje às 13h40": "2026-10-11T13:40",
+        "hoje as 13:40": "2026-10-11T13:40",
+        "hoje às 14h": "2026-10-11T14:00",
+        "hoje 14:30": "2026-10-11T14:30",
+    }
+    for quando, expected in horarios.items():
+        assert store.criar("teste", quando)["horario"].startswith(expected)
+
+
 def test_relativos_amanha_adiamento_e_falhas(store, clock):
     one = store.criar("consulta", "em 10 minutos")
     two = store.criar("cafe", "amanha 08:00")
