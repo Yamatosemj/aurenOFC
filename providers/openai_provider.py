@@ -6,6 +6,7 @@ import os
 from config import CACHE_KEY, MODEL
 from core.prompt import instrucoes
 from core import usage
+from core.intent_verification import INSTRUCTIONS, RESPONSE_FORMAT, criar_entrada_verificacao, interpretar_decisao
 
 
 class OpenAIProvider:
@@ -64,3 +65,19 @@ class OpenAIProvider:
         resposta = self.get_client().responses.create(**parametros)
         usage.registrar_uso(resposta)
         return resposta
+
+    def verify_intent(self, objetivo, chamadas, historico):
+        """Segunda leitura sem ferramentas: nenhuma acao e executada nesta chamada."""
+        entrada = criar_entrada_verificacao(objetivo, chamadas, historico)
+        resposta = self.get_client().responses.create(
+            model=MODEL,
+            instructions=INSTRUCTIONS,
+            input=entrada,
+            tools=[],
+            reasoning={"effort": "none"},
+            text={"format": RESPONSE_FORMAT},
+            max_output_tokens=300,
+            store=False,
+        )
+        usage.registrar_uso(resposta)
+        return interpretar_decisao(getattr(resposta, "output_text", ""))

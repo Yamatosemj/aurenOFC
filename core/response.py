@@ -29,6 +29,11 @@ def criar_resposta(
     )
 
 
+def verificar_intencao(objetivo, chamadas, historico):
+    """Revisao semantica da proposta, anterior ao Dispatcher."""
+    return _orchestrator.verify_intent(objetivo, chamadas, historico)
+
+
 def obter_metricas_roteamento() -> dict[str, object]:
     """Retorna um snapshot observacional da ultima selecao do Router."""
     router = _orchestrator.router

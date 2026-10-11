@@ -36,6 +36,39 @@ def _texto(resultado) -> str:
     return f"{_PREFIXO_FALHA_ATALHO}{texto}"
 
 
+def planejar_comando_rapido(mensagem, router=None):
+    """Apenas DESCREVE as ferramentas do atalho; nao executa nem autoriza.
+
+    Usado pelo Harness para revisar por IA os atalhos antes de seu Dispatcher.
+    """
+    decision = (router or get_router()).decidir_local(str(mensagem or "").strip())
+    escolha = decision.choice
+    args = decision.arguments
+
+    def chamada(nome, argumentos):
+        return SimpleNamespace(
+            name=nome,
+            arguments=json.dumps(argumentos, ensure_ascii=False),
+            call_id=f"fast-path-preflight-{nome}",
+        )
+
+    if escolha == "get_system_status":
+        return [chamada("obter_status_windows", {})]
+
+    if escolha == "open_tabs":
+        quantidade = int(args["quantidade"])
+        if 1 <= quantidade <= 10:
+            return [chamada("abrir_nova_aba", {"url": "", "modo": "visivel"}) for _ in range(quantidade)]
+        return []
+
+    if escolha in {"open_url", "open_known_site"}:
+        url = args["url"] if escolha == "open_url" else SITES_CONHECIDOS[args["site"]]
+        return [chamada("navegar_navegador", {"url": url, "modo": "visivel"})]
+
+    # Outros padroes nao sao executados localmente; seguem para o modelo.
+    return []
+
+
 def comando_rapido(mensagem, executar_ferramenta, router=None):
     """Executa atalhos previsiveis sem chamar a API.
 

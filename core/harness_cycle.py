@@ -11,6 +11,7 @@ from core.harness_round_input import _montar_input_e_estado_da_rodada
 from core.harness_tools import _executar_chamadas_rodada as _executar_chamadas_rodada_impl
 from core.browser_verification import verificar_resultado_navegador
 from core.vision import clear_active_vision_geometry, get_active_vision_geometry, prepare_vision_result_content
+from core.harness_intent_guard import verificar_antes_de_agir
 
 
 def executar_ciclo(
@@ -156,6 +157,18 @@ def executar_ciclo(
                 criar_resposta=resposta_wrapper,
             )
             return False, resposta
+
+        resultado_revisao = verificar_antes_de_agir(
+            harness,
+            objetivo,
+            chamadas,
+            historico,
+            rodada=rodada,
+            resposta_wrapper=resposta_wrapper,
+            write_log=write_log,
+        )
+        if resultado_revisao is not None:
+            return resultado_revisao
 
         browser_verification_enabled = harness._parece_tarefa_browser_verificavel(objetivo)
         if browser_verification_enabled:
