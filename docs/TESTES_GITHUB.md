@@ -1,5 +1,7 @@
 # Auren: testes remotos pelo GitHub
 
+> **Revisão de 2026-10-10:** este guia conserva o histórico de instalação/Live de 2026-10-09. Uma execução real posterior do comando por comentário na PR #119 está comprovada pelo [run #38085000162](https://github.com/Yamatosemj/aurenOFC/actions/runs/38085000162): validador e Windows aprovados, `PR test: completed; exit=0`. **Isso foi pytest no runner pessoal, sem API; não foi Live.** Consulte o [mapa auditado dos fluxos da Etapa 9](architecture/09-testes-ci-controle-remoto.md) antes de usar instruções históricas. O estado atual do PC/hook não é observável somente pelo GitHub.
+
 Configurado em 2026-10-09 no Windows local. Repositorio privado confirmado; somente o proprietario aparece como colaborador. Autenticacao existente do Git Credential Manager reutilizada, sem copiar tokens para arquivos versionados.
 
 ## Conexao validada
@@ -12,7 +14,7 @@ Pelo celular, abra [Conexao Windows](https://github.com/Yamatosemj/aurenOFC/acti
 
 Runner oficial 2.338.0 com SHA-256 verificado contra o digest da release. Instalacao em %USERPROFILE%\auren-remote\runner. Hook externo em policy\before-job.ps1 rejeita o job antes dos passos se evento, repositorio privado, ator, reator, branch, workflow ou SHA nao corresponderem aos workflows de conexao/live revisados. Tambem rejeita processo elevado. O commit permitido fica em policy\live-approval.json, junto do estado live_ready validado pelo agente; mudancas na main exigem revisao e atualizacao local pelo agente. Labels apenas selecionam o runner.
 
-A conta pessoal nao oferece restricao de runner group por workflow. A protecao adotada e local, com SHA fixo, e nao constitui sandbox contra o proprietario/administrador do repositorio ou da maquina. Nao ha gatilhos pull_request nos workflows. CI em push continua exclusivamente nos runners do GitHub. GITHUB_TOKEN da conexao tem permissions: {}; live tem contents: read; a configuracao padrao do repositorio e read, sem aprovar PRs.
+A conta pessoal nao oferece restricao de runner group por workflow. A protecao adotada e local, com SHA fixo, e nao constitui sandbox contra o proprietario/administrador do repositorio ou da maquina. Os workflows de **conexão e Windows Live pessoal** não têm gatilhos `pull_request`; são manuais e autorizados. Já a **suíte CI hospedada** em `.github/workflows/auren-file-intelligence.yml` e `.github/workflows/auren-visual-interaction.yml` **tem** gatilhos `push` e `pull_request` em `main` e não usa o Windows pessoal. GITHUB_TOKEN da conexao tem permissions: {}; live tem contents: read; a configuracao padrao do repositorio e read, sem aprovar PRs.
 
 O runner publica automaticamente nome da maquina e caminhos operacionais nos logs privados de inicializacao; o passo de conexao nao lista ambiente nem credenciais. Credenciais internas do runner permanecem somente na instalacao local. Nenhuma chave de API foi adicionada ao GitHub.
 

@@ -16,7 +16,8 @@ Assistente desktop/voz para Windows, versão técnica **V47**, usando o modelo c
 - [`docs/architecture/06-voz-stt-tts.md`](docs/architecture/06-voz-stt-tts.md) — entrada PTT, captura/VAD, transcrição Parakeet, síntese Kokoro, confirmações por voz e limites de teste.
 - [`docs/architecture/07-interface-desktop-gui.md`](docs/architecture/07-interface-desktop-gui.md) — Tkinter, worker/filas, modos Ativo/Standby/Desligado, confirmação, sessão e cancelamento.
 - [`docs/architecture/08-skills-capacidades-extensibilidade.md`](docs/architecture/08-skills-capacidades-extensibilidade.md) — carregamento local de skills, catálogo de capacidades, atalhos, flags experimentais e limites de segurança.
-- [`docs/TESTES_GITHUB.md`](docs/TESTES_GITHUB.md) e [`docs/CONTROLE_REMOTO_GITHUB.md`](docs/CONTROLE_REMOTO_GITHUB.md) — operacao e historico dos testes remotos; **algumas instrucoes antigas aguardam reconciliacao** com os runs atuais.
+- [`docs/architecture/09-testes-ci-controle-remoto.md`](docs/architecture/09-testes-ci-controle-remoto.md) — matriz de testes, CI hospedado, runner Windows, validação de PR via comentário, watchdog e evidências reais.
+- [`docs/TESTES_GITHUB.md`](docs/TESTES_GITHUB.md) e [`docs/CONTROLE_REMOTO_GITHUB.md`](docs/CONTROLE_REMOTO_GITHUB.md) — operação e histórico dos testes remotos, com [evidência de pytest por comentário já executado no Windows](https://github.com/Yamatosemj/aurenOFC/actions/runs/38085000162); consulte sempre o SHA e a política local vigentes.
 
 A documentacao evolui em PRs pequenas por subsistema. Para decidir o status real de uma funcionalidade, confronte documentos com codigo, PRs e CI atuais.
 
