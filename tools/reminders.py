@@ -31,9 +31,9 @@ def interpretar_quando(quando: str, agora: datetime) -> datetime:
             raise ValueError("Intervalo deve ser maior que zero.")
         return agora + timedelta(minutes=n * (60 if match.group(2).startswith("hora") else 1))
 
-    match = re.fullmatch(r"(hoje|amanh[aã])(?:\s+[aà]s?)?\s+(\d{1,2}):(\d{2})", value)
+    match = re.fullmatch(r"(hoje|amanh[aã])(?:\s+[aà]s?)?\s+(\d{1,2})(?:[:h](\d{2}))?h?", value)
     if match:
-        hour, minute = int(match.group(2)), int(match.group(3))
+        hour, minute = int(match.group(2)), int(match.group(3) or 0)
         if hour > 23 or minute > 59:
             raise ValueError("Horario invalido.")
         date = agora.date() + timedelta(days=int(match.group(1) != "hoje"))
