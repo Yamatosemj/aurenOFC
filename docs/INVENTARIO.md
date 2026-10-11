@@ -8,7 +8,7 @@
 - O codigo de `core/tools_registry.py` continha **49** entradas de ferramenta (`type: function`) nesse levantamento; confirme novamente se o registry mudar.
 - Versao configurada em `config.py`: **V47**. A candidata a voz **V48 foi integrada a `main`** pela PR #119, mas continua sem prova de funcionamento fisico do PTT/microfone/latencia. Alteracao de codigo integrada nao significa recurso validado em ambiente real.
 - `pytest` da PR #119 foi aprovado no notebook Windows do proprietario: **579 passed, 1 skipped, 1 warning** ([execucao](https://github.com/Yamatosemj/aurenOFC/actions/runs/38085000162)). Isso nao representa teste Live de API, microfone ou automacao.
-- `AUREN_STATE.md` possui historico acumulado e anotacoes antigas; sua reorganizacao em estado conciso e historico selecionado e uma tarefa documental **pendente**.
+- O antigo `AUREN_STATE.md` foi preservado integralmente em [history/AUREN_STATE_SNAPSHOT_2026-10-10.md](history/AUREN_STATE_SNAPSHOT_2026-10-10.md); o [estado operacional curto](../AUREN_STATE.md) deve conter somente situação verificada, pendências e procedimento de atualização. **Snapshot histórico não é estado atual.**
 
 ## Mapa dos subsistemas
 
@@ -43,7 +43,8 @@
 | Documento | Situacao identificada | Acao futura |
 | --- | --- | --- |
 | `README.md` | Traz instalacao, arquitetura e status do GUI/voz | Manter introdutorio; mover explicacoes extensas apenas quando auditorias estiverem completas |
-| `AUREN_STATE.md` | Mistura estado recente, marcos e resultados historicos, com aproximadamente 31 mil caracteres | Reorganizar **sem perder evidencias** e sem tratar texto antigo como status atual |
+| [`AUREN_STATE.md`](../AUREN_STATE.md) | **Consolidado nesta tarefa documental:** resumo curto de versão, capacidades, riscos, testes e próxima decisão | Atualizar na PR de cada mudança sem virar diário cronológico; confrontar sempre com código/CI |
+| [`docs/history/AUREN_STATE_SNAPSHOT_2026-10-10.md`](history/AUREN_STATE_SNAPSHOT_2026-10-10.md) | Histórico completo de 392 linhas antes da consolidação (55 mil caracteres) | **Preservar**, consultar como evidência histórica sem copiar status obsoleto para o estado vigente |
 | `docs/CONTROLE_REMOTO_GITHUB.md` | **Reconciliado na Etapa 9:** run #38085000162 confirma pytest por comentário no Windows; estado local atual não comprovado | Preservar políticas e procedimentos históricos; revalidar antes de cada novo run |
 | `docs/TESTES_GITHUB.md` | Histórico de 2026-10-09 reconciliado com workflows CI, Live e run de chat de 2026-10-10 | Manter distinção de autorização histórica versus estado local atual |
 | `scripts/README.md` | Indice dos atalhos existentes | Manter como referencia operacional local |
@@ -82,12 +83,12 @@
 
 **Etapa 9 (integrada na [PR #129](https://github.com/Yamatosemj/aurenOFC/pull/129), merge `0392365d609907557006f2e9ab3370857875ea51`):** matriz de workflows e testes, pytest hospedado versus Windows pessoal/Live, validação de solicitação por comentário, SHA e política local, watchdog, camadas L0/L1/L2/L4/L5 e comprovação E2E do run #38085000162, em [architecture/09-testes-ci-controle-remoto.md](architecture/09-testes-ci-controle-remoto.md). As páginas [TESTES_GITHUB.md](TESTES_GITHUB.md) e [CONTROLE_REMOTO_GITHUB.md](CONTROLE_REMOTO_GITHUB.md) tiveram avisos históricos reconciliados. Somente Markdown; 72 links internos verificados (0 quebrados). CI do primeiro HEAD `c384889b6a3a1efaf7e0df415950362adf073e5b` aprovado: Linux completo **556 passed/24 skipped**, Linux focado **166 passed/15 skipped**, Windows hospedado focado **181 passed**, modo seguro **110 passed** por plataforma. Revalidar SHA final, nenhum job no PC acionado.
 
-**Etapa 10 (auditoria documental na [PR #130](https://github.com/Yamatosemj/aurenOFC/pull/130), em revisão):** canais CLI/GUI/voz, seleção desigual de intérprete Python, configurações e override bloqueado, dependências, instaladores, dados locais, versões e distribuição fonte documentados em [architecture/10-entradas-config-instalacao-distribuicao.md](architecture/10-entradas-config-instalacao-distribuicao.md). Apenas Markdown, 100 links internos conferidos (0 quebrados); CI da PR pendente, sem instalação/teste Live.
+**Etapa 10 (integrada na [PR #130](https://github.com/Yamatosemj/aurenOFC/pull/130), merge `c18d58a88e2623818ccda1f08af6077c961598a1`):** canais CLI/GUI/voz, seleção desigual de intérprete Python, configurações e override bloqueado, dependências, instaladores, dados locais, versões e distribuição fonte documentados em [architecture/10-entradas-config-instalacao-distribuicao.md](architecture/10-entradas-config-instalacao-distribuicao.md). Apenas Markdown, 100 links internos conferidos (0 quebrados); no HEAD final `7cd46432d06fe4ce1605a43df7cab63d96eeb9a8`, [Linux completo](https://github.com/Yamatosemj/aurenOFC/actions/runs/38099193036) **556 passed/24 skipped** e [focados Linux/Windows](https://github.com/Yamatosemj/aurenOFC/actions/runs/38099192874) Linux **166 passed/15 skipped**, Windows hospedado **181 passed**, modo seguro **110 passed** por sistema; sem instalação/teste Live.
 
-**Próxima tarefa documental após a Etapa 10:** reorganizar `AUREN_STATE.md` em estado conciso + histórico rastreável, preservar referências a commits/PRs, e revisar redundâncias da documentação. Não confundir fim do inventário com fim do desenvolvimento do Auren.
+**Consolidação após a Etapa 10 (nesta PR separada):** o [estado operacional](../AUREN_STATE.md) foi reduzido e o [snapshot histórico](history/AUREN_STATE_SNAPSHOT_2026-10-10.md) preservado, mantendo referências para todas as auditorias e evidências. **Fim do inventário inicial não significa fim do desenvolvimento.**
 
 **Evidencia de CI da Etapa 1:** PR #121 aprovada no GitHub Actions, SHA de codigo documental antes do merge `9edb1ae7101fa9a3f1b6483a484ee3d4883a5014`: Linux 556 passed/24 skipped, Windows hospedado focado 181 passed e modo seguro 110 passed. **Sem execucao Live, microfone ou testes no notebook pessoal nessa PR documental.**
 
-**Etapas posteriores:** seguir a ordem da tabela, ajustando prioridades com o proprietario quando necessario. A reorganizacao de `AUREN_STATE.md` e a correcao da documentacao de testes remotos devem receber PRs proprias, separadas de mudancas no runtime.
+**Depois da consolidação:** novas prioridades dependem de decisão do proprietário, **uma PR por tarefa**. O estado curto mantém pendências; a documentação de testes remotos foi reconciliada na Etapa 9 e não autoriza Live por conta própria.
 
 Quando surgir contradicao entre texto e codigo, registre-a como pendencia, identifique a origem e verifique o GitHub antes de declarar uma versao como atual.

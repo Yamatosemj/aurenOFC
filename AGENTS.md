@@ -43,10 +43,11 @@ Este arquivo e a **porta de entrada operacional** de IAs e mantenedores que trab
 
 - Documente **junto da PR** alteracoes de arquitetura, contratos, operacao, comportamento ou risco. Nao duplique grandes trechos de codigo ou gere um manual para cada arquivo.
 - `README.md`: apresentacao, instalacao e uso basico.
-- `AUREN_STATE.md`: situacao **atual**, proxima prioridade, bloqueios e validacoes pendentes. **Pode conter registro historico obsoleto** ate sua reorganizacao; prefira evidencia recente do GitHub.
+- `AUREN_STATE.md`: **resumo operacional curto** da situação verificada, pendências e próxima decisão autorizada; **não** acrescentar diário cronológico nem tratar SHA anotado como HEAD permanente. Consultar GitHub a cada tarefa.
+- [`docs/history/AUREN_STATE_SNAPSHOT_2026-10-10.md`](docs/history/AUREN_STATE_SNAPSHOT_2026-10-10.md): cópia integral do estado anterior à consolidação, incluindo decisões e diagnósticos antigos potencialmente superados. **Não editar o snapshot para atualizar status**, nem apagar evidências; novos marcos históricos devem ficar em registros próprios/PRs verificáveis.
 - `docs/INVENTARIO.md`: mapa de subsistemas e estado da auditoria documental. Marque `mapeado` separadamente de `auditado`.
 - `docs/`: explicacoes de arquitetura, procedimentos e decisoes relevantes; nao confunda codigo presente com funcionalidade validada.
-- Atualize os links para os documentos relacionados e nao repita os mesmos fatos dinamicos em varios lugares.
+- Atualize os links para os documentos relacionados e não repita os mesmos fatos dinâmicos em vários lugares. Em cada PR, atualize somente fatos vigentes no estado curto (escopo, bloqueios e evidências); guarde histórico por link para PR/run e registros separados. Antes do merge, confira o CI no HEAD final; registre os runs finais na descrição da PR sem criar commits apenas para copiar números do CI.
 
 ## Antes de declarar a tarefa concluida
 

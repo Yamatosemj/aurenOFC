@@ -2,12 +2,13 @@
 
 Assistente desktop/voz para Windows, versão técnica **V47**, usando o modelo configurado em `config.py` (snapshot atual: `gpt-5.6-luna`).
 
-> **Estado atual do projeto:** consulte [AUREN_STATE.md](AUREN_STATE.md) antes de iniciar ou continuar trabalho no Auren. O estado oficial registra a tarefa ativa, PRs em andamento, CI, próxima fase e backlog.
+> **Estado atual do projeto:** consulte [AUREN_STATE.md](AUREN_STATE.md) antes de iniciar qualquer tarefa. É um resumo operacional curto, com referência ao último snapshot verificado; confira PRs, HEAD e CI atuais no GitHub. O histórico acumulado foi preservado separadamente.
 
 ## Para continuar a manutencao
 
 - [`AGENTS.md`](AGENTS.md) — regras para IAs e mantenedores: escopo, seguranca, testes e documentacao.
-- [`docs/INVENTARIO.md`](docs/INVENTARIO.md) — mapa dos subsistemas e ordem das auditorias. **Mapeado nao significa auditado ou validado em hardware.**
+- [`docs/INVENTARIO.md`](docs/INVENTARIO.md) — mapa dos subsistemas e auditorias 0–10. **Documentado não significa validado em hardware.**
+- [`docs/history/AUREN_STATE_SNAPSHOT_2026-10-10.md`](docs/history/AUREN_STATE_SNAPSHOT_2026-10-10.md) — histórico integral anterior à consolidação; **não usar como estado operacional atual**.
 - [`docs/architecture/01-nucleo.md`](docs/architecture/01-nucleo.md) — auditoria estatica do Harness, orquestradores, estados de tarefa, rastreio, testes e limites conhecidos.
 - [`docs/architecture/02-roteamento-seguranca.md`](docs/architecture/02-roteamento-seguranca.md) — auditoria estática do Router, Dispatcher, contratos de ferramentas, políticas de confirmação, anti-loop e conteúdo não confiável.
 - [`docs/architecture/03-modelo-sessao-memoria.md`](docs/architecture/03-modelo-sessao-memoria.md) — provider, contexto, SQLite, isolamento por chat, cache e limites reproduzidos.
