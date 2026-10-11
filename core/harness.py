@@ -162,6 +162,7 @@ class AurenHarness:
         salvar_estrategia: Callable[[str, list[str], str, bool], Any] | None = None,
         context: SessionContextManager | None = None,
         trace_store: TaskTraceStore | None = None,
+        verificar_intencao: Callable[[str, list[Any], list[dict[str, str]]], Any] | None = None,
     ) -> None:
         if max_model_rounds < 1:
             raise ValueError("max_model_rounds deve ser maior que zero.")
@@ -177,6 +178,7 @@ class AurenHarness:
         self.max_model_rounds = max_model_rounds
         self.task_manager = task_manager or TaskManager()
         self.obter_metricas_roteamento = obter_metricas_roteamento
+        self.verificar_intencao = verificar_intencao
         self.registrar_conversa = registrar_conversa
         self.salvar_estrategia = salvar_estrategia
         self.agent = AgentOrchestrator()
