@@ -15,13 +15,14 @@ from queue import Empty
 import secrets
 import shutil
 import subprocess
-from threading import Lock
+from threading import Event, Lock, Thread
 from time import monotonic
 from typing import Any
 from urllib.parse import urlsplit
 import webbrowser
 
 from ui.backend import AurenUiWorker, ConfirmationChoice
+from tools.reminders import ReminderStore, get_reminder_store
 
 
 INDEX_PATH = Path(__file__).with_name("chrome.html")
@@ -36,8 +37,12 @@ EXIT_COMMANDS = {"sair", "desligar auren", "desligue auren", "encerrar auren", "
 class LocalChromeApp:
     """Gerencia somente a interface, o worker e as confirmacoes de UI."""
 
-    def __init__(self, worker: AurenUiWorker | None = None) -> None:
+    def __init__(self, worker: AurenUiWorker | None = None, *,
+                 reminder_store: ReminderStore | None = None) -> None:
         self.worker = worker or AurenUiWorker()
+        self.reminder_store = reminder_store or get_reminder_store()
+        self._reminder_stop = Event()
+        self._reminder_thread = Thread(target=self._poll_reminders, daemon=True, name="auren-reminders")
         self.mode = "off"
         self.busy = False
         self.last_activity = monotonic()
@@ -47,6 +52,31 @@ class LocalChromeApp:
         self.history: deque[dict[str, Any]] = deque(maxlen=MAX_EVENTS)
         self.pending: tuple[int, ConfirmationChoice] | None = None
         self.worker.start()
+        self._reminder_thread.start()
+
+    def _poll_reminders(self) -> None:
+        """Agendador local. Nao envia pedidos ao modelo nem ao Dispatcher."""
+        while not self._reminder_stop.is_set():
+            try:
+                self.poll_due_reminders()
+            except (OSError, ValueError) as exc:
+                # Falha em banco/relogio nao derruba a interface.
+                with self.lock:
+                    self._push("notice", f"Falha ao verificar lembretes: {exc}")
+            self._reminder_stop.wait(1.0)
+
+    def poll_due_reminders(self) -> list[dict[str, Any]]:
+        """Agenda apenas notificacoes de lembretes previamente autorizados."""
+        due = self.reminder_store.retirar_vencidos()
+        if due:
+            with self.lock:
+                for reminder in due:
+                    self._push(
+                        "reminder_due",
+                        reminder["texto"],
+                        {"id": reminder["id"], "horario": reminder["horario"]},
+                    )
+        return due
 
     def _push(self, kind: str, text: str = "", payload: dict[str, Any] | None = None) -> None:
         self.counter += 1
@@ -188,6 +218,8 @@ class LocalChromeApp:
             return {"recorded": True}
 
     def shutdown(self) -> None:
+        self._reminder_stop.set()
+        self._reminder_thread.join(timeout=2)
         with self.lock:
             if self.pending is not None:
                 self.pending[1].answer(False)
