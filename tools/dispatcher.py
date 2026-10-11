@@ -6,7 +6,7 @@ from core.utils import normalizar_nome
 from core.tool_contracts import validate_tool_arguments
 from core.vision import transform_visual_tool_arguments
 from tools import applications, browser, browser_context, file_intelligence, files
-from tools import windows
+from tools import windows, reminders
 from tools.memory import salvar_memoria_persistente, consultar_memoria_persistente, esquecer_memoria_persistente
 
 from core.tool_result import LEGACY_FAILURE_MARKERS, ToolResult, from_legacy
@@ -137,6 +137,9 @@ def _preencher_windows_handler(args, memory_store, context):
 
 
 TOOL_HANDLERS = {
+    "criar_lembrete": _sem_memoria(reminders.criar_lembrete, "texto", "quando"),
+    "listar_lembretes": _sem_memoria(reminders.listar_lembretes, "status", "limite"),
+    "gerenciar_lembrete": _sem_memoria(reminders.gerenciar_lembrete, "id", "acao", "minutos"),
     "abrir_programa": _sem_memoria(applications.abrir_programa, "programa"),
     "buscar_arquivo": _sem_memoria(files.buscar_arquivo, "consulta"),
     "inspecionar_arquivo": _inspecionar_arquivo_handler,
