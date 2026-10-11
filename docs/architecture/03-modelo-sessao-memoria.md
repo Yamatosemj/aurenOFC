@@ -187,3 +187,8 @@ O CI hospedado da PR deve ser conferido pelo SHA em [AUREN_STATE.md](../../AUREN
 Ao mudar memória, preserve distinção entre fatos globais e chats, migração de bancos antigos, confirmação das tools e tratamento de conteúdo não confiável. Ao mudar provider/modelo, revise fachada, prompt, contrato de resposta, tratamento de falhas, cache e estimativa de uso. Ao mudar budgets, teste conteúdo efetivamente enviado, não apenas tamanho do banco ou existência de registros.
 
 **Próxima área documental:** Etapa 4 — Windows, arquivos e visão. As pendências acima não autorizam implementação silenciosa durante essa próxima auditoria.
+
+
+## Revisão de intenção por IA (PR em andamento)
+
+`providers/openai_provider.py::verify_intent` faz uma chamada separada ao **mesmo modelo configurado**, com `tools=[]`, formato estruturado e `store=False`; os tokens entram no contador de `core/usage.py`. Não há segunda IA nem cache de aprovação de ações. Existe um custo e atraso adicionais por rodada que propõe ação mutável; nenhum teste de API real foi autorizado nesta implementação. Erro de provider, resposta inválida e decisão não aprovada fazem o Harness interromper a execução da rodada. Veja `core/intent_verification.py` e `docs/architecture/01-nucleo.md`.
