@@ -53,6 +53,7 @@ from core.harness_session import (
     _garantir_sessao_chat as _garantir_sessao_chat_impl,
 )
 from core.harness_fast_path import _executar_fast_path as _executar_fast_path_impl
+from core.harness_intent_guard import verificar_antes_de_agir
 from core.harness_model import (
     _executar_rodada_modelo as _executar_rodada_modelo_impl,
     _log_resposta_modelo as _log_resposta_modelo_impl,
@@ -163,6 +164,7 @@ class AurenHarness:
         context: SessionContextManager | None = None,
         trace_store: TaskTraceStore | None = None,
         verificar_intencao: Callable[[str, list[Any], list[dict[str, str]]], Any] | None = None,
+        planejar_atalho: Callable[[str], list[Any]] | None = None,
     ) -> None:
         if max_model_rounds < 1:
             raise ValueError("max_model_rounds deve ser maior que zero.")
@@ -179,6 +181,7 @@ class AurenHarness:
         self.task_manager = task_manager or TaskManager()
         self.obter_metricas_roteamento = obter_metricas_roteamento
         self.verificar_intencao = verificar_intencao
+        self.planejar_atalho = planejar_atalho
         self.registrar_conversa = registrar_conversa
         self.salvar_estrategia = salvar_estrategia
         self.agent = AgentOrchestrator()
@@ -539,6 +542,25 @@ class AurenHarness:
             objetivo=objetivo_log,
         )
         self._registrar_turno("user", objetivo_log)
+
+        # Atalhos tambem precisam de revisao semantica ANTES do Dispatcher.
+        # O planejamento apenas descreve a acao; nao realiza efeitos.
+        if self.verificar_intencao is not None and self.planejar_atalho is not None:
+            try:
+                propostas_atalho = self.planejar_atalho(mensagem)
+            except Exception as exc:
+                _write_log("INTENT_FAST_PATH_PLAN_ERROR", task_id=self._task_id, erro=str(exc))
+                return self._encerrar_falha(
+                    "intent_fast_path_plan_error",
+                    "Nao consegui verificar o comando rapido. Nenhuma acao foi executada.",
+                )
+            if propostas_atalho:
+                veredito_atalho = verificar_antes_de_agir(
+                    self, mensagem.strip(), propostas_atalho, [],
+                    rodada=0, resposta_wrapper=_RespostaWrapper, write_log=_write_log,
+                )
+                if veredito_atalho is not None:
+                    return veredito_atalho
 
         fast_path = _executar_fast_path_impl(
             mensagem,
