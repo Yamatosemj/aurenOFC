@@ -76,7 +76,7 @@ class LocalDecisionEngine:
             return self._result("get_system_status", confidence=0.995, started=started)
 
         media = {
-            "pausa", "pause", "pausar", "pausa a musica", "pause a musica", "pausar a musica", "play", "toca", "retoma", "retomar",
+            "pausa", "pause", "pausar", "play", "toca", "retoma", "retomar",
             "proxima", "proximo", "anterior", "para a musica", "parar musica",
         }
         if normalized in media:
