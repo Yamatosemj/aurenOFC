@@ -1,0 +1,339 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Auren</title>
+
+<style>
+/* Layout: orbe ocupa o palco; legenda e cartões flutuam na base; barra de entrada fixa embaixo. */
+:root{
+  --bg1:#EEF2F8;--bg2:#DCE4F1;--ink:#2A3550;--mute:#5F6B88;--pill:#FFFFFFB8;--line:#C3CCDF;--focus:#3A62D8;
+  --card:#FFFFFFD9;--ok:#1F8A5B;--warn:#B77A00;--on-focus:#FFFFFF;
+  --font:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg1:#141D36;--bg2:#090E1D;--ink:#DDE5F5;--mute:#9AA6C4;--pill:#1B2740B8;--line:#2B3858;--focus:#8FB0FF;--card:#1B2740E6;--ok:#5FD3A0;--warn:#F0B84A;--on-focus:#0B1226;color-scheme:dark}}
+:root[data-theme="dark"]{--bg1:#141D36;--bg2:#090E1D;--ink:#DDE5F5;--mute:#9AA6C4;--pill:#1B2740B8;--line:#2B3858;--focus:#8FB0FF;--card:#1B2740E6;--ok:#5FD3A0;--warn:#F0B84A;--on-focus:#0B1226;color-scheme:dark}
+html{height:100%}
+*,*::before,*::after{box-sizing:border-box}
+body{height:100%;margin:0;overflow:hidden;color:var(--ink);background:radial-gradient(ellipse at 50% 40%,var(--bg1),var(--bg2));font:15px/1.45 var(--font);display:flex;flex-direction:column}
+#tint{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,var(--tint,transparent),transparent 68%)}
+header{position:relative;z-index:2;display:flex;align-items:center;justify-content:flex-end;gap:12px;padding:14px 16px 0}
+.brand{display:flex;flex-direction:column;min-width:0}
+.brand b{font-weight:300;font-size:1.35rem;letter-spacing:.32em;text-transform:uppercase;line-height:1.1}
+#estado{color:var(--mute);font-size:.82rem;min-height:1.2em;transition:opacity .4s}
+.tools{display:flex;gap:8px}
+button{font:inherit;color:var(--ink);cursor:pointer}
+.chip,.tool{background:var(--pill);border:1px solid var(--line);border-radius:999px;padding:7px 14px;opacity:.8;transition:opacity .2s,border-color .2s}
+.chip:hover,.tool:hover{opacity:1}
+.chip[aria-pressed="true"],.tool[aria-pressed="true"]{opacity:1;border-color:var(--focus)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+#stage{position:relative;flex:1;min-height:0;display:flex;flex-direction:column}
+canvas{flex:1;width:100%;min-height:0;display:block}
+#estados{position:absolute;z-index:3;top:8px;left:16px;right:16px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:12px;border:1px solid var(--line);border-radius:18px;background:var(--card);backdrop-filter:blur(10px)}
+#overlay{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;gap:10px;padding:0 16px 8px;pointer-events:none}
+#overlay>*{pointer-events:auto}
+#cards{display:flex;flex-direction:column;gap:8px;width:min(100%,420px)}
+.card{display:flex;align-items:center;gap:12px;padding:10px 12px 10px 14px;border:1px solid var(--line);border-radius:16px;background:var(--card);backdrop-filter:blur(10px);animation:in .45s ease both}
+.card .txt{flex:1;min-width:0}
+.card small{display:block;color:var(--mute);font-size:.74rem;letter-spacing:.08em;text-transform:uppercase}
+.card strong{display:block;font-weight:600;overflow-wrap:anywhere}
+.card .meta{color:var(--mute);font-size:.85rem}
+.card.done strong{text-decoration:line-through;color:var(--mute)}
+.card.lembrete small{color:var(--warn)}
+.card.tarefa small{color:var(--ok)}
+.acoes{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.acoes button{border:1px solid var(--line);background:transparent;border-radius:999px;padding:5px 11px;font-size:.82rem}
+.acoes button.main{background:var(--focus);color:var(--on-focus);border-color:var(--focus)}
+@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+#fala{width:min(100%,640px);text-align:center;min-height:4.4em}
+#eco{color:var(--mute);font-size:.82rem;min-height:1.2em;overflow-wrap:anywhere}
+#legenda{font-size:1.15rem;font-weight:400;line-height:1.4;text-wrap:balance;overflow-wrap:anywhere}
+form{position:relative;z-index:2;display:flex;align-items:center;gap:8px;width:min(100%,640px);margin:0 auto;padding:8px 16px 18px}
+input[type=text]{flex:1;min-width:0;font:inherit;color:var(--ink);background:var(--pill);border:1px solid var(--line);border-radius:999px;padding:12px 18px}
+input::placeholder{color:var(--mute)}
+.round{display:grid;place-items:center;width:46px;height:46px;flex:none;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--pill)}
+.round svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.round[aria-pressed="true"]{border-color:var(--focus);box-shadow:0 0 0 4px color-mix(in srgb,var(--focus) 25%,transparent)}
+#enviar{background:var(--focus);color:var(--on-focus);border-color:var(--focus)}
+@media (min-width:860px){
+  #cards{position:absolute;right:24px;top:8px;width:320px;bottom:auto}
+  #legenda{font-size:1.3rem}
+}
+@media (prefers-reduced-motion:reduce){.card{animation:none}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+#busca{width:min(100%,340px);display:flex}
+#busca input{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--pill);border:1px solid var(--line);border-radius:999px;padding:9px 16px;backdrop-filter:blur(10px);animation:in .3s ease both}
+#busca input::placeholder{color:var(--mute)}
+canvas{cursor:pointer}
+
+/* Chrome local: estilo e identidade herdados do prototipo original do usuario. */
+#estados{top:10px;left:auto;right:16px;width:210px;justify-content:flex-start}
+#estados .chip{width:100%;text-align:left}
+#authPanel[hidden]{display:none}
+#authPanel{position:absolute;inset:0;z-index:12;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(4,9,24,.75);backdrop-filter:blur(9px)}
+#authDialog{width:min(460px,100%);padding:22px;border:1px solid var(--line);border-radius:22px;background:var(--bg1);box-shadow:0 25px 80px #0008}
+#authDialog h2{margin:0 0 12px;font-size:1.2rem;font-weight:600}
+#authAction{font-size:1rem;overflow-wrap:anywhere}
+#authReason{font-size:.86rem;color:var(--mute);white-space:pre-wrap;overflow-wrap:anywhere}
+#authButtons{display:flex;gap:10px;justify-content:flex-end;margin-top:22px}
+#authButtons button{padding:9px 16px;border:1px solid var(--line);border-radius:30px;background:var(--pill)}
+#authYes{background:var(--focus)!important;color:var(--on-focus)!important}
+#orbFallback{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);pointer-events:none}
+#connection{position:absolute;bottom:2px;left:10px;right:10px;font-size:.7rem;text-align:center;color:var(--mute)}
+@media (prefers-reduced-motion:reduce){#stage canvas{animation:none}}
+</style>
+
+
+<div id="tint"></div>
+<header>
+  <button class="tool" id="bEstados" type="button" aria-pressed="false" aria-controls="estados">Estados</button>
+</header>
+<span id="estado" class="sr" role="status"></span>
+<div id="stage">
+  <canvas id="c" tabindex="0" role="button" aria-label="Auren. Clique para escrever uma mensagem"></canvas>
+  <div id="estados" hidden></div>
+  <div id="authPanel" role="dialog" aria-modal="true" aria-labelledby="authTitle" hidden>
+    <div id="authDialog"><h2 id="authTitle">Autorizar ação</h2>
+      <div id="authAction"></div><p id="authReason"></p>
+      <div id="authButtons"><button id="authNo" type="button">Negar</button><button id="authYes" type="button">Autorizar</button></div>
+    </div>
+  </div>
+  <div id="overlay">
+    <div id="cards" aria-label="Lembretes e tarefas"></div>
+    <div id="fala"><div id="eco"></div><div id="legenda" aria-live="polite"></div></div>
+    <form id="busca" hidden autocomplete="off"><input type="text" id="msg" placeholder="Pergunte ao Auren" aria-label="Mensagem para o Auren" enterkeyhint="send"></form>
+  </div>
+</div>
+
+
+<script nonce="__AUREN_SCRIPT_NONCE__">
+const E={
+ fundo:{n:"em segundo plano",hue:215,sat:38,lig:62,scale:.36,amp:.05,lobes:3,speed:.45,spike:0,glow:.25,squash:1,down:0,alpha:.55,voice:0,ring:0,orbit:0,bounce:0,shake:0,pulse:0},
+ normal:{n:"normal",hue:208,sat:55,lig:62,scale:.72,amp:.06,lobes:3,speed:.8,spike:0,glow:.45,squash:1,down:0,alpha:.92,voice:0,ring:0,orbit:0,bounce:0,shake:0,pulse:.4},
+ ouvindo:{n:"ouvindo",hue:188,sat:68,lig:60,scale:1,amp:.08,lobes:4,speed:1.1,spike:0,glow:.6,squash:1,down:0,alpha:1,voice:0,ring:1,orbit:0,bounce:0,shake:0,pulse:0},
+ pensando:{n:"pensando",hue:265,sat:58,lig:64,scale:.78,amp:.1,lobes:5,speed:2.2,spike:0,glow:.5,squash:1,down:0,alpha:1,voice:0,ring:0,orbit:1,bounce:0,shake:0,pulse:0},
+ falando:{n:"falando",hue:204,sat:80,lig:58,scale:1,amp:.09,lobes:3,speed:1.6,spike:0,glow:.85,squash:1,down:0,alpha:1,voice:1,ring:0,orbit:0,bounce:0,shake:0,pulse:0},
+ feliz:{n:"feliz",hue:36,sat:92,lig:60,scale:1.05,amp:.12,lobes:3,speed:1.4,spike:0,glow:.8,squash:1,down:0,alpha:1,voice:0,ring:0,orbit:0,bounce:1,shake:0,pulse:0},
+ triste:{n:"triste",hue:226,sat:26,lig:48,scale:.78,amp:.035,lobes:2,speed:.32,spike:0,glow:.18,squash:.82,down:.2,alpha:.88,voice:0,ring:0,orbit:0,bounce:0,shake:0,pulse:0},
+ irritada:{n:"irritada",hue:358,sat:86,lig:40,scale:1.04,amp:.09,lobes:5,speed:2.8,spike:.05,glow:.75,squash:1,down:0,alpha:1,voice:0,ring:0,orbit:0,bounce:0,shake:.8,pulse:.5},
+ lembrete:{n:"lembrete",hue:42,sat:96,lig:58,scale:1,amp:.08,lobes:4,speed:1.8,spike:0,glow:1,squash:1,down:0,alpha:1,voice:0,ring:0,orbit:0,bounce:0,shake:0,pulse:1},
+ perguntando:{n:"aguardando sua resposta",hue:165,sat:62,lig:62,scale:.95,amp:.07,lobes:3,speed:1,spike:0,glow:.65,squash:1,down:0,alpha:1,voice:0,ring:.5,orbit:0,bounce:0,shake:0,pulse:.5},
+ focada:{n:"focada na tarefa",hue:232,sat:70,lig:58,scale:.62,amp:.04,lobes:2,speed:3.4,spike:0,glow:.55,squash:1,down:0,alpha:1,voice:0,ring:0,orbit:0,bounce:0,shake:0,pulse:0},
+ confusa:{n:"confusa",hue:285,sat:45,lig:62,scale:.92,amp:.1,lobes:7,speed:.7,spike:.03,glow:.4,squash:1,down:0,alpha:.95,voice:0,ring:0,orbit:0,bounce:0,shake:.25,pulse:.25},
+ surpresa:{n:"surpresa",hue:52,sat:90,lig:66,scale:1.22,amp:.05,lobes:3,speed:2.2,spike:0,glow:1,squash:1,down:0,alpha:1,voice:0,ring:0,orbit:0,bounce:1.4,shake:0,pulse:0},
+ cansada:{n:"cansada",hue:250,sat:30,lig:52,scale:.55,amp:.03,lobes:2,speed:.25,spike:0,glow:.15,squash:.9,down:.1,alpha:.6,voice:0,ring:0,orbit:0,bounce:0,shake:0,pulse:.5},
+ orgulhosa:{n:"tarefa concluída",hue:145,sat:68,lig:56,scale:1.08,amp:.08,lobes:3,speed:1.2,spike:0,glow:.85,squash:1,down:0,alpha:1,voice:0,ring:0,orbit:0,bounce:.5,shake:0,pulse:.25}
+};
+const DEF={hs:.12,pf:5,dark:0,thorn:0,tremor:0,swirl:.2,rise:0,flow:0};
+const X={fundo:{swirl:.1},normal:{swirl:.18,pf:1.6},ouvindo:{swirl:.25,flow:-1},pensando:{swirl:1.5},falando:{swirl:.3,flow:.9},feliz:{swirl:.4,rise:1},triste:{swirl:.05,rise:-.9},irritada:{swirl:.6,flow:1.6,dark:.7,thorn:1,tremor:.55,pf:6.5,hs:.015},lembrete:{swirl:.6,flow:.8},
+ perguntando:{swirl:.2,flow:-.4,pf:3},focada:{swirl:2.2},confusa:{swirl:-.5,pf:2.2},surpresa:{swirl:.2,flow:3},
+ cansada:{swirl:.04,rise:-.25,pf:.9},orgulhosa:{swirl:.5,rise:.6,pf:2,hs:-.15}};
+for(const k in E)E[k]=Object.assign({},DEF,E[k],X[k]);
+const nomes=Object.keys(E),lab=document.getElementById("estado"),cv=document.getElementById("c");
+const reduz=matchMedia("(prefers-reduced-motion: reduce)").matches;
+let alvo=E.fundo,cur=Object.assign({},E.fundo),from=null,fila=[],tI=0,tD=1000,atual="fundo";
+const LAG={amp:.25,speed:.2,spike:.3,thorn:.35,tremor:.4,dark:.15,flow:.2,swirl:.15,shake:.35,ring:.1,orbit:.1,voice:.2,pulse:.2,bounce:.2,squash:.1,down:.15,lobes:.2,glow:.05,scale:.05};
+function dist(a,b){const dh=Math.abs(((b.hue-a.hue+540)%360)-180)/180;
+ return dh*.5+Math.abs(b.dark-a.dark)*.5+Math.abs(b.scale-a.scale)*.5+Math.abs(b.speed-a.speed)/8+Math.abs(b.amp-a.amp)*2+Math.abs(b.alpha-a.alpha)*.4}
+function inicia(a){from=Object.assign({},cur);alvo=a;tI=performance.now();tD=Math.max(.8,Math.min(2.6,.7+dist(from,a)*1.7))*1000}
+function define(k){
+ const dest=E[k];atual=k;lab.style.opacity=0;setTimeout(()=>{if(atual===k){lab.textContent=dest.n;lab.style.opacity=1}},200);
+ document.querySelectorAll(".chip").forEach(b=>b.setAttribute("aria-pressed",b.dataset.k===k));
+ const longe=dest!==E.normal&&dist(cur,dest)>.8&&dist(cur,E.normal)>.3;
+ fila=longe?[dest]:[];inicia(longe?E.normal:dest)}
+
+/* ---------- interface ---------- */
+const $=id=>document.getElementById(id);
+const painel=$("estados");
+for(const [rotulo,modo] of [["Ativo","active"],["Standby","standby"],["Desligado","off"]]){
+ const b=document.createElement("button");b.type="button";b.className="chip";
+ b.textContent=rotulo;b.dataset.mode=modo;
+ b.onclick=()=>trocarModo(modo);painel.append(b);
+}
+$("bEstados").onclick=()=>{painel.hidden=!painel.hidden;$("bEstados").setAttribute("aria-pressed",String(!painel.hidden))};
+
+const cap=$("legenda"),eco=$("eco"),cardsEl=$("cards");
+let seq=0,idle=null;
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+function say(text,s){return new Promise(res=>{cap.textContent="";if(reduz){cap.textContent=text;return res()}
+ const w=text.split(" ");let i=0;(function n(){if(s!==seq)return res();cap.textContent=w.slice(0,++i).join(" ");i<w.length?setTimeout(n,70):res()})()})}
+function repouso(){clearTimeout(idle);idle=setTimeout(()=>{if(atual==="normal")define("fundo")},20000)}
+
+function addCard(c){
+ const el=document.createElement("div");el.className="card "+c.tipo;
+ const t=document.createElement("div");t.className="txt";
+ const sm=document.createElement("small");sm.textContent=c.tipo==="lembrete"?"Lembrete":"Tarefa";
+ const st=document.createElement("strong");st.textContent=c.titulo;
+ const mt=document.createElement("span");mt.className="meta";mt.textContent=c.meta;
+ t.append(sm,st,mt);el.append(t);
+ const ac=document.createElement("div");ac.className="acoes";
+ const ok=document.createElement("button");ok.type="button";ok.className="main";ok.textContent=c.tipo==="lembrete"?"Feito":"Dispensar";
+ ok.onclick=()=>{if(c.tipo==="lembrete"){el.classList.add("done");mt.textContent="Concluído";ac.remove();agir("orgulhosa","Marquei como feito.")}else el.remove()};
+ ac.append(ok);
+ if(c.tipo==="lembrete"){const ad=document.createElement("button");ad.type="button";ad.textContent="Adiar 10 min";
+  ad.onclick=()=>{mt.textContent="Adiado em 10 min";agir("normal","Certo, volto a te lembrar em 10 minutos.")};ac.prepend(ad)}
+ el.append(ac);cardsEl.prepend(el);
+ while(cardsEl.children.length>3)cardsEl.lastChild.remove();
+}
+async function agir(estado,fala){const s=++seq;clearTimeout(idle);define("falando");await say(fala,s);if(s!==seq)return;define(estado);await wait(3500);if(s!==seq)return;define("normal");repouso()}
+
+/* Entrada real: toda mensagem vai ao worker Python / Harness existente. */
+async function conversar(texto){
+ if(modoAtual!=="active"||ocupado){cap.textContent="Ative o Auren e aguarde a tarefa atual.";return}
+ const s=++seq;clearTimeout(idle);
+ eco.textContent="Você: "+texto;cap.textContent="";define("pensando");
+ try{await postApi("/api/message",{text:texto})}
+ catch(err){if(s===seq)agir("confusa","Não consegui enviar: "+err.message)}
+}
+
+/* barra de busca: só aparece ao clicar no Auren (ou Enter com o orbe em foco) */
+const busca=$("busca"),inp=$("msg");
+function abre(){busca.hidden=false;if(atual==="fundo"){seq++;define("normal")}inp.focus()}
+function fecha(){busca.hidden=true;inp.value=""}
+cv.addEventListener("click",()=>busca.hidden?abre():fecha());
+cv.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();abre()}});
+busca.addEventListener("submit",e=>{e.preventDefault();const v=inp.value.trim();if(!v)return;fecha();conversar(v)});
+inp.addEventListener("keydown",e=>{if(e.key==="Escape"){fecha();cv.focus()}});
+inp.addEventListener("blur",()=>setTimeout(()=>{if(!inp.value.trim()&&document.activeElement!==inp)busca.hidden=true},150));
+
+/* API para ligar o Auren ao seu modelo: Auren.estado("feliz"), Auren.falar("texto","feliz"), Auren.lembrete("titulo","Hoje, 18:00"), Auren.tarefa("titulo") */
+window.Auren={estado:k=>{if(E[k]){seq++;define(k)}},falar:(t,k)=>agir(E[k]?k:"normal",t),conversar,
+ lembrete:(titulo,meta)=>{addCard({tipo:"lembrete",titulo,meta:meta||"Sem horário"});seq++;define("lembrete")},
+ tarefa:titulo=>addCard({tipo:"tarefa",titulo,meta:"Adicionada agora"})};
+
+
+/* Orbe leve, sem bibliotecas ou codigo remoto. Mantem a identidade do
+   prototipo original; uma versao WebGL refinada podera vir depois. */
+const ctx=cv.getContext("2d",{alpha:true});
+const estrelas=Array.from({length:170},(_,i)=>({x:(Math.sin(i*127.1)*43758.54)%1,y:(Math.sin(i*73.4)*27431.95)%1,r:.6+(i%7)/6,v:.18+(i%5)*.07}));
+const circ = (x,y,r)=>{ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2)};
+let ultimoTempo=0;
+function desenhar(agora){
+ requestAnimationFrame(desenhar);
+ if(!ctx)return;
+ const dt=Math.min(.05,Math.max(0,(agora-ultimoTempo)/1000));ultimoTempo=agora;
+ const w=cv.clientWidth,h=cv.clientHeight;
+ if(!w||!h)return;
+ const dpr=Math.min(devicePixelRatio||1,2),W=Math.round(w*dpr),H=Math.round(h*dpr);
+ if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H}
+ ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+ if(from){
+  const p=Math.min(1,Math.max(0,(agora-tI)/tD)),ease=p*p*(3-2*p);
+  for(const key of Object.keys(alvo)){
+   if(typeof alvo[key]!=="number")continue;
+   if(key==="hue"){cur.hue=from.hue+(((alvo.hue-from.hue+540)%360)-180)*ease}
+   else cur[key]=from[key]+(alvo[key]-from[key])*ease;
+  }
+  if(p>=1){if(fila.length)inicia(fila.shift());else from=null}
+ }
+ const time=agora/1000,hue=((cur.hue%360)+360)%360,
+  cy=h*.43 + cur.down*h*.06,cx=w*.5,
+  pulse=1+cur.pulse*.025*Math.sin(time*4),
+  radius=Math.min(w*.25,h*.235,165)*Math.max(.3,cur.scale)*pulse;
+ for(const v of estrelas){
+   const sx=Math.abs(v.x)*w,sy=Math.abs(v.y)*h;
+   ctx.fillStyle="rgba(157,171,244,"+(.16+.3*(.5+.5*Math.sin(time*v.v+sx)))+")";
+   ctx.fillRect(sx,sy,v.r,v.r);
+ }
+ const haze=ctx.createRadialGradient(cx,cy,radius*.6,cx,cy,radius*2.55);
+ haze.addColorStop(0,"hsla("+hue+",75%,68%,"+(.09+cur.glow*.16)+")");
+ haze.addColorStop(1,"hsla("+hue+",70%,55%,0)");
+ ctx.fillStyle=haze;circ(cx,cy,radius*2.6);ctx.fill();
+ const ringR=radius*1.46;
+ ctx.lineWidth=1;ctx.strokeStyle="hsla("+hue+",65%,77%,"+(.09+cur.glow*.17)+")";
+ for(let i=0;i<3;i++){
+  const a=time*(reduz?.04:.10)*(i%2?1:-1)+i*1.05;
+  ctx.save();ctx.translate(cx,cy);ctx.rotate(a);ctx.beginPath();
+  ctx.ellipse(0,0,ringR*(1+.1*i),ringR*(.3+.15*i),0,0,Math.PI*2);ctx.stroke();ctx.restore();
+ }
+ ctx.save();ctx.translate(cx,cy);ctx.rotate(time*(reduz?.02:.075));
+ const sides=13,rad=radius*1.25;
+ ctx.beginPath();for(let i=0;i<=sides;i++){
+  const a=i*2*Math.PI/sides,x=Math.cos(a)*rad,y=Math.sin(a)*rad;
+  if(!i)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+ }ctx.stroke();
+ for(let i=0;i<sides;i++){
+  const a=i*2*Math.PI/sides,b=((i+5)%sides)*2*Math.PI/sides;
+  ctx.beginPath();ctx.moveTo(Math.cos(a)*rad,Math.sin(a)*rad);
+  ctx.lineTo(Math.cos(b)*rad,Math.sin(b)*rad);ctx.stroke();
+ }ctx.restore();
+ const bubble=ctx.createRadialGradient(cx-radius*.30,cy-radius*.43,radius*.03,cx,cy,radius*1.05);
+ bubble.addColorStop(0,"hsla("+hue+",90%,92%,"+cur.alpha+")");
+ bubble.addColorStop(.22,"hsla("+hue+",65%,79%,"+cur.alpha+")");
+ bubble.addColorStop(.64,"hsla("+(hue+14)+",40%,61%,"+cur.alpha+")");
+ bubble.addColorStop(1,"hsla("+(hue+17)+",45%,38%,"+cur.alpha+")");
+ ctx.fillStyle=bubble;circ(cx,cy,radius);ctx.fill();
+ ctx.lineWidth=2;ctx.strokeStyle="hsla("+hue+",85%,88%,"+(cur.alpha*.50)+")";ctx.stroke();
+ ctx.save();ctx.translate(cx-radius*.20,cy-radius*.23);ctx.rotate(-.55);
+ const shine=ctx.createRadialGradient(0,0,0,0,0,radius*.47);
+ shine.addColorStop(0,"rgba(255,255,255,.6)");
+ shine.addColorStop(1,"rgba(255,255,255,0)");
+ ctx.fillStyle=shine;ctx.beginPath();ctx.ellipse(0,0,radius*.35,radius*.16,0,0,Math.PI*2);ctx.fill();
+ ctx.restore();
+ document.documentElement.style.setProperty("--tint","hsla("+hue+",65%,52%,"+(.08+cur.glow*.13)+")");
+}
+define("fundo");requestAnimationFrame(desenhar);
+
+/* Ponte HTTP local. Não há ações simuladas nem endpoint genérico de tools. */
+const AUREN_TOKEN="__AUREN_LOCAL_TOKEN__";
+let modoAtual="off",ocupado=false,ultimoEvento=0,consultando=false,pedidoPendente=null;
+async function postApi(path,body){
+ const res=await fetch(path,{method:"POST",headers:{"Content-Type":"application/json","X-Auren-Token":AUREN_TOKEN},body:JSON.stringify(body),cache:"no-store"});
+ const data=await res.json();
+ if(!res.ok)throw new Error(data.error||"Falha na comunicação local");
+ return data;
+}
+function pintaModo(){
+ const bot=$("bEstados");bot.textContent=({off:"Desligado",standby:"Standby",active:"Ativo"})[modoAtual]||"Estados";
+ document.querySelectorAll("#estados .chip").forEach(el=>el.setAttribute("aria-pressed",String(el.dataset.mode===modoAtual)));
+ if(modoAtual==="off"){define("fundo");if(!ocupado)cap.textContent="Auren desligado. Clique em Desligado para ativar."}
+ if(modoAtual==="standby"){define("fundo");cap.textContent="Standby: novas mensagens pausadas."}
+ if(modoAtual==="active"&&!ocupado&&!cap.textContent.trim()){define("normal");cap.textContent="Pronto para conversar."}
+}
+async function trocarModo(novo){
+ try{
+  const r=await postApi("/api/mode",{mode:novo});modoAtual=r.mode;painel.hidden=true;
+  pintaModo();if(novo==="active"){define("normal");cap.textContent="Pronto para conversar."}
+  if(novo==="off"){pedidoPendente=null;$("authPanel").hidden=true}
+ }catch(err){cap.textContent=err.message}
+}
+async function responderConfirmacao(aprovado){
+ const pendente=pedidoPendente;if(!pendente)return;
+ pedidoPendente=null;$("authPanel").hidden=true;
+ try{await postApi("/api/confirm",{id:pendente.id,approved:aprovado});define("pensando")}
+ catch(err){cap.textContent=err.message}
+}
+$("authNo").onclick=()=>responderConfirmacao(false);
+$("authYes").onclick=()=>responderConfirmacao(true);
+function evento(e){
+ if(e.kind==="you"){eco.textContent="Você: "+e.text;cap.textContent="";define("pensando")}
+ else if(e.kind==="busy"){ocupado=true;if(modoAtual==="active")define("pensando")}
+ else if(e.kind==="idle"){ocupado=false}
+ else if(e.kind==="reply"&&modoAtual!=="off"){void agir("normal",e.text)}
+ else if(e.kind==="error"&&modoAtual!=="off"){void agir("confusa",e.text)}
+ else if(e.kind==="confirm"){
+  pedidoPendente=e.payload;
+  $("authAction").textContent=e.payload.action;
+  $("authReason").textContent=e.payload.reason;
+  $("authPanel").hidden=false;define("perguntando");
+ }
+ else if(e.kind==="confirm_done"){pedidoPendente=null;$("authPanel").hidden=true}
+ else if(e.kind==="off"){if(modoAtual==="off")pintaModo()}
+}
+async function eventos(){
+ if(consultando)return;consultando=true;
+ try{
+  const r=await fetch("/api/events?after="+ultimoEvento,{headers:{"X-Auren-Token":AUREN_TOKEN},cache:"no-store"});
+  if(!r.ok)throw new Error("Serviço local indisponível");
+  const d=await r.json();
+  const previous=modoAtual;modoAtual=d.mode;ocupado=d.busy;
+  for(const e of d.events){evento(e);ultimoEvento=Math.max(ultimoEvento,e.seq)}
+  if(d.gap)cap.textContent="Alguns eventos antigos não estão disponíveis. Confira o estado atual.";
+  if(!d.events.length&&previous!==modoAtual)pintaModo();
+  if(d.events.length&&!d.events.some(e=>e.kind==="reply"||e.kind==="error")&&modoAtual==="off")pintaModo();
+  $("connection").textContent="Auren local • "+(ocupado?"processando":modoAtual);
+ }catch(err){$("connection").textContent="Sem conexão com o Auren local."}
+ finally{consultando=false}
+}
+const connection=document.createElement("div");connection.id="connection";$("stage").append(connection);
+pintaModo();eventos();setInterval(eventos,450);
+</script>
+
+</body></html>
