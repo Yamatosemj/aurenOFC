@@ -145,7 +145,7 @@ let seq=0,idle=null;
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 function say(text,s){return new Promise(res=>{cap.textContent="";if(reduz){cap.textContent=text;return res()}
  const w=text.split(" ");let i=0;(function n(){if(s!==seq)return res();cap.textContent=w.slice(0,++i).join(" ");i<w.length?setTimeout(n,70):res()})()})}
-function repouso(){clearTimeout(idle);idle=setTimeout(()=>{if(atual==="normal")define("fundo")},20000)}
+function repouso(){clearTimeout(idle)}
 
 function addCard(c){
  const el=document.createElement("div");el.className="card "+c.tipo;
@@ -178,7 +178,7 @@ async function conversar(texto){
 
 /* barra de busca: só aparece ao clicar no Auren (ou Enter com o orbe em foco) */
 const busca=$("busca"),inp=$("msg");
-function abre(){busca.hidden=false;if(atual==="fundo"){seq++;define("normal")}inp.focus()}
+function abre(){busca.hidden=false;if(atual==="fundo"&&modoAtual!=="off"){seq++;define("normal")}inp.focus()}
 function fecha(){busca.hidden=true;inp.value=""}
 cv.addEventListener("click",()=>busca.hidden?abre():fecha());
 cv.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();abre()}});
