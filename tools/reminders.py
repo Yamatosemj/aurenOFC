@@ -63,8 +63,13 @@ class ReminderStore:
                 horario TEXT NOT NULL,
                 status TEXT NOT NULL DEFAULT 'pendente',
                 criado_em TEXT NOT NULL,
-                atualizado_em TEXT NOT NULL
+                atualizado_em TEXT NOT NULL,
+                entregue_em TEXT
             )""")
+            # Migracao sem apagar lembretes criados em versoes anteriores.
+            columns = {r["name"] for r in con.execute("PRAGMA table_info(lembretes)")}
+            if "entregue_em" not in columns:
+                con.execute("ALTER TABLE lembretes ADD COLUMN entregue_em TEXT")
             con.execute("CREATE INDEX IF NOT EXISTS idx_lembretes_pendentes ON lembretes(status, horario)")
 
     def _connect(self):
@@ -141,7 +146,7 @@ class ReminderStore:
                 due = row["horario"]
                 status = "concluido" if action == "concluir" else "cancelado"
             con.execute(
-                "UPDATE lembretes SET horario=?, status=?, atualizado_em=? WHERE id=?",
+                "UPDATE lembretes SET horario=?, status=?, entregue_em=NULL, atualizado_em=? WHERE id=?",
                 (due, status, now.isoformat(timespec="seconds"), reminder_id),
             )
             return {"id": reminder_id, "texto": row["texto"], "horario": due, "status": status}
@@ -165,6 +170,40 @@ class ReminderStore:
                     (stamp, row["id"]),
                 )
             return [{**self._record(row), "status": "notificado"} for row in vencidos]
+
+
+    def avisos_nao_entregues(self, limite: int = 50) -> list[dict]:
+        """Avisos aguardam confirmacao do Chrome; nao somem ao recarregar a pagina."""
+        if not 1 <= limite <= 100:
+            raise ValueError("Limite de avisos invalido.")
+        with self._lock, self._connect() as con:
+            rows = con.execute(
+                "SELECT id, texto, horario, status FROM lembretes "
+                "WHERE status='notificado' AND entregue_em IS NULL "
+                "ORDER BY horario ASC LIMIT ?",
+                (limite,),
+            ).fetchall()
+            return [self._record(row) for row in rows]
+
+    def confirmar_aviso(self, reminder_id: int) -> bool:
+        """Confirma recepcao visual, sem concluir/cancelar o lembrete (idempotente)."""
+        if type(reminder_id) is not int or reminder_id < 1:
+            raise ValueError("ID de lembrete invalido.")
+        with self._lock, self._connect() as con:
+            con.execute("BEGIN IMMEDIATE")
+            row = con.execute(
+                "SELECT status, entregue_em FROM lembretes WHERE id=?",
+                (reminder_id,),
+            ).fetchone()
+            if row is None or row["status"] != "notificado":
+                return False
+            if row["entregue_em"] is None:
+                con.execute(
+                    "UPDATE lembretes SET entregue_em=? WHERE id=? "
+                    "AND status='notificado' AND entregue_em IS NULL",
+                    (self._now().isoformat(timespec="seconds"), reminder_id),
+                )
+            return True
 
 
 _singleton: ReminderStore | None = None
