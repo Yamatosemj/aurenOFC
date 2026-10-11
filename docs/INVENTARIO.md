@@ -1,6 +1,6 @@
 # Inventario tecnico e plano de documentacao do Auren
 
-> **Inventario das etapas 0 a 8.** Este documento e um mapa para orientar auditorias **uma por vez**; a presenca de um arquivo no repositorio nao comprova que a funcionalidade opera de ponta a ponta. Areas marcadas como **mapeadas** ainda nao foram auditadas em detalhe. As Etapas 1 a 8 documentam nucleo, caminho de ferramentas, modelo, memoria, Windows, visao, navegador, voz, interface desktop e extensibilidade por leitura de codigo e testes; **isso nao comprova comportamento Live**.
+> **Inventario das etapas 0 a 9.** Este documento e um mapa para orientar auditorias **uma por vez**; a presenca de um arquivo no repositorio nao comprova que a funcionalidade opera de ponta a ponta. Areas marcadas como **mapeadas** ainda nao foram auditadas em detalhe. As Etapas 1 a 9 documentam nucleo, caminho de ferramentas, modelo, memoria, Windows, visao, navegador, voz, interface desktop, extensibilidade, CI e controle remoto por leitura de codigo e testes; **isso nao comprova comportamento Live**.
 
 ## Escopo conferido
 
@@ -22,7 +22,7 @@
 | 6 | **Voz, STT e TTS** | `voice/*.py`, `requirements-voice.txt`, `scripts/iniciar/AUREN_VOZ.bat`, `agent/ari_native/audio_manager.py` | **Auditado estaticamente** em [architecture/06-voz-stt-tts.md](architecture/06-voz-stt-tts.md): PTT, captura, VAD, ASR, TTS, confirmações e limites; **teste físico pendente** |
 | 7 | **Interface desktop** | `interface_auren.py`, `ui/backend.py`, `scripts/iniciar/ABRIR_AUREN_GUI.bat` | **Auditado estaticamente** em [architecture/07-interface-desktop-gui.md](architecture/07-interface-desktop-gui.md); modos/filas/Harness/confirmacao/cancelamento; **Tk real/Live nao validado** |
 | 8 | **Skills, recursos experimentais e extensibilidade** | `skills/loader.py`, `core/capabilities.py`, `core/capability_resolver.py`, `core/capability_audio_*.py`, `experimental/` | **Auditado estaticamente** em [architecture/08-skills-capacidades-extensibilidade.md](architecture/08-skills-capacidades-extensibilidade.md): instruções de skills, 14 capacidades, flag de áudio e wake word isolada; **Live não validado** |
-| 9 | **Testes, CI e controle remoto** | `tests/`, `pytest.ini`, `testes_auren_live.py`, `remote_tests/`, `.github/workflows/` | Mapeado; **documentacao operacional desatualizada em partes** |
+| 9 | **Testes, CI e controle remoto** | `tests/`, `pytest.ini`, `testes_auren_live.py`, `remote_tests/`, `.github/workflows/` | **Auditado estaticamente** em [architecture/09-testes-ci-controle-remoto.md](architecture/09-testes-ci-controle-remoto.md); evidência histórica E2E do pytest por comentário, CI hospedado distinto de Live e política local **não inspecionada** |
 | 10 | **Entradas, configuracao e distribuicao** | `main.py`, `auren.py`, `config.py`, `scripts/`, `requirements*.txt`, `README.md` | Mapeado; **auditoria detalhada pendente** |
 
 **Mapeado** significa apenas que confirmamos a presenca dos caminhos e identificamos seu papel geral nos arquivos consultados. **Auditado** exigira examinar implementacao, consumidores, limites, testes, dependencias e efeito real. Nenhuma area recebe o rótulo de auditada apenas por ter passado no pytest.
@@ -44,8 +44,8 @@
 | --- | --- | --- |
 | `README.md` | Traz instalacao, arquitetura e status do GUI/voz | Manter introdutorio; mover explicacoes extensas apenas quando auditorias estiverem completas |
 | `AUREN_STATE.md` | Mistura estado recente, marcos e resultados historicos, com aproximadamente 31 mil caracteres | Reorganizar **sem perder evidencias** e sem tratar texto antigo como status atual |
-| `docs/CONTROLE_REMOTO_GITHUB.md` | Contem avisos antigos de que o teste por comentario/runner ainda nao estava operacional | Reconciliar com os runs atuais, preservando limites e procedimentos de seguranca |
-| `docs/TESTES_GITHUB.md` | Registra passos historicos de configuracao e operacao do runner | Diferenciar instalacao, autorizacao, teste remoto pytest e teste Live; verificar contra workflows e runs |
+| `docs/CONTROLE_REMOTO_GITHUB.md` | **Reconciliado na Etapa 9:** run #38085000162 confirma pytest por comentário no Windows; estado local atual não comprovado | Preservar políticas e procedimentos históricos; revalidar antes de cada novo run |
+| `docs/TESTES_GITHUB.md` | Histórico de 2026-10-09 reconciliado com workflows CI, Live e run de chat de 2026-10-10 | Manter distinção de autorização histórica versus estado local atual |
 | `scripts/README.md` | Indice dos atalhos existentes | Manter como referencia operacional local |
 
 **Nao apagar ou simplificar procedimentos de autorizacao, rollback ou recuperacao sem conferir os scripts reais e as condicoes do runner pessoal.**
@@ -78,9 +78,11 @@
 
 **Etapa 7 (integrada na [PR #127](https://github.com/Yamatosemj/aurenOFC/pull/127), merge `186b783965229a2578191a7337d4ed82228e0923`):** modo inicial desligado, estados GUI versus worker/Harness, backend em thread, duas filas, autorizacoes, teardown e limites de teste documentados em [architecture/07-interface-desktop-gui.md](architecture/07-interface-desktop-gui.md). Somente Markdown; 65 links relativos conferidos sem erros. Checks do primeiro HEAD `0a3f24fa884e2531ba38544852ad4cf385d4e48e` aprovados: Linux completo 556 passed/24 skipped; Linux focado 166 passed/15 skipped, Windows focado 181 passed, modo seguro 110 passed por sistema. Conferir os checks no último SHA antes do merge; sem Tk real/Live.
 
-**Etapa 8 (documentação na [PR #128](https://github.com/Yamatosemj/aurenOFC/pull/128), em revisão):** separação entre skills textuais sem SKILL.md versionado, catálogo declarativo de 14 capacidades e 49 tools executáveis, roteamento normal, experimento de áudio opt-in, wake word isolada e limites de segurança, em [architecture/08-skills-capacidades-extensibilidade.md](architecture/08-skills-capacidades-extensibilidade.md). Somente Markdown; 88 links relativos conferidos sem erros. Checks do primeiro HEAD `d56255cdd28d0517b2027ca898180f5a9a04a645` aprovados: Linux completo **556 passed/24 skipped**; Linux focado **166 passed/15 skipped**, Windows **181 passed**, modo seguro **110 passed** por plataforma. Revalidar CI no SHA final; sem Live.
+**Etapa 8 (integrada na [PR #128](https://github.com/Yamatosemj/aurenOFC/pull/128), merge `1bb85bc04efe850cd0705652c54e5cddcee9a8bd`):** separação entre skills textuais sem SKILL.md versionado, catálogo declarativo de 14 capacidades e 49 tools executáveis, roteamento normal, experimento de áudio opt-in, wake word isolada e limites de segurança, em [architecture/08-skills-capacidades-extensibilidade.md](architecture/08-skills-capacidades-extensibilidade.md). Somente Markdown; 88 links relativos conferidos sem erros. Checks do primeiro HEAD `d56255cdd28d0517b2027ca898180f5a9a04a645` aprovados: Linux completo **556 passed/24 skipped**; Linux focado **166 passed/15 skipped**, Windows **181 passed**, modo seguro **110 passed** por plataforma. Revalidar CI no SHA final; sem Live.
 
-**Proxima area documental:** Etapa 9 — testes, CI e controle remoto.
+**Etapa 9 (em auditoria documental nesta branch):** matriz de workflows e testes, pytest hospedado versus Windows pessoal/Live, validação de solicitação por comentário, SHA e política local, watchdog, camadas L0/L1/L2/L4/L5 e comprovação E2E do run #38085000162, em [architecture/09-testes-ci-controle-remoto.md](architecture/09-testes-ci-controle-remoto.md). As páginas [TESTES_GITHUB.md](TESTES_GITHUB.md) e [CONTROLE_REMOTO_GITHUB.md](CONTROLE_REMOTO_GITHUB.md) tiveram avisos históricos reconciliados. Somente Markdown, CI desta PR pendente, nenhum job no PC acionado.
+
+**Proxima area documental:** Etapa 10 — entradas, configuracao e distribuicao.
 
 **Evidencia de CI da Etapa 1:** PR #121 aprovada no GitHub Actions, SHA de codigo documental antes do merge `9edb1ae7101fa9a3f1b6483a484ee3d4883a5014`: Linux 556 passed/24 skipped, Windows hospedado focado 181 passed e modo seguro 110 passed. **Sem execucao Live, microfone ou testes no notebook pessoal nessa PR documental.**
 
