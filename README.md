@@ -15,6 +15,7 @@ Assistente desktop/voz para Windows, versão técnica **V47**, usando o modelo c
 - [`docs/architecture/05-navegador-browser-intelligence.md`](docs/architecture/05-navegador-browser-intelligence.md) — Playwright, leitura do DOM, abas, ações, permissões e limites da verificação posterior.
 - [`docs/architecture/06-voz-stt-tts.md`](docs/architecture/06-voz-stt-tts.md) — entrada PTT, captura/VAD, transcrição Parakeet, síntese Kokoro, confirmações por voz e limites de teste.
 - [`docs/architecture/07-interface-desktop-gui.md`](docs/architecture/07-interface-desktop-gui.md) — Tkinter, worker/filas, modos Ativo/Standby/Desligado, confirmação, sessão e cancelamento.
+- [`docs/architecture/08-skills-capacidades-extensibilidade.md`](docs/architecture/08-skills-capacidades-extensibilidade.md) — carregamento local de skills, catálogo de capacidades, atalhos, flags experimentais e limites de segurança.
 - [`docs/TESTES_GITHUB.md`](docs/TESTES_GITHUB.md) e [`docs/CONTROLE_REMOTO_GITHUB.md`](docs/CONTROLE_REMOTO_GITHUB.md) — operacao e historico dos testes remotos; **algumas instrucoes antigas aguardam reconciliacao** com os runs atuais.
 
 A documentacao evolui em PRs pequenas por subsistema. Para decidir o status real de uma funcionalidade, confronte documentos com codigo, PRs e CI atuais.
