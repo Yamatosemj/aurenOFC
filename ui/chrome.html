@@ -364,8 +364,9 @@ async function eventos(){
   const previous=modoAtual;modoAtual=d.mode;ocupado=d.busy;
   for(const e of d.events){evento(e);ultimoEvento=Math.max(ultimoEvento,e.seq)}
   if(d.gap)cap.textContent="Alguns eventos antigos não estão disponíveis. Confira o estado atual.";
-  if(previous!==modoAtual)pintaModo();
-  if(d.events.length&&modoAtual==="off")pintaModo();
+  const teveAlerta=d.events.some(e=>e.kind==="reminder_due");
+  if(previous!==modoAtual&&!teveAlerta)pintaModo();
+  if(d.events.length&&modoAtual==="off"&&!teveAlerta)pintaModo();
   $("connection").textContent="Auren local • "+(ocupado?"processando":modoAtual);
  }catch(err){$("connection").textContent="Sem conexão com o Auren local."}
  finally{consultando=false}
