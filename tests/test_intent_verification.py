@@ -253,7 +253,6 @@ def test_fast_path_plan_matches_dispatch_name_and_arguments():
     ("coloque o volume em 0%", "definir_volume_windows", '{"percentual":0}'),
     ("ative o mudo", "definir_mudo_windows", '{"ativado":true}'),
     ("desative o mudo", "definir_mudo_windows", '{"ativado":false}'),
-    ("pausa a musica", "controle_midia_windows", '{"acao":"play_pause"}'),
     ("proxima", "controle_midia_windows", '{"acao":"proxima"}'),
     ("abra o YouTube", "navegar_navegador", '{"url":"https://www.youtube.com","modo":"visivel"}'),
     ("abra o aplicativo Spotify", "abrir_programa", '{"programa":"Spotify"}'),
@@ -273,9 +272,9 @@ def test_exact_simple_intent_needs_no_extra_verifier(pedido, tool, args):
     ("abra o YouTube", "navegar_navegador", '{"url":"https://www.youtube.com","modo":"oculto"}'),
     ("abra o aplicativo Spotify", "abrir_programa", '{"programa":"Discord"}'),
     ("abra o aplicativo Spotify e feche a janela", "abrir_programa", '{"programa":"Spotify"}'),
-    ("pausa a musica", "controle_midia_windows", '{"acao":"proxima"}'),
     ("abra o YouTube", "fechar_aba", '{"indice":1}'),
     ("abra o YouTube", "navegar_navegador", '{"url":"https://www.youtube.com","modo":"visivel","extra":1}'),
+    ("pausa", "controle_midia_windows", '{"acao":"play_pause"}'),
     ("defina o volume em 30", "definir_volume_windows", "not json"),
 ])
 def test_changed_or_ambiguous_action_requires_verifier(pedido, tool, args):
