@@ -10,11 +10,11 @@ Atualizado em: 2026-10-10
 
 ### Etapa 8 — Skills, capacidades e experimentos (2026-10-10)
 
-- **Auditoria documental em andamento:** branch `docs/etapa-8-skills-capacidades-experimentos` sobre a `main` `186b783965229a2578191a7337d4ed82228e0923`. Novo `docs/architecture/08-skills-capacidades-extensibilidade.md` e referências em README, AGENTS e inventário. **Apenas Markdown**, sem instalar skills, ativar experimentos, alterar runtime, workflow, testes ou permissões.
+- **Auditoria documental submetida na [PR #128](https://github.com/Yamatosemj/aurenOFC/pull/128):** branch `docs/etapa-8-skills-capacidades-experimentos` sobre a `main` `186b783965229a2578191a7337d4ed82228e0923`. Novo `docs/architecture/08-skills-capacidades-extensibilidade.md` e referências em README, AGENTS e inventário. **Apenas Markdown**, sem instalar skills, ativar experimentos, alterar runtime, workflow, testes ou permissões.
 - **Código confrontado:** `skills/loader.py`, `core/session.py`, `auren.py`, Harness, Router, `core/capabilities.py`, `core/capability_resolver.py`, `core/intent_resolver.py`, TaskSpec, `core/local_decision.py`, fast paths, `core/capability_audio_runtime.py`, experimento/matriz, scripts da flag e `experimental/wake_word.py`; testes de catálogo, áudio, TaskSpec, roteamento e prompt injection.
 - **Estado real:** carregador de `SKILL.md` integrado ao contexto, mas nenhum `SKILL.md` versionado em `skills/` na `main`; 14 capacidades declaratórias não são as 49 ferramentas executáveis; resolver de TaskSpec é separado do roteamento normal; flag `AUREN_EXPERIMENT_CAPABILITY_AUDIO` fica desligada por padrão e, quando ativada, só tenta volume/mudo/mídia pelo Dispatcher; wake word permanece fora do runtime PTT.
 - **Limites para investigação posterior:** `install()` não valida explicitamente diretório/`..`/symlinks ao aceitar nomes de skills; texto de skills não é fronteira forte de confiança; padrão lexical não garante relevância; fallback do experimento pode retornar ao fluxo normal após falha de execução; ausência de testes dedicados de skills e ausência de validação de wake word real. Registrar hipóteses, não corrigir nesta PR.
-- **Validação pendente:** links relativos, PR e CI no SHA final; sem skills de terceiros, Windows Live, API, wake word físico nem experimento de áudio acionado nesta etapa documental.
+- **Validação documental:** 88 links relativos conferidos (0 quebrados), CI hospedado do HEAD final pendente. Sem skills de terceiros, Windows Live, API, wake word físico nem experimento de áudio acionado nesta etapa documental.
 - **Próxima etapa após merge:** 9 — testes, CI e controle remoto, em PR separada.
 
 
