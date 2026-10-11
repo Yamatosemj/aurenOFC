@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from queue import Empty, Queue
-from threading import Thread
+from threading import Event, Thread
 from types import SimpleNamespace
 
 from core.confirmation import ConfirmationRequest
@@ -142,3 +142,42 @@ def test_timeout_confirmation_enqueues_close_dialog_event():
     assert events.get_nowait().kind == "confirm"
     assert events.get_nowait().kind == "notice"
     assert events.get_nowait().kind == "confirm_done"
+
+
+def test_worker_suppresses_reply_from_previous_session_after_off():
+    started, release = Event(), Event()
+
+    class SlowHarness:
+        def processar_mensagem(self, text):
+            started.set()
+            release.wait(timeout=3)
+            return False, SimpleNamespace(output_text="resposta antiga")
+
+        def current_task(self):
+            return SimpleNamespace(state=SimpleNamespace(value="completed"))
+
+        def cancel_current_task(self):
+            pass
+
+        def fechar(self):
+            pass
+
+        def _encerrar_sessao_chat(self, status):
+            pass
+
+    worker = AurenUiWorker(harness_factory=lambda **_: SlowHarness())
+    worker.start()
+    try:
+        worker.activate()
+        assert worker.submit("ola")
+        assert started.wait(timeout=2)
+        worker.go_off()
+        release.set()
+        received = []
+        while "off" not in received:
+            received.append(worker.events.get(timeout=3).kind)
+        assert "reply" not in received
+    finally:
+        release.set()
+        worker.close()
+        worker._thread.join(timeout=3)

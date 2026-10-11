@@ -83,12 +83,11 @@ canvas{cursor:pointer}
 
 <div id="tint"></div>
 <header>
-  <button class="tool" id="bEstados" type="button" aria-pressed="false" aria-controls="estados">Estados</button>
+  <span class="tool" id="bEstados" role="status" aria-live="polite">Desligado</span>
 </header>
 <span id="estado" class="sr" role="status"></span>
 <div id="stage">
   <canvas id="c" tabindex="0" role="button" aria-label="Auren. Clique para escrever uma mensagem"></canvas>
-  <div id="estados" hidden></div>
   <div id="authPanel" role="dialog" aria-modal="true" aria-labelledby="authTitle" hidden>
     <div id="authDialog"><h2 id="authTitle">Autorizar ação</h2>
       <div id="authAction"></div><p id="authReason"></p>
@@ -136,26 +135,17 @@ function dist(a,b){const dh=Math.abs(((b.hue-a.hue+540)%360)-180)/180;
 function inicia(a){from=Object.assign({},cur);alvo=a;tI=performance.now();tD=Math.max(.8,Math.min(2.6,.7+dist(from,a)*1.7))*1000}
 function define(k){
  const dest=E[k];atual=k;lab.style.opacity=0;setTimeout(()=>{if(atual===k){lab.textContent=dest.n;lab.style.opacity=1}},200);
- document.querySelectorAll(".chip").forEach(b=>b.setAttribute("aria-pressed",b.dataset.k===k));
  const longe=dest!==E.normal&&dist(cur,dest)>.8&&dist(cur,E.normal)>.3;
  fila=longe?[dest]:[];inicia(longe?E.normal:dest)}
 
 /* ---------- interface ---------- */
 const $=id=>document.getElementById(id);
-const painel=$("estados");
-for(const [rotulo,modo] of [["Ativo","active"],["Standby","standby"],["Desligado","off"]]){
- const b=document.createElement("button");b.type="button";b.className="chip";
- b.textContent=rotulo;b.dataset.mode=modo;
- b.onclick=()=>trocarModo(modo);painel.append(b);
-}
-$("bEstados").onclick=()=>{painel.hidden=!painel.hidden;$("bEstados").setAttribute("aria-pressed",String(!painel.hidden))};
-
 const cap=$("legenda"),eco=$("eco"),cardsEl=$("cards");
 let seq=0,idle=null;
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 function say(text,s){return new Promise(res=>{cap.textContent="";if(reduz){cap.textContent=text;return res()}
  const w=text.split(" ");let i=0;(function n(){if(s!==seq)return res();cap.textContent=w.slice(0,++i).join(" ");i<w.length?setTimeout(n,70):res()})()})}
-function repouso(){clearTimeout(idle);idle=setTimeout(()=>{if(atual==="normal")define("fundo")},20000)}
+function repouso(){clearTimeout(idle)}
 
 function addCard(c){
  const el=document.createElement("div");el.className="card "+c.tipo;
@@ -177,16 +167,18 @@ async function agir(estado,fala){const s=++seq;clearTimeout(idle);define("faland
 
 /* Entrada real: toda mensagem vai ao worker Python / Harness existente. */
 async function conversar(texto){
- if(modoAtual!=="active"||ocupado){cap.textContent="Ative o Auren e aguarde a tarefa atual.";return}
+ if(ocupado){cap.textContent="Aguarde a tarefa atual.";return}
  const s=++seq;clearTimeout(idle);
  eco.textContent="Você: "+texto;cap.textContent="";define("pensando");
- try{await postApi("/api/message",{text:texto})}
- catch(err){if(s===seq)agir("confusa","Não consegui enviar: "+err.message)}
+ try{
+  const result=await postApi("/api/message",{text:texto});
+  if(result.mode){modoAtual=result.mode;if(modoAtual==="off")pintaModo()}
+ }catch(err){if(s===seq)agir("confusa","Não consegui enviar: "+err.message)}
 }
 
 /* barra de busca: só aparece ao clicar no Auren (ou Enter com o orbe em foco) */
 const busca=$("busca"),inp=$("msg");
-function abre(){busca.hidden=false;if(atual==="fundo"){seq++;define("normal")}inp.focus()}
+function abre(){busca.hidden=false;if(atual==="fundo"&&modoAtual!=="off"){seq++;define("normal")}inp.focus()}
 function fecha(){busca.hidden=true;inp.value=""}
 cv.addEventListener("click",()=>busca.hidden?abre():fecha());
 cv.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();abre()}});
@@ -311,18 +303,17 @@ async function postApi(path,body){
  return data;
 }
 function pintaModo(){
- const bot=$("bEstados");bot.textContent=({off:"Desligado",standby:"Standby",active:"Ativo"})[modoAtual]||"Estados";
- document.querySelectorAll("#estados .chip").forEach(el=>el.setAttribute("aria-pressed",String(el.dataset.mode===modoAtual)));
- if(modoAtual==="off"){define("fundo");if(!ocupado)cap.textContent="Auren desligado. Clique em Desligado para ativar."}
- if(modoAtual==="standby"){define("fundo");cap.textContent="Standby: novas mensagens pausadas."}
- if(modoAtual==="active"&&!ocupado&&!cap.textContent.trim()){define("normal");cap.textContent="Pronto para conversar."}
-}
-async function trocarModo(novo){
- try{
-  const r=await postApi("/api/mode",{mode:novo});modoAtual=r.mode;painel.hidden=true;
-  pintaModo();if(novo==="active"){define("normal");cap.textContent="Pronto para conversar."}
-  if(novo==="off"){pedidoPendente=null;$("authPanel").hidden=true}
- }catch(err){cap.textContent=err.message}
+ const bot=$("bEstados");
+ bot.textContent=({off:"Desligado",standby:"Standby",active:"Ativo"})[modoAtual]||"Auren";
+ if(modoAtual==="off"){
+  seq++;clearTimeout(idle);pedidoPendente=null;$("authPanel").hidden=true;
+  define("fundo");cap.textContent="Auren desligado. Envie uma mensagem para iniciar.";
+ }else if(modoAtual==="standby"){
+  seq++;clearTimeout(idle);
+  define("fundo");cap.textContent="Em standby. Envie uma mensagem para continuar.";
+ }else if(!ocupado&&!cap.textContent.trim()){
+  define("normal");cap.textContent="Pronto para conversar.";
+ }
 }
 async function responderConfirmacao(aprovado){
  const pendente=pedidoPendente;if(!pendente)return;
@@ -356,8 +347,8 @@ async function eventos(){
   const previous=modoAtual;modoAtual=d.mode;ocupado=d.busy;
   for(const e of d.events){evento(e);ultimoEvento=Math.max(ultimoEvento,e.seq)}
   if(d.gap)cap.textContent="Alguns eventos antigos não estão disponíveis. Confira o estado atual.";
-  if(!d.events.length&&previous!==modoAtual)pintaModo();
-  if(d.events.length&&!d.events.some(e=>e.kind==="reply"||e.kind==="error")&&modoAtual==="off")pintaModo();
+  if(previous!==modoAtual)pintaModo();
+  if(d.events.length&&modoAtual==="off")pintaModo();
   $("connection").textContent="Auren local • "+(ocupado?"processando":modoAtual);
  }catch(err){$("connection").textContent="Sem conexão com o Auren local."}
  finally{consultando=false}

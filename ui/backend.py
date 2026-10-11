@@ -202,6 +202,15 @@ class AurenUiWorker:
                     quick, response = harness.processar_mensagem(text)
                     answer = response if quick else getattr(response, "output_text", str(response))
                     answer = str(answer or "").strip() or "(Sem resposta textual.)"
+                    # Desligar/reativar invalida resultados da geracao anterior.
+                    with self._lock:
+                        still_current = (
+                            self._enabled
+                            and generation == self._generation
+                            and not self._closing.is_set()
+                        )
+                    if not still_current:
+                        continue
                     snapshot = harness.current_task()
                     status = getattr(getattr(snapshot, "state", None), "value", "")
                     if status == "failed":
@@ -209,7 +218,14 @@ class AurenUiWorker:
                     else:
                         self.events.put(UiEvent("reply", answer))
                 except Exception as exc:
-                    self.events.put(UiEvent("error", f"Erro ao processar: {exc}"))
+                    with self._lock:
+                        still_current = (
+                            self._enabled
+                            and generation == self._generation
+                            and not self._closing.is_set()
+                        )
+                    if still_current:
+                        self.events.put(UiEvent("error", f"Erro ao processar: {exc}"))
                 finally:
                     self.events.put(UiEvent("idle"))
         finally:
