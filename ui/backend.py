@@ -218,7 +218,14 @@ class AurenUiWorker:
                     else:
                         self.events.put(UiEvent("reply", answer))
                 except Exception as exc:
-                    self.events.put(UiEvent("error", f"Erro ao processar: {exc}"))
+                    with self._lock:
+                        still_current = (
+                            self._enabled
+                            and generation == self._generation
+                            and not self._closing.is_set()
+                        )
+                    if still_current:
+                        self.events.put(UiEvent("error", f"Erro ao processar: {exc}"))
                 finally:
                     self.events.put(UiEvent("idle"))
         finally:
