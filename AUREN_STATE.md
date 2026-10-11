@@ -2,7 +2,7 @@
 
 > **Leia este arquivo primeiro em toda nova conversa ou tarefa de manutenção.** Este documento descreve o **estado corrente verificado**, não um diário de PRs. Confirme as afirmações dinâmicas com a `main`, as PRs abertas e os checks atuais no GitHub antes de agir.
 >
-> **Revisão de base:** 2026-10-10 · `main` consultada em `c18d58a88e2623818ccda1f08af6077c961598a1` (merge da [PR #130](https://github.com/Yamatosemj/aurenOFC/pull/130)). A consolidação deste arquivo foi preparada na branch `docs/consolidar-estado-historico`. **O SHA de base não é promessa de HEAD atual.**
+> **Revisão de base:** 2026-10-10 · `main` consultada em `c18d58a88e2623818ccda1f08af6077c961598a1` (merge da [PR #130](https://github.com/Yamatosemj/aurenOFC/pull/130)). **O SHA de base não é promessa de HEAD atual.** O histórico integral foi arquivado, e a consolidação foi feita em PR documental separada.
 >
 > **Fontes:** [README](README.md) · [Regras para agentes](AGENTS.md) · [Inventário e estado por subsistema](docs/INVENTARIO.md) · [Histórico integral anterior à consolidação](docs/history/AUREN_STATE_SNAPSHOT_2026-10-10.md).
 
@@ -11,7 +11,7 @@
 - **Projeto:** Auren, assistente pessoal para desktop/voz no Windows, escrito em Python; o proprietário quer evolução por **uma tarefa/PR de cada vez**, com mudanças e testes rastreáveis no GitHub.
 - **Versão técnica configurada:** **V47** em [`config.py`](config.py), modelo padrão `gpt-5.6-luna`. O código de voz candidato à **V48** foi integrado pela [PR #119](https://github.com/Yamatosemj/aurenOFC/pull/119), **sem validação física de microfone/PTT/latência**. Não promover V48 a versão estável por decisão documental.
 - **Documentação:** inventário inicial **Etapas 0–10 auditado estaticamente**, com referências em [`docs/architecture/`](docs/architecture/01-nucleo.md) e [`docs/INVENTARIO.md`](docs/INVENTARIO.md). Isso **não** comprova funcionamento Live nem encerra o desenvolvimento do Auren.
-- **Tarefa atual desta branch:** consolidar estado e preservar histórico **somente em Markdown**, sem alterar runtime, ferramentas, workflows, runner, permissões ou secrets. Após integrar, **não há implementação seguinte autorizada automaticamente**; selecionar próximo escopo com o proprietário.
+- **Foco da consolidação:** separar estado operacional de histórico **somente em Markdown**, sem alterar runtime, ferramentas, workflows, runner, permissões ou segredos. **Nenhuma implementação seguinte foi autorizada automaticamente**; selecionar o próximo escopo com o proprietário.
 
 ## 2. Implementado no repositório — não confundir com validado
 
