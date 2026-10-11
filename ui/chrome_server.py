@@ -44,6 +44,7 @@ class LocalChromeApp:
         self.reminder_store = reminder_store or get_reminder_store()
         self._reminder_stop = Event()
         self._reminder_last_error: str | None = None
+        self._last_alert_load_error: str | None = None
         self._reminder_thread = Thread(target=self._poll_reminders, daemon=True, name="auren-reminders")
         self.mode = "off"
         self.busy = False
@@ -159,6 +160,17 @@ class LocalChromeApp:
             # Caso o navegador tenha perdido eventos, notificar da lacuna.
             gap = bool(self.history and after and after < self.history[0]["seq"] - 1)
             items = [item for item in self.history if item["seq"] > after]
+            try:
+                alerts = self.reminder_store.avisos_nao_entregues()
+                self._last_alert_load_error = None
+            except (sqlite3.Error, OSError, ValueError) as exc:
+                # Erro de banco nao deve derrubar o endpoint de eventos/chats.
+                error = f"{type(exc).__name__}: {exc}"
+                if error != self._last_alert_load_error:
+                    self._push("notice", f"Falha ao recuperar alertas: {error}")
+                self._last_alert_load_error = error
+                alerts = []
+                items = [item for item in self.history if item["seq"] > after]
             return {
                 "mode": self.mode,
                 "busy": self.busy,
@@ -167,7 +179,7 @@ class LocalChromeApp:
                 "events": items,
                 # Alertas sobrevivem a recarregamentos, lacunas na fila
                 # de eventos e reinicios do processo.
-                "alerts": self.reminder_store.avisos_nao_entregues(),
+                "alerts": alerts,
             }
 
     def confirmar_aviso(self, reminder_id: int) -> dict[str, Any]:
