@@ -244,3 +244,32 @@ def test_http_ack_requer_token_e_so_confirma_id_valido(store, clock):
         server.server_close()
         app.shutdown()
         runner.join(timeout=3)
+
+
+def test_falha_sqlite_na_lista_nao_interrompe_conversa(monkeypatch, store):
+    import sqlite3
+
+    class FakeWorker:
+        def __init__(self):
+            self.events = Queue()
+        def start(self): pass
+        def close(self): pass
+        def go_off(self): pass
+
+    app = LocalChromeApp(worker=FakeWorker(), reminder_store=store)
+    original = store.avisos_nao_entregues
+
+    def broken():
+        raise sqlite3.OperationalError("banco temporariamente ocupado")
+
+    try:
+        monkeypatch.setattr(store, "avisos_nao_entregues", broken)
+        first = app.snapshot()
+        assert first["alerts"] == []
+        assert len([e for e in first["events"] if e["kind"] == "notice"]) == 1
+        second = app.snapshot()
+        assert len([e for e in second["events"] if e["kind"] == "notice"]) == 1
+        monkeypatch.setattr(store, "avisos_nao_entregues", original)
+        assert app.snapshot()["alerts"] == []
+    finally:
+        app.shutdown()
