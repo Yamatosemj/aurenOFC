@@ -197,6 +197,12 @@ def test_strict_json_size_schema_and_content_type():
 def test_html_is_prototype_derived_real_ui_and_nonce_is_bound_to_csp():
     source = INDEX_PATH.read_text(encoding="utf-8")
     assert "const E={" in source and '"ouvindo"' in source and '"pensando"' in source
+    assert "THREE.WebGLRenderer" in source
+    assert "THREE.ShaderMaterial" in source
+    assert "THREE.IcosahedronGeometry(1,28)" in source
+    assert "const VS=" in source and "const FS=" in source
+    assert "getContext(\"2d\"" not in source
+    assert 'src="/assets/three-r128.min.js"' in source
     assert "function decide(" not in source
     assert "cdnjs.cloudflare" not in source
     assert "__AUREN_LOCAL_TOKEN__" in source
@@ -210,6 +216,8 @@ def test_html_is_prototype_derived_real_ui_and_nonce_is_bound_to_csp():
         assert "__AUREN_LOCAL_TOKEN__" not in page
         nonce = re.search(r'<script nonce="([^"]+)"', page)
         assert nonce is not None
+        asset_nonce = re.search(r'<script src="/assets/three-r128.min.js" nonce="([^"]+)"', page)
+        assert asset_nonce is not None and asset_nonce.group(1) == nonce.group(1)
         assert f"'nonce-{nonce.group(1)}'" in headers["Content-Security-Policy"]
         assert 'frame-ancestors ' in headers["Content-Security-Policy"]
         assert headers["Cache-Control"] == "no-store"
@@ -222,10 +230,41 @@ def test_browser_script_syntax_if_node_installed():
     if node is None:
         pytest.skip("Node nao instalado neste runner")
     html = INDEX_PATH.read_text(encoding="utf-8")
-    scripts = re.findall(r"<script[^>]*>([\s\S]*?)</script>", html, re.I)
+    scripts = [part for part in re.findall(r"<script[^>]*>([\s\S]*?)</script>", html, re.I) if part.strip()]
     assert len(scripts) == 1
     check = subprocess.run(
         [node, "--check", "-"], input=scripts[0],
         capture_output=True, text=True, timeout=10, check=False,
+    )
+    assert check.returncode == 0, check.stderr
+
+
+
+def test_three_js_is_served_locally_without_any_cdn():
+    from ui.chrome_server import THREE_SCRIPT_PATH
+    assert THREE_SCRIPT_PATH.is_file()
+    text = THREE_SCRIPT_PATH.read_text(encoding="utf-8")
+    assert text.startswith("/**\n * @license")
+    assert "THREE" in text
+    assert len(text) > 500_000
+    assert (THREE_SCRIPT_PATH.parent / "THREE_LICENSE.txt").is_file()
+    with running_server() as (app, worker, port):
+        status, headers, content = request(port, "GET", "/assets/three-r128.min.js")
+        assert status == 200
+        assert headers["Content-Type"].startswith("application/javascript")
+        assert content == THREE_SCRIPT_PATH.read_bytes()
+        status, _, _ = request(port, "GET", "/assets/../../AUREN_STATE.md")
+        assert status == 404
+
+
+def test_vendor_script_js_syntax_if_node_installed():
+    from ui.chrome_server import THREE_SCRIPT_PATH
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("Node nao instalado")
+    check = subprocess.run(
+        [node, "--check", "-"],
+        input=THREE_SCRIPT_PATH.read_text(encoding="utf-8"),
+        capture_output=True, text=True, timeout=20, check=False,
     )
     assert check.returncode == 0, check.stderr

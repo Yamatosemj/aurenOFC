@@ -11,11 +11,11 @@
 - **Projeto:** Auren, assistente pessoal para desktop/voz no Windows, escrito em Python; o proprietário quer evolução por **uma tarefa/PR de cada vez**, com mudanças e testes rastreáveis no GitHub.
 - **Versão técnica configurada:** **V47** em [`config.py`](config.py), modelo padrão `gpt-5.6-luna`. O código de voz candidato à **V48** foi integrado pela [PR #119](https://github.com/Yamatosemj/aurenOFC/pull/119), **sem validação física de microfone/PTT/latência**. Não promover V48 a versão estável por decisão documental.
 - **Documentação:** inventário inicial **Etapas 0–10 auditado estaticamente**, com referências em [`docs/architecture/`](docs/architecture/01-nucleo.md) e [`docs/INVENTARIO.md`](docs/INVENTARIO.md). Isso **não** comprova funcionamento Live nem encerra o desenvolvimento do Auren.
-- **Manutenção em foco:** implementar uma interface Chrome local com visual inspirado no protótipo do proprietário, sem mexer na voz, permissões, ferramentas ou servidor remoto.
+- **Manutenção em foco:** restaurar a animação 3D original do protótipo na interface Chrome local, preservando a comunicação existente com o Harness e as permissões. Sem mexer na voz, ferramentas ou servidor remoto.
 
 - **Verificação de intenção integrada na PR #132:** o mesmo modelo pode revisar ações mutáveis antes do Dispatcher (aprovar, esclarecer ou bloquear); falhas impedem a execução. **Otimização integrada na PR #133:** a segunda chamada fica dispensada somente quando uma proposta curta bate exatamente com o pedido explícito, incluindo ferramenta, argumentos e ausência de passos extras. Qualquer desvio, composição ou ambiguidade mantém a revisão por IA. Permissões e evidências pós-execução continuam independentes.
 
-- **Interface Chrome local (candidata):** `ui/chrome_server.py`, `ui/chrome.html` e `scripts/iniciar/AUREN_CHROME.bat` acrescentam uma entrada web local em 127.0.0.1, com visual inspirado no protótipo, mensagens de texto pelo `AurenUiWorker`, modos Ativo/Standby/Desligado e confirmação de ações sensíveis. Mantém a GUI Tkinter. Ainda sem voz/web mobile, lembretes reais ou validação física/Live no Chrome pessoal; testes de mock/CI não comprovam uso diário.
+- **Interface Chrome local (candidata):** `ui/chrome_server.py`, `ui/chrome.html` e `scripts/iniciar/AUREN_CHROME.bat` acrescentam uma entrada web local em 127.0.0.1, com orbe 3D WebGL restaurado a partir do protótipo e Three.js r128 local (MIT), mensagens de texto pelo `AurenUiWorker`, modos Ativo/Standby/Desligado e confirmação de ações sensíveis. Mantém a GUI Tkinter. Ainda sem voz/web mobile, lembretes reais ou validação física/Live no Chrome pessoal; testes de mock/CI não comprovam uso diário.
 
 ## 2. Implementado no repositório — não confundir com validado
 
