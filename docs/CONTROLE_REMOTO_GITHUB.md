@@ -1,5 +1,7 @@
 # Controle manual do Auren pelo celular
 
+> **Estado auditado em 2026-10-10:** existe prova de execução ponta a ponta do **pytest por comentário de PR**: [run #38085000162](https://github.com/Yamatosemj/aurenOFC/actions/runs/38085000162), PR #119, SHA `9fa20a4cb92dfead9a77fa9356d8677bcf559be8`, jobs `validar` e `executar` aprovados e log `PR test: completed; exit=0`. Esta evidência substitui os avisos históricos de que o fluxo nunca funcionou. **Não prova que o runner esteja online agora**, nem libera testes Live/API. Veja [Etapa 9 — matriz de execução e evidências](architecture/09-testes-ci-controle-remoto.md).
+
 Este controle opera no repositório **privado** `Yamatosemj/aurenOFC`, sem atualização periódica. O PC precisa estar ligado, online, com sessão Windows ativa e self-hosted runner online.
 
 **Verificação real (2026-10-09):** a operação `atualizar_main` foi concluída com sucesso no runner Windows, conforme [execução #37890091132](https://github.com/Yamatosemj/aurenOFC/actions/runs/37890091132). Esta alteração documental serve também como teste de uma nova atualização remota. **Testar PR por número ainda requer uma validação separada no PC.**
@@ -12,15 +14,15 @@ O controle local recusa executores administradores, emergencia ativa, comentario
 
 Para atualizar o clone principal configurado anteriormente, rode o instalador apenas apos um `git pull --ff-only` bem-sucedido. Se a instalacao responder que o hook local diverge do esperado, **pare**: nao force substituicao nem remova a politica. Esta automacao so aceita pytest sem chave de API e baixa a versao para uma pasta de testes, preservando o Auren em uso.
 
-Apos instalar, o assistente pode comentar `AUREN_TESTE_V1 pytest SHA40` em uma PR e recuperar o relatorio sem precisar do usuario entrar no GitHub. **Ainda precisa de prova end-to-end no seu Windows real para ser declarada concluida.** O PC continua precisando estar ligado, conectado e com o runner online durante cada teste.
+Apos instalar, o assistente pode comentar `AUREN_TESTE_V1 pytest SHA40` em uma PR e recuperar o relatorio sem precisar do usuario entrar no GitHub. **A execução #38085000162 demonstrou uma rodada ponta a ponta**. Uma execução não constitui autorização contínua: o estado local e o SHA devem ser conferidos antes de cada novo teste. O PC continua precisando estar ligado, conectado e com o runner online durante cada teste.
 
-## Testes enviados pelo chat — configuracao em andamento
+## Testes enviados pelo chat — uma execução real confirmada
 
 Um usuario nao precisa abrir o GitHub: o assistente, via GitHub conectado, publica na conversa de uma **PR aberta e revisada** o comentario exato `AUREN_TESTE_V1 pytest <SHA40>`. O workflow da branch padrao `.github/workflows/auren-chat-tests.yml` recebe `issue_comment`, valida a autoria do proprio dono, projeto privado, PR interna, base `main`, SHA do HEAD congelado, e usa um controlador Windows fixado em commit imutavel.
 
 Quando autorizado na politica **local**, o runner baixa a PR para `pr-checkout` (sem atualizar o clone principal), roda pytest sob watchdog por no maximo 20 min e publica `pr-result.json`, `pr-test.log` e `pytest.xml`. Esses dados podem ser inspecionados pelo assistente via GitHub, sem links/formularios para o usuario. `OPENAI_API_KEY` nao e liberada nessa bateria.
 
-**Ainda nao operacional:** o hook `%USERPROFILE%\\auren-remote\\policy\\before-job.ps1` bloqueia novas familias de workflow por seguranca e so pode ser examinado e alterado no proprio notebook; e necessaria aprovacao local pontual do novo fluxo, mantendo as verificacoes de usuario sem admin, projeto, evento, workflow e permissoes. Nunca desative o hook para fazer o teste passar.
+**Estado histórico reconciliado:** o hook `%USERPROFILE%\auren-remote\policy\before-job.ps1` inicialmente exigia aprovação local da nova família de workflow. O job Windows do run #38085000162 passou, demonstrando que o fluxo foi autorizado naquela ocasião; **não temos leitura atual da política local**. O hook continua obrigatório e nunca deve ser desativado ou enfraquecido para obter sucesso artificial.
 
 O comentario pertence a uma PR; o assistente identifica o numero e SHA antes de comentar. Não aceita texto livre no shell, nem faz `git pull` automático na instalacao de uso diario. O workflow anterior `auren-update-pc.yml` permanece intacto e continua reservado ao uso manual enquanto a migracao e validada.
 
