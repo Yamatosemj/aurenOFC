@@ -195,7 +195,7 @@ class ChromeRequestHandler(BaseHTTPRequestHandler):
         self.send_header("Cross-Origin-Opener-Policy", "same-origin")
         self.send_header(
             "Content-Security-Policy",
-            "default-src 'none'; script-src 'nonce-auren-local' 'strict-dynamic'; "
+            "default-src 'none'; script-src 'nonce-" + getattr(self, "_page_nonce", "") + "'; "
             "style-src 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; "
             "base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'",
         )
@@ -220,7 +220,9 @@ class ChromeRequestHandler(BaseHTTPRequestHandler):
             return
         path = urlsplit(self.path).path
         if path == "/":
+            self._page_nonce = secrets.token_urlsafe(24)
             html = INDEX_PATH.read_text(encoding="utf-8")
+            html = html.replace("__AUREN_SCRIPT_NONCE__", self._page_nonce)
             html = html.replace(
                 "__AUREN_LOCAL_TOKEN__",
                 json.dumps(self.server.app.token)[1:-1],
