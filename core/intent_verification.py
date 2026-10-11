@@ -131,3 +131,86 @@ def interpretar_decisao(texto: str) -> IntentDecision:
     if decisao == "bloquear" and not motivo.strip():
         raise ValueError("Verificacao bloqueou sem justificar.")
     return IntentDecision(decisao, motivo.strip()[:350], pergunta.strip()[:350])
+
+
+def proposta_simples_exata(
+    objetivo: str,
+    chamadas: Sequence[Any],
+    historico: Sequence[dict[str, str]],
+) -> bool:
+    """Dispensa SOMENTE a segunda revisao por IA para pedidos explicitos.
+
+    Nao escolhe a ferramenta, nao executa nem concede permissao. O Luna
+    continua responsavel por interpretar pedidos fora dos fast paths antigos.
+    A verificacao e estrita: qualquer argumento, tool ou passo adicional
+    diferente do pedido encaminha a rodada ao revisor por IA.
+    """
+    import re
+
+    from core.local_decision import SITES_CONHECIDOS
+    from core.router import get_router
+    from core.utils import normalizar_nome
+
+    if historico or not chamadas or len(chamadas) > 5 or len(objetivo) > 220:
+        return False
+
+    propostas = []
+    for item in chamadas:
+        nome = str(getattr(item, "name", ""))
+        bruto = getattr(item, "arguments", "")
+        if not isinstance(bruto, str) or len(bruto) > 600:
+            return False
+        try:
+            args = json.loads(bruto)
+        except (ValueError, TypeError):
+            return False
+        if not isinstance(args, dict):
+            return False
+        propostas.append((nome, args))
+
+    decisao = get_router().decidir_local(objetivo)
+    escolha = decisao.choice
+    args = decisao.arguments
+
+    if escolha == "set_volume":
+        return propostas == [("definir_volume_windows", {"percentual": args["percentual"]})]
+    if escolha == "set_mute":
+        return propostas == [("definir_mudo_windows", {"ativado": args["ativado"]})]
+    if escolha == "control_media" and args["acao"] in {"proxima", "anterior", "parar"}:
+        return propostas == [("controle_midia_windows", {"acao": args["acao"]})]
+    if escolha in {"open_known_site", "open_url"}:
+        url = args["url"] if escolha == "open_url" else SITES_CONHECIDOS[args["site"]]
+        return propostas == [("navegar_navegador", {"url": url, "modo": "visivel"})]
+    if escolha == "open_tabs":
+        quantidade = int(args["quantidade"])
+        return (
+            1 <= quantidade <= 5
+            and propostas == [
+                ("abrir_nova_aba", {"url": "", "modo": "visivel"})
+                for _ in range(quantidade)
+            ]
+        )
+
+    # Aplicativo citado pelo nome exato: o modelo escolhe a ferramenta e
+    # somente pulamos a revisao se ela corresponder exatamente ao alvo.
+    # Evita inferencias baseadas em palavras isoladas como "Chrome" ou "abre".
+    normalizado = normalizar_nome(objetivo)
+    m = re.fullmatch(
+        r"(?:abra|abre|abrir)\s+(?:(?:o|a|um|uma)\s+)?"
+        r"(?:app|aplicativo|programa)\s+"
+        r"([a-z0-9][a-z0-9 ._+-]{1,60})",
+        normalizado,
+    )
+    if m:
+        nome_app = m.group(1).strip()
+        if re.search(r"\b(?:e|depois|mas|sem|nao|tambem|ou|antes)\b", nome_app):
+            return False
+        return (
+            len(propostas) == 1
+            and propostas[0][0] == "abrir_programa"
+            and set(propostas[0][1]) == {"programa"}
+            and isinstance(propostas[0][1]["programa"], str)
+            and normalizar_nome(propostas[0][1]["programa"]) == nome_app
+        )
+
+    return False

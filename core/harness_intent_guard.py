@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-from core.intent_verification import precisa_verificar
+from core.intent_verification import precisa_verificar, proposta_simples_exata
 
 
 def verificar_antes_de_agir(
@@ -18,6 +18,16 @@ def verificar_antes_de_agir(
 ) -> tuple[bool, Any] | None:
     """None = aprovado ou apenas leitura; tupla = tarefa interrompida sem executar."""
     if harness.verificar_intencao is None or not precisa_verificar(chamadas):
+        return None
+
+    if proposta_simples_exata(objetivo, chamadas, historico):
+        write_log(
+            "INTENT_VERIFICATION_SKIPPED",
+            task_id=harness._task_id,
+            rodada=rodada,
+            motivo="pedido_simples_argumentos_exatos",
+            quantidade=len(chamadas),
+        )
         return None
 
     if harness.task_manager.should_cancel(harness._task_id):

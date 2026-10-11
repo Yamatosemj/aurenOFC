@@ -189,6 +189,6 @@ Ao mudar memória, preserve distinção entre fatos globais e chats, migração 
 **Próxima área documental:** Etapa 4 — Windows, arquivos e visão. As pendências acima não autorizam implementação silenciosa durante essa próxima auditoria.
 
 
-## Revisão de intenção por IA (PR em andamento)
+## Revisão de intenção por IA (PR #132, otimizada)
 
-`providers/openai_provider.py::verify_intent` faz uma chamada separada ao **mesmo modelo configurado**, com `tools=[]`, formato estruturado e `store=False`; os tokens entram no contador de `core/usage.py`. Não há segunda IA nem cache de aprovação de ações. Existe um custo e atraso adicionais por rodada que propõe ação mutável; nenhum teste de API real foi autorizado nesta implementação. Erro de provider, resposta inválida e decisão não aprovada fazem o Harness interromper a execução da rodada. Veja `core/intent_verification.py` e `docs/architecture/01-nucleo.md`.
+`providers/openai_provider.py::verify_intent` faz uma chamada separada ao **mesmo modelo configurado**, com `tools=[]`, formato estruturado e `store=False`; os tokens entram no contador de `core/usage.py`. Não há segunda IA nem cache de aprovação de ações. A chamada adicional é dispensada apenas para intenções simples que casem exatamente com a ferramenta e os argumentos propostos, sem outras ações ou histórico. Nos demais casos há custo e atraso adicionais por rodada com ação mutável; nenhum teste de API real foi autorizado nesta implementação. Erro de provider, resposta inválida e decisão não aprovada fazem o Harness interromper a execução da rodada. Veja `core/intent_verification.py` e `docs/architecture/01-nucleo.md`.
