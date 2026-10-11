@@ -167,3 +167,81 @@ def test_provider_verification_has_no_tools_and_counts_usage(monkeypatch):
     assert requests[0]["store"] is False
     assert requests[0]["text"]["format"]["type"] == "json_schema"
     assert counted == [response]
+
+
+def test_fast_path_is_blocked_before_it_can_act():
+    from tools.fast_paths import planejar_comando_rapido
+
+    executed = []
+    harness = AurenHarness(
+        criar_resposta=lambda *_: (_ for _ in ()).throw(AssertionError("should not call main model")),
+        executar_ferramenta=lambda _: (_ for _ in ()).throw(AssertionError("no dispatch")),
+        mostrar_uso=lambda: None,
+        obter_chamadas=lambda _: [],
+        comando_rapido=lambda message: executed.append(message) or (True, "feito"),
+        iniciar_tarefa=lambda: None,
+        apos_tarefa=None,
+        fechar=lambda: None,
+        verificar_intencao=lambda *_: IntentDecision("bloquear", "site errado"),
+        planejar_atalho=planejar_comando_rapido,
+    )
+    _, response = harness.processar_mensagem("abra o YouTube")
+    assert executed == []
+    assert "Nao executei" in response.output_text
+    assert harness.current_task().state is TaskState.FAILED
+
+
+def test_fast_path_is_executed_after_ai_approval():
+    from tools.fast_paths import planejar_comando_rapido
+
+    executed = []
+    harness = AurenHarness(
+        criar_resposta=lambda *_: (_ for _ in ()).throw(AssertionError("no main model call")),
+        executar_ferramenta=lambda _: (_ for _ in ()).throw(AssertionError("shortcut stub")),
+        mostrar_uso=lambda: None,
+        obter_chamadas=lambda _: [],
+        comando_rapido=lambda message: executed.append(message) or (True, "abri o YouTube"),
+        iniciar_tarefa=lambda: None,
+        apos_tarefa=None,
+        fechar=lambda: None,
+        verificar_intencao=lambda *_: IntentDecision("aprovar", "pedido claro"),
+        planejar_atalho=planejar_comando_rapido,
+    )
+    handled, response = harness.processar_mensagem("abra o YouTube")
+    assert handled is True
+    assert executed == ["abra o YouTube"]
+    assert "abri o YouTube" in str(response)
+
+
+def test_read_only_fast_path_skips_model_verification():
+    from tools.fast_paths import planejar_comando_rapido
+
+    executed = []
+    harness = AurenHarness(
+        criar_resposta=lambda *_: (_ for _ in ()).throw(AssertionError("no main model call")),
+        executar_ferramenta=lambda _: (_ for _ in ()).throw(AssertionError("shortcut stub")),
+        mostrar_uso=lambda: None,
+        obter_chamadas=lambda _: [],
+        comando_rapido=lambda message: executed.append(message) or (True, "12:00"),
+        iniciar_tarefa=lambda: None,
+        apos_tarefa=None,
+        fechar=lambda: None,
+        verificar_intencao=lambda *_: (_ for _ in ()).throw(AssertionError("read-only")),
+        planejar_atalho=planejar_comando_rapido,
+    )
+    handled, _ = harness.processar_mensagem("que horas sao")
+    assert handled is True
+    assert executed == ["que horas sao"]
+
+
+def test_fast_path_plan_matches_dispatch_name_and_arguments():
+    from tools.fast_paths import planejar_comando_rapido
+
+    proposals = planejar_comando_rapido("abra o YouTube")
+    assert len(proposals) == 1
+    assert proposals[0].name == "navegar_navegador"
+    assert json.loads(proposals[0].arguments)["url"] == "https://www.youtube.com"
+
+    proposals = planejar_comando_rapido("abra duas abas")
+    assert len(proposals) == 2
+    assert all(p.name == "abrir_nova_aba" for p in proposals)
