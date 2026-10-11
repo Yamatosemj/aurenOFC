@@ -65,6 +65,8 @@ class AurenOrchestrator:
             "digite", "pesquise", "pesquisar", "navegue", "navegar",
             "feche ", "fechar ", "mova ", "defina ", "coloque ",
             "salve ", "salvar ", "execute ", "rodar ", "analise a tela",
+            "lembre", "lembra", "lembrete", "avise", "avisar",
+            "agende", "agendar", "adie", "adiar", "cancele", "cancelar",
         )
         return not any(token in texto or token in texto_norm for token in acoes)
 
