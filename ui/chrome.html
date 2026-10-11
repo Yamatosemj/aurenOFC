@@ -334,16 +334,6 @@ function evento(e){
  if(e.kind==="you"){eco.textContent="Você: "+e.text;cap.textContent="";define("pensando")}
  else if(e.kind==="busy"){ocupado=true;if(modoAtual==="active")define("pensando")}
  else if(e.kind==="idle"){ocupado=false}
- else if(e.kind==="reminder_due"){
-  const id=Number(e.payload&&e.payload.id);
-  const title=String(e.text||"Lembrete");
-  addCard({tipo:"lembrete",titulo:title,meta:"Hora de lembrar",id:Number.isSafeInteger(id)&&id>0?id:null});
-  seq++;define("lembrete");cap.textContent="Lembrete: "+title;
-  document.title="🔔 Lembrete • Auren";
-  if("Notification" in window&&Notification.permission==="granted"){
-   try{new Notification("Lembrete do Auren",{body:title})}catch(err){console.warn("Notificação indisponível",err)}
-  }
- }
  else if(e.kind==="reply"&&modoAtual!=="off"){void agir("normal",e.text)}
  else if(e.kind==="error"&&modoAtual!=="off"){void agir("confusa",e.text)}
  else if(e.kind==="confirm"){
@@ -355,6 +345,29 @@ function evento(e){
  else if(e.kind==="confirm_done"){pedidoPendente=null;$("authPanel").hidden=true}
  else if(e.kind==="off"){if(modoAtual==="off")pintaModo()}
 }
+// Avisos sobrevivem a recarregamentos ate que a propria interface confirme
+// que exibiu o cartao. O ACK nao conclui nem cancela o lembrete.
+const avisosExibidos=new Set(),avisosAckEmAndamento=new Set();
+function mostrarAviso(reminder){
+ const id=reminder&&reminder.id;
+ if(!Number.isSafeInteger(id)||id<1)return;
+ if(!avisosExibidos.has(id)){
+  avisosExibidos.add(id);
+  const title=String(reminder.texto||"Lembrete");
+  addCard({tipo:"lembrete",titulo:title,meta:"Hora de lembrar",id});
+  seq++;define("lembrete");cap.textContent="Lembrete: "+title;
+  document.title="🔔 Lembrete • Auren";
+  if("Notification" in window&&Notification.permission==="granted"){
+   try{new Notification("Lembrete do Auren",{body:title})}catch(err){console.warn("Notificação indisponível",err)}
+  }
+ }
+ if(!avisosAckEmAndamento.has(id)){
+  avisosAckEmAndamento.add(id);
+  void postApi("/api/reminders/ack",{id}).catch(err=>{
+   console.warn("Confirmacao do aviso pendente de nova tentativa",err);
+  }).finally(()=>avisosAckEmAndamento.delete(id));
+ }
+}
 async function eventos(){
  if(consultando)return;consultando=true;
  try{
@@ -364,9 +377,10 @@ async function eventos(){
   const previous=modoAtual;modoAtual=d.mode;ocupado=d.busy;
   for(const e of d.events){evento(e);ultimoEvento=Math.max(ultimoEvento,e.seq)}
   if(d.gap)cap.textContent="Alguns eventos antigos não estão disponíveis. Confira o estado atual.";
-  const teveAlerta=d.events.some(e=>e.kind==="reminder_due");
-  if(previous!==modoAtual&&!teveAlerta)pintaModo();
-  if(d.events.length&&modoAtual==="off"&&!teveAlerta)pintaModo();
+  if(previous!==modoAtual)pintaModo();
+  if(d.events.length&&modoAtual==="off")pintaModo();
+  // Renderizar por ultimo evita que o modo Desligado apague o aviso.
+  for(const reminder of (d.alerts||[]))mostrarAviso(reminder);
   $("connection").textContent="Auren local • "+(ocupado?"processando":modoAtual);
  }catch(err){$("connection").textContent="Sem conexão com o Auren local."}
  finally{consultando=false}
