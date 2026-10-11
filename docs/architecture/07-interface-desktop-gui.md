@@ -132,3 +132,16 @@ Não corrigir esses itens nesta PR exclusivamente Markdown. Testes Live/ações 
 7. Qualquer alteração de produção futura: atualizar este documento e os testes da mesma área, em PR própria.
 
 **Próxima área documental:** Etapa 8 — skills, recursos experimentais e extensibilidade, em PR separada.
+
+
+## Canal Chrome local — implementação candidata
+
+O canal adicional `ui/chrome_server.py` serve `ui/chrome.html` **somente em 127.0.0.1**, por porta dinâmica. A interface visual adapta o HTML original do proprietário e renderiza um orbe simplificado em Canvas 2D, sem CDN ou frameworks, com estados, legendas e confirmação explícita. O arquivo original permanece apenas como referência do usuário, não como uma implementação embutida em Python.
+
+**Fluxo:** Chrome (texto/Ativo/Standby/Desligado/confirmação) → HTTP local (JSON limitado, origem+Host+token de sessão+nonce CSP) → `AurenUiWorker` existente → `auren.criar_harness(confirmation_channel=GuiConfirmationChannel)` → Router/Dispatcher/PermissionManager → `UiEvent` → consulta local da página. Não há endpoint para chamar tools diretamente.
+
+**Ciclos e permissões:** inicia desligado; enviar texto só em Ativo e sem tarefa pendente; Standby recusa novas mensagens, mas não pausa operações em andamento; Desligado cancela cooperativamente a tarefa e nega confirmação pendente. Aprovação exige token, identificador vigente, botão de Autorizar e modo Ativo. Timeouts do `GuiConfirmationChannel` continuam negando, e o cancelamento não realiza rollback. O worker continua aberto até encerrar o terminal que hospeda o HTTP; fechar só a guia Chrome não para o backend.
+
+**Segurança e limites:** sem escuta em `0.0.0.0`, sem CORS, verifica origem/Host/Sec-Fetch-Site, token aleatório em cabeçalho e CSP com nonce dinâmico; eventos não incluem `ConfirmationChoice` bruto. Dependências Python novas: zero. O usuário local e outros processos no mesmo computador **não estão isolados criptograficamente entre si**. Frontend na mesma máquina não deve ser exposto à rede nem encapsulado em um servidor público sem reavaliar autenticação. Sem sincronização de áudio/voz e sem tarefas/lembretes reais na UI nesta etapa.
+
+**Validação:** `tests/test_chrome_ui.py` usa servidor HTTP em loopback, worker falso e confirmações falsas; CI comprova contrato do canal, mas não prova renderização no Chrome físico, resposta API paga, estabilidade gráfica ou interação Windows real. A GUI Tkinter permanece intacta.
