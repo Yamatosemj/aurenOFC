@@ -11,9 +11,11 @@
 - **Projeto:** Auren, assistente pessoal para desktop/voz no Windows, escrito em Python; o proprietário quer evolução por **uma tarefa/PR de cada vez**, com mudanças e testes rastreáveis no GitHub.
 - **Versão técnica configurada:** **V47** em [`config.py`](config.py), modelo padrão `gpt-5.6-luna`. O código de voz candidato à **V48** foi integrado pela [PR #119](https://github.com/Yamatosemj/aurenOFC/pull/119), **sem validação física de microfone/PTT/latência**. Não promover V48 a versão estável por decisão documental.
 - **Documentação:** inventário inicial **Etapas 0–10 auditado estaticamente**, com referências em [`docs/architecture/`](docs/architecture/01-nucleo.md) e [`docs/INVENTARIO.md`](docs/INVENTARIO.md). Isso **não** comprova funcionamento Live nem encerra o desenvolvimento do Auren.
-- **Foco da consolidação:** separar estado operacional de histórico **somente em Markdown**, sem alterar runtime, ferramentas, workflows, runner, permissões ou segredos. **Nenhuma implementação seguinte foi autorizada automaticamente**; selecionar o próximo escopo com o proprietário.
+- **Manutenção em foco:** otimizar a revisão de intenção integrada pela PR #132 para dispensar segunda chamada ao modelo apenas em pedidos simples e exatos. Alterações de voz, novas ferramentas, permissões e outras otimizações não fazem parte desta tarefa.
 
 - **Verificação de intenção integrada na PR #132:** o mesmo modelo pode revisar ações mutáveis antes do Dispatcher (aprovar, esclarecer ou bloquear); falhas impedem a execução. **Correção em andamento:** a segunda chamada fica dispensada somente quando uma proposta curta bate exatamente com o pedido explícito, incluindo ferramenta, argumentos e ausência de passos extras. Qualquer desvio, composição ou ambiguidade mantém a revisão por IA. Permissões e evidências pós-execução continuam independentes.
+
+## 2. Implementado no repositório — não confundir com validado
 
 | Área | Estado verificável na revisão | Documento |
 | --- | --- | --- |
