@@ -120,7 +120,7 @@ A interface [Tkinter](../../interface_auren.py) é entrada textual separada; o m
 | [`tests/test_permission_policy.py`](../../tests/test_permission_policy.py) | Classificação/autorização de ferramentas por risco, não prova captura de voz |
 | [`tests/test_routing_single_owner.py`](../../tests/test_routing_single_owner.py) | Caminho de execução único do Router/Dispatcher, com simulações |
 
-Esses testes foram **inspecionados no código**. Só relatar aprovação de pytest/CI quando a execução for confirmada no SHA desta PR; aprovação de teste de voz com dispositivo/ASR/saída falsos **não** equivale a verificar `Ctrl direito + Shift direito` no notebook, audio Bluetooth, reconhecimento real, eco e latência. O registro antigo do pytest no Windows pessoal da PR #119 cobre **pytest**, não Live.
+Esses testes foram **inspecionados no código**. A [suíte Linux completa](https://github.com/Yamatosemj/aurenOFC/actions/runs/38096946269) passou no primeiro HEAD da PR #126 `371418434518a050c822e7edf3c473c53dd152dc` com **556 passed/24 skipped**; os [testes focados Linux/Windows](https://github.com/Yamatosemj/aurenOFC/actions/runs/38096946329) passaram com Linux **166 passed/15 skipped**, Windows **181 passed** e modo seguro **110 passed** em cada sistema. **Reverificar CI do último SHA antes de integrar.** Aprovação com dispositivos/ASR/saída falsos **não** equivale a verificar `Ctrl direito + Shift direito` no notebook, audio Bluetooth, reconhecimento real, eco e latência. O registro antigo do pytest no Windows pessoal da PR #119 cobre **pytest**, não Live.
 
 ## 10. Checklist para manutenção e validação futura
 
