@@ -30,7 +30,7 @@
 | Extensibilidade | Carregador de skills, catálogo de capacidades e experimento de áudio opt-in; wake word fora do runtime | [08](docs/architecture/08-skills-capacidades-extensibilidade.md) |
 | Testes, inicialização e instalação | CI hospedado; controle remoto autorizado separadamente; launchers Python e instaladores por código-fonte | [09](docs/architecture/09-testes-ci-controle-remoto.md), [10](docs/architecture/10-entradas-config-instalacao-distribuicao.md) |
 
-**Números são snapshots:** o [inventário](docs/INVENTARIO.md) registrou 49 ferramentas e 14 capacidades declarativas. Contar novamente no registry se houver mudança; não tratar a lista declarativa como ferramenta executável.
+**Números são snapshots:** o [inventário](docs/INVENTARIO.md) registrou 49 ferramentas antes desta mudança e 14 capacidades declarativas. A branch de lembretes propõe 52 ferramentas no registry (incluindo três de agenda), sujeitas à validação de CI. Não tratar a lista declarativa como ferramenta executável.
 
 ## 3. Evidências confirmadas e o que NÃO foi testado
 
