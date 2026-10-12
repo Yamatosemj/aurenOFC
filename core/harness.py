@@ -10,6 +10,7 @@ from core.task_trace import TaskTrace, TaskTraceStore
 from core.tool_result import ToolResult
 from agent.orchestrator import AgentOrchestrator
 from core.session import SessionContextManager
+from core.harness_followup import PerguntaPendente, resolver_continuacao
 from skills.loader import SkillLibrary
 from core.vision import (
     clear_active_vision_geometry,
@@ -196,6 +197,7 @@ class AurenHarness:
         self.context = context
         self.skill_library = context.skills if context.skills is not None else SkillLibrary(PROJECT_ROOT / "skills")
         self._contexto_tarefa = ""
+        self._pergunta_pendente: PerguntaPendente | None = None
         self._task_id = ""
         self._session: SessionContext | None = None
         self._session_context_token: contextvars.Token | None = None
@@ -477,6 +479,11 @@ class AurenHarness:
     def _limpar_estado_sessao(self) -> None:
         self._session = None
         self._chat_started_here = False
+        self._pergunta_pendente = None
+
+    def _guardar_esclarecimento(self, objetivo: str, pergunta: str) -> None:
+        if self._parece_tarefa_de_acao(objetivo) and str(pergunta).rstrip().endswith("?"):
+            self._pergunta_pendente = PerguntaPendente(objetivo, pergunta[-350:])
 
 
     def _processar_mensagem_impl(self, mensagem: str) -> tuple[bool, Any]:
@@ -494,12 +501,17 @@ class AurenHarness:
         self._browser_verification_state.clear()
         self._browser_verification_state["pending"] = False
         objetivo_log = mensagem.strip()
+        objetivo_efetivo, status_continuacao = resolver_continuacao(
+            self._pergunta_pendente, objetivo_log,
+        )
+        # A pendencia pertence somente a proxima mensagem, nunca a outros chats.
+        self._pergunta_pendente = None
         try:
-            plan = self.agent.begin(objetivo_log)
+            plan = self.agent.begin(objetivo_efetivo)
             chat_id = self._session.chat_id if self._session else ""
             contexto = self.context.build(
                 chat_id,
-                objetivo_log,
+                objetivo_efetivo,
                 tarefas=self.task_manager.recent_snapshots(chat_id, limit=3),
             )
             for erro_contexto in contexto.erros:
@@ -513,7 +525,7 @@ class AurenHarness:
         if self._contexto_tarefa:
             self._contexto_tarefa = self._texto_seguro(self._contexto_tarefa, self.context.max_chars)
         task_snapshot = self.task_manager.create(
-            objetivo_log,
+            objetivo_efetivo,
             chat_id=self._session.chat_id if self._session else None,
         )
         self._task_id = task_snapshot.task_id
@@ -522,7 +534,7 @@ class AurenHarness:
             self._trace = self.trace_store.start_task(
                 task_id=self._task_id,
                 chat_id=self._session.chat_id if self._session else None,
-                objective=objetivo_log,
+                objective=objetivo_efetivo,
                 started_at=task_snapshot.created_at,
                 started_perf=self._trace_started_perf,
             )
@@ -540,14 +552,26 @@ class AurenHarness:
             "TASK_START",
             task_id=self._task_id,
             objetivo=objetivo_log,
+            objetivo_resolvido=objetivo_efetivo if objetivo_efetivo != objetivo_log else None,
         )
         self._registrar_turno("user", objetivo_log)
+
+        if status_continuacao in {"cancelar", "sem_pendencia"}:
+            mensagem_final = (
+                "Certo, nao vou executar a acao pendente."
+                if status_continuacao == "cancelar"
+                else "Nao ha uma acao pendente para confirmar. Diga o que deseja fazer."
+            )
+            self.task_manager.complete(mensagem_final, task_id=self._task_id)
+            self._registrar_turno("assistant", mensagem_final)
+            _write_log("TASK_END", task_id=self._task_id, status=status_continuacao)
+            return False, _RespostaWrapper(mensagem_final)
 
         # Atalhos tambem precisam de revisao semantica ANTES do Dispatcher.
         # O planejamento apenas descreve a acao; nao realiza efeitos.
         if self.verificar_intencao is not None and self.planejar_atalho is not None:
             try:
-                propostas_atalho = self.planejar_atalho(mensagem)
+                propostas_atalho = self.planejar_atalho(objetivo_efetivo)
             except Exception as exc:
                 _write_log("INTENT_FAST_PATH_PLAN_ERROR", task_id=self._task_id, erro=str(exc))
                 return self._encerrar_falha(
@@ -556,14 +580,14 @@ class AurenHarness:
                 )
             if propostas_atalho:
                 veredito_atalho = verificar_antes_de_agir(
-                    self, mensagem.strip(), propostas_atalho, [],
+                    self, objetivo_efetivo, propostas_atalho, [],
                     rodada=0, resposta_wrapper=_RespostaWrapper, write_log=_write_log,
                 )
                 if veredito_atalho is not None:
                     return veredito_atalho
 
         fast_path = _executar_fast_path_impl(
-            mensagem,
+            objetivo_efetivo,
             comando_rapido=self.comando_rapido,
             task_manager=self.task_manager,
             task_id=self._task_id,
@@ -577,7 +601,7 @@ class AurenHarness:
         if fast_path is not None:
             return fast_path
 
-        return self._executar_ciclo(mensagem.strip())
+        return self._executar_ciclo(objetivo_efetivo)
 
     # ------------------------------------------------------------------
     # CICLO DO AGENTE
