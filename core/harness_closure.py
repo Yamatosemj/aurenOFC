@@ -90,6 +90,117 @@ def _comprovou_fechamento(objetivo: str, historico: Sequence[Mapping[str, Any]])
     return False
 
 
+def _encerramento_sem_progresso(
+    objetivo: str,
+    historico: Sequence[Mapping[str, Any]],
+) -> dict[str, Any] | None:
+    """Detecta PID/nome que continua ativo depois de taskkill.
+
+    O resultado positivo do comando significa envio da solicitacao, nao
+    encerramento. Exigimos uma consulta posterior, filtrada pelo aplicativo
+    solicitado. Se o MESMO processo persistir, encerramos essa tentativa:
+    insistir com o mesmo PID sem mudar o estado nao e recuperacao.
+    """
+    pedido = _alvo_fechamento(objetivo)
+    if pedido is None or not pedido[1] or not historico:
+        return None
+    alvo, _completo = pedido
+    ultimo = historico[-1]
+    if ultimo.get("ferramenta") != "listar_processos_windows":
+        return None
+    argumentos_lista = _argumentos(ultimo)
+    if normalizar_nome(str(argumentos_lista.get("filtro") or "")) != alvo:
+        return None
+    resultado = str(ultimo.get("resultado") or "")
+    if not resultado.startswith("Processos encontrados:"):
+        return None
+
+    ultima_mutacao = next(
+        (
+            item for item in reversed(historico[:-1])
+            if item.get("ferramenta") == "encerrar_processo_windows"
+        ),
+        None,
+    )
+    if ultima_mutacao is None:
+        return None
+    # So podemos relacionar esta leitura com a ultima tentativa quando nao
+    # existe uma consulta de processos intermediaria depois dessa tentativa.
+    pos_mutacao = max(
+        i for i, item in enumerate(historico[:-1])
+        if item is ultima_mutacao
+    )
+    if any(
+        item.get("ferramenta") == "listar_processos_windows"
+        for item in historico[pos_mutacao + 1:-1]
+    ):
+        return None
+
+    args = _argumentos(ultima_mutacao)
+    pid = args.get("pid")
+    try:
+        pid = int(pid) if pid not in (None, "", 0) else None
+    except (TypeError, ValueError):
+        pid = None
+    nome = normalizar_nome(str(args.get("nome") or ""))
+    if pid is None and not nome:
+        return None
+
+    for linha in resultado.splitlines()[1:]:
+        partes = linha.split(" | PID ", 1)
+        if len(partes) != 2:
+            continue
+        executavel = partes[0].strip()
+        try:
+            pid_atual = int(partes[1].split(" | ", 1)[0].strip())
+        except (ValueError, TypeError):
+            continue
+        if pid is not None and pid_atual == pid:
+            return {"pid": pid, "processo": executavel}
+        if pid is None and nome == normalizar_nome(executavel):
+            return {"pid": pid_atual, "processo": executavel}
+    return None
+
+
+def _repeticao_encerramento_sem_verificar(
+    objetivo: str,
+    chamadas: Sequence[Any],
+    historico: Sequence[Mapping[str, Any]],
+) -> bool:
+    """Nao reenviar a mesma tentativa sem uma consulta entre elas."""
+    pedido = _alvo_fechamento(objetivo)
+    if pedido is None or not pedido[1] or not historico:
+        return False
+    ultima_lista = max(
+        (i for i, item in enumerate(historico)
+         if item.get("ferramenta") == "listar_processos_windows"),
+        default=-1,
+    )
+    tentativas = [
+        _argumentos(item)
+        for item in historico[ultima_lista + 1:]
+        if item.get("ferramenta") == "encerrar_processo_windows"
+    ]
+    if not tentativas:
+        return False
+    for chamada in chamadas:
+        if str(getattr(chamada, "name", "")) != "encerrar_processo_windows":
+            continue
+        try:
+            args = json.loads(str(getattr(chamada, "arguments", "") or "{}"))
+        except (ValueError, TypeError):
+            continue
+        if not isinstance(args, dict):
+            continue
+        if any(
+            args.get("pid") == anterior.get("pid")
+            and args.get("nome") == anterior.get("nome")
+            for anterior in tentativas
+        ):
+            return True
+    return False
+
+
 def _orientacao_verificacao(objetivo: str) -> str:
     pedido = _alvo_fechamento(objetivo)
     if pedido is None:
