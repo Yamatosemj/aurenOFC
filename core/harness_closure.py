@@ -124,6 +124,26 @@ def _encerramento_sem_progresso(
     )
     if ultima_mutacao is None:
         return None
+
+    # Uma acao negada ou uma falha de taskkill nao e um sinal de
+    # encerramento enviado. O processo ainda estar vivo nao demonstra
+    # falta de progresso da execucao se o comando nem foi aceito.
+    retorno_mutacao = str(ultima_mutacao.get("resultado") or "").strip()
+    if retorno_mutacao.startswith("{"):
+        try:
+            estado_mutacao = json.loads(retorno_mutacao)
+        except (TypeError, ValueError):
+            return None
+        if not isinstance(estado_mutacao, dict) or estado_mutacao.get("ok") is not True:
+            return None
+        dados_mutacao = estado_mutacao.get("dados")
+        if isinstance(dados_mutacao, dict) and dados_mutacao.get("solicitacao_enviada") is False:
+            return None
+    elif normalizar_nome(retorno_mutacao).startswith((
+        "nao consegui", "nao vou", "acao nao executada", "falha ao executar"
+    )):
+        return None
+
     # So podemos relacionar esta leitura com a ultima tentativa quando nao
     # existe uma consulta de processos intermediaria depois dessa tentativa.
     pos_mutacao = max(
