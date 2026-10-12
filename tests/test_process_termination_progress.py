@@ -78,6 +78,27 @@ def test_nao_falsifica_sem_progresso_em_comando_de_janela_ou_leitura_antiga():
     assert _encerramento_sem_progresso("feche Steam por completo", antigo) is None
 
 
+@pytest.mark.parametrize("resultado_falha", [
+    json.dumps({
+        "ok": False,
+        "mensagem": "ACAO NAO EXECUTADA: Usuario negou a acao.",
+        "codigo_erro": "permission_denied",
+    }),
+    json.dumps({
+        "ok": False,
+        "mensagem": "Nao consegui solicitar o encerramento.",
+        "codigo_erro": "process_termination_command_failed",
+    }),
+    "Nao consegui encerrar o processo: acesso negado",
+])
+def test_pid_ativo_apos_acao_negada_ou_falha_nao_finge_sinal_enviado(resultado_falha):
+    historico = _historico()
+    historico[1]["resultado"] = resultado_falha
+    assert _encerramento_sem_progresso(
+        "feche Steam por completo", historico,
+    ) is None
+
+
 def test_nome_em_vez_de_pid_que_permanece_tambem_e_detectado():
     assert _encerramento_sem_progresso(
         "feche steam por completo",
