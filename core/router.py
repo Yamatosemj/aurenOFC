@@ -389,7 +389,7 @@ class Router:
         # Sites/URLs reconhecidos seguem o caminho de navegador ja existente.
         if not domains and re.fullmatch(
             r"(?:auren[,!\s]+)?(?:abra|abre|abrir|inicie|iniciar|execute|executar)"
-            r"\s+(?:(?:o|a|um|uma)\\s+)?[\wÀ-ÿ][\wÀ-ÿ ._+-]{1,70}",
+            r"\s+(?:(?:o|a|um|uma)\s+)?[\wÀ-ÿ][\wÀ-ÿ ._+-]{1,70}",
             texto,
         ) and self.local_decision.choice(texto).choice == "unknown_or_complex":
             domains = ["apps_files"]
