@@ -70,7 +70,9 @@ def _comprovou_fechamento(objetivo: str, historico: Sequence[Mapping[str, Any]])
             if ferramenta != "listar_processos_windows":
                 continue
             filtro = normalizar_nome(str(argumentos.get("filtro") or ""))
-            if not filtro or not (filtro in alvo or alvo in filtro):
+            # Filtrar apenas "steam.exe" nao cobre steamwebhelper.exe; a
+            # prova de fechamento integral exige o filtro do alvo inteiro.
+            if not filtro or filtro != alvo:
                 continue
             if retorno.startswith("Nenhum processo corresponde a '"):
                 return True
