@@ -17,7 +17,7 @@ class PerguntaPendente:
     pergunta: str
 
 
-SIM = frozenset({"sim", "sim pode", "pode", "pode sim", "isso", "isso mesmo", "claro", "ok", "pode abrir"})
+SIM = frozenset({"sim", "sim pode", "pode", "pode sim", "isso", "isso mesmo", "claro", "ok", "pode abrir", "sim auren", "sim auren leon sol", "pode sim auren", "claro auren"})
 NAO = frozenset({"nao", "nao pode", "nao precisa", "deixa", "deixa pra la", "cancela", "cancelar"})
 
 
