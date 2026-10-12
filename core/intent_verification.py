@@ -173,6 +173,68 @@ def interpretar_decisao(texto: str) -> IntentDecision:
     return IntentDecision(decisao, motivo.strip()[:350], pergunta.strip()[:350])
 
 
+def passo_principal_de_encerramento_comprovado(
+    objetivo: str,
+    chamadas: Sequence[Any],
+    historico: Sequence[dict[str, str]],
+) -> bool:
+    """Preflight deterministico ESTRITO para um unico processo principal.
+
+    E equivalente ao fast path de revisao semantica exata: nao executa
+    ferramentas nem autoriza encerramentos. Somente o executavel principal
+    (nome do app + '.exe'), observado em leitura recente e correspondente
+    a um PID exato, e aceito. Helpers, servicos, PIDs sem evidencia e pedidos
+    normais de fechar janela continuam sujeitos a revisao por IA.
+    """
+    from core.harness_closure import _alvo_fechamento
+    from core.utils import normalizar_nome
+
+    pedido = _alvo_fechamento(objetivo)
+    if pedido is None or not pedido[1] or len(chamadas) != 1 or not historico:
+        return False
+    alvo = pedido[0]
+    if not re.fullmatch(r"[a-z0-9_-]{2,40}", alvo):
+        return False
+
+    item = chamadas[0]
+    if getattr(item, "name", None) != "encerrar_processo_windows":
+        return False
+    try:
+        args = json.loads(str(getattr(item, "arguments", "")))
+    except (TypeError, ValueError):
+        return False
+    if not isinstance(args, dict) or not set(args).issubset({"pid", "nome"}):
+        return False
+    pid = args.get("pid")
+    if type(pid) is not int or pid <= 0 or pid > 2**32 - 1:
+        return False
+
+    nome_esperado = alvo + ".exe"
+    if args.get("nome") not in (None, "", nome_esperado):
+        return False
+
+    # A lista de processos deve ser a ultima ferramenta executada,
+    # com filtro EXATAMENTE igual ao aplicativo. Nada de PID memorizado,
+    # relatorio antigo ou resultado de outra origem.
+    ultima = historico[-1]
+    if ultima.get("ferramenta") != "listar_processos_windows":
+        return False
+    try:
+        filtro = json.loads(str(ultima.get("argumentos", "{}"))).get("filtro")
+    except (TypeError, ValueError, AttributeError):
+        return False
+    if normalizar_nome(str(filtro or "")) != alvo:
+        return False
+    resposta = str(ultima.get("resultado", ""))
+    if not resposta.startswith("Processos encontrados: "):
+        return False
+    linha_procurada = f"{nome_esperado} | PID {pid} |"
+    return any(
+        linha.lower().startswith(linha_procurada)
+        for linha in resposta.splitlines()[1:]
+    )
+
+
 def proposta_simples_exata(
     objetivo: str,
     chamadas: Sequence[Any],
@@ -190,6 +252,9 @@ def proposta_simples_exata(
     from core.local_decision import SITES_CONHECIDOS
     from core.router import get_router
     from core.utils import normalizar_nome
+
+    if passo_principal_de_encerramento_comprovado(objetivo, chamadas, historico):
+        return True
 
     if historico or not chamadas or len(chamadas) > 5 or len(objetivo) > 220:
         return False
