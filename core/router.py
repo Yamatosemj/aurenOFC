@@ -394,6 +394,20 @@ class Router:
         ) and self.local_decision.choice(texto).choice == "unknown_or_complex":
             domains = ["apps_files"]
 
+        # Fechar um aplicativo exige capacidade Windows, mesmo quando seu nome
+        # coincide com um servico web. Fechamento *por completo* tambem exige
+        # inspecao/controle de processos; o PermissionManager continua decidindo
+        # se o encerramento e autorizado.
+        if re.match(
+            r"^(?:auren[,!\\s]+)?(?:feche|fecha|fechar|encerre|encerra|encerrar|termine|terminar|finalize|finalizar)\\s+",
+            texto,
+        ) and not re.search(r"\\b(?:aba|abas|site|p[aá]gina)\\b", texto):
+            if "windows" not in domains:
+                domains.append("windows")
+            if re.search(r"\\b(?:por\\s*completo|totalmente|completamente|definitivamente|de\\s+vez)\\b", texto):
+                if "process" not in domains:
+                    domains.append("process")
+
         # Sem sinal suficientemente claro: preserva 100% da compatibilidade.
         if not domains:
             self.last_domains = []
