@@ -129,7 +129,8 @@ def test_revisor_nao_repete_pergunta_ja_respondida():
     sentencas = []
     respostas = [
         _response(_call("listar_processos_windows", {"filtro": "steam"})),
-        _response(_call("encerrar_processo_windows", {"pid": 19380})),
+        # Primeiro o modelo propoe helper: revisao por IA (nao fast path).
+        _response(_call("encerrar_processo_windows", {"pid": 8636})),
         _response(_call("listar_processos_windows", {"filtro": "steam"})),
         _response(_call("encerrar_processo_windows", {"pid": 19380})),
         _response(texto="Steam encerrada"),
@@ -146,7 +147,8 @@ def test_revisor_nao_repete_pergunta_ja_respondida():
         if item.name == "listar_processos_windows" and sentencas.count("listar_processos_windows") >= 3:
             return "Nenhum processo corresponde a 'steam'."
         if item.name == "listar_processos_windows":
-            return "Processos encontrados: 1\nsteam.exe | PID 19380 | memoria 100 K"
+            return ("Processos encontrados: 2\nsteam.exe | PID 19380 | memoria 100 K"
+                    "\nsteamwebhelper.exe | PID 8636 | memoria 100 K")
         if item.name == "encerrar_processo_windows":
             return "Processo encerrado."
         raise AssertionError(item.name)
