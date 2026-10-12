@@ -164,8 +164,25 @@ def encerrar_processo_windows(pid=None, nome=""):
         )
         saida = (resultado.stdout or resultado.stderr).strip()
         if resultado.returncode == 0:
-            return saida or "Processo encerrado."
-        return f"Nao consegui encerrar o processo: {saida or 'erro desconhecido.'}"
+            # taskkill /PID e /IM sem /F podem apenas enviar pedido de
+            # encerramento. Codigo 0 nao prova que o PID desapareceu.
+            # O Harness comprova a ausencia em nova consulta de processos.
+            return ToolResult.success(
+                "Pedido de encerramento enviado. O processo ainda precisa "
+                "ser verificado em nova listagem; nao declare que foi encerrado.",
+                data={
+                    "solicitacao_enviada": True,
+                    "encerramento_comprovado": False,
+                    "pid": pedido_pid,
+                    "nome": alvo,
+                },
+                tool_name="encerrar_processo_windows",
+            )
+        return ToolResult.failure(
+            f"Nao consegui solicitar o encerramento: {saida or 'erro desconhecido.'}",
+            error_code="process_termination_command_failed",
+            tool_name="encerrar_processo_windows",
+        )
     except Exception as erro:
         return f"Nao consegui encerrar o processo: {erro}"
 
