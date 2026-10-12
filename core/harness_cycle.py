@@ -12,6 +12,7 @@ from core.harness_tools import _executar_chamadas_rodada as _executar_chamadas_r
 from core.browser_verification import verificar_resultado_navegador
 from core.vision import clear_active_vision_geometry, get_active_vision_geometry, prepare_vision_result_content
 from core.harness_intent_guard import verificar_antes_de_agir
+from core.intent_verification import READ_ONLY_TOOLS
 
 
 def executar_ciclo(
@@ -143,6 +144,14 @@ def executar_ciclo(
                     retry.failure_message or "Nao consegui produzir uma resposta final.",
                     rodada,
                 )
+
+            # Uma pergunta apos consulta nao conclui a acao pedida.
+            # Guardamos somente o objetivo original e a pergunta, jamais
+            # uma proposta mutante nao autorizada pelo usuario.
+            if final_texto.endswith("?") and all(
+                item.get("ferramenta") in READ_ONLY_TOOLS for item in historico
+            ):
+                harness._guardar_esclarecimento(objetivo, final_texto)
 
             resposta = _finalizar_resposta_sucesso(
                 objetivo,
