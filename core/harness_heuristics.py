@@ -5,6 +5,8 @@ from typing import Callable
 
 import re
 
+from core.utils import normalizar_nome
+
 
 def _parece_tarefa_visual_composta(objetivo: str) -> bool:
     """Detecta tarefas visuais que exigem mais de uma observacao/acao."""
@@ -110,6 +112,11 @@ def _pode_encerrar_localmente(
     multitab_concluida: Callable[[str, list[dict[str, str]]], bool],
 ) -> bool:
     """Decide se podemos evitar uma rodada adicional do modelo."""
+    # Uma afirmacao isolada nunca prova que uma ferramenta de leitura
+    # cumpriu a acao que pode ter sido discutida no turno anterior.
+    if normalizar_nome(objetivo) in {"sim", "pode", "pode sim", "isso", "isso mesmo", "nao"}:
+        return False
+
     if vision_reobserve_pending:
         return False
 
