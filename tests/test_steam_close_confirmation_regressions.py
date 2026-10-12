@@ -130,7 +130,11 @@ def test_revisor_nao_repete_pergunta_ja_respondida():
     respostas = [
         _response(_call("listar_processos_windows", {"filtro": "steam"})),
         _response(_call("encerrar_processo_windows", {"pid": 19380})),
+        _response(_call("listar_processos_windows", {"filtro": "steam"})),
+        _response(_call("encerrar_processo_windows", {"pid": 19380})),
         _response(texto="Steam encerrada"),
+        _response(_call("listar_processos_windows", {"filtro": "steam"})),
+        _response(texto="Steam encerrada e verificada"),
     ]
 
     def modelo(inp, *_args):
@@ -139,7 +143,13 @@ def test_revisor_nao_repete_pergunta_ja_respondida():
 
     def ferramenta(item):
         sentencas.append(item.name)
-        return "Processos encontrados: 1\nsteam.exe | PID 19380 | memoria 100 K"
+        if item.name == "listar_processos_windows" and sentencas.count("listar_processos_windows") >= 3:
+            return "Nenhum processo corresponde a 'steam'."
+        if item.name == "listar_processos_windows":
+            return "Processos encontrados: 1\nsteam.exe | PID 19380 | memoria 100 K"
+        if item.name == "encerrar_processo_windows":
+            return "Processo encerrado."
+        raise AssertionError(item.name)
 
     revisoes = []
     def revisor(objetivo, calls, historico):
@@ -164,7 +174,14 @@ def test_revisor_nao_repete_pergunta_ja_respondida():
     # Depois do SIM o processo principal comprovado e validado por regra
     # deterministica e vai para o executor/PermissionManager normal.
     _, resposta = harness.processar_mensagem("sim auren")
-    assert sentencas == ["listar_processos_windows", "encerrar_processo_windows"]
+    assert sentencas == [
+        "listar_processos_windows",
+        "listar_processos_windows",
+        "encerrar_processo_windows",
+        "listar_processos_windows",
+    ]
+    assert resposta.output_text == "Steam encerrada e verificada"
+    assert len(revisoes) == 1
     assert harness.current_task().objective == "feche steam por completo"
     assert "Pergunta pendente" not in harness.current_task().objective
     assert harness._confirmacao_esclarecimento is not None
