@@ -6,6 +6,7 @@ import json
 import re
 
 from core.intent_verification import precisa_verificar, proposta_simples_exata
+from core.utils import normalizar_nome
 
 
 def _diagnostico_propostas_bloqueadas(chamadas: list[Any]) -> list[dict[str, Any]]:
@@ -68,7 +69,14 @@ def verificar_antes_de_agir(
         quantidade=len(chamadas),
     )
     try:
-        decisao = harness.verificar_intencao(objetivo, chamadas, historico)
+        historico_revisor = list(historico)
+        pergunta_confirmada = getattr(harness, "_confirmacao_esclarecimento", None)
+        if pergunta_confirmada:
+            historico_revisor.append({
+                "ferramenta": "__confirmacao_usuario_pendente__",
+                "resultado": str(pergunta_confirmada)[:350],
+            })
+        decisao = harness.verificar_intencao(objetivo, chamadas, historico_revisor)
         if getattr(decisao, "decisao", None) not in {"aprovar", "esclarecer", "bloquear"}:
             raise ValueError("Decisao semantica desconhecida.")
     except Exception as exc:
@@ -105,6 +113,24 @@ def verificar_antes_de_agir(
             )
         if harness.task_manager.should_cancel(harness._task_id):
             return harness._encerrar_cancelado("cancelado antes do esclarecimento", rodada)
+        pergunta_confirmada = getattr(harness, "_confirmacao_esclarecimento", None)
+        if (
+            pergunta_confirmada
+            and normalizar_nome(pergunta_confirmada) == normalizar_nome(pergunta)
+        ):
+            write_log(
+                "INTENT_CLARIFICATION_LOOP_GUARD",
+                task_id=harness._task_id,
+                rodada=rodada,
+                motivo="pergunta_ja_confirmada_pelo_usuario",
+            )
+            return harness._encerrar_falha(
+                "repeated_clarification",
+                "Voce ja respondeu essa pergunta, mas o verificador continua "
+                "pedindo a mesma confirmacao. Interrompi a tarefa para evitar "
+                "um ciclo de perguntas sem executar a acao.",
+                rodada,
+            )
         harness._guardar_esclarecimento(objetivo, pergunta)
         harness.task_manager.complete(pergunta, task_id=harness._task_id)
         harness._registrar_turno("assistant", pergunta)
