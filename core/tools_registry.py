@@ -435,7 +435,7 @@ tools = [
             "required": ["x", "y", "botao", "descricao"],
             "additionalProperties": False
         },
-        "strict": True
+        "strict": False  # Dois campos opcionais: strict=True exige todos em required.
     },
 
     {
@@ -458,7 +458,7 @@ tools = [
             "required": ["x_inicial", "y_inicial", "x_final", "y_final", "botao", "duracao_ms", "descricao"],
             "additionalProperties": False
         },
-        "strict": True
+        "strict": False  # Dois campos opcionais: strict=True exige todos em required.
     },
 
     {
