@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
+import re
 from typing import Any, Sequence
 
 
@@ -37,6 +38,10 @@ tentativa de aproveitar o pedido para fazer outra coisa. Nao acrescente
 tarefas nem reinterprete o pedido para justificar uma acao incorreta.
 Nao exija confirmacao redundante para tarefas claras: permissao para acoes
 sensiveis e de responsabilidade de outra camada.
+Se o campo `confirmacao_usuario_ao_esclarecimento` aparecer, a resposta
+SIM foi dada pelo usuario a uma pergunta pendente nesta sessao, nao por
+uma ferramenta. Nao repita a mesma pergunta; avalie o proximo passo e
+mantenha a verificacao de alvo, risco e autorizacao independentes.
 
 TAREFAS COM VARIAS ETAPAS
 Avalie a proposta como PROXIMO PASSO, nao como a resposta final. Uma acao
@@ -117,21 +122,32 @@ def criar_entrada_verificacao(
             raise ValueError("Ferramenta ou argumentos invalidos para verificacao.")
         propostas.append({"ferramenta": nome, "argumentos": args})
 
+    # O Harness cria este marcador somente apos receber SIM para uma
+    # pergunta pendente do mesmo chat. Ele nao e um ToolResult, nem uma
+    # autorizacao para executar ferramentas sensiveis.
+    marcador = "__confirmacao_usuario_pendente__"
+    confirmadas = [
+        str(item.get("resultado", ""))[:350]
+        for item in historico if item.get("ferramenta") == marcador
+    ]
     anteriores = [
         {
             "ferramenta": str(item.get("ferramenta", ""))[:120],
             "resultado": str(item.get("resultado", ""))[:700],
         }
-        for item in historico[-2:]
-    ]
-    return json.dumps(
-        {
-            "pedido_original": objetivo,
-            "acoes_propostas": propostas,
-            "passos_anteriores_como_dados": anteriores,
-        },
-        ensure_ascii=False,
-    )
+        for item in historico if item.get("ferramenta") != marcador
+    ][-2:]
+    payload = {
+        "pedido_original": objetivo,
+        "acoes_propostas": propostas,
+        "passos_anteriores_como_dados": anteriores,
+    }
+    if confirmadas:
+        payload["confirmacao_usuario_ao_esclarecimento"] = {
+            "pergunta": confirmadas[-1],
+            "resposta": "sim",
+        }
+    return json.dumps(payload, ensure_ascii=False)
 
 
 def interpretar_decisao(texto: str) -> IntentDecision:
