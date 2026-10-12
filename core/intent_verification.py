@@ -230,7 +230,7 @@ def passo_principal_de_encerramento_comprovado(
         return False
     linha_procurada = f"{nome_esperado} | PID {pid} |"
     return any(
-        linha.lower().startswith(linha_procurada)
+        linha.casefold().startswith(linha_procurada.casefold())
         for linha in resposta.splitlines()[1:]
     )
 
