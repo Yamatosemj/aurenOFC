@@ -326,6 +326,28 @@ class Router:
             return " ".join(partes)
         return str(entrada or "")
 
+    @classmethod
+    def _objetivo_para_roteamento(cls, entrada: Any) -> str:
+        """Separa o pedido do usuario das instrucoes/historico do Harness.
+
+        O provider ainda recebe todo o estado; somente a escolha do toolset
+        considera o objetivo controlado, nao resultados ou instrucoes internas.
+        """
+        estado = entrada
+        if isinstance(entrada, (list, tuple)) and entrada:
+            primeiro = entrada[0]
+            if isinstance(primeiro, dict) and primeiro.get("role") == "user":
+                conteudo = primeiro.get("content")
+                if isinstance(conteudo, list) and conteudo:
+                    bloco = conteudo[0]
+                    if isinstance(bloco, dict) and bloco.get("type") == "input_text":
+                        estado = bloco.get("text", "")
+        if isinstance(estado, str) and estado.startswith("CONTEXTO CONTROLADO DA TAREFA\\n"):
+            primeira_linha = estado.split("\\n", 2)[1]
+            if primeira_linha.startswith("Objetivo original: "):
+                return primeira_linha[len("Objetivo original: "):].strip()
+        return cls._extract_text(entrada)
+
     def _detectar_dominios(self, mensagem: Any) -> list[str]:
         texto = self._extract_text(mensagem).strip().lower()
         if not texto:
@@ -359,8 +381,18 @@ class Router:
 
     def select_tool_names(self, mensagem: Any, available_tools: list[dict[str, Any]]) -> list[str]:
         all_names = [item["name"] for item in available_tools]
-        texto = self._extract_text(mensagem).strip().lower()
-        domains = self._detectar_dominios(mensagem)
+        texto = self._objetivo_para_roteamento(mensagem).strip().lower()
+        domains = self._detectar_dominios(texto)
+
+        # Abertura simples de aplicativo nomeado: nao deixar instrucao interna
+        # sobre "janelas" esconder abrir_programa nem forcar uma leitura inutil.
+        # Sites/URLs reconhecidos seguem o caminho de navegador ja existente.
+        if not domains and re.fullmatch(
+            r"(?:auren[,!\\s]+)?(?:abra|abre|abrir|inicie|iniciar|execute|executar)"
+            r"\\s+(?:(?:o|a|um|uma)\\s+)?[\\wÀ-ÿ][\\wÀ-ÿ ._+-]{1,70}",
+            texto,
+        ) and self.local_decision.choice(texto).choice == "unknown_or_complex":
+            domains = ["apps_files"]
 
         # Sem sinal suficientemente claro: preserva 100% da compatibilidade.
         if not domains:
