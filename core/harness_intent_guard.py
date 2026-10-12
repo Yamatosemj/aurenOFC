@@ -2,8 +2,36 @@
 from __future__ import annotations
 
 from typing import Any, Callable
+import json
+import re
 
 from core.intent_verification import precisa_verificar, proposta_simples_exata
+
+
+def _diagnostico_propostas_bloqueadas(chamadas: list[Any]) -> list[dict[str, Any]]:
+    """Registra apenas o nome das tools e o alvo de eventual encerramento.
+
+    Nunca registra argumentos genericos (texto de formularios, clipboard,
+    mensagens ou outros dados privados) no evento de bloqueio.
+    """
+    diagnostico: list[dict[str, Any]] = []
+    for item in chamadas[:12]:
+        nome = str(getattr(item, "name", "") or "")[:100]
+        resumo: dict[str, Any] = {"ferramenta": nome}
+        if nome == "encerrar_processo_windows":
+            try:
+                args = json.loads(str(getattr(item, "arguments", "") or "{}"))
+            except (TypeError, ValueError):
+                args = {}
+            if isinstance(args, dict):
+                processo = str(args.get("nome") or "").strip()
+                pid = args.get("pid")
+                if processo and re.fullmatch(r"[a-zA-Z0-9_.-]{1,80}", processo):
+                    resumo["nome_processo"] = processo
+                if type(pid) is int and 0 < pid <= 2**32 - 1:
+                    resumo["pid"] = pid
+        diagnostico.append(resumo)
+    return diagnostico
 
 
 def verificar_antes_de_agir(
@@ -61,6 +89,10 @@ def verificar_antes_de_agir(
         task_id=harness._task_id,
         rodada=rodada,
         decisao=decisao.decisao,
+        **({
+            "motivo": str(decisao.motivo or "")[:350],
+            "propostas": _diagnostico_propostas_bloqueadas(chamadas),
+        } if decisao.decisao == "bloquear" else {}),
     )
 
     if decisao.decisao == "esclarecer":
