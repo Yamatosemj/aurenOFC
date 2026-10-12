@@ -399,12 +399,12 @@ class Router:
         # inspecao/controle de processos; o PermissionManager continua decidindo
         # se o encerramento e autorizado.
         if re.match(
-            r"^(?:auren[,!\\s]+)?(?:feche|fecha|fechar|encerre|encerra|encerrar|termine|terminar|finalize|finalizar)\\s+",
+            r"^(?:auren[,!\s]+)?(?:feche|fecha|fechar|encerre|encerra|encerrar|termine|terminar|finalize|finalizar)\s+",
             texto,
-        ) and not re.search(r"\\b(?:aba|abas|site|p[aá]gina)\\b", texto):
+        ) and not re.search(r"\b(?:aba|abas|site|p[aá]gina)\b", texto):
             if "windows" not in domains:
                 domains.append("windows")
-            if re.search(r"\\b(?:por\\s*completo|totalmente|completamente|definitivamente|de\\s+vez)\\b", texto):
+            if re.search(r"\b(?:por\s*completo|totalmente|completamente|definitivamente|de\s+vez)\b", texto):
                 if "process" not in domains:
                     domains.append("process")
 
