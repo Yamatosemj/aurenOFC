@@ -13,7 +13,7 @@ from core.browser_verification import verificar_resultado_navegador
 from core.vision import clear_active_vision_geometry, get_active_vision_geometry, prepare_vision_result_content
 from core.harness_intent_guard import verificar_antes_de_agir
 from core.intent_verification import READ_ONLY_TOOLS
-from core.harness_closure import _alvo_fechamento, _comprovou_fechamento, _orientacao_verificacao
+from core.harness_closure import (_alvo_fechamento, _comprovou_fechamento, _orientacao_verificacao, _encerramento_sem_progresso, _repeticao_encerramento_sem_verificar)
 
 
 def executar_ciclo(
@@ -227,6 +227,21 @@ def executar_ciclo(
             )
             return False, resposta
 
+        # Protecao anterior ao Dispatcher: o modelo nao pode reenviar
+        # um encerramento identico sem consultar de novo o estado.
+        if _repeticao_encerramento_sem_verificar(objetivo, chamadas, historico):
+            write_log(
+                "TASK_PROCESS_NO_PROGRESS_GUARD",
+                task_id=harness._task_id, rodada=rodada,
+                motivo="repeticao_sem_verificacao",
+            )
+            return harness._encerrar_falha(
+                "process_no_progress",
+                "Ja solicitei esse encerramento, mas nao confirmei o resultado. "
+                "Interrompi a repeticao para evitar novas tentativas sem evidencia.",
+                rodada,
+            )
+
         resultado_revisao = verificar_antes_de_agir(
             harness,
             objetivo,
@@ -288,6 +303,27 @@ def executar_ciclo(
             harness._browser_verification_guard_attempts = 0
         if cancelado:
             return harness._encerrar_cancelado("cancelado durante execucao", rodada)
+
+        # Depois de taskkill e de nova listagem: o MESMO PID ainda vivo
+        # significa ausencia de progresso, mesmo que taskkill retornou 0.
+        # Nao repetir o PID ate o limite de rodadas nem relatar sucesso.
+        sem_progresso = _encerramento_sem_progresso(objetivo, historico)
+        if sem_progresso is not None:
+            write_log(
+                "TASK_PROCESS_NO_PROGRESS_GUARD",
+                task_id=harness._task_id, rodada=rodada,
+                motivo="pid_ainda_ativo",
+                pid=sem_progresso["pid"],
+                processo=sem_progresso["processo"],
+            )
+            return harness._encerrar_falha(
+                "process_no_progress",
+                f"Solicitei o encerramento de {sem_progresso['processo']} "
+                f"(PID {sem_progresso['pid']}), mas o mesmo processo "
+                "continua ativo na verificacao seguinte. "
+                "Interrompi as novas tentativas. A tarefa nao foi concluida.",
+                rodada,
+            )
 
         # Se o ultimo passo explicitamente pedido ja foi executado
         # com sucesso, encerramos localmente e economizamos uma chamada
