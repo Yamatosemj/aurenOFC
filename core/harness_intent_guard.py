@@ -73,6 +73,7 @@ def verificar_antes_de_agir(
             )
         if harness.task_manager.should_cancel(harness._task_id):
             return harness._encerrar_cancelado("cancelado antes do esclarecimento", rodada)
+        harness._guardar_esclarecimento(objetivo, pergunta)
         harness.task_manager.complete(pergunta, task_id=harness._task_id)
         harness._registrar_turno("assistant", pergunta)
         write_log("TASK_END", task_id=harness._task_id, status="needs_clarification", rodada=rodada)
