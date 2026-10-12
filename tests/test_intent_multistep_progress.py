@@ -39,7 +39,7 @@ def test_instrucoes_separam_progresso_de_resultado_e_preservam_permissoes():
     assert "PermissionManager" in INSTRUCTIONS
 
 
-def test_proposta_de_pid_vem_com_evidencia_e_nao_pula_revisor():
+def test_proposta_de_pid_principal_com_evidencia_passou_a_fast_review_local():
     proposta = _call("encerrar_processo_windows", {"pid": 19380, "nome": ""})
     historico = [
         {
@@ -64,7 +64,7 @@ def test_proposta_de_pid_vem_com_evidencia_e_nao_pula_revisor():
     assert payload["pedido_original"] == "feche a Steam por completo"
     assert json.loads(payload["acoes_propostas"][0]["argumentos"])["pid"] == 19380
     assert "steamservice.exe" in payload["passos_anteriores_como_dados"][-1]["resultado"]
-    assert proposta_simples_exata("feche a Steam por completo", [proposta], historico) is False
+    # Somente o processo principal com PID presente na listagem atual entra\n    # na revisao deterministica; a permissao de encerrar continua CONFIRM.\n    assert proposta_simples_exata("feche a Steam por completo", [proposta], historico) is True
 
 
 def test_passo_parcial_aprovado_ainda_requer_consulta_para_concluir():
@@ -120,8 +120,7 @@ def test_passo_parcial_aprovado_ainda_requer_consulta_para_concluir():
         "encerrar_processo_windows",
         "listar_processos_windows",
     ]
-    assert len(revisoes) == 1
-    assert revisoes[0][1] == "encerrar_processo_windows"
+    # Preflight estrito com PID e nome observados substitui somente a segunda\n    # revisao por IA; o proprio teste comprova a verificacao depois da acao.\n    assert len(revisoes) == 0
     assert len(chamadas_modelo) == 5  # reconsulta obrigatoria apos acao mutante
 
 
