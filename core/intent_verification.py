@@ -46,8 +46,8 @@ pertencem ao Harness, depois da execucao; voce nao deve exigir que uma
 unica chamada resolva todas as etapas.
 
 Exemplo: usuario pediu "feche a Steam por completo". Uma consulta atual
-listou steam.exe (PID 19380) e outros processos da Steam. A proposta de
-encerrar apenas PID 19380 pode ser um passo valido: nao BLOQUEIE apenas
+listou steam.exe e outros processos da Steam. A proposta de
+encerrar um PID da Steam identificado na consulta atual pode ser um passo valido: nao BLOQUEIE apenas
 porque outros processos ainda permanecerao. O Harness deve verificar os
 processos restantes e continuar o objetivo, respeitando permissoes em cada
 passo. Isso nao concede autorizacao ao encerramento.
