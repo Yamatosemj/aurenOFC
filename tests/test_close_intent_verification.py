@@ -99,7 +99,7 @@ def test_nunca_valida_consulta_antiga_apos_fechar_a_janela():
 def test_lista_de_janelas_nao_comprova_encerramento_completo():
     historico = [
         {"ferramenta": "fechar_janela_windows", "resultado": "Solicitei o fechamento da janela: Steam", "argumentos": '{"alvo":"Steam"}'},
-        {"ferramenta": "listar_janelas_windows", "resultado": "Janelas visiveis: 1\\n1. Chrome", "argumentos": "{}"},
+        {"ferramenta": "listar_janelas_windows", "resultado": "Janelas visiveis: 1\n1. Chrome", "argumentos": "{}"},
     ]
     assert _comprovou_fechamento("feche a Steam", historico)
     assert not _comprovou_fechamento("feche a Steam porcompleto", historico)
@@ -121,7 +121,7 @@ def test_harness_nao_encerra_apos_listar_janelas_e_verifica_depois_de_wm_close()
     def ferramenta(call):
         if call.name == "listar_janelas_windows":
             quantidade["janelas"] += 1
-            return "Janelas visiveis: 2\\n1. Steam\\n2. Chrome" if quantidade["janelas"] == 1 else "Janelas visiveis: 1\\n1. Chrome"
+            return "Janelas visiveis: 2\n1. Steam\n2. Chrome" if quantidade["janelas"] == 1 else "Janelas visiveis: 1\n1. Chrome"
         if call.name == "fechar_janela_windows":
             return "Solicitei o fechamento da janela: Steam"
         raise AssertionError(call.name)
@@ -148,13 +148,13 @@ def test_harness_fechamento_completo_requer_processos_ausentes():
     quant = {"processos": 0}
     def ferramenta(call):
         if call.name == "listar_janelas_windows":
-            return "Janelas visiveis: 1\\n1. Steam"
+            return "Janelas visiveis: 1\n1. Steam"
         if call.name == "fechar_janela_windows":
             return "Solicitei o fechamento da janela: Steam"
         if call.name == "listar_processos_windows":
             quant["processos"] += 1
             return (
-                "Processos encontrados: 1\\nSteamWebHelper.exe | PID 200 | memoria 10"
+                "Processos encontrados: 1\nSteamWebHelper.exe | PID 200 | memoria 10"
                 if quant["processos"] == 1
                 else "Nenhum processo corresponde a 'steam'."
             )
@@ -182,7 +182,7 @@ def test_harness_fechamento_completo_requer_processos_ausentes():
 def test_harness_falha_em_vez_de_inventar_fechamento_sem_evidencia():
     def ferramenta(call):
         assert call.name == "listar_janelas_windows"
-        return "Janelas visiveis: 1\\n1. Steam"
+        return "Janelas visiveis: 1\n1. Steam"
 
     h, chamadas, _pedidos = _harness([
         _resposta(_chamada("listar_janelas_windows")),
