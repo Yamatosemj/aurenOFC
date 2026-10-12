@@ -5,12 +5,13 @@ from pathlib import Path
 from typing import Any, Callable
 
 from core.task_manager import TaskManager, TaskState
+from core.utils import normalizar_nome
 from core import usage
 from core.task_trace import TaskTrace, TaskTraceStore
 from core.tool_result import ToolResult
 from agent.orchestrator import AgentOrchestrator
 from core.session import SessionContextManager
-from core.harness_followup import PerguntaPendente, resolver_continuacao
+from core.harness_followup import PerguntaPendente, resolver_continuacao, SIM
 from skills.loader import SkillLibrary
 from core.vision import (
     clear_active_vision_geometry,
@@ -198,6 +199,7 @@ class AurenHarness:
         self.skill_library = context.skills if context.skills is not None else SkillLibrary(PROJECT_ROOT / "skills")
         self._contexto_tarefa = ""
         self._pergunta_pendente: PerguntaPendente | None = None
+        self._confirmacao_esclarecimento: str | None = None
         self._task_id = ""
         self._session: SessionContext | None = None
         self._session_context_token: contextvars.Token | None = None
@@ -480,6 +482,7 @@ class AurenHarness:
         self._session = None
         self._chat_started_here = False
         self._pergunta_pendente = None
+        self._confirmacao_esclarecimento = None
 
     def _guardar_esclarecimento(self, objetivo: str, pergunta: str) -> None:
         if self._parece_tarefa_de_acao(objetivo) and str(pergunta).rstrip().endswith("?"):
@@ -501,8 +504,18 @@ class AurenHarness:
         self._browser_verification_state.clear()
         self._browser_verification_state["pending"] = False
         objetivo_log = mensagem.strip()
+        pendente_anterior = self._pergunta_pendente
         objetivo_efetivo, status_continuacao = resolver_continuacao(
-            self._pergunta_pendente, objetivo_log,
+            pendente_anterior, objetivo_log,
+        )
+        # Um "sim" apenas responde a pergunta pendente do mesmo chat.
+        # Essa confirmacao contextual NAO substitui a autorizacao local do
+        # PermissionManager para encerrar processos ou outros efeitos.
+        self._confirmacao_esclarecimento = (
+            pendente_anterior.pergunta
+            if pendente_anterior is not None
+            and normalizar_nome(objetivo_log) in SIM
+            else None
         )
         # A pendencia pertence somente a proxima mensagem, nunca a outros chats.
         self._pergunta_pendente = None
