@@ -13,6 +13,7 @@ from core.browser_verification import verificar_resultado_navegador
 from core.vision import clear_active_vision_geometry, get_active_vision_geometry, prepare_vision_result_content
 from core.harness_intent_guard import verificar_antes_de_agir
 from core.intent_verification import READ_ONLY_TOOLS
+from core.harness_closure import _alvo_fechamento, _comprovou_fechamento, _orientacao_verificacao
 
 
 def executar_ciclo(
@@ -31,6 +32,7 @@ def executar_ciclo(
     empty_response_retries = 0
     falha_nao_recuperada = False
     ferramentas_executadas = 0
+    tentativas_verificacao_fechamento = 0
 
     if harness.task_manager.should_cancel(harness._task_id):
         return harness._encerrar_cancelado("cancelado antes da primeira rodada")
@@ -144,6 +146,64 @@ def executar_ciclo(
                     retry.failure_message or "Nao consegui produzir uma resposta final.",
                     rodada,
                 )
+
+            # O retorno de WM_CLOSE apenas solicita o fechamento. E uma
+            # listagem anterior ao fechamento nao prova o estado final.
+            # Para pedidos "por completo", a evidencia deve vir de processos,
+            # nunca apenas da lista de janelas visiveis.
+            if _alvo_fechamento(objetivo) is not None and not _comprovou_fechamento(
+                objetivo, historico,
+            ):
+                if final_texto.endswith("?"):
+                    harness._guardar_esclarecimento(objetivo, final_texto)
+                    harness.task_manager.complete(final_texto, task_id=harness._task_id)
+                    harness._registrar_turno("assistant", final_texto)
+                    write_log(
+                        "TASK_END", task_id=harness._task_id,
+                        status="needs_clarification", rodada=rodada,
+                    )
+                    return False, resposta_wrapper(final_texto)
+                if tentativas_verificacao_fechamento >= 2:
+                    return harness._encerrar_falha(
+                        "close_not_verified",
+                        "Nao consegui comprovar que o aplicativo foi fechado. "
+                        "Nao vou informar que esta encerrado sem verificar o estado real.",
+                        rodada,
+                    )
+                tentativas_verificacao_fechamento += 1
+                orientacao = _orientacao_verificacao(objetivo)
+                estado_verificacao = harness._montar_estado(
+                    objetivo,
+                    historico,
+                    [{
+                        "ferramenta": "guard_fechamento",
+                        "argumentos": "{}",
+                        "resultado": orientacao,
+                    }],
+                )
+                write_log(
+                    "TASK_CLOSE_VERIFICATION_GUARD",
+                    task_id=harness._task_id,
+                    rodada=rodada,
+                    tentativa=tentativas_verificacao_fechamento,
+                )
+                chamada_verificacao = _executar_rodada_modelo_impl(
+                    estado_verificacao,
+                    rodada=rodada + 1,
+                    task_id=harness._task_id,
+                    task_manager=harness.task_manager,
+                    pedir_modelo=harness._pedir_modelo,
+                    log_resposta_modelo=harness._log_resposta_modelo,
+                    write_log=write_log,
+                    input_items=1,
+                    estado_chars=len(estado_verificacao),
+                    tool_choice="required",
+                    log_tool_choice="required",
+                )
+                if chamada_verificacao is None:
+                    return False, resposta_wrapper(harness.MSG_ERRO_PROVIDER)
+                resposta, _latencia, _metricas = chamada_verificacao
+                continue
 
             # Uma pergunta apos consulta nao conclui a acao pedida.
             # Guardamos somente o objetivo original e a pergunta, jamais
