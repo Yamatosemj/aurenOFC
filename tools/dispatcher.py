@@ -156,7 +156,7 @@ TOOL_HANDLERS = {
     "obter_status_windows": _sem_memoria(windows.obter_status_windows),
     "capturar_tela_windows": _sem_memoria(windows.capturar_tela_windows),
     "listar_processos_windows": _sem_memoria(windows.listar_processos_windows, "filtro", defaults={"filtro": ""}),
-    "encerrar_processo_windows": _sem_memoria(windows.encerrar_processo_windows, "pid", "nome", defaults={"pid": None, "nome": ""}),
+    "encerrar_processo_windows": _sem_memoria(windows.encerrar_processo_windows, "pid", "nome", "forcar", defaults={"pid": None, "nome": "", "forcar": False}),
     "ler_area_transferencia_windows": _sem_memoria(windows.ler_area_transferencia_windows),
     "definir_area_transferencia_windows": _sem_memoria(windows.definir_area_transferencia_windows, "texto"),
     "pressionar_tecla_windows": _sem_memoria(windows.pressionar_tecla_windows, "tecla"),
