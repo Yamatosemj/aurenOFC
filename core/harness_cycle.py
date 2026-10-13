@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any
+import json
 
 from core.harness_completion import _concluir_tarefa_localmente, _finalizar_resposta_sucesso, _tentar_retry_resposta_vazia
 from core.harness_guards import _tratar_rodada_sem_ferramentas as _tratar_rodada_sem_ferramentas_impl
@@ -13,7 +14,8 @@ from core.browser_verification import verificar_resultado_navegador
 from core.vision import clear_active_vision_geometry, get_active_vision_geometry, prepare_vision_result_content
 from core.harness_intent_guard import verificar_antes_de_agir
 from core.intent_verification import READ_ONLY_TOOLS
-from core.harness_closure import (_alvo_fechamento, _comprovou_fechamento, _orientacao_verificacao, _encerramento_sem_progresso, _repeticao_encerramento_sem_verificar)
+from core.harness_closure import (_alvo_fechamento, _comprovou_fechamento, _orientacao_verificacao, _encerramento_sem_progresso, _repeticao_encerramento_sem_verificar, _reconsulta_processos_pendente, _confirmacao_fechamento_ja_respondida)
+from core.utils import normalizar_nome
 
 
 def executar_ciclo(
@@ -33,6 +35,8 @@ def executar_ciclo(
     falha_nao_recuperada = False
     ferramentas_executadas = 0
     tentativas_verificacao_fechamento = 0
+    tentativas_confirmacao_repetida = 0
+    tentativas_reconsulta_processos = 0
 
     if harness.task_manager.should_cancel(harness._task_id):
         return harness._encerrar_cancelado("cancelado antes da primeira rodada")
@@ -67,6 +71,58 @@ def executar_ciclo(
             return harness._encerrar_cancelado("cancelado durante a tarefa", rodada)
 
         if not chamadas:
+            # O usuario ja respondeu SIM ao esclarecimento contextual. Uma
+            # segunda pergunta equivalente do modelo nao e nova autorizacao:
+            # pedimos uma acao verificavel, sem executar nada diretamente.
+            pergunta_modelo = str(getattr(resposta, "output_text", "") or "").strip()
+            if _confirmacao_fechamento_ja_respondida(
+                objetivo,
+                getattr(harness, "_confirmacao_esclarecimento", None),
+                pergunta_modelo,
+            ):
+                if tentativas_confirmacao_repetida >= 1:
+                    return harness._encerrar_falha(
+                        "repeated_user_confirmation",
+                        "Voce ja confirmou esse escopo, mas o modelo repetiu a pergunta. "
+                        "Interrompi sem executar novas acoes; nenhuma permissao foi presumida.",
+                        rodada,
+                    )
+                tentativas_confirmacao_repetida += 1
+                estado_confirmado = harness._montar_estado(
+                    objetivo, historico, [{
+                        "ferramenta": "guard_confirmacao_ja_respondida",
+                        "argumentos": "{}",
+                        "resultado": (
+                            "O usuario ja respondeu SIM a essa pergunta de escopo nesta sessao. "
+                            "NAO repita a pergunta. Proponha SOMENTE a proxima ferramenta "
+                            "necessaria; encerramentos ainda exigem revisor e PermissionManager. "
+                            "Se nao souber o PID, consulte listar_processos_windows."
+                        ),
+                    }],
+                )
+                write_log(
+                    "TASK_REPEATED_CONFIRMATION_GUARD",
+                    task_id=harness._task_id, rodada=rodada,
+                    tentativa=tentativas_confirmacao_repetida,
+                )
+                nova_chamada = _executar_rodada_modelo_impl(
+                    estado_confirmado,
+                    rodada=rodada + 1,
+                    task_id=harness._task_id,
+                    task_manager=harness.task_manager,
+                    pedir_modelo=harness._pedir_modelo,
+                    log_resposta_modelo=harness._log_resposta_modelo,
+                    write_log=write_log,
+                    input_items=1,
+                    estado_chars=len(estado_confirmado),
+                    tool_choice="required",
+                    log_tool_choice="required",
+                )
+                if nova_chamada is None:
+                    return False, resposta_wrapper(harness.MSG_ERRO_PROVIDER)
+                resposta, _latencia, _metricas = nova_chamada
+                continue
+
             guard = _tratar_rodada_sem_ferramentas_impl(
                 objetivo=objetivo,
                 historico=historico,
@@ -241,6 +297,79 @@ def executar_ciclo(
                 "Interrompi a repeticao para evitar novas tentativas sem evidencia.",
                 rodada,
             )
+
+        # Nunca dispare encerramentos em lote: cada taskkill exige uma
+        # listagem posterior de processos antes de escolher o proximo PID.
+        pedido_fechamento = _alvo_fechamento(objetivo)
+        completo = bool(pedido_fechamento and pedido_fechamento[1])
+        if completo and len(chamadas) > 1 and any(
+            str(getattr(item, "name", "")) == "encerrar_processo_windows"
+            for item in chamadas
+        ):
+            return harness._encerrar_falha(
+                "process_batch_unverified",
+                "Nao vou executar encerramentos em lote sem observar o resultado "
+                "de cada um. Proponha uma acao de cada vez.",
+                rodada,
+            )
+
+        if completo and _reconsulta_processos_pendente(objetivo, historico):
+            def consulta_do_alvo(item: Any) -> bool:
+                if str(getattr(item, "name", "")) != "listar_processos_windows":
+                    return False
+                try:
+                    args = json.loads(str(getattr(item, "arguments", "") or "{}"))
+                except (ValueError, TypeError):
+                    return False
+                return (
+                    isinstance(args, dict)
+                    and normalizar_nome(str(args.get("filtro") or "")) == pedido_fechamento[0]
+                )
+
+            if len(chamadas) != 1 or not consulta_do_alvo(chamadas[0]):
+                if tentativas_reconsulta_processos >= 1:
+                    return harness._encerrar_falha(
+                        "process_post_action_check_missing",
+                        "Interrompi a tarefa: depois de taskkill e obrigatorio "
+                        "consultar novamente os processos antes de outra acao.",
+                        rodada,
+                    )
+                tentativas_reconsulta_processos += 1
+                estado_reconsulta = harness._montar_estado(
+                    objetivo, historico, [{
+                        "ferramenta": "guard_processos_pos_acao",
+                        "argumentos": "{}",
+                        "resultado": (
+                            f"Antes de qualquer outra acao, use SOMENTE "
+                            f"listar_processos_windows com filtro='{pedido_fechamento[0]}'. "
+                            "Um taskkill anterior nao prova que o processo desapareceu. "
+                            "Depois da listagem, decida o proximo passo, sem assumir sucesso."
+                        ),
+                    }],
+                )
+                write_log(
+                    "TASK_PROCESS_REOBSERVE_GUARD",
+                    task_id=harness._task_id, rodada=rodada,
+                    tentativa=tentativas_reconsulta_processos,
+                )
+                nova_chamada = _executar_rodada_modelo_impl(
+                    estado_reconsulta,
+                    rodada=rodada + 1,
+                    task_id=harness._task_id,
+                    task_manager=harness.task_manager,
+                    pedir_modelo=harness._pedir_modelo,
+                    log_resposta_modelo=harness._log_resposta_modelo,
+                    write_log=write_log,
+                    input_items=1,
+                    estado_chars=len(estado_reconsulta),
+                    tool_choice="required",
+                    log_tool_choice="required",
+                )
+                if nova_chamada is None:
+                    return False, resposta_wrapper(harness.MSG_ERRO_PROVIDER)
+                resposta, _latencia, _metricas = nova_chamada
+                continue
+            tentativas_reconsulta_processos = 0
 
         resultado_revisao = verificar_antes_de_agir(
             harness,
