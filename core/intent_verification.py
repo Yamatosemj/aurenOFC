@@ -203,7 +203,10 @@ def passo_principal_de_encerramento_comprovado(
         args = json.loads(str(getattr(item, "arguments", "")))
     except (TypeError, ValueError):
         return False
-    if not isinstance(args, dict) or not set(args).issubset({"pid", "nome"}):
+    if not isinstance(args, dict) or not set(args).issubset({"pid", "nome", "forcar"}):
+        return False
+    # Encerramento forcado nunca recebe atalho para pular a revisao semantica.
+    if args.get("forcar", False) is not False:
         return False
     pid = args.get("pid")
     if type(pid) is not int or pid <= 0 or pid > 2**32 - 1:
