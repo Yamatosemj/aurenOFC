@@ -127,7 +127,7 @@ def test_forca_nunca_pula_revisor_semantico():
     historico = [{
         "ferramenta": "listar_processos_windows",
         "argumentos": '{"filtro":"steam"}',
-        "resultado": "Processos encontrados: 1\\nsteam.exe | PID 19380 | memoria 20 K",
+        "resultado": "Processos encontrados: 1\nsteam.exe | PID 19380 | memoria 20 K",
     }]
     normal = [SimpleNamespace(
         name="encerrar_processo_windows",
