@@ -112,7 +112,7 @@ def test_confirmacao_aprovada_executa_e_negada_nao_executa(monkeypatch):
         item, PermissionManager(confirmation_channel=_FakeConfirmation(True)), None
     )
     assert r.ok is True
-    assert chamadas == [("encerrar_processo_windows", {"pid": 4321, "nome": ""})]
+    assert chamadas == [("encerrar_processo_windows", {"pid": 4321, "nome": "", "forcar": False})]
 
 
 def test_erro_do_handler_nao_derruba_o_processo(monkeypatch):
