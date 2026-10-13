@@ -100,7 +100,7 @@ def test_permissao_negada_bloqueia_a_execucao(monkeypatch):
 def test_confirmacao_aprovada_executa_e_negada_nao_executa(monkeypatch):
     chamadas = []
     monkeypatch.setitem(dispatcher.TOOL_HANDLERS, "encerrar_processo_windows", _handler(chamadas, "encerrar_processo_windows"))
-    item = _item("encerrar_processo_windows", {"pid": 4321, "nome": ""})
+    item = _item("encerrar_processo_windows", {"pid": 4321, "nome": "", "forcar": False})
 
     r = dispatcher.executar_ferramenta(
         item, PermissionManager(confirmation_channel=_FakeConfirmation(False)), None
