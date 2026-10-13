@@ -3,23 +3,22 @@ from __future__ import annotations
 import csv
 import ctypes
 import io
+import ntpath
 import os
 from ctypes import wintypes
-from pathlib import Path
 import subprocess
 
 from core.tool_result import ToolResult
 from core.utils import normalizar_nome
 
 
-def _nome_executavel_por_pid_windows(pid):
-    """Retorna apenas o nome do executavel de um PID usando APIs Win64 seguras."""
+def _caminho_executavel_por_pid_windows(pid):
+    """Consulta a imagem real do PID (falha fechada se identidade nao acessivel)."""
     if os.name != "nt" or not pid:
         return ""
 
     kernel32 = ctypes.windll.kernel32
     PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
-
     kernel32.OpenProcess.argtypes = [
         wintypes.DWORD, wintypes.BOOL, wintypes.DWORD
     ]
@@ -41,24 +40,22 @@ def _nome_executavel_por_pid_windows(pid):
     )
     if not handle:
         return ""
-
     try:
         buffer = ctypes.create_unicode_buffer(1024)
         tamanho = ctypes.c_ulong(len(buffer))
-        if kernel32.QueryFullProcessImageNameW(
-            handle,
-            0,
-            buffer,
-            ctypes.byref(tamanho),
-        ):
-            return Path(buffer.value).name.lower()
+        if kernel32.QueryFullProcessImageNameW(handle, 0, buffer, ctypes.byref(tamanho)):
+            return buffer.value
     except Exception:
         pass
     finally:
         kernel32.CloseHandle(handle)
-
     return ""
 
+
+def _nome_executavel_por_pid_windows(pid):
+    """Retorna o nome do executavel usando a identidade real do PID."""
+    caminho = _caminho_executavel_por_pid_windows(pid)
+    return ntpath.basename(caminho).lower() if caminho else ""
 
 
 def listar_processos_windows(filtro=""):
@@ -105,11 +102,17 @@ def listar_processos_windows(filtro=""):
     except Exception as erro:
         return f"Nao consegui listar os processos: {erro}"
 
-def encerrar_processo_windows(pid=None, nome=""):
+def encerrar_processo_windows(pid=None, nome="", forcar=False):
     if os.name != "nt":
         return "Controle de processos so esta disponivel no Windows."
 
     alvo = str(nome).strip()
+    if type(forcar) is not bool:
+        return ToolResult.failure(
+            "O modo forcar precisa ser booleano.",
+            error_code="force_invalid",
+            tool_name="encerrar_processo_windows",
+        )
     try:
         pedido_pid = int(pid) if pid not in (None, "", 0) else None
     except (TypeError, ValueError):
@@ -125,6 +128,13 @@ def encerrar_processo_windows(pid=None, nome=""):
     if pedido_pid is None and not alvo:
         return "Informe um PID ou nome de processo."
 
+    if forcar and (pedido_pid is None or not alvo):
+        return ToolResult.failure(
+            "Encerramento forcado exige PID e nome exato do executavel.",
+            error_code="force_requires_pid_and_name",
+            tool_name="encerrar_processo_windows",
+        )
+
     if pedido_pid is None and any(c in alvo for c in "*?"):
         return "Nao vou aceitar curingas no nome do processo; informe um executavel especifico."
 
@@ -138,7 +148,42 @@ def encerrar_processo_windows(pid=None, nome=""):
         return "Nao vou encerrar o proprio processo do Auren pelo caminho de taskkill."
 
     if pedido_pid is not None:
-        nome_real = _nome_executavel_por_pid_windows(pedido_pid)
+        if forcar:
+            caminho_real = _caminho_executavel_por_pid_windows(pedido_pid)
+            nome_real = ntpath.basename(caminho_real).lower()
+            if not caminho_real or not ntpath.isabs(caminho_real):
+                return ToolResult.failure(
+                    f"Nao vou forcar PID {pedido_pid}: caminho do processo nao verificavel.",
+                    error_code="force_identity_unverified",
+                    tool_name="encerrar_processo_windows",
+                )
+            if nome_real != alvo.lower():
+                return ToolResult.failure(
+                    "Nao vou forcar: o nome informado nao corresponde ao executavel do PID.",
+                    error_code="force_identity_mismatch",
+                    tool_name="encerrar_processo_windows",
+                )
+            # Em nenhum caso usar /F para imagens do proprio Windows.
+            raiz_windows = (
+                getattr(os, "environ", {}).get("SystemRoot")
+                or getattr(os, "environ", {}).get("WINDIR")
+                or r"C:\Windows"
+            )
+            caminho_norm = ntpath.normcase(ntpath.normpath(caminho_real))
+            raiz_norm = ntpath.normcase(ntpath.normpath(raiz_windows)).rstrip("\\")
+            if caminho_norm.startswith(raiz_norm + "\\"):
+                return ToolResult.failure(
+                    "Nao vou forcar um executavel instalado no diretorio do Windows.",
+                    error_code="force_windows_process_blocked",
+                    tool_name="encerrar_processo_windows",
+                )
+            # Nenhuma politica por nome e exaustiva; esta e defesa adicional.
+            protegidos = protegidos | {
+                "svchost.exe", "registry", "memcompression",
+                "taskhostw.exe", "fontdrvhost.exe", "sihost.exe",
+            }
+        else:
+            nome_real = _nome_executavel_por_pid_windows(pedido_pid)
         if not nome_real:
             return (
                 f"Nao vou encerrar o PID {pedido_pid}: nao consegui verificar qual processo ele representa."
@@ -151,6 +196,8 @@ def encerrar_processo_windows(pid=None, nome=""):
     try:
         if pedido_pid is not None:
             comando = ["taskkill", "/PID", str(pedido_pid)]
+            if forcar:
+                comando.insert(1, "/F")
         else:
             comando = ["taskkill", "/IM", alvo]
         resultado = subprocess.run(
@@ -164,8 +211,28 @@ def encerrar_processo_windows(pid=None, nome=""):
         )
         saida = (resultado.stdout or resultado.stderr).strip()
         if resultado.returncode == 0:
-            return saida or "Processo encerrado."
-        return f"Nao consegui encerrar o processo: {saida or 'erro desconhecido.'}"
+            # taskkill /PID e /IM sem /F podem apenas enviar pedido de
+            # encerramento. Codigo 0 nao prova que o PID desapareceu.
+            # O Harness comprova a ausencia em nova consulta de processos.
+            return ToolResult.success(
+                ("Pedido de encerramento FORCADO enviado. " if forcar else
+                 "Pedido de encerramento enviado. ")
+                + "O processo ainda precisa ser verificado em nova listagem; "
+                  "nao declare que foi encerrado.",
+                data={
+                    "solicitacao_enviada": True,
+                    "encerramento_comprovado": False,
+                    "forcado": forcar,
+                    "pid": pedido_pid,
+                    "nome": alvo,
+                },
+                tool_name="encerrar_processo_windows",
+            )
+        return ToolResult.failure(
+            f"Nao consegui solicitar o encerramento: {saida or 'erro desconhecido.'}",
+            error_code="process_termination_command_failed",
+            tool_name="encerrar_processo_windows",
+        )
     except Exception as erro:
         return f"Nao consegui encerrar o processo: {erro}"
 

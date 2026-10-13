@@ -2,8 +2,37 @@
 from __future__ import annotations
 
 from typing import Any, Callable
+import json
+import re
 
 from core.intent_verification import precisa_verificar, proposta_simples_exata
+from core.utils import normalizar_nome
+
+
+def _diagnostico_propostas_bloqueadas(chamadas: list[Any]) -> list[dict[str, Any]]:
+    """Registra apenas o nome das tools e o alvo de eventual encerramento.
+
+    Nunca registra argumentos genericos (texto de formularios, clipboard,
+    mensagens ou outros dados privados) no evento de bloqueio.
+    """
+    diagnostico: list[dict[str, Any]] = []
+    for item in chamadas[:12]:
+        nome = str(getattr(item, "name", "") or "")[:100]
+        resumo: dict[str, Any] = {"ferramenta": nome}
+        if nome == "encerrar_processo_windows":
+            try:
+                args = json.loads(str(getattr(item, "arguments", "") or "{}"))
+            except (TypeError, ValueError):
+                args = {}
+            if isinstance(args, dict):
+                processo = str(args.get("nome") or "").strip()
+                pid = args.get("pid")
+                if processo and re.fullmatch(r"[a-zA-Z0-9_.-]{1,80}", processo):
+                    resumo["nome_processo"] = processo
+                if type(pid) is int and 0 < pid <= 2**32 - 1:
+                    resumo["pid"] = pid
+        diagnostico.append(resumo)
+    return diagnostico
 
 
 def verificar_antes_de_agir(
@@ -40,7 +69,14 @@ def verificar_antes_de_agir(
         quantidade=len(chamadas),
     )
     try:
-        decisao = harness.verificar_intencao(objetivo, chamadas, historico)
+        historico_revisor = list(historico)
+        pergunta_confirmada = getattr(harness, "_confirmacao_esclarecimento", None)
+        if pergunta_confirmada:
+            historico_revisor.append({
+                "ferramenta": "__confirmacao_usuario_pendente__",
+                "resultado": str(pergunta_confirmada)[:350],
+            })
+        decisao = harness.verificar_intencao(objetivo, chamadas, historico_revisor)
         if getattr(decisao, "decisao", None) not in {"aprovar", "esclarecer", "bloquear"}:
             raise ValueError("Decisao semantica desconhecida.")
     except Exception as exc:
@@ -61,6 +97,10 @@ def verificar_antes_de_agir(
         task_id=harness._task_id,
         rodada=rodada,
         decisao=decisao.decisao,
+        **({
+            "motivo": str(decisao.motivo or "")[:350],
+            "propostas": _diagnostico_propostas_bloqueadas(chamadas),
+        } if decisao.decisao == "bloquear" else {}),
     )
 
     if decisao.decisao == "esclarecer":
@@ -73,6 +113,25 @@ def verificar_antes_de_agir(
             )
         if harness.task_manager.should_cancel(harness._task_id):
             return harness._encerrar_cancelado("cancelado antes do esclarecimento", rodada)
+        pergunta_confirmada = getattr(harness, "_confirmacao_esclarecimento", None)
+        if (
+            pergunta_confirmada
+            and normalizar_nome(pergunta_confirmada) == normalizar_nome(pergunta)
+        ):
+            write_log(
+                "INTENT_CLARIFICATION_LOOP_GUARD",
+                task_id=harness._task_id,
+                rodada=rodada,
+                motivo="pergunta_ja_confirmada_pelo_usuario",
+            )
+            return harness._encerrar_falha(
+                "repeated_clarification",
+                "Voce ja respondeu essa pergunta, mas o verificador continua "
+                "pedindo a mesma confirmacao. Interrompi a tarefa para evitar "
+                "um ciclo de perguntas sem executar a acao.",
+                rodada,
+            )
+        harness._guardar_esclarecimento(objetivo, pergunta)
         harness.task_manager.complete(pergunta, task_id=harness._task_id)
         harness._registrar_turno("assistant", pergunta)
         write_log("TASK_END", task_id=harness._task_id, status="needs_clarification", rodada=rodada)

@@ -12,6 +12,8 @@ from core.harness_tools import _executar_chamadas_rodada as _executar_chamadas_r
 from core.browser_verification import verificar_resultado_navegador
 from core.vision import clear_active_vision_geometry, get_active_vision_geometry, prepare_vision_result_content
 from core.harness_intent_guard import verificar_antes_de_agir
+from core.intent_verification import READ_ONLY_TOOLS
+from core.harness_closure import (_alvo_fechamento, _comprovou_fechamento, _orientacao_verificacao, _encerramento_sem_progresso, _repeticao_encerramento_sem_verificar)
 
 
 def executar_ciclo(
@@ -30,6 +32,7 @@ def executar_ciclo(
     empty_response_retries = 0
     falha_nao_recuperada = False
     ferramentas_executadas = 0
+    tentativas_verificacao_fechamento = 0
 
     if harness.task_manager.should_cancel(harness._task_id):
         return harness._encerrar_cancelado("cancelado antes da primeira rodada")
@@ -144,6 +147,72 @@ def executar_ciclo(
                     rodada,
                 )
 
+            # O retorno de WM_CLOSE apenas solicita o fechamento. E uma
+            # listagem anterior ao fechamento nao prova o estado final.
+            # Para pedidos "por completo", a evidencia deve vir de processos,
+            # nunca apenas da lista de janelas visiveis.
+            if _alvo_fechamento(objetivo) is not None and not _comprovou_fechamento(
+                objetivo, historico,
+            ):
+                if final_texto.endswith("?"):
+                    harness._guardar_esclarecimento(objetivo, final_texto)
+                    harness.task_manager.complete(final_texto, task_id=harness._task_id)
+                    harness._registrar_turno("assistant", final_texto)
+                    write_log(
+                        "TASK_END", task_id=harness._task_id,
+                        status="needs_clarification", rodada=rodada,
+                    )
+                    return False, resposta_wrapper(final_texto)
+                if tentativas_verificacao_fechamento >= 2:
+                    return harness._encerrar_falha(
+                        "close_not_verified",
+                        "Nao consegui comprovar que o aplicativo foi fechado. "
+                        "Nao vou informar que esta encerrado sem verificar o estado real.",
+                        rodada,
+                    )
+                tentativas_verificacao_fechamento += 1
+                orientacao = _orientacao_verificacao(objetivo)
+                estado_verificacao = harness._montar_estado(
+                    objetivo,
+                    historico,
+                    [{
+                        "ferramenta": "guard_fechamento",
+                        "argumentos": "{}",
+                        "resultado": orientacao,
+                    }],
+                )
+                write_log(
+                    "TASK_CLOSE_VERIFICATION_GUARD",
+                    task_id=harness._task_id,
+                    rodada=rodada,
+                    tentativa=tentativas_verificacao_fechamento,
+                )
+                chamada_verificacao = _executar_rodada_modelo_impl(
+                    estado_verificacao,
+                    rodada=rodada + 1,
+                    task_id=harness._task_id,
+                    task_manager=harness.task_manager,
+                    pedir_modelo=harness._pedir_modelo,
+                    log_resposta_modelo=harness._log_resposta_modelo,
+                    write_log=write_log,
+                    input_items=1,
+                    estado_chars=len(estado_verificacao),
+                    tool_choice="required",
+                    log_tool_choice="required",
+                )
+                if chamada_verificacao is None:
+                    return False, resposta_wrapper(harness.MSG_ERRO_PROVIDER)
+                resposta, _latencia, _metricas = chamada_verificacao
+                continue
+
+            # Uma pergunta apos consulta nao conclui a acao pedida.
+            # Guardamos somente o objetivo original e a pergunta, jamais
+            # uma proposta mutante nao autorizada pelo usuario.
+            if final_texto.endswith("?") and all(
+                item.get("ferramenta") in READ_ONLY_TOOLS for item in historico
+            ):
+                harness._guardar_esclarecimento(objetivo, final_texto)
+
             resposta = _finalizar_resposta_sucesso(
                 objetivo,
                 historico,
@@ -157,6 +226,21 @@ def executar_ciclo(
                 criar_resposta=resposta_wrapper,
             )
             return False, resposta
+
+        # Protecao anterior ao Dispatcher: o modelo nao pode reenviar
+        # um encerramento identico sem consultar de novo o estado.
+        if _repeticao_encerramento_sem_verificar(objetivo, chamadas, historico):
+            write_log(
+                "TASK_PROCESS_NO_PROGRESS_GUARD",
+                task_id=harness._task_id, rodada=rodada,
+                motivo="repeticao_sem_verificacao",
+            )
+            return harness._encerrar_falha(
+                "process_no_progress",
+                "Ja solicitei esse encerramento, mas nao confirmei o resultado. "
+                "Interrompi a repeticao para evitar novas tentativas sem evidencia.",
+                rodada,
+            )
 
         resultado_revisao = verificar_antes_de_agir(
             harness,
@@ -219,6 +303,27 @@ def executar_ciclo(
             harness._browser_verification_guard_attempts = 0
         if cancelado:
             return harness._encerrar_cancelado("cancelado durante execucao", rodada)
+
+        # Depois de taskkill e de nova listagem: o MESMO PID ainda vivo
+        # significa ausencia de progresso, mesmo que taskkill retornou 0.
+        # Nao repetir o PID ate o limite de rodadas nem relatar sucesso.
+        sem_progresso = _encerramento_sem_progresso(objetivo, historico)
+        if sem_progresso is not None:
+            write_log(
+                "TASK_PROCESS_NO_PROGRESS_GUARD",
+                task_id=harness._task_id, rodada=rodada,
+                motivo="pid_ainda_ativo",
+                pid=sem_progresso["pid"],
+                processo=sem_progresso["processo"],
+            )
+            return harness._encerrar_falha(
+                "process_no_progress",
+                f"Solicitei o encerramento de {sem_progresso['processo']} "
+                f"(PID {sem_progresso['pid']}), mas o mesmo processo "
+                "continua ativo na verificacao seguinte. "
+                "Interrompi as novas tentativas. A tarefa nao foi concluida.",
+                rodada,
+            )
 
         # Se o ultimo passo explicitamente pedido ja foi executado
         # com sucesso, encerramos localmente e economizamos uma chamada
