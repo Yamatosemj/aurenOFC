@@ -182,6 +182,71 @@ def _encerramento_sem_progresso(
     return None
 
 
+
+def _confirmacao_fechamento_ja_respondida(
+    objetivo: str,
+    pergunta_anterior: str | None,
+    nova_pergunta: str,
+) -> bool:
+    """Reconhece apenas repeticao de aprovacao contextual no fechamento total.
+
+    SIM nao substitui a confirmacao do PermissionManager de cada ferramenta.
+    Perguntas novas sobre identidade, escopo ou risco distinto sao preservadas.
+    """
+    pedido = _alvo_fechamento(objetivo)
+    if pedido is None or not pedido[1] or not pergunta_anterior:
+        return False
+    alvo = pedido[0]
+    texto = normalizar_nome(nova_pergunta)
+    if not str(nova_pergunta or "").strip().endswith("?") or alvo not in texto:
+        return False
+    sinal_aprovacao = re.search(
+        r"\b(?:confirma|confirmar|autoriza|autorizar|posso|quer que eu)\b", texto
+    )
+    mesmo_escopo = re.search(
+        r"\b(?:forc\w*|encerr\w*|fech\w*|finaliz\w*|processos?)\b", texto
+    )
+    pergunta_antiga = normalizar_nome(pergunta_anterior)
+    return bool(
+        sinal_aprovacao and mesmo_escopo
+        and re.search(r"\b(?:confirm\w*|autoriz\w*|posso|quer que eu)\b", pergunta_antiga)
+        and alvo in pergunta_antiga
+    )
+
+
+def _reconsulta_processos_pendente(
+    objetivo: str,
+    historico: Sequence[Mapping[str, Any]],
+) -> bool:
+    """Exige observacao posterior ao taskkill antes de nova alteracao.
+
+    Uma consulta anterior ao encerramento, ou uma leitura com falha,
+    nao comprova o estado atual dos processos.
+    """
+    pedido = _alvo_fechamento(objetivo)
+    if pedido is None or not pedido[1]:
+        return False
+    alvo = pedido[0]
+    ultima_mutacao = max(
+        (i for i, item in enumerate(historico)
+         if item.get("ferramenta") == "encerrar_processo_windows"),
+        default=-1,
+    )
+    if ultima_mutacao < 0:
+        return False
+    for item in historico[ultima_mutacao + 1:]:
+        if item.get("ferramenta") != "listar_processos_windows":
+            continue
+        filtro = normalizar_nome(str(_argumentos(item).get("filtro") or ""))
+        resultado = str(item.get("resultado") or "")
+        if filtro == alvo and (
+            resultado.startswith("Processos encontrados:")
+            or resultado.startswith("Nenhum processo corresponde a '")
+        ):
+            return False
+    return True
+
+
 def _repeticao_encerramento_sem_verificar(
     objetivo: str,
     chamadas: Sequence[Any],

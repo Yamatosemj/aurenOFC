@@ -10,6 +10,7 @@ def _montar_estado(
     *,
     incluir_contexto: bool,
     contexto_tarefa: str,
+    esclarecimento_confirmado: str = "",
     vision_reobserve_pending: bool,
     browser_verification_pending: bool = False,
     max_history_items: int,
@@ -22,6 +23,17 @@ def _montar_estado(
     ]
 
     linhas.append("TIPO: execucao controlada pelo harness")
+
+    if esclarecimento_confirmado:
+        linhas.extend([
+            "",
+            "ESCLARECIMENTO CONTEXTUAL JA RESPONDIDO PELO USUARIO NESTA SESSAO:",
+            f"Pergunta anterior: {esclarecimento_confirmado[:350]}",
+            "Resposta do usuario: SIM. Nao repita essa pergunta de confirmacao.",
+            "Continue pelo proximo passo verificavel, consultando ferramentas se necessario.",
+            "IMPORTANTE: esta resposta nao autoriza ferramentas. A revisao de intencao,",
+            "o Dispatcher e o PermissionManager continuam obrigatorios para cada efeito.",
+        ])
 
     if incluir_contexto and contexto_tarefa:
         linhas.extend(["", contexto_tarefa])

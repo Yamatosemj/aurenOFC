@@ -110,6 +110,9 @@ O ciclo pode dispensar nova chamada ao modelo quando a ultima etapa solicitada f
 
 ### Guards e falhas
 
+**Fechamento total e respostas de esclarecimento (PR #139, candidata):** no mesmo chat, uma resposta afirmativa estritamente reconhecida (incluindo "ja disse que sim") retoma o objetivo original e o estado controlado registra que a pergunta de **escopo** ja foi respondida. Se o modelo repetir uma pergunta equivalente de confirmacao de fechamento total, o Harness exige uma proxima chamada de ferramenta apenas uma vez; se persistir, falha sem executar efeitos adicionais. Isso **nao** autoriza ferramentas: revisao de intencao, contratos e PermissionManager permanecem obrigatorios. Apos toda tentativa de `encerrar_processo_windows` num pedido de fechamento completo, o ciclo exige `listar_processos_windows` filtrada pelo alvo antes de propor outro PID; listas antigas ou falhas nao contam, e encerramentos em lote sao rejeitados. `taskkill` sozinho nao prova resultado final. Regressao em `tests/test_steam_live_followup_20261013.py` com mocks; teste Live posterior e decisao separada.
+
+
 - **Visual:** apos ferramenta visual mutante bem-sucedida com geometria ativa, o Harness invalida a geometria e exige nova observacao antes de encerrar certas tarefas. Guard tenta novamente ate o limite implementado.
 - **Browser:** em tarefas compostas identificadas heurísticamente, mudanca de estado deixa verificacao pendente; **obter_contexto_navegador** so libera a pendencia com evidência deterministica positiva, segundo [browser_verification.py](../../core/browser_verification.py).
 - **Multitab:** confirma destinos reconheciveis de abas numeradas e limita retries; nao se aplica genericamente a toda navegacao.
