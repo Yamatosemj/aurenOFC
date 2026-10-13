@@ -334,7 +334,7 @@ tools = [
     {
         "type": "function",
         "name": "encerrar_processo_windows",
-        "description": "Encerra um processo do Windows por PID ou nome. Use somente quando o usuario pedir explicitamente.",
+        "description": "Solicita encerramento de processo por PID ou nome. Para fechar completamente um aplicativo que persiste, pode propor forcar=true SOMENTE com PID e nome exato conferidos na listagem atual; exige confirmacao, pode perder dados e nao prova conclusao sem nova listagem.",
         "parameters": {
             "type": "object",
             "properties": {
@@ -344,10 +344,14 @@ tools = [
                 },
                 "nome": {
                     "type": "string",
-                    "description": "Nome do executavel, ou string vazia se for usar PID."
+                    "description": "Nome exato do executavel; obrigatorio junto do PID quando forcar=true."
+                },
+                "forcar": {
+                    "type": "boolean",
+                    "description": "false = solicitar saida normal; true = taskkill /F, somente com PID + nome exato verificados, apos fechamento normal insuficiente ou pedido explicito de forcar. Acao destrutiva sujeita a confirmacao."
                 }
             },
-            "required": ["pid", "nome"],
+            "required": ["pid", "nome", "forcar"],
             "additionalProperties": False
         },
         "strict": True
