@@ -368,7 +368,7 @@ class AurenHarness:
             resultado_atual,
             incluir_contexto=incluir_contexto,
             contexto_tarefa=self._contexto_tarefa,
-            esclarecimento_confirmado=self._confirmacao_esclarecimento or "",
+            esclarecimento_confirmado=getattr(self, "_confirmacao_esclarecimento", None) or "",
             vision_reobserve_pending=getattr(self, "_vision_reobserve_pending", False),
             browser_verification_pending=getattr(self, "_browser_verification_pending", False),
             max_history_items=self.DEFAULT_MAX_HISTORY_ITEMS,
