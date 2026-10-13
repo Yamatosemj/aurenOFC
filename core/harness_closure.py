@@ -198,7 +198,7 @@ def _confirmacao_fechamento_ja_respondida(
         return False
     alvo = pedido[0]
     texto = normalizar_nome(nova_pergunta)
-    if not texto.endswith("?") or alvo not in texto:
+    if not str(nova_pergunta or "").strip().endswith("?") or alvo not in texto:
         return False
     sinal_aprovacao = re.search(
         r"\b(?:confirma|confirmar|autoriza|autorizar|posso|quer que eu)\b", texto
