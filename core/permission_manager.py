@@ -593,6 +593,11 @@ class PermissionManager:
             return self._classificar_tecla(argumentos)
 
         if capacidade == "windows.process.control":
+            if argumentos.get("forcar") is True:
+                return (
+                    PermissionLevel.CONFIRM,
+                    "ENCERRAMENTO FORCADO (/F): o processo pode parar sem salvar dados. Confirme apenas se reconhece o PID e o programa.",
+                )
             return (
                 PermissionLevel.CONFIRM,
                 "Encerrar um processo pode perder trabalho ou fechar um programa sem salvar.",
