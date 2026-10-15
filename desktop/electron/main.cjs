@@ -9,6 +9,8 @@ const path = require('node:path');
 const readline = require('node:readline');
 
 const root = path.resolve(__dirname, '..', '..');
+// O ICO da identidade visual e distribuido separadamente ate incluir assets binarios no Git.
+const iconPath = path.join(__dirname, 'assets', 'auren.ico');
 const URL_LINE = /^Abra: (http:\/\/127\.0\.0\.1:(\d{1,5})\/)$/;
 
 let window = null;
@@ -43,6 +45,7 @@ function display(url) {
 
   window = new BrowserWindow({
     title: 'Auren',
+    icon: existsSync(iconPath) ? iconPath : undefined,
     width: 1200,
     height: 800,
     minWidth: 610,
@@ -152,6 +155,7 @@ if (!app.requestSingleInstanceLock()) {
   });
 
   app.whenReady().then(() => {
+    if (process.platform === 'win32') app.setAppUserModelId('Auren.Desktop');
     Menu.setApplicationMenu(null);
     session.defaultSession.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
     session.defaultSession.setPermissionCheckHandler(() => false);
