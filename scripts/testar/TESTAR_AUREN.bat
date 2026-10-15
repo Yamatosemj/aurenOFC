@@ -2,10 +2,15 @@
 setlocal
 cd /d "%~dp0..\.."
 
-rem Sem argumento, executamos a regressao diaria sem L5 live para economizar API.
-rem Use --completo para a congelacao completa incluindo L5.
+rem Sem argumentos: somente L0 e L1 (descoberta e verificacoes sem API).
+rem L2 pode alterar o Windows; L4/L5 podem utilizar API e alterar desktop.
+rem Camadas com efeitos exigem escolha explicita via --camada ou --completo.
 set "AUREN_TEST_ARGS=%*"
-if "%~1"=="" set "AUREN_TEST_ARGS=--camada L0,L1,L2,L4"
+if "%~1"=="" (
+    set "AUREN_TEST_ARGS=--camada L0,L1"
+    echo [INFO] Teste padrao seguro: somente camadas L0 e L1.
+    echo [INFO] L2, L4 e L5 nao serao executadas automaticamente.
+)
 
 rem Preferimos o Python do ambiente virtual do proprio Auren.
 set "AUREN_PYTHON="

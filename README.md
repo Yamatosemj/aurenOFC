@@ -47,7 +47,7 @@ Arquivos de comando para Windows agora estao organizados por finalidade em `scri
 - `scripts/iniciar/ABRIR_AUREN_GUI.bat` — abrir a interface (uso recomendado)
 - `scripts/iniciar/AUREN_VOZ.bat` — abrir o modo de voz
 - `scripts/instalar/` — instalar dependencias gerais e de voz
-- `scripts/testar/` — executar baterias de teste
+- `scripts/testar/` — executar baterias de teste; `TESTAR_AUREN.bat` sem argumentos usa **somente L0,L1**, sem acionar automaticamente L2/L4/L5. Camadas Live devem ser pedidas explicitamente (`--camada` ou `--completo`) e podem alterar o Windows/usar API.
 - `scripts/diagnosticos/` — inspecionar microfones, metricas, custos e outros diagnosticos
 - `scripts/experimentos/` — ativar ou desativar experimentos locais
 

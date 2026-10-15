@@ -19,6 +19,8 @@
 
 - **Correcao candidata, auditoria por arquivo (achado 2):** `tools/windows_processes.py` agora retorna `ToolResult` explicito em todos os caminhos de listagem/encerramento; erros nao sao inferidos pelo texto. `core/tool_result.py` e demais ferramentas legadas permanecem inalterados, assim como confirmacoes, PermissionManager e validacao posterior de `taskkill`. A validacao depende do CI no SHA final e de verificacao independente no Windows pessoal; **nao considerar integrado a main antes do merge**.
 
+- **Atalho de testes (correção candidata do achado 3 da auditoria de 15/10):** `scripts/testar/TESTAR_AUREN.bat` sem argumentos passa a selecionar apenas `L0,L1`, como o runner Python já fazia; L2/L4/L5 só mediante argumentos explícitos. Preserve seleção de Python e preflight, não altere workflows/runner local. Validar CI do SHA final e comportamento do BAT em máquina autorizada; nenhuma camada Live foi executada nesta correção. PR separada, ainda não integrada à `main`.
+
 ## 2. Implementado no repositório — não confundir com validado
 
 | Área | Estado verificável na revisão | Documento |
