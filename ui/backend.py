@@ -213,10 +213,14 @@ class AurenUiWorker:
                         continue
                     snapshot = harness.current_task()
                     status = getattr(getattr(snapshot, "state", None), "value", "")
+                    session = getattr(harness, "_session", None)
+                    source_chat_id = getattr(session, "chat_id", None)
+                    # Metadado de identificacao, nao altera o contexto do Harness.
+                    metadata = {"source_chat_id": source_chat_id} if isinstance(source_chat_id, str) else None
                     if status == "failed":
-                        self.events.put(UiEvent("error", answer))
+                        self.events.put(UiEvent("error", answer, payload=metadata))
                     else:
-                        self.events.put(UiEvent("reply", answer))
+                        self.events.put(UiEvent("reply", answer, payload=metadata))
                 except Exception as exc:
                     with self._lock:
                         still_current = (
