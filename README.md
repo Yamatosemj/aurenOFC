@@ -23,6 +23,9 @@ Assistente desktop/voz para Windows, versão técnica **V47**, usando o modelo c
 
 A documentacao evolui em PRs pequenas por subsistema. Para decidir o status real de uma funcionalidade, confronte documentos com codigo, PRs e CI atuais.
 
+**Correcao candidata do contrato de processos (auditoria de 15/10, achado 2):** as ferramentas `listar_processos_windows` e `encerrar_processo_windows` passam a devolver `ToolResult.success/failure` em **todos** os caminhos, com codigo de erro estruturado para falhas. Falhas nao dependem mais de reconhecer palavras como "nao consegui" e chegam assim ao Dispatcher/Harness. Mensagens de listagem bem-sucedida continuam no mesmo formato; `taskkill` bem-sucedido continua significando **pedido enviado, nao encerramento comprovado**. A adaptacao textual de **outras** ferramentas legadas por `from_legacy` segue como divida tecnica separada; nao ha mudanca global na interpretacao textual.
+
+
 ## Estrutura
 
 ```text
