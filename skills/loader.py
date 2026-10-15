@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path, PureWindowsPath
+from pathlib import Path
+import ntpath
 import os
 import re
 import shutil
@@ -60,8 +61,8 @@ class SkillLibrary:
             or value != value.strip()
             or value in {".", ".."}
             or value.endswith(".")
-            or re.search(r'[\\x00-\\x1f\\x7f<>:"/\\\\|?*]', value)
-            or PureWindowsPath(value).is_reserved()
+            or any(ord(char) < 32 or ord(char) == 127 or char in '<>:"/\|?*' for char in value)
+            or ntpath.isreserved(value)
         ):
             raise ValueError("Nome de skill invalido: use apenas um nome de pasta simples.")
         return value
