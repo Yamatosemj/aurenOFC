@@ -141,7 +141,7 @@ do Auren continua V47 até a validação física de voz.
 
 Por padrão, o Auren usa `gpt-5.6-luna`. `config.py` lê `AUREN_MODEL` e usa o padrão quando o valor está vazio ou contém apenas espaços.
 
-**Limitação confirmada:** atualmente, definir um modelo diferente faz a validação de coerência em `auren.py` interromper a inicialização. O prompt também identifica o modelo por texto fixo. Portanto, a troca por variável de ambiente **ainda não funciona de ponta a ponta**; veja a [auditoria de modelo e memória](docs/architecture/03-modelo-sessao-memoria.md). A correção de código será tratada separadamente.
+**Correção candidata (auditoria, achado 4):** `AUREN_MODEL` passa a determinar o modelo usado pela fachada, pelo prompt e pelo provider, preservando a verificação de versão e o literal do modelo **padrão** para verificadores estáticos antigos. O identificador configurado deve ser de um modelo acessível à conta/API; **nenhuma chamada real à API foi validada**. O modelo padrão permanece `gpt-5.6-luna`; veja [a auditoria de modelo e memória](docs/architecture/03-modelo-sessao-memoria.md).
 
 ## Testes
 
