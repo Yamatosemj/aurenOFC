@@ -211,6 +211,49 @@ def test_excecao_da_ferramenta_vira_falha_e_o_modelo_pode_recuperar():
     assert "boom" in task.steps[0].error
 
 
+def test_sucesso_de_outra_ferramenta_nao_apaga_falha_entre_rodadas():
+    def resposta(n, _bench):
+        if n == 1:
+            return _resp([_call(n, "clicar_elemento")])
+        if n == 2:
+            return _resp([_call(n, "obter_status_windows")])
+        return _resp(text="Tudo concluido.")
+
+    bench = _Bench(
+        resposta,
+        lambda item: (
+            ToolResult.failure("O clique falhou.", tool_name=item.name)
+            if item.name == "clicar_elemento"
+            else ToolResult.success("CPU 10%", tool_name=item.name)
+        ),
+    )
+    _, resposta_final, task = bench.run("clique no botao")
+    assert [step.success for step in task.steps] == [False, True]
+    assert bench.model_calls == 3
+    assert task.state is TaskState.FAILED
+    assert task.error == "step_failed_unrecovered"
+    assert "nao foi concluida" in resposta_final.output_text.lower()
+
+
+def test_sucesso_na_mesma_rodada_em_outra_ferramenta_nao_mascara_erro():
+    bench = _Bench(
+        lambda n, _b: (
+            _resp([_call(1, "clicar_elemento"), _call(2, "obter_status_windows")])
+            if n == 1 else _resp(text="Tudo pronto.")
+        ),
+        lambda item: (
+            ToolResult.failure("Clique falhou.", tool_name=item.name)
+            if item.name == "clicar_elemento"
+            else ToolResult.success("CPU 10%", tool_name=item.name)
+        ),
+    )
+    _, _resposta, task = bench.run("clique no botao")
+    assert bench.tools == ["clicar_elemento", "obter_status_windows"]
+    assert [step.success for step in task.steps] == [False, True]
+    assert task.state is TaskState.FAILED
+    assert task.error == "step_failed_unrecovered"
+
+
 def test_falha_de_ferramenta_sem_recuperacao_termina_como_failed():
     bench = _Bench(
         lambda n, b: _resp([_call(n)]) if n == 1 else _resp(text="terminei"),
