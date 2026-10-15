@@ -99,6 +99,8 @@ npm start
 
 Apos instalar uma vez, voce tambem pode abrir `scripts/iniciar/AUREN_DESKTOP.bat` por duplo clique. O pacote fixa `electron@44.7.2`. A janela **nao abre o Chrome**; usa Chromium embutido no Electron. Fechar a janela encerra o servidor Python via EOF no pipe (com encerramento forcado de contingencia apos 5 segundos). O atalho `AUREN_CHROME.bat` continua disponivel.
 
+**Icone:** a janela aceita `desktop/electron/assets/auren.ico`, quando presente. O arquivo de imagem foi preparado separadamente; ele ainda precisa ser copiado para essa pasta porque os assets binarios nao foram adicionados ao GitHub. Isso nao altera o orbe 3D nem garante o icone embutido de um futuro `.exe` empacotado.
+
 **Limites desta etapa:** ainda requer o repositorio, Python configurado, Node/npm e instalacao do Electron; nao e um `Auren.exe` portatil/instalador. Sem teste visual fisico no Windows do proprietario, **nao ha garantia de igualdade pixel a pixel** (versao do Chromium, GPU, DPI e fontes podem interferir). Comparar lado a lado na mesma resolucao e escala antes de aprovar; testes automatizados nao comprovam o WebGL ou funcionamento Live.
 
 ## Interface desktop (primeira versao)
