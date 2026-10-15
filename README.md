@@ -120,7 +120,7 @@ scripts/instalar/INSTALAR_VOZ.bat
 
 A camada de voz usa dependências separadas de `requirements-voice.txt`. Reinstalar com `INSTALAR_VOZ.bat` **preserva os modelos ASR/TTS já baixados**: o instalador não limpa `data/voice/`. No primeiro uso, o Parakeet verifica a presença dos arquivos necessários e tenta completar o download se faltar algo; isto pode exigir internet.
 
-**Atenção:** os instaladores não criam automaticamente `.venv`. O atalho da GUI usa `py -3`/`python` global mesmo quando existe uma `.venv`, enquanto o de voz prefere `.venv` e depois `py -3`. Use o [guia técnico da Etapa 10](docs/architecture/10-entradas-config-instalacao-distribuicao.md) antes de diagnosticar erro de dependência. A instalação de `playwright` via pip não instala automaticamente o Chromium.
+**Atenção:** os instaladores não criam automaticamente `.venv`. **Correção candidata do achado 8:** atalhos principais de instalação, GUI/Chrome, voz e testes usam a mesma escolha de Python: `.venv` local → `..\\.venv` → `py -3` → `python`. Um ambiente virtual **na pasta pai pode ser compartilhado com outro projeto**; confira o caminho antes de instalar dependências. Os comandos diretos `python main.py` não usam esse seletor. Use o [guia técnico da Etapa 10](docs/architecture/10-entradas-config-instalacao-distribuicao.md). A instalação de `playwright` via pip não instala automaticamente o Chromium.
 
 ### Evolução de voz V48 (candidata, ainda sem validação física)
 
