@@ -30,7 +30,7 @@ def test_electron_reuses_original_ui_without_renderer_privileges():
     assert "webviewTag: false" in source
     assert "setWindowOpenHandler(() => ({ action: 'deny' }))" in source
     assert "will-navigate" in source
-    assert r"127\\.0\\.0\\.1" in source
+    assert r"127\.0\.0\.1" in source
     assert "'-m', 'ui.chrome_server'" in source
     assert "'--no-browser', '--desktop-stdio'" in source
     assert chrome_server.INDEX_PATH.name == "chrome.html"
