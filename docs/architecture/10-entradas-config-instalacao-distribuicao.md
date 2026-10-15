@@ -52,7 +52,7 @@ Outras configurações ambientais no runtime, **com escopo próprio**, incluem `
 | [`requirements.txt`](../../requirements.txt) | `openai==3.26.0`, `playwright==1.63.0`, `jsonschema==4.26.0`, `Pillow==12.3.0` | Dependências principais |
 | [`requirements-voice.txt`](../../requirements-voice.txt) | `onnx-asr[cpu,hub]==0.12.0`, `kokoro-onnx==0.6.1`, `sounddevice==0.5.6`, `soundfile==0.13.1`, `keyboard==0.13.5`, `numpy==2.5.3`, `webrtcvad-wheels==2.0.14.post1` | Extras de áudio/STT/TTS; não instalados pelo instalador básico |
 | [`scripts/instalar/INSTALAR_AUREN.bat`](../../scripts/instalar/INSTALAR_AUREN.bat) | Executa `-m pip install -r requirements.txt` | Usa seletor compartilhado: `.venv` local → `..\\.venv` → `py -3` → `python`; preserva código de saída |
-| [`scripts/instalar/INSTALAR_VOZ.bat`](../../scripts/instalar/INSTALAR_VOZ.bat) | Executa `-m pip install -r requirements-voice.txt` | Prefere `.venv` do projeto; senão usa `py -3`. Não instala dependências básicas |
+| [`scripts/instalar/INSTALAR_VOZ.bat`](../../scripts/instalar/INSTALAR_VOZ.bat) | Executa `-m pip install -r requirements-voice.txt` | Mesmo seletor compartilhado do instalador principal; preserva caches ASR/TTS e não instala dependências básicas |
 | [`tests/test_dependency_pins.py`](../../tests/test_dependency_pins.py) | Assegura presença de `==` e ausência de versões divergentes entre listas | **Não** prova resolução offline, integridade de pacotes, compatibilidade completa de transitivas nem compatibilidade em toda máquina |
 
 **Diferenças importantes dos instaladores:**
