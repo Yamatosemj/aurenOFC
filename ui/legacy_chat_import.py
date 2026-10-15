@@ -12,7 +12,6 @@ import re
 import sqlite3
 from collections import defaultdict
 from pathlib import Path
-from urllib.parse import quote
 from uuid import UUID, uuid5
 
 LEGACY_LOG_ROOT = Path(__file__).resolve().parents[1] / "logs" / "chats"
@@ -34,7 +33,7 @@ def _memory_turns(path: Path) -> dict[str, list[tuple[str, str, str]]]:
     """Abre o SQLite original SOMENTE com mode=ro, sem criar/modificar tabelas."""
     if not path.is_file() or path.is_symlink():
         return {}
-    uri = "file:" + quote(str(path.resolve()), safe="/:") + "?mode=ro"
+    uri = path.resolve().as_uri() + "?mode=ro"
     groups: dict[str, list[tuple[str, str, str]]] = defaultdict(list)
     try:
         with sqlite3.connect(uri, uri=True, timeout=2) as db:
