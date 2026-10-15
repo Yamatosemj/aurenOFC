@@ -389,9 +389,12 @@ async function historyRefresh(){
    small.textContent=historyDate(chat.updated_at)+(chat.id===historyActive?" · Atual":"");
    open.append(heading,small);open.onclick=()=>historyOpen(chat.id);
    const copy=document.createElement("button");copy.type="button";copy.className="historyCopy";
-   copy.textContent="Copiar";copy.setAttribute("aria-label","Copiar "+chat.title);
-   copy.onclick=()=>historyCopy(chat.id,copy);
-   item.append(open,copy);historyUI.list.append(item);
+   copy.textContent="Texto";copy.setAttribute("aria-label","Copiar mensagens de "+chat.title);
+   copy.title="Copiar apenas mensagens";copy.onclick=()=>historyCopy(chat.id,copy);
+   const logCopy=document.createElement("button");logCopy.type="button";logCopy.className="historyCopy";
+   logCopy.textContent="Log";logCopy.setAttribute("aria-label","Copiar log técnico de "+chat.title);
+   logCopy.title="Copiar log técnico integral";logCopy.onclick=()=>historyCopyTechnical(chat.id,logCopy);
+   item.append(open,copy,logCopy);historyUI.list.append(item);
   }
  }catch(err){historyNotice(err.message)}
 }
