@@ -28,6 +28,8 @@ def test_electron_reuses_original_ui_without_renderer_privileges():
     assert "sandbox: true" in source
     assert "webSecurity: true" in source
     assert "webviewTag: false" in source
+    assert "assets\', \'auren.ico" in source
+    assert "icon: existsSync(iconPath) ? iconPath : undefined" in source
     assert "setWindowOpenHandler(() => ({ action: 'deny' }))" in source
     assert "will-navigate" in source
     assert r"127\.0\.0\.1" in source
