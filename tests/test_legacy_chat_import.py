@@ -146,7 +146,15 @@ def test_history_http_automatically_discovers_old_chats_without_exposing_logs(tm
     from threading import Thread
     from http.client import HTTPConnection
     from ui.chrome_server import ChromeServer, LocalChromeApp
-    from tests.test_ui_conversation_history import StubWorker
+    from queue import Queue
+
+    class StubWorker:
+        def __init__(self):
+            self.events = Queue()
+        def start(self):
+            pass
+        def close(self):
+            pass
 
     root = tmp_path / "logs" / "chats"
     source = _make_log(
