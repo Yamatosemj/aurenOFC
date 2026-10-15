@@ -39,7 +39,7 @@
 
 **Limites de confiança:** `prompt_context` rotula skills como dados não confiáveis, mas esse prefixo textual **não constitui isolamento forte** de prompt injection. Uma skill local com instruções perigosas não deve ganhar prioridade sobre políticas de sistema, usuário ou autorização por ser recuperada. Não existe validação de assinatura, sandbox de execução ou política de fontes explicitamente implementada por este carregador.
 
-**Candidato a revisão de segurança, sem correção nesta PR:** o método `install` aceita `name`/front matter como nome de diretório e constrói `self.root / (name or skill.name)` sem validação explícita de componentes, `..` ou caminho absoluto. Investigar contenção e testes de percurso/symlink antes de usar skills de terceiros. A análise estática **não** é demonstração de exploração ou de arquivo realmente modificado fora da raiz.
+**Achado 6 — correção candidata:** a versão anterior aceitava `name`/front matter diretamente como caminho de destino, criando risco de travessia e redirecionamento por symlink. Agora há validação portátil de nome, contenção por `resolve` e rejeição de symlinks/junctions no destino e em `discover`. [Testes dedicados](../../tests/test_skills_path_safety.py) cobrem nomes hostis, front matter, reinstalação comum, links para fora, links internos e fonte redirecionada em `tmp_path`. **Limitação:** o diretório de skills deve pertencer ao usuário confiável; checagens de caminho e `os.replace` não tornam a operação race-proof diante de outro processo que consiga substituir diretórios simultaneamente, nem autenticam o conteúdo da skill.
 
 ## 3. Catálogo de capacidades e resolver — 14 definições ≠ 49 tools
 
