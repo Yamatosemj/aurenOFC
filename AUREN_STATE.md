@@ -19,6 +19,8 @@
 
 - **Interface Electron (candidata, PR separada, pendente de validacao Windows):** adicionada uma janela Chromium via `desktop/electron/main.cjs` que reutiliza integralmente `ui/chrome.html` e o servidor Python atual, com encerramento cooperativo por stdin. O original Chrome/Tkinter nao foi substituido. Ainda sem instalador/EXE autonomo, nem comparacao visual pixel a pixel ou teste no PC do proprietario. Manter como candidata ate CI e prova de uso fisico.
 
+- **Historico de UI (PR candidata baseada na #141):** `ui/conversation_history.py` grava mensagens exibidas em SQLite local e independente do contexto do modelo; o mesmo HTML Chrome/Electron ganha painel retratil para lista, busca, leitura e copia completa, mais nova conversa segura. **Visualizar nao equivale a retomar o contexto anterior do Harness**. Sem importacao retroativa de logs antigos, sem criptografia local e sem teste grafico fisico. Validar CI e Windows antes de merge.
+
 ## 2. Implementado no repositório — não confundir com validado
 
 | Área | Estado verificável na revisão | Documento |
