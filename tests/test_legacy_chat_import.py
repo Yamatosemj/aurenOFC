@@ -139,3 +139,57 @@ def test_readonly_legacy_import_incremental_and_idempotent(tmp_path):
         f.write(_event("TASK_START", objetivo="Voltei"))
     ui.refresh_legacy(force=True)
     assert [m["content"] for m in ui.get_messages(first)["messages"]] == ["Ola", "Voltei"]
+
+
+def test_history_http_automatically_discovers_old_chats_without_exposing_logs(tmp_path):
+    """O painel consulta chats antigos pela API existente e recebe so mensagens."""
+    from threading import Thread
+    from http.client import HTTPConnection
+    from ui.chrome_server import ChromeServer, LocalChromeApp
+    from tests.test_ui_conversation_history import StubWorker
+
+    root = tmp_path / "logs" / "chats"
+    source = _make_log(
+        root, OLD,
+        _event("CHAT_START", chat_id=OLD)
+        + _event("TASK_START", objetivo="Oi, Auren")
+        + _event("MODEL_ROUND_RESPONSE", output_text="INTERNO_NAO_MOSTRAR")
+        + _event("TOOL_CALL", ferramenta="abrir_programa", argumentos={"nome": "Chrome"}),
+    )
+    before = source.read_bytes()
+    store = UiConversationHistory(
+        tmp_path / "ui-history.sqlite3",
+        legacy_root=root,
+        memory_db=tmp_path / "missing.db",
+    )
+    app = LocalChromeApp(worker=StubWorker(), history_store=store)
+    server = ChromeServer(app)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+
+    def get(path):
+        conn = HTTPConnection("127.0.0.1", server.server_port, timeout=5)
+        try:
+            conn.request("GET", path, headers={"X-Auren-Token": app.token})
+            res = conn.getresponse()
+            return res.status, json.loads(res.read())
+        finally:
+            conn.close()
+
+    try:
+        status, listing = get("/api/history")
+        assert status == 200 and len(listing["chats"]) == 1
+        cid = listing["chats"][0]["id"]
+        status, body = get("/api/history/" + cid)
+        assert status == 200
+        assert [(m["role"], m["content"]) for m in body["messages"]] == [
+            ("user", "Oi, Auren")
+        ]
+        assert "INTERNO_NAO_MOSTRAR" not in json.dumps(body)
+        assert "abrir_programa" not in json.dumps(body)
+        assert source.read_bytes() == before
+    finally:
+        server.shutdown()
+        server.server_close()
+        app.shutdown()
+        thread.join(timeout=4)
