@@ -32,3 +32,7 @@ RELATORIOS/
 
 # Relatorios remotos locais
 reports/
+
+# Dependencias e builds do Electron
+desktop/electron/node_modules/
+desktop/electron/dist/
