@@ -165,9 +165,11 @@ def test_cannot_new_chat_during_work_or_confirmation(tmp_path):
 
 def test_exit_command_does_not_leak_to_model_or_reuse_old_history(tmp_path):
     with server_for(tmp_path) as (app, worker, store, port):
-        first = app.submit("Primeiro assunto")["active_chat_id"]
+        app.submit("Primeiro assunto")
+        first = app.active_chat_id
         assert app.submit("sair")["mode"] == "off"
-        second = app.submit("Outro assunto")["active_chat_id"]
+        app.submit("Outro assunto")
+        second = app.active_chat_id
         assert first != second
         assert worker.messages == ["Primeiro assunto", "Outro assunto"]
         assert len(store.list_chats()) == 2
