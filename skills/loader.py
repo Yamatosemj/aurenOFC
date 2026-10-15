@@ -61,7 +61,7 @@ class SkillLibrary:
             or value != value.strip()
             or value in {".", ".."}
             or value.endswith(".")
-            or any(ord(char) < 32 or ord(char) == 127 or char in '<>:"/\|?*' for char in value)
+            or any(ord(char) < 32 or ord(char) == 127 or char in r'<>:"/\|?*' for char in value)
             or ntpath.isreserved(value)
         ):
             raise ValueError("Nome de skill invalido: use apenas um nome de pasta simples.")
