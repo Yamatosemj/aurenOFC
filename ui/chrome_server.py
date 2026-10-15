@@ -15,9 +15,10 @@ from queue import Empty
 import secrets
 import shutil
 import subprocess
-from threading import Lock
+import sys
+from threading import Lock, Thread
 from time import monotonic
-from typing import Any
+from typing import Any, BinaryIO
 from urllib.parse import urlsplit
 import webbrowser
 
@@ -335,6 +336,16 @@ class ChromeServer(ThreadingHTTPServer):
         self.app = app
 
 
+def _watch_desktop_stdin(server: ChromeServer, source: BinaryIO) -> None:
+    """Finaliza o HTTP de forma cooperativa quando o Electron fecha o pipe."""
+    try:
+        while source.read(1024):
+            pass
+    except (OSError, ValueError):
+        pass
+    server.shutdown()
+
+
 def _open_chrome(url: str) -> None:
     candidates = [shutil.which("chrome"), shutil.which("chrome.exe")]
     if os.name == "nt":
@@ -353,6 +364,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Interface local do Auren no Chrome.")
     parser.add_argument("--port", type=int, default=0, help="Porta local (padrao: livre automaticamente).")
     parser.add_argument("--no-browser", action="store_true", help="Nao abrir navegador automaticamente.")
+    parser.add_argument("--desktop-stdio", action="store_true", help="Encerrar ao receber EOF do aplicativo desktop.")
     args = parser.parse_args()
     app = LocalChromeApp()
     try:
@@ -361,6 +373,13 @@ def main() -> None:
             print("Auren Chrome: pagina local. Nao acessivel pela rede.")
             print(f"Abra: {url}")
             print("Feche com Ctrl+C nesta janela para encerrar o servidor.")
+            if args.desktop_stdio:
+                Thread(
+                    target=_watch_desktop_stdin,
+                    args=(server, sys.stdin.buffer),
+                    name="auren-desktop-stdin",
+                    daemon=True,
+                ).start()
             if not args.no_browser:
                 _open_chrome(url)
             server.serve_forever(poll_interval=0.3)
