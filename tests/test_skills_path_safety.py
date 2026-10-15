@@ -6,10 +6,13 @@ provas de instalacao e descoberta usam apenas tmp_path.
 from __future__ import annotations
 
 from pathlib import Path
+import warnings
 
 import pytest
 
 from skills.loader import SkillLibrary
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _source(root: Path, name: str = "demo", *, text: str | None = None) -> Path:
@@ -173,3 +176,11 @@ def test_discovery_skips_invalid_frontmatter_without_importing_into_context(tmp_
     lib = SkillLibrary(root)
     assert lib.discover() == []
     assert lib.prompt_context("fora") == ""
+
+
+def test_skills_loader_has_no_syntax_warning():
+    """O parser deve rejeitar escapes invalidos, inclusive no Python 3.13."""
+    loader = ROOT / "skills" / "loader.py"
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", SyntaxWarning)
+        compile(loader.read_text(encoding="utf-8"), str(loader), "exec")
