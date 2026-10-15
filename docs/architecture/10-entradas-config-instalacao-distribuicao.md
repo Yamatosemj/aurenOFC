@@ -98,7 +98,7 @@ O controle remoto [`auren-update-pc.yml`](../../.github/workflows/auren-update-p
 
 | Evidência | O que oferece | O que fica pendente |
 | --- | --- | --- |
-| [`tests/test_model_config.py`](../../tests/test_model_config.py) | Leitura de variável e provider isolado | Provar override em `import auren` / entrypoint; hoje existe verificação contraditória |
+| [`tests/test_model_config.py`](../../tests/test_model_config.py) e [`tests/test_model_override_startup.py`](../../tests/test_model_override_startup.py) | Variável de ambiente, startup de fachada e montagem de requisição simulada | Não verifica disponibilidade/compatibilidade de modelo na API real |
 | [`tests/test_dependency_pins.py`](../../tests/test_dependency_pins.py) | Regras de pin direto e deduplicação | Pip install num sistema limpo, transitivas, vulnerabilidades, dependências nativas |
 | [`tests/test_scripts_layout.py`](../../tests/test_scripts_layout.py) | Caminhos de launchers e preservação de entradas | Execução real de BAT e instalação/voz/GUI |
 | [`tests/test_desktop_ui_backend.py`](../../tests/test_desktop_ui_backend.py) | Contrato simulado de GUI e sintaxe do frontend | Janela Tk física, DPI, foco e política Windows |
