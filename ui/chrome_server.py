@@ -70,6 +70,10 @@ class LocalChromeApp:
                 break
             if event.kind in {"reply", "error"} and self.active_chat_id:
                 try:
+                    if isinstance(event.payload, dict):
+                        source_id = event.payload.get("source_chat_id")
+                        if isinstance(source_id, str):
+                            self.history_store.bind_harness_chat(self.active_chat_id, source_id)
                     self.history_store.append(
                         self.active_chat_id,
                         "assistant" if event.kind == "reply" else "error",
