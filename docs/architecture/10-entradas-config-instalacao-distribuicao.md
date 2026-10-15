@@ -112,7 +112,7 @@ O controle remoto [`auren-update-pc.yml`](../../.github/workflows/auren-update-p
 
 1. **Entrada e ambiente:** unificar bootstrap Python GUI/voz/instalação/testes, inclusive fallback e mensagens de erro; adicionar testes sobre a seleção do interpretador.
 2. **Instalador de voz:** corrigir política de cache ASR, lógica de remoção/verificação e retorno de erro em PR própria, preservando modelos existentes.
-3. **Modelo configurável:** resolver divergência `config.py` ↔ `auren.py` ↔ prompt com testes reais de entrada, sem mudanças silenciosas de identificação/compatibilidade.
+3. **Modelo configurável:** a candidata corrige a divergência `config.py` ↔ `auren.py` ↔ prompt com tests de import em subprocesso; faltam validação real de modelos alternativos na API e revisão antes de integrar, sem mudanças silenciosas de versão/compatibilidade.
 4. **Preparação do navegador:** documentar/automatizar verificação ou instalação de Chromium Playwright sob consentimento adequado, sem alegar que `pip install` basta.
 5. **Distribuição:** decidir futuramente se deve existir empacotamento portátil, instalador, ambiente isolado e estratégia de atualização/rollback. **Não criar EXE nem serviço automaticamente**.
 6. **Recuperação:** revisar backups de dados de memória, caches, configurações pessoais e permissões, sem copiar segredos para Git.
