@@ -12,20 +12,9 @@ if "%~1"=="" (
     echo [INFO] L2, L4 e L5 nao serao executadas automaticamente.
 )
 
-rem Preferimos o Python do ambiente virtual do proprio Auren.
-set "AUREN_PYTHON="
-if exist ".venv\Scripts\python.exe" (
-    set "AUREN_PYTHON=.venv\Scripts\python.exe"
-) else if exist "..\.venv\Scripts\python.exe" (
-    set "AUREN_PYTHON=..\.venv\Scripts\python.exe"
-) else (
-    where py >nul 2>&1
-    if not errorlevel 1 (
-        set "AUREN_PYTHON=py -3"
-    ) else (
-        set "AUREN_PYTHON=python"
-    )
-)
+rem Mesmo interpretador dos atalhos de instalacao e inicializacao.
+call "%~dp0..\lib\SELECIONAR_PYTHON.cmd"
+if errorlevel 1 exit /b 1
 
 rem Preflight de dependencias obrigatorias antes de carregar o Auren.
 %AUREN_PYTHON% -c "import jsonschema, openai"
