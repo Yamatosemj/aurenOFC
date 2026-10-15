@@ -76,7 +76,7 @@ O repositório não possui nesta revisão arquivo de build/distribuição como `
 
 Todos os arquivos `.bat` estão sob [`scripts/`](../../scripts/README.md) e executam `cd /d "%~dp0..\\.."` na inicialização, logo são independentes da pasta em que o usuário abriu o atalho. **Isso não significa que todos selecionem o mesmo interpretador**. A suíte [`tests/test_scripts_layout.py`](../../tests/test_scripts_layout.py) confere presença, bootstrap de diretório e destinos textuais, mas não instala dependências nem abre uma janela.
 
-**Recomendação documental para manutenção futura:** unificar a escolha de Python entre **instalar, GUI, voz e testes**, preservando compatibilidade e mensagens úteis quando o ambiente não estiver pronto; tratar em PR de código própria, acompanhada de testes Windows reais/simulados. Não corrigir nesta auditoria documental.
+**Achado 8 — correção candidata:** sete launchers principais compartilham [`SELECIONAR_PYTHON.cmd`](../../scripts/lib/SELECIONAR_PYTHON.cmd). Os testes [test_python_shortcut_selector.py](../../tests/test_python_shortcut_selector.py) verificam a estrutura em todos os sistemas e, no Windows, executam cópia do helper em pasta temporária com `where.cmd` falso e executáveis-fantasma (sem pip/GUI/API). [test_voice_installer_cache.py](../../tests/test_voice_installer_cache.py) preserva a simulação do instalador de voz com o helper novo. Testar no Windows pessoal antes de integrar, sem confundir com instalação real.
 
 ## 5. Dados, segredos, caches e atualização
 
