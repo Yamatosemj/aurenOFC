@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
+import os
 import re
+import shutil
+import tempfile
 
 @dataclass(frozen=True)
 class Skill:
@@ -42,32 +45,103 @@ class SkillLibrary:
             description = first.lstrip("#").strip()[:240]
         return Skill(name=name, description=description, path=path, instructions=body)
 
+    @staticmethod
+    def _is_link(path: Path) -> bool:
+        # is_junction cobre junctions NTFS que is_symlink nao identifica.
+        return path.is_symlink() or (hasattr(path, "is_junction") and path.is_junction())
+
+    @staticmethod
+    def _safe_name(value: str) -> str:
+        """Aceita somente um nome de diretorio portavel, nunca um caminho."""
+        if (
+            not isinstance(value, str)
+            or not value
+            or len(value) > 100
+            or value != value.strip()
+            or value in {".", ".."}
+            or value.endswith(".")
+            or re.search(r'[\\x00-\\x1f\\x7f<>:"/\\\\|?*]', value)
+            or PureWindowsPath(value).is_reserved()
+        ):
+            raise ValueError("Nome de skill invalido: use apenas um nome de pasta simples.")
+        return value
+
     def install(self, source: str | Path, *, name: str | None = None) -> Skill:
-        """Instala uma skill local copiando somente o SKILL.md para o diretório de skills."""
-        import shutil
+        """Copia apenas SKILL.md, sem permitir escrita fora da raiz confiavel."""
         src = Path(source)
         skill_file = src if src.name == "SKILL.md" else src / "SKILL.md"
+        if self._is_link(src) or self._is_link(skill_file):
+            raise ValueError("Fonte da skill nao pode ser link simbolico ou junction.")
         if not skill_file.is_file():
             raise FileNotFoundError(f"SKILL.md nao encontrado em: {skill_file}")
         skill = self._parse(skill_file)
-        if skill is None or not skill.name.strip():
+        if skill is None:
             raise ValueError("SKILL.md invalido.")
-        target_dir = self.root / (name or skill.name)
-        target_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(skill_file, target_dir / "SKILL.md")
-        installed = self._parse(target_dir / "SKILL.md")
+
+        # Validar tambem o front matter, mesmo quando um nome e fornecido.
+        self._safe_name(skill.name)
+        folder = self._safe_name(name if name is not None else skill.name)
+
+        if self._is_link(self.root):
+            raise ValueError("Raiz das skills nao pode ser link simbolico ou junction.")
+        self.root.mkdir(parents=True, exist_ok=True)
+        root = self.root.resolve(strict=True)
+        target_dir = root / folder
+        if self._is_link(target_dir) or not target_dir.resolve().is_relative_to(root):
+            raise ValueError("Destino da skill aponta para fora da raiz permitida.")
+        target_dir.mkdir(exist_ok=True)
+        if self._is_link(target_dir) or target_dir.resolve(strict=True) != root / folder:
+            raise ValueError("Diretorio de destino da skill foi redirecionado.")
+
+        target_file = target_dir / "SKILL.md"
+        if self._is_link(target_file) or (target_file.exists() and not target_file.is_file()):
+            raise ValueError("SKILL.md de destino nao pode ser um link ou arquivo especial.")
+
+        # Replace atomico evita seguir um eventual symlink no destino final
+        # ao sobrescrever uma skill existente. O diretorio raiz deve ser
+        # controlado pelo usuario (nao oferece defesa contra races hostis).
+        fd, temp_name = tempfile.mkstemp(prefix=".auren-skill-", suffix=".tmp", dir=target_dir)
+        tmp = Path(temp_name)
+        try:
+            with os.fdopen(fd, "wb") as out, skill_file.open("rb") as data:
+                shutil.copyfileobj(data, out)
+            shutil.copystat(skill_file, tmp)
+            if self._is_link(target_dir) or target_dir.resolve(strict=True) != root / folder:
+                raise ValueError("Destino da skill mudou durante a copia.")
+            if self._is_link(target_file):
+                raise ValueError("SKILL.md de destino virou um link simbolico.")
+            os.replace(tmp, target_file)
+        finally:
+            tmp.unlink(missing_ok=True)
+        installed = self._parse(target_file)
         if installed is None:
             raise ValueError("Falha ao validar a skill instalada.")
         return installed
 
     def discover(self) -> list[Skill]:
-        if not self.root.exists():
+        if not self.root.exists() or self._is_link(self.root):
             return []
+        root = self.root.resolve()
         items = []
         for path in sorted(self.root.rglob("SKILL.md")):
-            skill = self._parse(path)
-            if skill is not None:
-                items.append(skill)
+            try:
+                # Nao ler arquivos nem percorrer ancestrais que sejam links.
+                relative = path.relative_to(self.root)
+                current = self.root
+                linked = False
+                for component in relative.parts:
+                    current = current / component
+                    if self._is_link(current):
+                        linked = True
+                        break
+                if linked or not path.resolve().is_relative_to(root):
+                    continue
+                skill = self._parse(path)
+                if skill is not None:
+                    self._safe_name(skill.name)
+                    items.append(skill)
+            except (OSError, ValueError):
+                continue
         return items
 
     def match(self, objective: str, limit: int = 3) -> list[Skill]:
