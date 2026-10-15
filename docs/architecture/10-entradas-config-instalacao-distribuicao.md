@@ -68,7 +68,7 @@ O repositório não possui nesta revisão arquivo de build/distribuição como `
 | Atalho | Escolha real do interpretador | Consequência documentada |
 | --- | --- | --- |
 | [`ABRIR_AUREN_GUI.bat`](../../scripts/iniciar/ABRIR_AUREN_GUI.bat) | Seletor comum `.venv` → `..\\.venv` → `py -3` → `python` | Agora usa o mesmo Python dos instaladores; registra erro e devolve exit code após a GUI terminar |
-| [`AUREN_VOZ.bat`](../../scripts/iniciar/AUREN_VOZ.bat) | `.venv\\Scripts\\python.exe` se presente, senão `py -3` | Não testa `..\\.venv` e não oferece fallback `python` sem `py` |
+| [`AUREN_VOZ.bat`](../../scripts/iniciar/AUREN_VOZ.bat) | Seletor comum | Inclui agora fallback para o ambiente pai e `python` quando `py` não está no PATH; continua com retorno do código de erro e pausa |
 | [`TESTAR_AUREN.bat`](../../scripts/testar/TESTAR_AUREN.bat) | `.venv` local → `..\\.venv` → `py -3` → `python` | Sem argumentos **seleciona `--camada L0,L1,L2,L4`**: inclui **L4 com modelo/API e efeitos reais**, apesar do comentário “regressão diária sem L5”. **Não é pytest de baixo risco** |
 | [`TESTAR_VOZ.bat`](../../scripts/testar/TESTAR_VOZ.bat) | `.venv` local, senão `py -3` | Roda somente `pytest tests/test_voice.py -q`. Não prova qualidade física de áudio; **não preserva explicitamente `%ERRORLEVEL%` ao sair** após `pause` |
 | [`scripts/diagnosticos`](../../scripts/README.md) | Scripts específicos, alguns Python com bootstrap de raiz | Ferramentas auxiliares para diagnósticos; alguns podem depender de serviços, devices ou API. Checar intenção antes de executar |
