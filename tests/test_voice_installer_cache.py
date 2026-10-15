@@ -44,8 +44,14 @@ def test_voice_installer_preserves_completed_partial_and_other_caches_when_run(
     path = root / "scripts" / "instalar" / "INSTALAR_VOZ.bat"
     path.parent.mkdir(parents=True)
     source = INSTALLER.read_text(encoding="utf-8")
-    # Removemos somente a pausa interativa da COPIA testada.
-    path.write_text(source.replace("\npause\n", "\nrem pause (somente fixture)\n"), encoding="utf-8")
+    # A copia nao aguarda tecla e usa "call" para o py.cmd falso:
+    # ao contrario do py.exe real, executar outro .cmd sem "call"
+    # transferiria o controle e nao retornaria ao instalador.
+    pip_command = "%PY% -m pip install -r requirements-voice.txt"
+    assert source.count(pip_command) == 1
+    fixture = source.replace("\npause\n", "\nrem pause (somente fixture)\n")
+    fixture = fixture.replace(pip_command, "call " + pip_command)
+    path.write_text(fixture, encoding="utf-8")
     (root / "requirements-voice.txt").write_text("# sem instalacao real\n", encoding="utf-8")
 
     artifacts = {
@@ -60,7 +66,7 @@ def test_voice_installer_preserves_completed_partial_and_other_caches_when_run(
         file.parent.mkdir(parents=True, exist_ok=True)
         file.write_bytes(payload)
 
-    # Substitui EXCLUSIVAMENTE o comando 'py' na copia de teste.
+    # Simula o launcher py.exe usando py.cmd apenas na sandbox.
     # Esta fixture NUNCA inicia o pip real e registra os argumentos.
     fake_bin = root / "fake-bin"
     fake_bin.mkdir()
@@ -71,12 +77,16 @@ def test_voice_installer_preserves_completed_partial_and_other_caches_when_run(
     )
     log = root / "pip-invocation.txt"
     env = os.environ.copy()
-    env["PATH"] = str(fake_bin) + os.pathsep + env.get("PATH", "")
+    # PATH restrito ao stub para impedir fallback acidental para um py real.
+    # "cmd.exe" e aberto pelo caminho absoluto de ComSpec.
+    env["PATH"] = str(fake_bin)
     env["AUREN_TEST_PY_LOG"] = str(log)
     env["AUREN_TEST_FAKE_EXIT"] = str(pip_exit)
 
     proc = subprocess.run(
-        ["cmd.exe", "/d", "/c", f'call "{path}"'],
+        # Passar "call" e o path separadamente evita a dupla camada de
+        # aspas aplicada por subprocess.list2cmdline em caminhos com espacos.
+        [os.environ.get("ComSpec", "cmd.exe"), "/d", "/c", "call", str(path)],
         cwd=root,
         env=env,
         capture_output=True,
