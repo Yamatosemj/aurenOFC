@@ -56,7 +56,12 @@ def test_voice_installer_preserves_completed_partial_and_other_caches_when_run(
     selector = ROOT / "scripts" / "lib" / "SELECIONAR_PYTHON.cmd"
     selector_copy = root / "scripts" / "lib" / selector.name
     selector_copy.parent.mkdir(parents=True)
-    selector_copy.write_text(selector.read_text(encoding="utf-8"), encoding="utf-8")
+    # Teste usa where.cmd no lugar do where.exe original. Apenas na copia
+    # adicionamos CALL, para devolver o controle ao seletor.
+    helper_text = selector.read_text(encoding="utf-8")
+    helper_text = helper_text.replace("where py >nul 2>&1", "call where py >nul 2>&1")
+    helper_text = helper_text.replace("where python >nul 2>&1", "call where python >nul 2>&1")
+    selector_copy.write_text(helper_text, encoding="utf-8")
     (root / "requirements-voice.txt").write_text("# sem instalacao real\n", encoding="utf-8")
 
     artifacts = {
