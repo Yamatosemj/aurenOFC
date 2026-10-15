@@ -85,6 +85,22 @@ Limitações: somente texto por enquanto (sem integrar PTT, STT ou TTS); cartõe
 
 A GUI Tkinter original continua disponível em `scripts/iniciar/ABRIR_AUREN_GUI.bat` e não foi removida.
 
+## Interface desktop Electron (mesmo visual do Chrome; candidata)
+
+**Nao e um redesenho.** `desktop/electron/main.cjs` abre uma janela Electron/Chromium com a mesma pagina servida de `ui/chrome.html` e o mesmo `ui/vendor/three-r128.min.js`. O HTML, CSS, shaders e animacoes nao sao modificados para criar esta entrada. O servidor local Python continua em `127.0.0.1`, com os mesmos endpoints, token de sessao, Harness e confirmacoes. O Electron nao expõe Node.js ao renderer, impede nova navegacao/janelas e nega permissoes do navegador.
+
+Para testar no Windows com Node.js/npm e as dependencias Python do Auren ja instaladas:
+
+```powershell
+cd desktop/electron
+npm install
+npm start
+```
+
+Apos instalar uma vez, voce tambem pode abrir `scripts/iniciar/AUREN_DESKTOP.bat` por duplo clique. O pacote fixa `electron@44.7.2`. A janela **nao abre o Chrome**; usa Chromium embutido no Electron. Fechar a janela encerra o servidor Python via EOF no pipe (com encerramento forcado de contingencia apos 5 segundos). O atalho `AUREN_CHROME.bat` continua disponivel.
+
+**Limites desta etapa:** ainda requer o repositorio, Python configurado, Node/npm e instalacao do Electron; nao e um `Auren.exe` portatil/instalador. Sem teste visual fisico no Windows do proprietario, **nao ha garantia de igualdade pixel a pixel** (versao do Chromium, GPU, DPI e fontes podem interferir). Comparar lado a lado na mesma resolucao e escala antes de aprovar; testes automatizados nao comprovam o WebGL ou funcionamento Live.
+
 ## Interface desktop (primeira versao)
 
 No Windows, abra `scripts/iniciar/ABRIR_AUREN_GUI.bat` (ou rode `python interface_auren.py`).
