@@ -27,8 +27,14 @@ def _executar_chamadas_rodada(
     browser_state_mutating_tools: set[str] | None = None,
     browser_verification_tool: str = "obter_contexto_navegador",
     browser_verifier: Callable[[str, str, Any, Any], bool | None] | None = None,
+    falhas_pendentes: set[tuple[str, str]] | None = None,
 ) -> tuple[list[dict[str, Any]], int, bool, bool, bool]:
-    """Executa as chamadas de uma rodada e atualiza historico/estado operacional."""
+    """Executa a rodada sem apagar falhas anteriores por sucessos nao relacionados.
+
+    O ciclo compartilha ``falhas_pendentes`` entre rodadas. Uma falha so e
+    recuperada por sucesso posterior da mesma ferramenta com os mesmos
+    argumentos normalizados para registro (sem expor valores sensiveis).
+    """
     resultados_rodada: list[dict[str, Any]] = []
     ferramentas_executadas = 0
     cancelado = False
@@ -157,7 +163,19 @@ def _executar_chamadas_rodada(
             task_id=task_id,
         )
         ferramentas_executadas += 1
-        falha_nao_recuperada = not ferramenta_sucesso
+        if falhas_pendentes is None:
+            # Chamadores sem rastreador nao podem presumir que outro sucesso
+            # recuperou a falha anterior.
+            falha_nao_recuperada = falha_nao_recuperada or not ferramenta_sucesso
+        else:
+            # O ciclo compartilha este conjunto durante a tarefa inteira.
+            # Um sucesso de outra ferramenta/alvo nao limpa falhas pendentes.
+            assinatura = (nome, argumentos)
+            if ferramenta_sucesso:
+                falhas_pendentes.discard(assinatura)
+            else:
+                falhas_pendentes.add(assinatura)
+            falha_nao_recuperada = bool(falhas_pendentes)
 
         historico.append(
             {
