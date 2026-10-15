@@ -146,7 +146,7 @@ No orquestrador, só string não vazia, de até 700 caracteres após compactaç�
 | Contexto e continuidade | [test_session_context.py](../../tests/test_session_context.py) | Stores temporários, recência, fatos, corte, falhas auxiliares, Harness com modelo falso; teste sem ID só examina turnos |
 | Escopo e migração | [test_session_isolation.py](../../tests/test_session_isolation.py) | IDs distintos, fatos globais, estratégias por chat e migração de coluna |
 | Erro do provider | [test_provider_boundary.py](../../tests/test_provider_boundary.py) | Falha controlada e próxima tarefa saudável com callbacks falsos |
-| Modelo | [test_model_config.py](../../tests/test_model_config.py) | Config/provider respeitam variável; não cobre import completo de auren com override |
+| Modelo | [test_model_config.py](../../tests/test_model_config.py), [test_model_override_startup.py](../../tests/test_model_override_startup.py) | Config, fachada, prompt e provider simulados com override em processo isolado; não testa API real |
 | Cache | [test_ari_native_components.py](../../tests/test_ari_native_components.py) | Hit/miss e repetição direta; o teste com LRU/TTL no nome não exercita efetivamente expiração nem eviction |
 | Ciclo de sessão | [test_harness_session.py](../../tests/test_harness_session.py) | Reuso, criação, limpeza e exceção de logger em callbacks |
 | Gravação e fila | [test_harness_turn.py](../../tests/test_harness_turn.py), [test_harness_strategy.py](../../tests/test_harness_strategy.py) | Texto repassado, exceções, compactação, chat capturado, cancelamento e fallback |
