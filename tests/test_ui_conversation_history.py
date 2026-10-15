@@ -171,6 +171,29 @@ def test_exit_command_does_not_leak_to_model_or_reuse_old_history(tmp_path):
         assert len(store.list_chats()) == 2
 
 
+def test_electron_clipboard_bridge_is_write_only_and_sandboxed():
+    root = Path(__file__).resolve().parents[1] / "desktop" / "electron"
+    main = (root / "main.cjs").read_text(encoding="utf-8")
+    preload = (root / "preload.cjs").read_text(encoding="utf-8")
+    assert "contextIsolation: true" in main and "sandbox: true" in main
+    assert "preload: path.join(__dirname, 'preload.cjs')" in main
+    assert "event.sender !== window.webContents" in main
+    assert "value.length > 4_000_000" in main
+    assert "clipboard.writeText(value)" in main
+    assert "clipboard.readText" not in main + preload
+    assert "contextBridge.exposeInMainWorld" in preload
+    assert "auren:copy-text" in preload
+    assert "window.aurenDesktop.copyText(text)" in INDEX_PATH.read_text(encoding="utf-8")
+    node = shutil.which("node")
+    if node:
+        for path in (root / "main.cjs", root / "preload.cjs"):
+            checked = subprocess.run(
+                [node, "--check", str(path)],
+                capture_output=True, text=True, timeout=10, check=False,
+            )
+            assert checked.returncode == 0, checked.stderr
+
+
 def test_history_drawer_uses_text_content_and_leaves_orb_shaders_untouched():
     source = INDEX_PATH.read_text(encoding="utf-8")
     assert "historySidebar" in source
