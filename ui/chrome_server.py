@@ -343,8 +343,9 @@ class ChromeRequestHandler(BaseHTTPRequestHandler):
                         path.removeprefix("/api/history/"),
                         int(params.get("after", ["0"])[0]),
                     )
-            except (ValueError, TypeError):
-                self._bad(400, "Consulta de historico invalida.")
+            except (ValueError, TypeError) as exc:
+                message = str(exc) if path.endswith("/technical-log") else "Consulta de historico invalida."
+                self._bad(400, message)
                 return
             self._json(200, result)
             return
