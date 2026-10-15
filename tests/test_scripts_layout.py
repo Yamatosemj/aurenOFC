@@ -77,3 +77,23 @@ def test_manual_tester_default_remains_l0_l1_only():
     assert 'requested = {"L0", "L1"}' in source
     assert 'if "--completo" in args:' in source
     assert 'requested = {"L0", "L1", "L2", "L4", "L5"}' in source
+
+
+def test_l1_manual_tester_matches_ui_automation_and_mouse_confirmation_policy():
+    """Evita reportar politica CONFIRM segura como falha no teste L1."""
+    from core.permission_manager import PermissionManager, PermissionLevel
+
+    manager = PermissionManager()
+    normal = manager.nivel_da_acao("clicar_elemento_windows", {"alvo": "abrir"})
+    sensitive = manager.nivel_da_acao("clicar_elemento_windows", {"alvo": "excluir"})
+    mouse = manager.nivel_da_acao(
+        "clicar_mouse_windows",
+        {"x": 10, "y": 10, "botao": "esquerdo", "descricao": "botao Pesquisar"},
+    )
+    assert normal[0] == sensitive[0] == mouse[0] == PermissionLevel.CONFIRM
+    assert "clique" in mouse[1].lower() and "confirmacao" in mouse[1].lower()
+
+    source = (ROOT / "testes_auren_live.py").read_text(encoding="utf-8")
+    assert '"clique_normal": "confirm"' in source
+    assert '"clique_sensivel": "confirm"' in source
+    assert '"clique" in mouse_reason.lower() and "confirmacao" in mouse_reason.lower()' in source
