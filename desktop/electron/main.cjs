@@ -2,7 +2,7 @@
 
 // Janela nativa para a interface Chrome EXISTENTE do Auren.
 // O renderer recebe somente a pagina HTTP local; nao recebe acesso ao Node.
-const { app, BrowserWindow, dialog, Menu, session } = require('electron');
+const { app, BrowserWindow, dialog, Menu, session, ipcMain, clipboard } = require('electron');
 const { spawn } = require('node:child_process');
 const { existsSync } = require('node:fs');
 const path = require('node:path');
@@ -57,7 +57,8 @@ function display(url) {
       contextIsolation: true,
       sandbox: true,
       webSecurity: true,
-      webviewTag: false
+      webviewTag: false,
+      preload: path.join(__dirname, 'preload.cjs')
     }
   });
 
@@ -157,6 +158,13 @@ if (!app.requestSingleInstanceLock()) {
   app.whenReady().then(() => {
     if (process.platform === 'win32') app.setAppUserModelId('Auren.Desktop');
     Menu.setApplicationMenu(null);
+    ipcMain.handle('auren:copy-text', (event, value) => {
+      if (!window || event.sender !== window.webContents || typeof value !== 'string' || value.length > 4_000_000) {
+        throw new Error('Solicitacao de copia rejeitada.');
+      }
+      clipboard.writeText(value);
+      return true;
+    });
     session.defaultSession.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
     session.defaultSession.setPermissionCheckHandler(() => false);
     starting = setTimeout(() => {
