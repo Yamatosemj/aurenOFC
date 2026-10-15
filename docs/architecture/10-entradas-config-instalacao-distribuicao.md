@@ -58,7 +58,7 @@ Outras configurações ambientais no runtime, **com escopo próprio**, incluem `
 **Diferenças importantes dos instaladores:**
 
 1. **Nenhum desses scripts cria automaticamente uma `.venv`**. Se ela não existir, a instalação pode usar Python global (ou um ambiente de outro escopo, dependendo do comando). O Python escolhido para instalar precisa corresponder ao usado depois para iniciar.
-2. O instalador de voz diz **“Limpando apenas cache ASR incompleto”**, mas executa `rmdir /s /q` sobre **todo o diretório de cache ASR especificado se existir**, independentemente do estado; pode exigir novo download. O script **não verifica o código de falha do `rmdir`** e termina imprimindo código zero depois da instalação de pacotes bem-sucedida. Não vender como reinstalação preservadora do cache.
+2. **Correção candidata do achado 5:** o instalador de voz **não apaga mais o cache ASR** ao reinstalar dependências, evitando o uso destrutivo de `rmdir /s /q`; mantém o tratamento de falha de `pip`. Se faltarem arquivos obrigatórios do modelo, o próprio STT tenta completar o download no primeiro uso. O teste [`test_voice_installer_cache.py`](../../tests/test_voice_installer_cache.py) verifica o BAT estaticamente e no Windows, por cópia isolada com `py` simulado e cache fictício; isso **não** testa uma instalação real ou o comportamento do download.
 3. Ambos os instaladores apenas usam `pip`; **não** executam a instalação do browser Chromium do Playwright. O pacote Python `playwright` instalado não prova existência do navegador binário, driver/microfone, dispositivos áudio, permissões de UIA ou perfil Windows adequado. Essas pré-condições exigem verificação e orientação específicas numa futura melhoria de onboarding.
 
 O repositório não possui nesta revisão arquivo de build/distribuição como `pyproject.toml`, `setup.py`, instalador MSI ou executável portátil gerado. O processo documentado é **checkout do código-fonte + ambiente Python + scripts de instalação + execução por Python**. Não anunciar um instalador completo “um clique”, serviço Windows ou distribuição em EXE que o código não fornece.
@@ -111,7 +111,7 @@ O controle remoto [`auren-update-pc.yml`](../../.github/workflows/auren-update-p
 ## 8. Pendências após completar o inventário inicial
 
 1. **Entrada e ambiente:** unificar bootstrap Python GUI/voz/instalação/testes, inclusive fallback e mensagens de erro; adicionar testes sobre a seleção do interpretador.
-2. **Instalador de voz:** corrigir política de cache ASR, lógica de remoção/verificação e retorno de erro em PR própria, preservando modelos existentes.
+2. **Instalador de voz:** correção candidata em PR própria remove a limpeza destrutiva do cache; validar as provas offline e preservar caches reais. Ausência de limpeza não prova funcionamento físico do STT.
 3. **Modelo configurável:** a candidata corrige a divergência `config.py` ↔ `auren.py` ↔ prompt com tests de import em subprocesso; faltam validação real de modelos alternativos na API e revisão antes de integrar, sem mudanças silenciosas de versão/compatibilidade.
 4. **Preparação do navegador:** documentar/automatizar verificação ou instalação de Chromium Playwright sob consentimento adequado, sem alegar que `pip install` basta.
 5. **Distribuição:** decidir futuramente se deve existir empacotamento portátil, instalador, ambiente isolado e estratégia de atualização/rollback. **Não criar EXE nem serviço automaticamente**.

@@ -118,7 +118,7 @@ scripts/instalar/INSTALAR_AUREN.bat
 scripts/instalar/INSTALAR_VOZ.bat
 ```
 
-A camada de voz usa dependências separadas de `requirements-voice.txt`.
+A camada de voz usa dependências separadas de `requirements-voice.txt`. Reinstalar com `INSTALAR_VOZ.bat` **preserva os modelos ASR/TTS já baixados**: o instalador não limpa `data/voice/`. No primeiro uso, o Parakeet verifica a presença dos arquivos necessários e tenta completar o download se faltar algo; isto pode exigir internet.
 
 **Atenção:** os instaladores não criam automaticamente `.venv`. O atalho da GUI usa `py -3`/`python` global mesmo quando existe uma `.venv`, enquanto o de voz prefere `.venv` e depois `py -3`. Use o [guia técnico da Etapa 10](docs/architecture/10-entradas-config-instalacao-distribuicao.md) antes de diagnosticar erro de dependência. A instalação de `playwright` via pip não instala automaticamente o Chromium.
 
