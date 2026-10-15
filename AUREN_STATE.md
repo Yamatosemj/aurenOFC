@@ -17,6 +17,8 @@
 
 - **Interface Chrome local (candidata ao uso real):** `ui/chrome_server.py`, `ui/chrome.html` e `scripts/iniciar/AUREN_CHROME.bat` oferecem entrada web em 127.0.0.1, orbe WebGL original com Three.js local (MIT) e texto pelo mesmo `AurenUiWorker`. A PR #136 integrada removeu a seleção manual: mensagem acorda, 120 s sem atividade entram em Standby, `sair` desliga a sessão (sem matar o servidor), mensagem posterior inicia nova sessão. Confirmações continuam pelo canal seguro; GUI Tkinter preservada. O usuário relatou teste real bem-sucedido do orbe e de comandos do Chrome em 2026-10-11, mas a nova lógica de estados ainda exige validação no Chrome pessoal. Sem voz/web mobile ou lembretes reais.
 
+- **Correcao candidata, auditoria por arquivo (achado 2):** `tools/windows_processes.py` agora retorna `ToolResult` explicito em todos os caminhos de listagem/encerramento; erros nao sao inferidos pelo texto. `core/tool_result.py` e demais ferramentas legadas permanecem inalterados, assim como confirmacoes, PermissionManager e validacao posterior de `taskkill`. A validacao depende do CI no SHA final e de verificacao independente no Windows pessoal; **nao considerar integrado a main antes do merge**.
+
 ## 2. Implementado no repositório — não confundir com validado
 
 | Área | Estado verificável na revisão | Documento |

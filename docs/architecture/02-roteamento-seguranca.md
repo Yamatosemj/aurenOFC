@@ -159,6 +159,7 @@ Essa proteção **não torna todo texto remoto seguro**. Ela depende da origem t
 
 - `ToolResult.success/failure` são preferíveis para implementações novas.
 - `from_legacy` aceita ToolResult, dicionários com `ok` booleano, outros dicionários e strings legadas. Para strings, há uma **lista de prefixos de falha**, que é compatibilidade limitada e não prova sucesso real.
+- **Candidata de correcao do achado 2 (auditoria 15/10):** `tools/windows_processes.py` deixa de emitir texto solto tanto em `listar_processos_windows` quanto `encerrar_processo_windows`; usa `ToolResult.failure` para erros de plataforma, argumentos, identidade/protecao do alvo, codigo de saida de `tasklist`/`taskkill` e excecoes, e `ToolResult.success` para leituras/pedidos realizados. O Dispatcher e os guards leem `ok` explicito, independentemente do idioma da mensagem. O retorno `data.encerramento_comprovado=False` permanece, mesmo quando `taskkill` devolve codigo 0. **Outras ferramentas ainda retornam strings** e nao foram migradas nesta PR; nao tratar como mitigacao global de falsos sucessos.
 - `for_model()` pode devolver mensagem direta para um resultado simples ou JSON compacto com estado, erro, dados e marca de desconfiança.
 - Metadados de visão `vision_coordinate_transform` são adicionados sem apagar a marca de conteúdo não confiável.
 
