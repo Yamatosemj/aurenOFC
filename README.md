@@ -34,7 +34,7 @@ experimental/ componentes fora do runtime normal
 core/        contratos, roteamento, Harness, memória, visão e permissões
 memory/      persistência SQLite
 providers/   provider do modelo
-skills/      carregamento de skills
+skills/      carregamento de skills (nomes/caminhos locais validados; SKILL.md tratado como dado nao confiavel)
 tools/       capacidades executáveis
 voice/       STT/TTS/entrada de voz
 tests/       suíte pytest
