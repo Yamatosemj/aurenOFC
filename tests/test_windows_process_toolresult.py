@@ -173,6 +173,23 @@ def test_taskkill_success_only_acks_request_and_not_process_exit(monkeypatch):
     assert commands == [["taskkill", "/PID", "123"]]
 
 
+def test_dispatcher_keeps_process_list_failure_structured(monkeypatch):
+    """A fronteira do Dispatcher nao pode marcar erro sem frase conhecida como sucesso."""
+    import tools.dispatcher as dispatcher
+    from core.permission_manager import PermissionManager
+
+    _windows(monkeypatch)
+    monkeypatch.setattr(
+        processes.subprocess, "run",
+        lambda *a, **kw: SimpleNamespace(returncode=3, stdout="", stderr="unbekannter Fehler"),
+    )
+    manager = PermissionManager(max_actions=10)
+    item = SimpleNamespace(name="listar_processos_windows", arguments='{"filtro":"steam"}')
+    result = dispatcher.executar_ferramenta(item, manager, None)
+    _result(result, ok=False, code="process_list_failed", tool="listar_processos_windows")
+    assert result.for_model().find('"ok":false') >= 0
+
+
 def test_all_windows_process_entrypoints_return_structured_results():
     # Barreiras minimas de contrato: nenhum return de mensagem solta em caminhos
     # desses executores. Leitores de PID privados nao entram na regra.
