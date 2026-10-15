@@ -19,10 +19,11 @@ import sys
 from threading import Lock, Thread
 from time import monotonic
 from typing import Any, BinaryIO
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, parse_qs
 import webbrowser
 
 from ui.backend import AurenUiWorker, ConfirmationChoice
+from ui.conversation_history import UiConversationHistory, MAX_SEARCH, MAX_TEXT
 
 
 INDEX_PATH = Path(__file__).with_name("chrome.html")
@@ -37,8 +38,10 @@ EXIT_COMMANDS = {"sair", "desligar auren", "desligue auren", "encerrar auren", "
 class LocalChromeApp:
     """Gerencia somente a interface, o worker e as confirmacoes de UI."""
 
-    def __init__(self, worker: AurenUiWorker | None = None) -> None:
+    def __init__(self, worker: AurenUiWorker | None = None, history_store: UiConversationHistory | None = None) -> None:
         self.worker = worker or AurenUiWorker()
+        self.history_store = history_store or UiConversationHistory()
+        self.active_chat_id: str | None = None
         self.mode = "off"
         self.busy = False
         self.last_activity = monotonic()
@@ -65,6 +68,16 @@ class LocalChromeApp:
                 event = self.worker.events.get_nowait()
             except Empty:
                 break
+            if event.kind in {"reply", "error"} and self.active_chat_id:
+                try:
+                    self.history_store.append(
+                        self.active_chat_id,
+                        "assistant" if event.kind == "reply" else "error",
+                        str(event.text or "")[:MAX_TEXT],
+                    )
+                except (OSError, ValueError, Exception) as exc:
+                    # Nunca incluir conteudo de mensagens no erro exposto na UI.
+                    self._push("notice", "Nao foi possivel salvar uma resposta no historico.")
             if event.kind == "confirm":
                 choice = event.payload
                 if not isinstance(choice, ConfirmationChoice):
@@ -126,6 +139,7 @@ class LocalChromeApp:
             return {
                 "mode": self.mode,
                 "busy": self.busy,
+                "active_chat_id": self.active_chat_id,
                 "seq": self.counter,
                 "gap": gap,
                 "events": items,
@@ -172,8 +186,31 @@ class LocalChromeApp:
                 raise ValueError("O Auren nao aceitou a mensagem.")
             self.busy = True
             self.last_activity = monotonic()
+            try:
+                if self.active_chat_id is None:
+                    self.active_chat_id = self.history_store.create_chat()
+                self.history_store.append(self.active_chat_id, "user", message)
+            except Exception:
+                self._push("notice", "Mensagem enviada, mas nao foi salva no historico.")
             self._push("you", message)
-            return {"accepted": True, "mode": self.mode}
+            return {"accepted": True, "mode": self.mode, "active_chat_id": self.active_chat_id}
+
+    def new_chat(self) -> dict[str, Any]:
+        """Troca somente a sessao da UI e solicita descarte do Harness anterior."""
+        with self.lock:
+            self._drain()
+            if self.busy or self.pending is not None:
+                raise ValueError("Aguarde a tarefa ou confirmacao atual terminar.")
+            self._go_off()
+            self.active_chat_id = None
+            self._push("new_chat")
+            return {"active_chat_id": None, "mode": "off"}
+
+    def list_chats(self, query: str) -> dict[str, Any]:
+        return {"chats": self.history_store.list_chats(query), "active_chat_id": self.active_chat_id}
+
+    def read_chat(self, chat_id: str, after: int) -> dict[str, Any]:
+        return self.history_store.get_messages(chat_id, after=after)
 
     def confirm(self, request_id: int, approved: bool) -> dict[str, Any]:
         with self.lock:
@@ -271,6 +308,31 @@ class ChromeRequestHandler(BaseHTTPRequestHandler):
                 "application/javascript; charset=utf-8",
             )
             return
+        if path == "/api/history" or path.startswith("/api/history/"):
+            if not self._authorized():
+                self._bad(403, "Sessao nao autorizada.")
+                return
+            try:
+                params = parse_qs(urlsplit(self.path).query, keep_blank_values=True)
+                if path == "/api/history":
+                    if set(params) - {"q"} or len(params.get("q", [""])) != 1:
+                        raise ValueError("Pesquisa invalida.")
+                    query = params.get("q", [""])[0]
+                    if len(query) > MAX_SEARCH:
+                        raise ValueError("Pesquisa muito longa.")
+                    result = self.server.app.list_chats(query)
+                else:
+                    if set(params) - {"after"} or len(params.get("after", ["0"])) != 1:
+                        raise ValueError("Cursor invalido.")
+                    result = self.server.app.read_chat(
+                        path.removeprefix("/api/history/"),
+                        int(params.get("after", ["0"])[0]),
+                    )
+            except (ValueError, TypeError):
+                self._bad(400, "Consulta de historico invalida.")
+                return
+            self._json(200, result)
+            return
         if path == "/api/events":
             if not self._authorized():
                 self._bad(403, "Sessao nao autorizada.")
@@ -303,7 +365,11 @@ class ChromeRequestHandler(BaseHTTPRequestHandler):
             if not isinstance(obj, dict):
                 raise ValueError("O corpo precisa ser um objeto JSON.")
             path = urlsplit(self.path).path
-            if path == "/api/mode":
+            if path == "/api/history/new":
+                if obj:
+                    raise ValueError("Nova conversa nao aceita parametros.")
+                result = self.server.app.new_chat()
+            elif path == "/api/mode":
                 if set(obj) != {"mode"} or not isinstance(obj["mode"], str):
                     raise ValueError("Modo invalido.")
                 result = self.server.app.change_mode(obj["mode"])
