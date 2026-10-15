@@ -201,3 +201,140 @@ def test_history_http_automatically_discovers_old_chats_without_exposing_logs(tm
         server.server_close()
         app.shutdown()
         thread.join(timeout=4)
+
+
+def test_technical_log_exact_copy_for_imported_chat_and_original_is_untouched(tmp_path):
+    root = tmp_path / "logs" / "chats"
+    original = (
+        _event("CHAT_START", chat_id=OLD)
+        + _event("TASK_START", task_id="a", objetivo="Abra o Chrome")
+        + _event("MODEL_ROUND_RESPONSE", rodada=1, output_text="resultado intermediário")
+        + _event("TOOL_CALL", ferramenta="abrir_programa", argumentos={"nome": "Chrome"})
+        + _event("TOOL_RESULT", ferramenta="abrir_programa", resultado="ok")
+        + _event("TASK_END", task_id="a", status="completed")
+    )
+    log = _make_log(root, OLD, original)
+    ui = UiConversationHistory(
+        tmp_path / "history.sqlite3", legacy_root=root, memory_db=tmp_path / "missing.db"
+    )
+    chat = ui.list_chats()[0]["id"]
+    assert ui.technical_log(chat) == original
+    assert log.read_text(encoding="utf-8") == original
+    assert [m["content"] for m in ui.get_messages(chat)["messages"]] == ["Abra o Chrome"]
+
+
+def test_technical_log_only_from_validated_source_not_client_paths(tmp_path):
+    import pytest
+
+    root = tmp_path / "logs" / "chats"
+    ui = UiConversationHistory(
+        tmp_path / "history.sqlite3", legacy_root=root, memory_db=tmp_path / "missing.db"
+    )
+    chat = ui.create_chat()
+    with pytest.raises(ValueError, match="Ainda nao existe"):
+        ui.technical_log(chat)
+    with pytest.raises(ValueError):
+        ui.technical_log("../../secrets")
+    with pytest.raises(ValueError):
+        ui.technical_log("not-a-chat-id")
+
+    # Um link simbolico nao deve expor arquivo fora da pasta de logs.
+    malicious = root / OLD / "chat" / "chat.log"
+    malicious.parent.mkdir(parents=True)
+    target = tmp_path / "secret.txt"
+    target.write_text("SEGREDO", encoding="utf-8")
+    try:
+        malicious.symlink_to(target)
+    except (OSError, NotImplementedError):
+        return
+    linked = ui.create_chat()
+    ui.bind_harness_chat(linked, OLD)
+    with pytest.raises(ValueError, match="invalido"):
+        ui.technical_log(linked)
+    assert target.read_text(encoding="utf-8") == "SEGREDO"
+
+
+def test_technical_log_too_big_is_rejected_not_truncated(tmp_path):
+    import pytest
+
+    root = tmp_path / "logs" / "chats"
+    log = _make_log(root, OLD, _event("TASK_START", objetivo="mensagem"))
+    ui = UiConversationHistory(
+        tmp_path / "history.sqlite3", legacy_root=root, memory_db=tmp_path / "missing.db"
+    )
+    chat = ui.list_chats()[0]["id"]
+    with log.open("ab") as f:
+        f.write(b"x" * 3_000_001)
+    with pytest.raises(ValueError, match="3 MB"):
+        ui.technical_log(chat)
+    assert log.stat().st_size > 3_000_000
+
+
+def test_technical_log_http_requires_session_token_and_preserves_full_raw_text(tmp_path):
+    from threading import Thread
+    from queue import Queue
+    from http.client import HTTPConnection
+    from ui.chrome_server import ChromeServer, LocalChromeApp
+
+    root = tmp_path / "logs" / "chats"
+    body = _event("CHAT_START", chat_id=OLD) + _event(
+        "TASK_START", task_id="one", objetivo="Iniciar"
+    ) + _event("MODEL_ROUND_RESPONSE", output_text="Texto técnico")
+    saved = _make_log(root, OLD, body)
+    store = UiConversationHistory(
+        tmp_path / "history.sqlite3", legacy_root=root, memory_db=tmp_path / "missing.db"
+    )
+
+    class Worker:
+        def __init__(self):
+            self.events = Queue()
+        def start(self):
+            pass
+        def close(self):
+            pass
+
+    app = LocalChromeApp(worker=Worker(), history_store=store)
+    server = ChromeServer(app)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    cid = store.list_chats()[0]["id"]
+    path = "/api/history/" + cid + "/technical-log"
+
+    def get(target, headers=None):
+        conn = HTTPConnection("127.0.0.1", server.server_port, timeout=5)
+        try:
+            conn.request("GET", target, headers=headers or {})
+            res = conn.getresponse()
+            return res.status, json.loads(res.read())
+        finally:
+            conn.close()
+
+    try:
+        assert get(path)[0] == 403
+        assert get(path, {"X-Auren-Token": "wrong"})[0] == 403
+        assert get(path, {"X-Auren-Token": app.token, "Origin": "https://evil.invalid"})[0] == 403
+        status, response = get(path, {"X-Auren-Token": app.token})
+        assert status == 200
+        assert response == {"text": body}
+        assert get("/api/history/../../core/harness.py/technical-log",
+                   {"X-Auren-Token": app.token})[0] in {400, 404}
+        assert get(path + "?after=1", {"X-Auren-Token": app.token})[0] == 400
+        assert saved.read_text(encoding="utf-8") == body
+        status, visible = get("/api/history/" + cid, {"X-Auren-Token": app.token})
+        assert status == 200
+        assert [m["content"] for m in visible["messages"]] == ["Iniciar"]
+    finally:
+        server.shutdown()
+        server.server_close()
+        app.shutdown()
+        thread.join(timeout=4)
+
+
+def test_history_copy_ui_offers_both_formats():
+    from ui.chrome_server import INDEX_PATH
+    source = INDEX_PATH.read_text(encoding="utf-8")
+    assert 'id="historyCopyAll"' in source
+    assert 'id="historyCopyLog"' in source
+    assert "historyCopyTechnical" in source
+    assert '"/technical-log"' in source
+    assert "window.aurenDesktop.copyText(text)" in source
