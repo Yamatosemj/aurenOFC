@@ -119,9 +119,11 @@ def test_http_auth_persistence_copy_data_and_new_chat(tmp_path):
         status, _ = call(port, "POST", "/api/history/new", body={})
         assert status == 403
         status, result = call(port, "POST", "/api/message", app.token, {"text": "Olá, Auren"})
-        assert status == 200 and result["active_chat_id"]
-        chat_id = result["active_chat_id"]
+        assert status == 200 and result == {"accepted": True, "mode": "active"}
+        chat_id = app.active_chat_id
+        assert chat_id
         worker.events.put(UiEvent("reply", "Olá, usuário!"))
+        worker.events.put(UiEvent("idle"))
         status, snapshot = call(port, "GET", "/api/events?after=0", app.token)
         assert status == 200 and snapshot["active_chat_id"] == chat_id
         status, items = call(port, "GET", "/api/history?q=ol%C3%A1", app.token)
