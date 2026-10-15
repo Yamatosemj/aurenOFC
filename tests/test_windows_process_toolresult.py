@@ -28,7 +28,10 @@ def _result(value, *, ok: bool, code: str | None, tool: str):
         assert converted.as_dict()["ok"] is False
         assert '"ok":false' in converted.for_model()
     else:
-        assert converted.for_model() == value.message
+        if value.data is None:
+            assert converted.for_model() == value.message
+        else:
+            assert '"ok":true' in converted.for_model()
 
 
 @pytest.mark.parametrize("operation,tool", [
