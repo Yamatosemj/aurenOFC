@@ -7,22 +7,9 @@ echo AUREN - INSTALACAO DAS DEPENDENCIAS
 echo ========================================
 
 echo.
-if exist ".venv\Scripts\python.exe" (
-    echo Usando Python do ambiente virtual: .venv
-    ".venv\Scripts\python.exe" -m pip install -r requirements.txt
-) else if exist "..\.venv\Scripts\python.exe" (
-    echo Usando Python do ambiente virtual pai: ..\.venv
-    "..\.venv\Scripts\python.exe" -m pip install -r requirements.txt
-) else (
-    where py >nul 2>&1
-    if not errorlevel 1 (
-        echo Usando Python global: py -3
-        py -3 -m pip install -r requirements.txt
-    ) else (
-        echo Usando Python global: python
-        python -m pip install -r requirements.txt
-    )
-)
+call "%~dp0..\lib\SELECIONAR_PYTHON.cmd"
+if errorlevel 1 exit /b 1
+%AUREN_PYTHON% -m pip install -r requirements.txt
 
 set "AUREN_EXIT_CODE=%ERRORLEVEL%"
 echo.
