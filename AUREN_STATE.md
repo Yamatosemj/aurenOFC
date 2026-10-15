@@ -17,6 +17,8 @@
 
 - **Interface Chrome local (candidata ao uso real):** `ui/chrome_server.py`, `ui/chrome.html` e `scripts/iniciar/AUREN_CHROME.bat` oferecem entrada web em 127.0.0.1, orbe WebGL original com Three.js local (MIT) e texto pelo mesmo `AurenUiWorker`. A PR #136 integrada removeu a seleção manual: mensagem acorda, 120 s sem atividade entram em Standby, `sair` desliga a sessão (sem matar o servidor), mensagem posterior inicia nova sessão. Confirmações continuam pelo canal seguro; GUI Tkinter preservada. O usuário relatou teste real bem-sucedido do orbe e de comandos do Chrome em 2026-10-11, mas a nova lógica de estados ainda exige validação no Chrome pessoal. Sem voz/web mobile ou lembretes reais.
 
+- **Interface Electron (candidata, PR separada, pendente de validacao Windows):** adicionada uma janela Chromium via `desktop/electron/main.cjs` que reutiliza integralmente `ui/chrome.html` e o servidor Python atual, com encerramento cooperativo por stdin. O original Chrome/Tkinter nao foi substituido. Ainda sem instalador/EXE autonomo, nem comparacao visual pixel a pixel ou teste no PC do proprietario. Manter como candidata ate CI e prova de uso fisico.
+
 ## 2. Implementado no repositório — não confundir com validado
 
 | Área | Estado verificável na revisão | Documento |
