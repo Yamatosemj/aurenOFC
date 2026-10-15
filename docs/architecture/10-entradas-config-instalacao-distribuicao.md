@@ -110,7 +110,7 @@ O controle remoto [`auren-update-pc.yml`](../../.github/workflows/auren-update-p
 
 ## 8. Pendências após completar o inventário inicial
 
-1. **Entrada e ambiente:** unificar bootstrap Python GUI/voz/instalação/testes, inclusive fallback e mensagens de erro; adicionar testes sobre a seleção do interpretador.
+1. **Entrada e ambiente — achado 8, correção candidata:** unificar bootstrap do grupo principal de sete atalhos e validar prioridade, fallback e erro sem abrir programas reais; diagnósticos/experimentos e comandos diretos permanecem fora deste escopo.
 2. **Instalador de voz:** correção candidata em PR própria remove a limpeza destrutiva do cache; validar as provas offline e preservar caches reais. Ausência de limpeza não prova funcionamento físico do STT.
 3. **Modelo configurável:** a candidata corrige a divergência `config.py` ↔ `auren.py` ↔ prompt com tests de import em subprocesso; faltam validação real de modelos alternativos na API e revisão antes de integrar, sem mudanças silenciosas de versão/compatibilidade.
 4. **Preparação do navegador:** documentar/automatizar verificação ou instalação de Chromium Playwright sob consentimento adequado, sem alegar que `pip install` basta.
