@@ -194,7 +194,7 @@ class LocalChromeApp:
             except Exception:
                 self._push("notice", "Mensagem enviada, mas nao foi salva no historico.")
             self._push("you", message)
-            return {"accepted": True, "mode": self.mode, "active_chat_id": self.active_chat_id}
+            return {"accepted": True, "mode": self.mode}
 
     def new_chat(self) -> dict[str, Any]:
         """Troca somente a sessao da UI e solicita descarte do Harness anterior."""
