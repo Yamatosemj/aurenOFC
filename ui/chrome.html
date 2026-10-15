@@ -78,8 +78,48 @@ canvas{cursor:pointer}
 #orbFallback{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);pointer-events:none}
 #connection{position:absolute;bottom:2px;left:10px;right:10px;font-size:.7rem;text-align:center;color:var(--mute)}
 @media (prefers-reduced-motion:reduce){#stage canvas{animation:none}}
+/* Historico discreto: overlay lateral, sem deslocar nem redesenhar o orbe. */
+#historyToggle{position:fixed;z-index:6;top:12px;left:16px;width:42px;height:42px;border:1px solid var(--line);border-radius:14px;background:var(--pill);backdrop-filter:blur(12px);font-size:21px;line-height:1}
+#historyBackdrop[hidden],#historySidebar[hidden]{display:none!important}
+#historyBackdrop{position:fixed;inset:0;z-index:7;background:rgba(0,0,0,.28)}
+#historySidebar{position:fixed;z-index:8;top:0;bottom:0;left:0;width:min(370px,92vw);padding:18px;display:flex;flex-direction:column;gap:12px;background:var(--bg2);border-right:1px solid var(--line);box-shadow:12px 0 45px #0004}
+#historyTop{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#historyTop strong{letter-spacing:.06em;font-size:1rem;font-weight:600}
+.historyActions{display:flex;gap:6px}
+.historyBtn{border:1px solid var(--line);border-radius:12px;background:var(--pill);padding:8px 10px}
+#historySearch{width:100%;border:1px solid var(--line);background:var(--pill);color:var(--ink);border-radius:12px;padding:11px;font:inherit}
+#historyList,#historyTranscript{min-height:0;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:9px;padding:2px 0 14px}
+.historyItem{border:1px solid var(--line);border-radius:14px;padding:11px;display:flex;align-items:center;gap:8px;background:var(--pill)}
+.historyOpen{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;text-align:left;border:0;background:none;padding:0}
+.historyOpen strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.9rem;font-weight:600}
+.historyOpen small{color:var(--mute);font-size:.75rem}
+.historyCopy{border:1px solid var(--line);border-radius:10px;background:var(--card);padding:8px;font-size:.8rem}
+.historyBubble{border:1px solid var(--line);border-radius:12px;padding:11px;background:var(--pill);white-space:pre-wrap;overflow-wrap:anywhere;font-size:.88rem}
+.historyBubble strong{font-size:.74rem;color:var(--mute);display:block;margin-bottom:5px}
+.historyBubble.error{border-color:var(--warn)}
+#historyDetail[hidden],#historyIndex[hidden]{display:none!important}
+#historyDetail,#historyIndex{display:contents}
+#historyMeta{font-size:.77rem;color:var(--mute);min-height:1.2em}
+#historyStatus{font-size:.8rem;color:var(--mute);min-height:1.2em}
+#historyTitle{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 </style>
 
+
+<button id="historyToggle" type="button" aria-label="Abrir historico" title="Histórico de conversas" aria-expanded="false">☰</button>
+<div id="historyBackdrop" hidden></div>
+<aside id="historySidebar" aria-label="Historico de conversas" hidden>
+  <div id="historyTop"><strong id="historyTitle">Conversas</strong><div class="historyActions"><button id="historyNew" type="button" class="historyBtn" title="Nova conversa">+ Nova</button><button id="historyClose" type="button" class="historyBtn" aria-label="Fechar histórico">✕</button></div></div>
+  <div id="historyIndex">
+    <input id="historySearch" type="search" autocomplete="off" placeholder="Buscar nas conversas" aria-label="Buscar no histórico">
+    <div id="historyList" aria-live="polite"></div>
+  </div>
+  <div id="historyDetail" hidden>
+    <div class="historyActions"><button id="historyBack" type="button" class="historyBtn">← Voltar</button><button id="historyCopyAll" type="button" class="historyBtn">Copiar conversa</button></div>
+    <div id="historyTranscript"></div>
+  </div>
+  <div id="historyMeta">Histórico local neste computador</div>
+  <div id="historyStatus" role="status" aria-live="polite"></div>
+</aside>
 
 <div id="tint"></div>
 <header>
@@ -302,6 +342,140 @@ async function postApi(path,body){
  if(!res.ok)throw new Error(data.error||"Falha na comunicação local");
  return data;
 }
+
+/* Painel retratil e copiador: registros somente do canal UI, nao do contexto do Harness. */
+const historyUI={
+ toggle:$("historyToggle"),side:$("historySidebar"),backdrop:$("historyBackdrop"),
+ list:$("historyList"),search:$("historySearch"),detail:$("historyDetail"),
+ index:$("historyIndex"),transcript:$("historyTranscript"),title:$("historyTitle"),
+ status:$("historyStatus")
+};
+let historySelected=null,historyTimer=null,historyRefreshPending=false,historyActive=null;
+function historyNotice(message){historyUI.status.textContent=message}
+function historyShow(open){
+ historyUI.side.hidden=!open;historyUI.backdrop.hidden=!open;
+ historyUI.toggle.setAttribute("aria-expanded",String(open));
+ if(open){historyRefresh();historyUI.search.focus()}else{historySelected=null;historyShowIndex()}
+}
+function historyShowIndex(){
+ historyUI.detail.hidden=true;historyUI.index.hidden=false;
+ historyUI.title.textContent="Conversas";
+}
+async function historyRequest(url){
+ const r=await fetch(url,{headers:{"X-Auren-Token":AUREN_TOKEN},cache:"no-store"});
+ const data=await r.json();
+ if(!r.ok)throw new Error(data.error||"Não foi possível consultar o histórico.");
+ return data;
+}
+function historyDate(iso){
+ const d=new Date(iso);return Number.isNaN(d.getTime())?"":d.toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"});
+}
+async function historyRefresh(){
+ if(historyUI.side.hidden||historySelected)return;
+ const query=historyUI.search.value;
+ try{
+  const data=await historyRequest("/api/history?q="+encodeURIComponent(query));
+  if(historyUI.side.hidden||historySelected||query!==historyUI.search.value)return;
+  historyActive=data.active_chat_id;
+  historyUI.list.replaceChildren();
+  if(!data.chats.length){
+   const empty=document.createElement("p");empty.textContent="Nenhuma conversa encontrada.";historyUI.list.append(empty);
+  }
+  for(const chat of data.chats){
+   const item=document.createElement("div");item.className="historyItem";
+   const open=document.createElement("button");open.type="button";open.className="historyOpen";
+   const heading=document.createElement("strong");heading.textContent=chat.title;
+   const small=document.createElement("small");
+   small.textContent=historyDate(chat.updated_at)+(chat.id===historyActive?" · Atual":"");
+   open.append(heading,small);open.onclick=()=>historyOpen(chat.id);
+   const copy=document.createElement("button");copy.type="button";copy.className="historyCopy";
+   copy.textContent="Copiar";copy.setAttribute("aria-label","Copiar "+chat.title);
+   copy.onclick=()=>historyCopy(chat.id,copy);
+   item.append(open,copy);historyUI.list.append(item);
+  }
+ }catch(err){historyNotice(err.message)}
+}
+async function historyLoadAll(id){
+ let after=0,all=[],title="";
+ for(let page=0;page<1000;page++){
+  const data=await historyRequest("/api/history/"+encodeURIComponent(id)+"?after="+after);
+  title=data.chat.title;all.push(...data.messages);
+  if(!data.has_more)return {title,messages:all};
+  if(data.next_after<=after)throw new Error("Cursor repetido no histórico.");
+  after=data.next_after;
+ }
+ throw new Error("Conversa muito extensa para copiar integralmente.");
+}
+function historyFormat(data){
+ const lines=["# "+data.title];
+ for(const m of data.messages){
+  const who=m.role==="user"?"Você":m.role==="error"?"Erro":"Auren";
+  lines.push("","["+who+" • "+historyDate(m.created_at)+"]",m.content);
+ }
+ return lines.join("\n");
+}
+async function historyClipboard(text){
+ try{
+  if(!navigator.clipboard||!navigator.clipboard.writeText)throw new Error("Clipboard API indisponível");
+  await navigator.clipboard.writeText(text);
+ }catch(_){
+  const tmp=document.createElement("textarea");tmp.value=text;
+  tmp.style.position="fixed";tmp.style.left="-9999px";
+  document.body.append(tmp);tmp.select();
+  const ok=document.execCommand("copy");tmp.remove();
+  if(!ok)throw new Error("Não foi possível copiar. Verifique a permissão da área de transferência.");
+ }
+}
+async function historyCopy(id,button){
+ const old=button.textContent;button.disabled=true;historyNotice("Preparando cópia…");
+ try{
+  const data=await historyLoadAll(id);
+  await historyClipboard(historyFormat(data));
+  historyNotice(data.messages.length+" mensagens copiadas.");
+  button.textContent="Copiado!";
+ }catch(err){historyNotice(err.message)}
+ finally{button.disabled=false;setTimeout(()=>{button.textContent=old},1500)}
+}
+async function historyOpen(id){
+ historySelected=id;historyUI.index.hidden=true;historyUI.detail.hidden=false;
+ historyUI.transcript.replaceChildren();historyUI.title.textContent="Carregando…";
+ try{
+  const data=await historyLoadAll(id);
+  if(historySelected!==id)return;
+  historyUI.title.textContent=data.title;
+  if(!data.messages.length){
+   const empty=document.createElement("p");empty.textContent="Conversa sem mensagens.";historyUI.transcript.append(empty);
+  }
+  for(const msg of data.messages){
+   const bubble=document.createElement("div");bubble.className="historyBubble "+msg.role;
+   const label=document.createElement("strong");
+   label.textContent=(msg.role==="user"?"Você":msg.role==="assistant"?"Auren":"Erro")+" · "+historyDate(msg.created_at);
+   const content=document.createElement("span");content.textContent=msg.content;
+   bubble.append(label,content);historyUI.transcript.append(bubble);
+  }
+ }catch(err){historyNotice(err.message)}
+}
+historyUI.toggle.onclick=()=>historyShow(historyUI.side.hidden);
+$("historyClose").onclick=()=>historyShow(false);
+historyUI.backdrop.onclick=()=>historyShow(false);
+$("historyBack").onclick=()=>{historySelected=null;historyShowIndex();historyRefresh()};
+$("historyCopyAll").onclick=()=>historySelected&&historyCopy(historySelected,$("historyCopyAll"));
+historyUI.search.addEventListener("input",()=>{
+ clearTimeout(historyTimer);historyTimer=setTimeout(historyRefresh,240);
+});
+$("historyNew").onclick=async()=>{
+ try{
+  await postApi("/api/history/new",{});
+  historySelected=null;historyShow(false);
+  historyActive=null;
+  historyNotice("Nova conversa. Clique no orbe para começar.");
+  modoAtual="off";pintaModo();
+ }catch(err){historyNotice(err.message)}
+};
+window.addEventListener("keydown",e=>{
+ if(e.key==="Escape"&&!historyUI.side.hidden){e.preventDefault();historyShow(false)}
+});
+
 function pintaModo(){
  const bot=$("bEstados");
  bot.textContent=({off:"Desligado",standby:"Standby",active:"Ativo"})[modoAtual]||"Auren";
@@ -326,7 +500,7 @@ $("authYes").onclick=()=>responderConfirmacao(true);
 function evento(e){
  if(e.kind==="you"){eco.textContent="Você: "+e.text;cap.textContent="";define("pensando")}
  else if(e.kind==="busy"){ocupado=true;if(modoAtual==="active")define("pensando")}
- else if(e.kind==="idle"){ocupado=false}
+ else if(e.kind==="idle"){ocupado=false;if(!historyUI.side.hidden&&!historySelected)historyRefresh()}
  else if(e.kind==="reply"&&modoAtual!=="off"){void agir("normal",e.text)}
  else if(e.kind==="error"&&modoAtual!=="off"){void agir("confusa",e.text)}
  else if(e.kind==="confirm"){
@@ -336,6 +510,7 @@ function evento(e){
   $("authPanel").hidden=false;define("perguntando");
  }
  else if(e.kind==="confirm_done"){pedidoPendente=null;$("authPanel").hidden=true}
+ else if(e.kind==="new_chat"){historyActive=null}
  else if(e.kind==="off"){if(modoAtual==="off")pintaModo()}
 }
 async function eventos(){
