@@ -103,6 +103,14 @@ Apos instalar uma vez, voce tambem pode abrir `scripts/iniciar/AUREN_DESKTOP.bat
 
 **Limites desta etapa:** ainda requer o repositorio, Python configurado, Node/npm e instalacao do Electron; nao e um `Auren.exe` portatil/instalador. Sem teste visual fisico no Windows do proprietario, **nao ha garantia de igualdade pixel a pixel** (versao do Chromium, GPU, DPI e fontes podem interferir). Comparar lado a lado na mesma resolucao e escala antes de aprovar; testes automatizados nao comprovam o WebGL ou funcionamento Live.
 
+## Historico de conversas da interface (candidata)
+
+A interface atual do Chrome **e a mesma usada no Electron**. Clique em **☰** no canto superior esquerdo para abrir um painel lateral discreto. Nele voce pode buscar conversas por titulo/conteudo, abrir e ler cada registro e **copiar a conversa completa** (com os turnos de Usuario/Auren e seus horarios), sem precisar selecionar texto manualmente. O botao **+ Nova** encerra a sessao atual com as protecoes existentes e inicia um novo historico apenas quando a primeira mensagem for enviada; tarefas e confirmacoes em andamento bloqueiam a troca de conversa.
+
+Os novos turnos ficam gravados em **`data/ui/conversation_history.sqlite3`**, ignorado pelo Git. Os dados sao **locais e nao criptografados**, portanto qualquer pessoa ou processo com acesso aos arquivos do perfil pode le-los. O registro serve para consulta/copia, e **nao reativa o estado interno de uma sessao antiga no modelo**. Clicar numa conversa antiga abre uma visualizacao de leitura; uma continuacao real com contexto do modelo exige outra etapa, sem contornar o Harness. Nao importa automaticamente logs historicos anteriores a esta funcionalidade e nao interfere na memoria SQLite do agente.
+
+A API `/api/history` e as rotas de detalhe e `/api/history/new` exigem o mesmo token local das demais APIs, protegidas por verificacoes de host, origem e loopback. As mensagens aparecem como texto (nao HTML) para evitar execucao de conteudo nao confiavel. O orbe 3D, shaders e animacoes existentes nao foram alterados.
+
 ## Interface desktop (primeira versao)
 
 No Windows, abra `scripts/iniciar/ABRIR_AUREN_GUI.bat` (ou rode `python interface_auren.py`).
