@@ -166,7 +166,7 @@ tests/test_harness_round_preparation.py
 Reproduções adicionais, fora da suíte e sem alterar testes do repositório:
 
 - Banco temporário com conversa/estratégia em chat-A: build sem ID recupera seções globais; build com chat-B não as recupera.
-- Subprocesso com AUREN_MODEL diferente: import auren aborta na verificação de coerência.
+- **Achado histórico antes da correção:** um subprocesso com `AUREN_MODEL` diferente abortava o import de `auren` na verificação de coerência; a correção candidata elimina esse bloqueio, com teste de subprocesso dedicado em `tests/test_model_override_startup.py`.
 - Provider falso: texto elegível igual com response_id diferente produz apenas uma chamada; estado padrão do Harness é rejeitado pelo cache.
 - Cliente Responses falso: tools vazio, previous_response_id opcional e parallel_tool_calls=False chegam ao payload.
 
