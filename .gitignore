@@ -36,3 +36,6 @@ reports/
 # Dependencias e builds do Electron
 desktop/electron/node_modules/
 desktop/electron/dist/
+
+# Historico local da interface (privado)
+data/ui/
