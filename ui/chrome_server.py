@@ -217,6 +217,9 @@ class LocalChromeApp:
     def read_chat(self, chat_id: str, after: int) -> dict[str, Any]:
         return self.history_store.get_messages(chat_id, after=after)
 
+    def read_technical_log(self, chat_id: str) -> dict[str, str]:
+        return {"text": self.history_store.technical_log(chat_id)}
+
     def confirm(self, request_id: int, approved: bool) -> dict[str, Any]:
         with self.lock:
             self._drain()
@@ -319,7 +322,14 @@ class ChromeRequestHandler(BaseHTTPRequestHandler):
                 return
             try:
                 params = parse_qs(urlsplit(self.path).query, keep_blank_values=True)
-                if path == "/api/history":
+                if path.endswith("/technical-log") and path.startswith("/api/history/"):
+                    if params:
+                        raise ValueError("Consulta de log invalida.")
+                    chat_id = path.removeprefix("/api/history/").removesuffix("/technical-log")
+                    if "/" in chat_id:
+                        raise ValueError("Identificador de conversa invalido.")
+                    result = self.server.app.read_technical_log(chat_id)
+                elif path == "/api/history":
                     if set(params) - {"q"} or len(params.get("q", [""])) != 1:
                         raise ValueError("Pesquisa invalida.")
                     query = params.get("q", [""])[0]
