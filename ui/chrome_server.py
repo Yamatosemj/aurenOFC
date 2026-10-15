@@ -75,7 +75,7 @@ class LocalChromeApp:
                         "assistant" if event.kind == "reply" else "error",
                         str(event.text or "")[:MAX_TEXT],
                     )
-                except (OSError, ValueError, Exception) as exc:
+                except Exception:
                     # Nunca incluir conteudo de mensagens no erro exposto na UI.
                     self._push("notice", "Nao foi possivel salvar uma resposta no historico.")
             if event.kind == "confirm":
@@ -175,6 +175,7 @@ class LocalChromeApp:
                 self._push("you", message)
                 if self.mode != "off":
                     self._go_off()
+                self.active_chat_id = None
                 return {"accepted": True, "mode": "off"}
             if self.busy:
                 raise ValueError("Aguarde a tarefa atual terminar.")
