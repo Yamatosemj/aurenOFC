@@ -92,7 +92,12 @@ def test_selector_real_windows_cmd_with_fake_where_and_no_real_python(
     root = tmp_path / "sandbox com espacos"
     lib = root / "scripts" / "lib"
     lib.mkdir(parents=True)
-    (lib / SELECTOR.name).write_text(SELECTOR.read_text(encoding="utf-8"), encoding="utf-8")
+    # A producao usa where.exe. Nesta sandbox 'where' e um .cmd falso:
+    # precisa de CALL para devolver o fluxo ao seletor.
+    helper_text = SELECTOR.read_text(encoding="utf-8")
+    helper_text = helper_text.replace("where py >nul 2>&1", "call where py >nul 2>&1")
+    helper_text = helper_text.replace("where python >nul 2>&1", "call where python >nul 2>&1")
+    (lib / SELECTOR.name).write_text(helper_text, encoding="utf-8")
 
     if kind in {"local", "parent"}:
         venv = root / ".venv" if kind == "local" else tmp_path / ".venv"
