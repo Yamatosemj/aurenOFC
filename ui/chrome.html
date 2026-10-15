@@ -114,10 +114,10 @@ canvas{cursor:pointer}
     <div id="historyList" aria-live="polite"></div>
   </div>
   <div id="historyDetail" hidden>
-    <div class="historyActions"><button id="historyBack" type="button" class="historyBtn">← Voltar</button><button id="historyCopyAll" type="button" class="historyBtn">Copiar conversa</button></div>
+    <div class="historyActions"><button id="historyBack" type="button" class="historyBtn">← Voltar</button><button id="historyCopyAll" type="button" class="historyBtn">Copiar conversa</button><button id="historyCopyLog" type="button" class="historyBtn" title="Copiar registros técnicos da sessão selecionada">Copiar log técnico</button></div>
     <div id="historyTranscript"></div>
   </div>
-  <div id="historyMeta">Histórico local neste computador</div>
+  <div id="historyMeta">Logs técnicos podem conter dados privados. Revise antes de compartilhar.</div>
   <div id="historyStatus" role="status" aria-live="polite"></div>
 </aside>
 
@@ -441,6 +441,17 @@ async function historyCopy(id,button){
  }catch(err){historyNotice(err.message)}
  finally{button.disabled=false;setTimeout(()=>{button.textContent=old},1500)}
 }
+async function historyCopyTechnical(id,button){
+ const old=button.textContent;button.disabled=true;historyNotice("Lendo o log técnico original…");
+ try{
+  const data=await historyRequest("/api/history/"+encodeURIComponent(id)+"/technical-log");
+  if(typeof data.text!=="string")throw new Error("Resposta do log técnico inválida.");
+  await historyClipboard(data.text);
+  historyNotice("Log técnico integral copiado. Revise possíveis dados privados antes de compartilhar.");
+  button.textContent="Copiado!";
+ }catch(err){historyNotice(err.message)}
+ finally{button.disabled=false;setTimeout(()=>{button.textContent=old},1500)}
+}
 async function historyOpen(id){
  historySelected=id;historyUI.index.hidden=true;historyUI.detail.hidden=false;
  historyUI.transcript.replaceChildren();historyUI.title.textContent="Carregando…";
@@ -465,6 +476,7 @@ $("historyClose").onclick=()=>historyShow(false);
 historyUI.backdrop.onclick=()=>historyShow(false);
 $("historyBack").onclick=()=>{historySelected=null;historyShowIndex();historyRefresh()};
 $("historyCopyAll").onclick=()=>historySelected&&historyCopy(historySelected,$("historyCopyAll"));
+$("historyCopyLog").onclick=()=>historySelected&&historyCopyTechnical(historySelected,$("historyCopyLog"));
 historyUI.search.addEventListener("input",()=>{
  clearTimeout(historyTimer);historyTimer=setTimeout(historyRefresh,240);
 });
