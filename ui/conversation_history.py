@@ -13,7 +13,7 @@ from time import monotonic
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
-from ui.legacy_chat_import import LEGACY_LOG_ROOT, LEGACY_MEMORY_DB, legacy_uuid, read_legacy_sources
+from ui.legacy_chat_import import LEGACY_LOG_ROOT, LEGACY_MEMORY_DB, CHAT_NAME, legacy_uuid, read_legacy_sources
 
 DEFAULT_HISTORY_DB = Path(__file__).resolve().parents[1] / "data" / "ui" / "conversation_history.sqlite3"
 PAGE_SIZE = 100
@@ -156,6 +156,50 @@ class UiConversationHistory:
                 "UPDATE ui_chats SET source_chat_id=? WHERE id=? AND legacy_import=0",
                 (source_chat_id, chat_id),
             )
+
+    def technical_log(self, chat_id: str) -> str:
+        """Devolve o chat.log canonico integral, nunca o dump global de varios chats.
+
+        Leitura somente, com limite explicito: nao copiar um log truncado como se
+        fosse completo. O ID HTTP e um UUID da UI, jamais caminho de arquivo.
+        """
+        chat_id = _validate_id(chat_id)
+        if self._legacy_root is None or self._legacy_root.is_symlink():
+            raise ValueError("Log tecnico indisponivel para esta conversa.")
+
+        with self._lock, self._connect() as db:
+            row = db.execute(
+                "SELECT source_chat_id FROM ui_chats WHERE id=?", (chat_id,)
+            ).fetchone()
+        if row is None:
+            raise ValueError("Conversa nao encontrada.")
+        source_id = row["source_chat_id"]
+        if not isinstance(source_id, str) or not CHAT_NAME.fullmatch(source_id):
+            raise ValueError("Ainda nao existe log tecnico vinculado a esta conversa.")
+
+        root = self._legacy_root.resolve()
+        path = self._legacy_root / source_id / "chat" / "chat.log"
+        if path.is_symlink() or not path.resolve().is_relative_to(root):
+            raise ValueError("Caminho de log invalido.")
+
+        # Copia integral com teto compativel com a ponte de clipboard Electron.
+        max_bytes = 3_000_000
+        try:
+            with path.open("rb") as source:
+                raw = source.read(max_bytes + 1)
+        except FileNotFoundError as exc:
+            raise ValueError("O arquivo tecnico desta conversa nao foi encontrado.") from exc
+        except OSError as exc:
+            raise ValueError("Nao foi possivel ler o log tecnico.") from exc
+        if len(raw) > max_bytes:
+            raise ValueError(
+                "Log tecnico acima de 3 MB: copia integral indisponivel pelo painel. "
+                "Abra o arquivo original em logs/chats para consultar sem perda."
+            )
+        try:
+            return raw.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise ValueError("Log tecnico nao esta em UTF-8 valido.") from exc
 
     def _connect(self) -> sqlite3.Connection:
         db = sqlite3.connect(self.path, timeout=5)
