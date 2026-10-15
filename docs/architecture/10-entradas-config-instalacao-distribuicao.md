@@ -34,7 +34,7 @@ Todos os canais de conversa reaproveitam o mesmo ponto de montagem `auren.criar_
 | `MEMORY_DB_PATH` | `data/memory/auren_memory.sqlite3` | Caminho da memória local; ignorado por Git |
 | `AUREN_VERSION` | **47** | Identificação técnica estável atual, não avaliação do voice V48 |
 | `DEFAULT_MODEL` | `gpt-5.6-luna` | Modelo padrão definido no código |
-| `MODEL` | `os.getenv("AUREN_MODEL", "").strip() or DEFAULT_MODEL` | A variável é lida no import; configuração alternativa **não funciona de ponta a ponta** na fachada |
+| `MODEL` | `os.getenv("AUREN_MODEL", "").strip() or DEFAULT_MODEL` | Valor efetivo usado por fachada/prompt/provider após correção candidata; aceitação pela API não validada |
 | `CACHE_KEY` | `auren-v47` | Namespace de cache derivado da versão |
 | `ARCHITECTURE_NAME` | `V47 ARI NATIVE VISUAL GEOMETRY` | Identificação da arquitetura |
 | `RESPONSE_CACHE_MAX_ITEMS` e `TTL_SECONDS` | **50 itens**, **600 segundos** | Defaults do cache de resposta textual, não validade de estados do Windows |
