@@ -125,7 +125,7 @@ Não existe arquivo `tests/test_skills.py` nem `SKILL.md` versionado nesta árvo
 
 ## 8. Pendências delimitadas (não corrigir nesta PR)
 
-1. **Skills sem bateria dedicada:** seleção lexical, front matter, tamanho, nome de pasta e fronteiras de caminho/symlink merecem testes independentes.
+1. **Skills:** a PR candidata adiciona bateria de segurança de nomes/path/symlink; ainda faltam testes mais amplos de seleção lexical, limites de contexto, e prompt injection semântico. Diretório local de skills deve permanecer confiável (sem acesso de escrita por atacantes concorrentes).
 2. **Instruções locais como texto não confiável:** guarda contra prompt injection precisa de cenários adversariais de skill reais; prefixo no prompt não substitui isolamento/política.
 3. **Catálogos diferentes:** `KNOWN_SERVICES` do catálogo de capacidades e `SITES_CONHECIDOS` dos fast paths não são a mesma lista; alterações futuras podem criar comportamento inconsistente.
 4. **Limite do experimento áudio:** fallback após erro, idempotência e custo de repetição de comando devem ser avaliados antes de expandir uso.
