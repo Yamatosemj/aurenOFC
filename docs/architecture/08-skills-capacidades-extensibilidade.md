@@ -31,7 +31,7 @@
 - `discover()` procura recursivamente `SKILL.md` e ignora arquivos ilegíveis, links simbólicos/junctions e nomes inválidos; verifica que o documento resolvido permanece dentro da raiz. **Não** consulta catálogo remoto, não instala dependências e não executa código da skill.
 - `match(objective, limit=3)` tokeniza a solicitação e classifica pelo **número de termos com ocorrência como substring** em nome, descrição ou corpo. Empate é por nome; isso **não** é ranking semântico nem comprovação de capacidade.
 - `prompt_context(objective, limit=3, max_chars=2200)` concatena até **700 caracteres de instruções por skill**, com limite total de **2.200** e uma identificação explícita de conteúdo não confiável. `compact_descriptions(limit=8)` lista resumos, mas não executa ação.
-- `install(source, name=...)` copia **somente** `SKILL.md` para a raiz escolhida. Não é gerenciador de pacote: **não** instala scripts, arquivos auxiliares, bibliotecas, ferramentas ou contratos automaticamente.
+- `install(source, name=...)` copia **somente** `SKILL.md` para a raiz escolhida. **Correção candidata do achado 6:** valida o nome do front matter e qualquer override de diretório como um único componente portátil, recusa nomes reservados no Windows, caminhos absolutos, separadores e travessia `..`; recusa fontes/destinos em links simbólicos e junctions, confere contenção após resolver caminhos e substitui `SKILL.md` via arquivo temporário e `os.replace` para não seguir um link no arquivo final. Não instala scripts ou contratos automaticamente.
 
 ### Onde o conteúdo entra
 
