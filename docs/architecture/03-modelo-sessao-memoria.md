@@ -36,7 +36,7 @@ A cadeia oficial continua passando pelo Harness. Métodos Python públicos de st
 
 [config.py](../../config.py) lê `AUREN_MODEL` no import, remove espaços e usa `gpt-5.6-luna` quando vazio. **Correção candidata do achado 4:** [auren.py](../../auren.py) conserva o literal de **modelo padrão** para descoberta estática/compatibilidade, mas valida esse literal contra `config.DEFAULT_MODEL` e, depois, define o modelo efetivo a partir de `config.MODEL`. Dessa forma, um override legítimo não interrompe a importação; coerência de versão/cache/arquitetura/default continua exigida. A aceitação do identificador pela API depende da conta e da disponibilidade do modelo.
 
-Além disso, [core/prompt.py](../../core/prompt.py) instrui o modelo a se identificar como GPT-5.6 Luna de forma fixa. Mudar apenas config/provider não atualiza essa identificação. O teste de override em [test_model_config.py](../../tests/test_model_config.py) verifica config/provider, não a inicialização completa da fachada. O README foi corrigido para não prometer que a troca funciona hoje; a correção de código fica para PR própria.
+O [prompt](../../core/prompt.py) agora inclui o identificador realmente configurado em vez da identidade textual fixa; serializa o nome como string JSON para não transformar quebras de linha/aspas vindas do ambiente em linhas de instrução. [test_model_config.py](../../tests/test_model_config.py) mantém os testes antigos; [test_model_override_startup.py](../../tests/test_model_override_startup.py) adiciona import completo em subprocesso, isolamento de SQLite, provider simulado sem rede e preservação da descoberta estática. **Não** é prova de que um ID arbitrário exista ou seja compatível na API.
 
 ## 3. Sessão, chat e contexto da tarefa
 
