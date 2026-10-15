@@ -415,6 +415,11 @@ function historyFormat(data){
  return lines.join("\n");
 }
 async function historyClipboard(text){
+ // Electron usa uma ponte somente para ESCRITA; Chrome usa API web.
+ if(window.aurenDesktop&&typeof window.aurenDesktop.copyText==="function"){
+  await window.aurenDesktop.copyText(text);
+  return;
+ }
  try{
   if(!navigator.clipboard||!navigator.clipboard.writeText)throw new Error("Clipboard API indisponível");
   await navigator.clipboard.writeText(text);
