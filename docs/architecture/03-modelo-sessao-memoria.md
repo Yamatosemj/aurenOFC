@@ -76,7 +76,7 @@ A primeira rodada recebe objetivo e contexto no estado textual. O estado é cort
 
 O Harness passa `response_id=None` e esforço `none`. Portanto **não usa previous_response_id**, embora o provider aceite esse argumento para outros chamadores. Limitar o estado não limita sozinho todo o payload: outputs e imagens são itens separados. O corte textual também não equivale a resumo semântico.
 
-A docstring do helper diz preservar reasoning; o loop observado só copia itens `function_call`. Essa divergência já está registrada na Etapa 1; compatibilidade de reasoning com modelos reais continua pendente.
+**Correção candidata do achado 7:** o helper agora anexa ao input seguinte itens `reasoning` e `function_call` da resposta **imediatamente anterior**, em ordem, antes dos outputs. A alteração é coberta por [testes de continuidade](../../tests/test_harness_reasoning_continuity.py) com respostas/SDK simulados e não reenvia mensagens finais nem toda a cadeia. **Não** altera o esforço `none`, o uso de `previous_response_id` (continua ausente) nem demonstra se a API real fornece campos de reasoning utilizáveis em modo stateless.
 
 ## 4. Persistência e recuperação
 
