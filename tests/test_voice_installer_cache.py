@@ -47,11 +47,21 @@ def test_voice_installer_preserves_completed_partial_and_other_caches_when_run(
     # A copia nao aguarda tecla e usa "call" para o py.cmd falso:
     # ao contrario do py.exe real, executar outro .cmd sem "call"
     # transferiria o controle e nao retornaria ao instalador.
-    pip_command = "%PY% -m pip install -r requirements-voice.txt"
+    pip_command = "%AUREN_PYTHON% -m pip install -r requirements-voice.txt"
     assert source.count(pip_command) == 1
     fixture = source.replace("\npause\n", "\nrem pause (somente fixture)\n")
     fixture = fixture.replace(pip_command, "call " + pip_command)
     path.write_text(fixture, encoding="utf-8")
+    # A fixture deve ter o MESMO seletor usado em producao.
+    selector = ROOT / "scripts" / "lib" / "SELECIONAR_PYTHON.cmd"
+    selector_copy = root / "scripts" / "lib" / selector.name
+    selector_copy.parent.mkdir(parents=True)
+    # Teste usa where.cmd no lugar do where.exe original. Apenas na copia
+    # adicionamos CALL, para devolver o controle ao seletor.
+    helper_text = selector.read_text(encoding="utf-8")
+    helper_text = helper_text.replace("where py >nul 2>&1", "call where py >nul 2>&1")
+    helper_text = helper_text.replace("where python >nul 2>&1", "call where python >nul 2>&1")
+    selector_copy.write_text(helper_text, encoding="utf-8")
     (root / "requirements-voice.txt").write_text("# sem instalacao real\n", encoding="utf-8")
 
     artifacts = {
@@ -73,6 +83,11 @@ def test_voice_installer_preserves_completed_partial_and_other_caches_when_run(
     fake_py = fake_bin / "py.cmd"
     fake_py.write_text(
         '@echo off\n>>"%AUREN_TEST_PY_LOG%" echo %*\nexit /b %AUREN_TEST_FAKE_EXIT%\n',
+        encoding="utf-8",
+    )
+    # O helper usa where; simulamos apenas py (nao procura executaveis reais).
+    (fake_bin / "where.cmd").write_text(
+        '@echo off\nif /i "%~1"=="py" exit /b 0\nexit /b 1\n',
         encoding="utf-8",
     )
     log = root / "pip-invocation.txt"

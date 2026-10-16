@@ -7,14 +7,11 @@ echo AUREN VOICE ENGINE V3 - INSTALACAO
 echo ========================================
 echo.
 
-if exist ".venv\Scripts\python.exe" (
-    set "PY=.venv\Scripts\python.exe"
-) else (
-    set "PY=py -3"
-)
+call "%~dp0..\lib\SELECIONAR_PYTHON.cmd"
+if errorlevel 1 exit /b 1
 
 echo Instalando dependencias locais de voz...
-%PY% -m pip install -r requirements-voice.txt
+%AUREN_PYTHON% -m pip install -r requirements-voice.txt
 if errorlevel 1 (
     echo.
     echo ERRO: a instalacao das dependencias falhou.
