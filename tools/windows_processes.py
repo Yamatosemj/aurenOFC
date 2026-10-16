@@ -10,6 +10,7 @@ import subprocess
 
 from core.tool_result import ToolResult
 from core.utils import normalizar_nome
+from tools.windows_process_policy import is_inside_windows_directory, is_protected_process_name
 
 
 def _caminho_executavel_por_pid_windows(pid):
@@ -138,6 +139,12 @@ def encerrar_processo_windows(pid=None, nome="", forcar=False):
             error_code="force_invalid",
             tool_name="encerrar_processo_windows",
         )
+    if isinstance(pid, bool):
+        return ToolResult.failure(
+            "PID invalido. Informe um numero inteiro valido.",
+            error_code="pid_invalid",
+            tool_name="encerrar_processo_windows",
+        )
     try:
         pedido_pid = int(pid) if pid not in (None, "", 0) else None
     except (TypeError, ValueError):
@@ -173,12 +180,7 @@ def encerrar_processo_windows(pid=None, nome="", forcar=False):
             tool_name="encerrar_processo_windows",
         )
 
-    # Evita encerramento acidental de processos centrais do Windows.
-    protegidos = {
-        "system", "system idle process", "smss.exe", "csrss.exe", "wininit.exe",
-        "services.exe", "lsass.exe", "winlogon.exe", "explorer.exe", "dwm.exe"
-    }
-
+    # Politica comum para encerramento normal e forcado (/IM e /PID).
     if pedido_pid == os.getpid():
         return ToolResult.failure(
             "Nao vou encerrar o proprio processo do Auren pelo caminho de taskkill.",
@@ -208,19 +210,12 @@ def encerrar_processo_windows(pid=None, nome="", forcar=False):
                 or getattr(os, "environ", {}).get("WINDIR")
                 or r"C:\Windows"
             )
-            caminho_norm = ntpath.normcase(ntpath.normpath(caminho_real))
-            raiz_norm = ntpath.normcase(ntpath.normpath(raiz_windows)).rstrip("\\")
-            if caminho_norm.startswith(raiz_norm + "\\"):
+            if is_inside_windows_directory(caminho_real, raiz_windows):
                 return ToolResult.failure(
                     "Nao vou forcar um executavel instalado no diretorio do Windows.",
                     error_code="force_windows_process_blocked",
                     tool_name="encerrar_processo_windows",
                 )
-            # Nenhuma politica por nome e exaustiva; esta e defesa adicional.
-            protegidos = protegidos | {
-                "svchost.exe", "registry", "memcompression",
-                "taskhostw.exe", "fontdrvhost.exe", "sihost.exe",
-            }
         else:
             nome_real = _nome_executavel_por_pid_windows(pedido_pid)
         if not nome_real:
@@ -229,13 +224,21 @@ def encerrar_processo_windows(pid=None, nome="", forcar=False):
                 error_code="process_identity_unverified",
                 tool_name="encerrar_processo_windows",
             )
-        if nome_real in protegidos:
+        if is_protected_process_name(nome_real):
             return ToolResult.failure(
                 f"Nao vou encerrar o processo protegido '{nome_real}'.",
                 error_code="protected_process_blocked",
                 tool_name="encerrar_processo_windows",
             )
-    elif alvo.lower() in protegidos:
+        # Um nome fornecido junto ao PID nao pode disfarcar a identidade real.
+        # O nome continua opcional no modo normal, para compatibilidade.
+        if alvo and nome_real != alvo.casefold() and not forcar:
+            return ToolResult.failure(
+                "Nao vou encerrar: o nome informado nao corresponde ao executavel do PID.",
+                error_code="process_identity_mismatch",
+                tool_name="encerrar_processo_windows",
+            )
+    elif is_protected_process_name(alvo):
         return ToolResult.failure(
             f"Nao vou encerrar o processo protegido '{alvo}'.",
             error_code="protected_process_blocked",
