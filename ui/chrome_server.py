@@ -68,6 +68,16 @@ class LocalChromeApp:
                 event = self.worker.events.get_nowait()
             except Empty:
                 break
+            # Os eventos podem ter sido emitidos antes de Desligar/reativar.
+            # Nao deixar idle/off/confirm de uma sessao anterior afetar a atual.
+            event_generation = getattr(event, "generation", None)
+            worker_generation = getattr(self.worker, "generation", None)
+            if event_generation is not None and event_generation != worker_generation:
+                if event.kind == "confirm" and isinstance(event.payload, ConfirmationChoice):
+                    event.payload.answer(False)
+                continue
+            # Persistir SOMENTE depois de validar a geracao da sessao.
+            # Resposta obsoleta nao pertence ao chat reativado.
             if event.kind in {"reply", "error"} and self.active_chat_id:
                 try:
                     if isinstance(event.payload, dict):
@@ -80,7 +90,7 @@ class LocalChromeApp:
                         str(event.text or "")[:MAX_TEXT],
                     )
                 except Exception:
-                    # Nunca incluir conteudo de mensagens no erro exposto na UI.
+                    # Nao incluir conteudo da mensagem no erro da UI.
                     self._push("notice", "Nao foi possivel salvar uma resposta no historico.")
             if event.kind == "confirm":
                 choice = event.payload
@@ -419,7 +429,7 @@ class ChromeServer(ThreadingHTTPServer):
 
 
 def _watch_desktop_stdin(server: ChromeServer, source: BinaryIO) -> None:
-    """Finaliza o HTTP de forma cooperativa quando o Electron fecha o pipe."""
+    """Encerra o HTTP ao receber EOF do processo Electron (sem navegador externo)."""
     try:
         while source.read(1024):
             pass

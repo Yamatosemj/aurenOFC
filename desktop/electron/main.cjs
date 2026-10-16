@@ -24,8 +24,10 @@ let lastError = '';
 
 const pythonCandidates = () => {
   const venv = path.join(root, '.venv', 'Scripts', 'python.exe');
+  const parentVenv = path.resolve(root, '..', '.venv', 'Scripts', 'python.exe');
   const candidates = [];
   if (existsSync(venv)) candidates.push({ command: venv, args: [] });
+  if (existsSync(parentVenv)) candidates.push({ command: parentVenv, args: [] });
   if (process.platform === 'win32') candidates.push({ command: 'py', args: ['-3'] });
   candidates.push({ command: process.platform === 'win32' ? 'python' : 'python3', args: [] });
   return candidates;

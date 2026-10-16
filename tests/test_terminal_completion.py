@@ -200,7 +200,7 @@ def test_step_failure_sem_recovery_falha_tarefa():
     assert harness.current_task().steps[0].success is False
 
 
-def test_step_failure_com_recovery_pode_continuar():
+def test_falha_ao_abrir_nao_e_recuperada_por_consultar_status():
     from types import SimpleNamespace
     _, Response, _ = _make_harness([])
     outputs = [
@@ -219,7 +219,10 @@ def test_step_failure_com_recovery_pode_continuar():
     harness, _, _ = _make_harness([Response([outputs[0], outputs[1]]), Response([], "recuperado com sucesso")], executor=executor)
     harness.processar_mensagem("abra o Notepad e depois verifique o status do sistema")
     snap = harness.current_task()
-    assert snap.state is not TaskState.FAILED
+    # Consultar o status nao abriu o Notepad; o teste anterior tratava esse
+    # sucesso como "recovery" mesmo sem reparar a operacao que falhou.
+    assert snap.state is TaskState.FAILED
+    assert snap.error == "step_failed_unrecovered"
     assert len(snap.steps) == 2
     assert snap.steps[0].success is False
     assert snap.steps[1].success is True

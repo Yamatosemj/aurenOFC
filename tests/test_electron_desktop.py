@@ -28,6 +28,9 @@ def test_electron_reuses_original_ui_without_renderer_privileges():
     assert "sandbox: true" in source
     assert "webSecurity: true" in source
     assert "webviewTag: false" in source
+    assert "const parentVenv = path.resolve(root, '..', '.venv', 'Scripts', 'python.exe')" in source
+    assert "if (existsSync(parentVenv)) candidates.push" in source
+    assert "shell: false" in source
     assert "assets\', \'auren.ico" in source
     assert "icon: existsSync(iconPath) ? iconPath : undefined" in source
     assert "setWindowOpenHandler(() => ({ action: 'deny' }))" in source

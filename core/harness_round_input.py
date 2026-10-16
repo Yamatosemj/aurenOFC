@@ -45,12 +45,12 @@ def _montar_input_da_rodada(
         }
     ]
 
-    # Modelos de raciocínio exigem que os itens de reasoning da resposta
-    # anterior acompanhem os function calls e os respectivos outputs.
-    # Enviamos somente a resposta da rodada imediatamente anterior,
-    # nunca toda a cadeia da tarefa.
-    for item in getattr(resposta_anterior, "output", []):
-        if getattr(item, "type", "") == "function_call":
+    # Preservamos os itens reasoning e function_call da resposta anterior
+    # na ordem original. Eles pertencem a mesma rodada e antecedem os outputs
+    # das ferramentas. Nao copiamos mensagens finais nem rodadas mais antigas.
+    # O SDK devolve itens como objetos com .type; nao os converter em texto.
+    for item in getattr(resposta_anterior, "output", []) or []:
+        if getattr(item, "type", "") in {"reasoning", "function_call"}:
             input_items.append(item)
 
     for resultado in resultados:

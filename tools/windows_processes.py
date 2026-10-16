@@ -10,6 +10,7 @@ import subprocess
 
 from core.tool_result import ToolResult
 from core.utils import normalizar_nome
+from tools.windows_process_policy import is_inside_windows_directory, is_protected_process_name
 
 
 def _caminho_executavel_por_pid_windows(pid):
@@ -60,7 +61,11 @@ def _nome_executavel_por_pid_windows(pid):
 
 def listar_processos_windows(filtro=""):
     if os.name != "nt":
-        return "Listagem de processos so esta disponivel no Windows."
+        return ToolResult.failure(
+            "Listagem de processos so esta disponivel no Windows.",
+            error_code="windows_only",
+            tool_name="listar_processos_windows",
+        )
 
     try:
         resultado = subprocess.run(
@@ -73,7 +78,11 @@ def listar_processos_windows(filtro=""):
             check=False,
         )
         if resultado.returncode != 0:
-            return "Nao consegui listar os processos do Windows."
+            return ToolResult.failure(
+                "Nao consegui listar os processos do Windows.",
+                error_code="process_list_failed",
+                tool_name="listar_processos_windows",
+            )
 
         linhas = list(csv.reader(io.StringIO(resultado.stdout)))
         pedido = normalizar_nome(filtro) if filtro else ""
@@ -88,8 +97,14 @@ def listar_processos_windows(filtro=""):
 
         if not encontrados:
             if pedido:
-                return f"Nenhum processo corresponde a '{filtro}'."
-            return "Nenhum processo foi encontrado."
+                return ToolResult.success(
+                    f"Nenhum processo corresponde a '{filtro}'.",
+                    tool_name="listar_processos_windows",
+                )
+            return ToolResult.success(
+                "Nenhum processo foi encontrado.",
+                tool_name="listar_processos_windows",
+            )
 
         encontrados.sort(key=lambda item: normalizar_nome(item[0]))
         limite = 25
@@ -98,13 +113,24 @@ def listar_processos_windows(filtro=""):
         ]
         for nome, pid, memoria in encontrados[:limite]:
             linhas_saida.append(f"{nome} | PID {pid} | memoria {memoria}")
-        return "\n".join(linhas_saida)
+        return ToolResult.success(
+            "\n".join(linhas_saida),
+            tool_name="listar_processos_windows",
+        )
     except Exception as erro:
-        return f"Nao consegui listar os processos: {erro}"
+        return ToolResult.failure(
+            f"Nao consegui listar os processos: {erro}",
+            error_code="process_list_exception",
+            tool_name="listar_processos_windows",
+        )
 
 def encerrar_processo_windows(pid=None, nome="", forcar=False):
     if os.name != "nt":
-        return "Controle de processos so esta disponivel no Windows."
+        return ToolResult.failure(
+            "Controle de processos so esta disponivel no Windows.",
+            error_code="windows_only",
+            tool_name="encerrar_processo_windows",
+        )
 
     alvo = str(nome).strip()
     if type(forcar) is not bool:
@@ -113,20 +139,32 @@ def encerrar_processo_windows(pid=None, nome="", forcar=False):
             error_code="force_invalid",
             tool_name="encerrar_processo_windows",
         )
+    if isinstance(pid, bool):
+        return ToolResult.failure(
+            "PID invalido. Informe um numero inteiro valido.",
+            error_code="pid_invalid",
+            tool_name="encerrar_processo_windows",
+        )
     try:
         pedido_pid = int(pid) if pid not in (None, "", 0) else None
     except (TypeError, ValueError):
         return ToolResult.failure(
             "PID invalido. Informe um numero inteiro valido.",
             error_code="pid_invalid",
+            tool_name="encerrar_processo_windows",
         )
     if pedido_pid is not None and pedido_pid <= 0:
         return ToolResult.failure(
             "PID invalido. Informe um PID maior que zero.",
             error_code="pid_invalid",
+            tool_name="encerrar_processo_windows",
         )
     if pedido_pid is None and not alvo:
-        return "Informe um PID ou nome de processo."
+        return ToolResult.failure(
+            "Informe um PID ou nome de processo.",
+            error_code="process_target_missing",
+            tool_name="encerrar_processo_windows",
+        )
 
     if forcar and (pedido_pid is None or not alvo):
         return ToolResult.failure(
@@ -136,16 +174,19 @@ def encerrar_processo_windows(pid=None, nome="", forcar=False):
         )
 
     if pedido_pid is None and any(c in alvo for c in "*?"):
-        return "Nao vou aceitar curingas no nome do processo; informe um executavel especifico."
+        return ToolResult.failure(
+            "Nao vou aceitar curingas no nome do processo; informe um executavel especifico.",
+            error_code="process_wildcard_rejected",
+            tool_name="encerrar_processo_windows",
+        )
 
-    # Evita encerramento acidental de processos centrais do Windows.
-    protegidos = {
-        "system", "system idle process", "smss.exe", "csrss.exe", "wininit.exe",
-        "services.exe", "lsass.exe", "winlogon.exe", "explorer.exe", "dwm.exe"
-    }
-
+    # Politica comum para encerramento normal e forcado (/IM e /PID).
     if pedido_pid == os.getpid():
-        return "Nao vou encerrar o proprio processo do Auren pelo caminho de taskkill."
+        return ToolResult.failure(
+            "Nao vou encerrar o proprio processo do Auren pelo caminho de taskkill.",
+            error_code="self_process_blocked",
+            tool_name="encerrar_processo_windows",
+        )
 
     if pedido_pid is not None:
         if forcar:
@@ -169,29 +210,40 @@ def encerrar_processo_windows(pid=None, nome="", forcar=False):
                 or getattr(os, "environ", {}).get("WINDIR")
                 or r"C:\Windows"
             )
-            caminho_norm = ntpath.normcase(ntpath.normpath(caminho_real))
-            raiz_norm = ntpath.normcase(ntpath.normpath(raiz_windows)).rstrip("\\")
-            if caminho_norm.startswith(raiz_norm + "\\"):
+            if is_inside_windows_directory(caminho_real, raiz_windows):
                 return ToolResult.failure(
                     "Nao vou forcar um executavel instalado no diretorio do Windows.",
                     error_code="force_windows_process_blocked",
                     tool_name="encerrar_processo_windows",
                 )
-            # Nenhuma politica por nome e exaustiva; esta e defesa adicional.
-            protegidos = protegidos | {
-                "svchost.exe", "registry", "memcompression",
-                "taskhostw.exe", "fontdrvhost.exe", "sihost.exe",
-            }
         else:
             nome_real = _nome_executavel_por_pid_windows(pedido_pid)
         if not nome_real:
-            return (
-                f"Nao vou encerrar o PID {pedido_pid}: nao consegui verificar qual processo ele representa."
+            return ToolResult.failure(
+                f"Nao vou encerrar o PID {pedido_pid}: nao consegui verificar qual processo ele representa.",
+                error_code="process_identity_unverified",
+                tool_name="encerrar_processo_windows",
             )
-        if nome_real in protegidos:
-            return f"Nao vou encerrar o processo protegido '{nome_real}'."
-    elif alvo.lower() in protegidos:
-        return f"Nao vou encerrar o processo protegido '{alvo}'."
+        if is_protected_process_name(nome_real):
+            return ToolResult.failure(
+                f"Nao vou encerrar o processo protegido '{nome_real}'.",
+                error_code="protected_process_blocked",
+                tool_name="encerrar_processo_windows",
+            )
+        # Um nome fornecido junto ao PID nao pode disfarcar a identidade real.
+        # O nome continua opcional no modo normal, para compatibilidade.
+        if alvo and nome_real != alvo.casefold() and not forcar:
+            return ToolResult.failure(
+                "Nao vou encerrar: o nome informado nao corresponde ao executavel do PID.",
+                error_code="process_identity_mismatch",
+                tool_name="encerrar_processo_windows",
+            )
+    elif is_protected_process_name(alvo):
+        return ToolResult.failure(
+            f"Nao vou encerrar o processo protegido '{alvo}'.",
+            error_code="protected_process_blocked",
+            tool_name="encerrar_processo_windows",
+        )
 
     try:
         if pedido_pid is not None:
@@ -234,6 +286,10 @@ def encerrar_processo_windows(pid=None, nome="", forcar=False):
             tool_name="encerrar_processo_windows",
         )
     except Exception as erro:
-        return f"Nao consegui encerrar o processo: {erro}"
+        return ToolResult.failure(
+            f"Nao consegui encerrar o processo: {erro}",
+            error_code="process_termination_exception",
+            tool_name="encerrar_processo_windows",
+        )
 
 

@@ -175,6 +175,32 @@ def test_exit_command_does_not_leak_to_model_or_reuse_old_history(tmp_path):
         assert len(store.list_chats()) == 2
 
 
+def test_old_generation_reply_cannot_contaminate_new_chat_history(tmp_path):
+    """Resposta enfileirada de sessao anterior nunca entra no chat novo."""
+    with server_for(tmp_path) as (app, worker, store, _port):
+        worker.generation = 1
+        app.submit("Mensagem da sessao antiga")
+        first_id = app.active_chat_id
+        worker.events.put(UiEvent("idle", generation=1))
+        app.snapshot()
+        app.new_chat()
+        worker.generation = 2
+        app.submit("Mensagem da nova sessao")
+        second_id = app.active_chat_id
+        assert first_id != second_id
+        worker.events.put(UiEvent("reply", "Resposta antiga", generation=1))
+        worker.events.put(UiEvent("reply", "Resposta nova", generation=2))
+        worker.events.put(UiEvent("idle", generation=2))
+        snap = app.snapshot()
+        assert all(e.get("text") != "Resposta antiga" for e in snap["events"])
+        assert [m["content"] for m in store.get_messages(first_id)["messages"]] == [
+            "Mensagem da sessao antiga"
+        ]
+        assert [m["content"] for m in store.get_messages(second_id)["messages"]] == [
+            "Mensagem da nova sessao", "Resposta nova"
+        ]
+
+
 def test_electron_clipboard_bridge_is_write_only_and_sandboxed():
     root = Path(__file__).resolve().parents[1] / "desktop" / "electron"
     main = (root / "main.cjs").read_text(encoding="utf-8")

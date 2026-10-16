@@ -119,7 +119,7 @@ A política começa em `CAPABILITY_POLICY` (por capacidade) e é refinada por `n
 
 - **Memória:** leitura AUTO; gravação e esquecimento CONFIRM.
 - **Arquivos:** busca AUTO; `file.read`/`file.inspect` passam também por política do **caminho** (permitido, exige confirmação ou bloqueado). A segurança de allowlist, symlinks e pastas protegidas pertence à auditoria de arquivos da Etapa 4.
-- **Processos:** listar AUTO, encerrar CONFIRM.
+- **Processos:** listar AUTO, encerrar CONFIRM. **Candidata do achado 9:** além da confirmação, o executor recusa a mesma lista centralizada de processos do sistema para `/IM`, `/PID` normal e `/F` e rejeita inconsistência entre nome informado e identidade verificada do PID. A decisão de confirmação não substitui as guardas do executor; `taskkill` com retorno 0 não comprova saída.
 - **Windows:** leitura/status/captura AUTO; mover/focar/minimizar/maximizar/restaurar janela AUTO, **fechar janela** CONFIRM; mouse mover AUTO, clicar/arrastar CONFIRM; teclas explicitamente seguras AUTO e teclas potencialmente acionáveis CONFIRM.
 - **UI Automation:** inspeção AUTO; clicar/alternar/selecionar CONFIRM; preenchimento apenas em alvo de pesquisa/filtro reconhecido pode ser AUTO, após preflight; campos protegidos ou suspeitos CONFIRM.
 - **Navegador:** navegação e troca/abertura de abas AUTO; fechamento de aba CONFIRM; leitura AUTO; cliques em alvos de allowlist textual **exata** podem ser AUTO, outros CONFIRM; preenchimento de busca/filtro AUTO quando reconhecido, outros CONFIRM.
@@ -159,6 +159,7 @@ Essa proteção **não torna todo texto remoto seguro**. Ela depende da origem t
 
 - `ToolResult.success/failure` são preferíveis para implementações novas.
 - `from_legacy` aceita ToolResult, dicionários com `ok` booleano, outros dicionários e strings legadas. Para strings, há uma **lista de prefixos de falha**, que é compatibilidade limitada e não prova sucesso real.
+- **Candidata de correcao do achado 2 (auditoria 15/10):** `tools/windows_processes.py` deixa de emitir texto solto tanto em `listar_processos_windows` quanto `encerrar_processo_windows`; usa `ToolResult.failure` para erros de plataforma, argumentos, identidade/protecao do alvo, codigo de saida de `tasklist`/`taskkill` e excecoes, e `ToolResult.success` para leituras/pedidos realizados. O Dispatcher e os guards leem `ok` explicito, independentemente do idioma da mensagem. O retorno `data.encerramento_comprovado=False` permanece, mesmo quando `taskkill` devolve codigo 0. **Outras ferramentas ainda retornam strings** e nao foram migradas nesta PR; nao tratar como mitigacao global de falsos sucessos.
 - `for_model()` pode devolver mensagem direta para um resultado simples ou JSON compacto com estado, erro, dados e marca de desconfiança.
 - Metadados de visão `vision_coordinate_transform` são adicionados sem apagar a marca de conteúdo não confiável.
 
