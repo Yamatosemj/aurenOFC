@@ -24,7 +24,9 @@ def _event(kind: str, **fields: object) -> str:
 def _make_log(root: Path, cid: str, content: str) -> Path:
     path = root / cid / "chat" / "chat.log"
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding="utf-8")
+    # Gravar exatamente os bytes de entrada; write_text traduz LF para CRLF
+    # em Windows e invalida os testes de copia integral.
+    path.write_bytes(content.encode("utf-8"))
     return path
 
 
@@ -221,6 +223,26 @@ def test_technical_log_exact_copy_for_imported_chat_and_original_is_untouched(tm
     assert ui.technical_log(chat) == original
     assert log.read_text(encoding="utf-8") == original
     assert [m["content"] for m in ui.get_messages(chat)["messages"]] == ["Abra o Chrome"]
+
+
+def test_technical_log_preserves_windows_crlf_exactly(tmp_path):
+    """Copiar o log deve manter CRLF original, sem normalizar nem regravar."""
+    root = tmp_path / "logs" / "chats"
+    original = (
+        _event("CHAT_START", chat_id=OLD)
+        + _event("TASK_START", task_id="a", objetivo="Abrir o Chrome")
+    ).replace("\n", "\r\n")
+    log = _make_log(root, OLD, original)
+    original_bytes = log.read_bytes()
+    assert b"\r\n" in original_bytes
+
+    ui = UiConversationHistory(
+        tmp_path / "history.sqlite3", legacy_root=root, memory_db=tmp_path / "missing.db"
+    )
+    chat = ui.list_chats()[0]["id"]
+    assert ui.technical_log(chat) == original
+    assert ui.technical_log(chat).encode("utf-8") == original_bytes
+    assert log.read_bytes() == original_bytes
 
 
 def test_technical_log_only_from_validated_source_not_client_paths(tmp_path):
