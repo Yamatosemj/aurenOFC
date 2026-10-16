@@ -22,10 +22,8 @@ if errorlevel 1 (
 )
 
 echo.
-echo Limpando apenas cache ASR incompleto da V3, se existir...
-if exist "data\voice\asr\parakeet-tdt-0.6b-v3-ptBR-TAGARELA-onnx-int8" (
-    rmdir /s /q "data\voice\asr\parakeet-tdt-0.6b-v3-ptBR-TAGARELA-onnx-int8"
-)
+echo Cache ASR preservado. Nenhum modelo local sera apagado pelo instalador.
+echo Se faltarem arquivos do Parakeet, o proprio ASR tentara completar o download no primeiro uso.
 
 echo.
 echo ========================================

@@ -28,10 +28,10 @@
 
 [`SkillLibrary`](../../skills/loader.py) usa `skills/` como raiz por padrão. O contrato de arquivo é simples: um `SKILL.md` pode conter front matter delimitado por `---` com linhas `name:` e `description:`; sem esses campos, nome cai para o nome da pasta e descrição para o primeiro texto não vazio do corpo (até **240 caracteres**).
 
-- `discover()` procura recursivamente `SKILL.md` e ignora arquivos ilegíveis; **não** consulta um catálogo remoto, não instala dependências e não executa código da skill.
+- `discover()` procura recursivamente `SKILL.md` e ignora arquivos ilegíveis, links simbólicos/junctions e nomes inválidos; verifica que o documento resolvido permanece dentro da raiz. **Não** consulta catálogo remoto, não instala dependências e não executa código da skill.
 - `match(objective, limit=3)` tokeniza a solicitação e classifica pelo **número de termos com ocorrência como substring** em nome, descrição ou corpo. Empate é por nome; isso **não** é ranking semântico nem comprovação de capacidade.
 - `prompt_context(objective, limit=3, max_chars=2200)` concatena até **700 caracteres de instruções por skill**, com limite total de **2.200** e uma identificação explícita de conteúdo não confiável. `compact_descriptions(limit=8)` lista resumos, mas não executa ação.
-- `install(source, name=...)` copia **somente** `SKILL.md` para a raiz escolhida. Não é gerenciador de pacote: **não** instala scripts, arquivos auxiliares, bibliotecas, ferramentas ou contratos automaticamente.
+- `install(source, name=...)` copia **somente** `SKILL.md` para a raiz escolhida. **Correção candidata do achado 6:** valida o nome do front matter e qualquer override de diretório como um único componente portátil, recusa nomes reservados no Windows, caminhos absolutos, separadores e travessia `..`; recusa fontes/destinos em links simbólicos e junctions, confere contenção após resolver caminhos e substitui `SKILL.md` via arquivo temporário e `os.replace` para não seguir um link no arquivo final. Não instala scripts ou contratos automaticamente.
 
 ### Onde o conteúdo entra
 
@@ -39,7 +39,7 @@
 
 **Limites de confiança:** `prompt_context` rotula skills como dados não confiáveis, mas esse prefixo textual **não constitui isolamento forte** de prompt injection. Uma skill local com instruções perigosas não deve ganhar prioridade sobre políticas de sistema, usuário ou autorização por ser recuperada. Não existe validação de assinatura, sandbox de execução ou política de fontes explicitamente implementada por este carregador.
 
-**Candidato a revisão de segurança, sem correção nesta PR:** o método `install` aceita `name`/front matter como nome de diretório e constrói `self.root / (name or skill.name)` sem validação explícita de componentes, `..` ou caminho absoluto. Investigar contenção e testes de percurso/symlink antes de usar skills de terceiros. A análise estática **não** é demonstração de exploração ou de arquivo realmente modificado fora da raiz.
+**Achado 6 — correção candidata:** a versão anterior aceitava `name`/front matter diretamente como caminho de destino, criando risco de travessia e redirecionamento por symlink. Agora há validação portátil de nome, contenção por `resolve` e rejeição de symlinks/junctions no destino e em `discover`. [Testes dedicados](../../tests/test_skills_path_safety.py) cobrem nomes hostis, front matter, reinstalação comum, links para fora, links internos e fonte redirecionada em `tmp_path`. **Limitação:** o diretório de skills deve pertencer ao usuário confiável; checagens de caminho e `os.replace` não tornam a operação race-proof diante de outro processo que consiga substituir diretórios simultaneamente, nem autenticam o conteúdo da skill.
 
 ## 3. Catálogo de capacidades e resolver — 14 definições ≠ 49 tools
 
@@ -98,7 +98,8 @@ A árvore do projeto **não contém integração desse módulo no loop `voice/ma
 | [`tests/test_capability_audio_runtime.py`](../../tests/test_capability_audio_runtime.py) | Flag desligada, conversão de argumentos, simulação de sucesso da ferramenta, fallback para pedidos não áudio |
 | [`tests/test_task_spec.py`](../../tests/test_task_spec.py) | Esquema e falhas de TaskSpec v1 |
 | [`tests/test_router_tool_selection.py`](../../tests/test_router_tool_selection.py), [`tests/test_routing_single_owner.py`](../../tests/test_routing_single_owner.py) | Seleção de tools e caminho único de execução em ambiente controlado |
-| [`tests/test_prompt_injection.py`](../../tests/test_prompt_injection.py) | Guards de conteúdo não confiável em fluxos simulados; **não há suite de segurança completa específica para SKILL.md** |
+| [`tests/test_prompt_injection.py`](../../tests/test_prompt_injection.py) | Guardas de conteúdo não confiável nos fluxos simulados; não equivale a isolamento das instruções recebidas em SKILL.md |
+| [`tests/test_skills_path_safety.py`](../../tests/test_skills_path_safety.py) | Instalação/descoberta em `tmp_path`: nomes válidos e hostis, travessia de caminho, symlink/junction, conteúdo dentro/fora da raiz e ausência de escrita externa; não testa corrida hostil nem valida o conteúdo semântico |
 
 Não existe arquivo `tests/test_skills.py` nem `SKILL.md` versionado nesta árvore; isso **não significa** que o carregador é seguro ou inseguro sem teste adicional. A auditoria consistiu em leitura dos códigos e testes citados. O primeiro HEAD revisado da PR #128 (`d56255cdd28d0517b2027ca898180f5a9a04a645`) passou no CI hospedado: [suíte Linux completa](https://github.com/Yamatosemj/aurenOFC/actions/runs/38097910114) (**556 passed, 24 skipped**) e [focados Linux/Windows](https://github.com/Yamatosemj/aurenOFC/actions/runs/38097910125) (Linux **166 passed/15 skipped**, Windows **181 passed**, modo seguro **110 passed** por sistema). **Reverificar CI do SHA final antes de integrar.** Aprovação com mocks não demonstra execução do experimento no Windows pessoal, autenticação de fonte da skill, instalação segura com nomes maliciosos ou comportamento real do wake word.
 
@@ -124,7 +125,7 @@ Não existe arquivo `tests/test_skills.py` nem `SKILL.md` versionado nesta árvo
 
 ## 8. Pendências delimitadas (não corrigir nesta PR)
 
-1. **Skills sem bateria dedicada:** seleção lexical, front matter, tamanho, nome de pasta e fronteiras de caminho/symlink merecem testes independentes.
+1. **Skills:** a PR candidata adiciona bateria de segurança de nomes/path/symlink; ainda faltam testes mais amplos de seleção lexical, limites de contexto, e prompt injection semântico. Diretório local de skills deve permanecer confiável (sem acesso de escrita por atacantes concorrentes).
 2. **Instruções locais como texto não confiável:** guarda contra prompt injection precisa de cenários adversariais de skill reais; prefixo no prompt não substitui isolamento/política.
 3. **Catálogos diferentes:** `KNOWN_SERVICES` do catálogo de capacidades e `SITES_CONHECIDOS` dos fast paths não são a mesma lista; alterações futuras podem criar comportamento inconsistente.
 4. **Limite do experimento áudio:** fallback após erro, idempotência e custo de repetição de comando devem ser avaliados antes de expandir uso.

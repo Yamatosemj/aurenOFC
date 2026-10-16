@@ -23,6 +23,9 @@ Assistente desktop/voz para Windows, versão técnica **V47**, usando o modelo c
 
 A documentacao evolui em PRs pequenas por subsistema. Para decidir o status real de uma funcionalidade, confronte documentos com codigo, PRs e CI atuais.
 
+**Correcao candidata do contrato de processos (auditoria de 15/10, achado 2):** as ferramentas `listar_processos_windows` e `encerrar_processo_windows` passam a devolver `ToolResult.success/failure` em **todos** os caminhos, com codigo de erro estruturado para falhas. Falhas nao dependem mais de reconhecer palavras como "nao consegui" e chegam assim ao Dispatcher/Harness. Mensagens de listagem bem-sucedida continuam no mesmo formato; `taskkill` bem-sucedido continua significando **pedido enviado, nao encerramento comprovado**. A adaptacao textual de **outras** ferramentas legadas por `from_legacy` segue como divida tecnica separada; nao ha mudanca global na interpretacao textual.
+
+
 ## Estrutura
 
 ```text
@@ -31,7 +34,7 @@ experimental/ componentes fora do runtime normal
 core/        contratos, roteamento, Harness, memória, visão e permissões
 memory/      persistência SQLite
 providers/   provider do modelo
-skills/      carregamento de skills
+skills/      carregamento de skills (nomes/caminhos locais validados; SKILL.md tratado como dado nao confiavel)
 tools/       capacidades executáveis
 voice/       STT/TTS/entrada de voz
 tests/       suíte pytest
@@ -44,7 +47,7 @@ Arquivos de comando para Windows agora estao organizados por finalidade em `scri
 - `scripts/iniciar/ABRIR_AUREN_GUI.bat` — abrir a interface (uso recomendado)
 - `scripts/iniciar/AUREN_VOZ.bat` — abrir o modo de voz
 - `scripts/instalar/` — instalar dependencias gerais e de voz
-- `scripts/testar/` — executar baterias de teste
+- `scripts/testar/` — executar baterias de teste; `TESTAR_AUREN.bat` sem argumentos usa **somente L0,L1**, sem acionar automaticamente L2/L4/L5. Camadas Live devem ser pedidas explicitamente (`--camada` ou `--completo`) e podem alterar o Windows/usar API.
 - `scripts/diagnosticos/` — inspecionar microfones, metricas, custos e outros diagnosticos
 - `scripts/experimentos/` — ativar ou desativar experimentos locais
 
@@ -115,7 +118,7 @@ scripts/instalar/INSTALAR_AUREN.bat
 scripts/instalar/INSTALAR_VOZ.bat
 ```
 
-A camada de voz usa dependências separadas de `requirements-voice.txt`.
+A camada de voz usa dependências separadas de `requirements-voice.txt`. Reinstalar com `INSTALAR_VOZ.bat` **preserva os modelos ASR/TTS já baixados**: o instalador não limpa `data/voice/`. No primeiro uso, o Parakeet verifica a presença dos arquivos necessários e tenta completar o download se faltar algo; isto pode exigir internet.
 
 **Atenção:** os instaladores não criam automaticamente `.venv`. O atalho da GUI usa `py -3`/`python` global mesmo quando existe uma `.venv`, enquanto o de voz prefere `.venv` e depois `py -3`. Use o [guia técnico da Etapa 10](docs/architecture/10-entradas-config-instalacao-distribuicao.md) antes de diagnosticar erro de dependência. A instalação de `playwright` via pip não instala automaticamente o Chromium.
 
@@ -138,7 +141,7 @@ do Auren continua V47 até a validação física de voz.
 
 Por padrão, o Auren usa `gpt-5.6-luna`. `config.py` lê `AUREN_MODEL` e usa o padrão quando o valor está vazio ou contém apenas espaços.
 
-**Limitação confirmada:** atualmente, definir um modelo diferente faz a validação de coerência em `auren.py` interromper a inicialização. O prompt também identifica o modelo por texto fixo. Portanto, a troca por variável de ambiente **ainda não funciona de ponta a ponta**; veja a [auditoria de modelo e memória](docs/architecture/03-modelo-sessao-memoria.md). A correção de código será tratada separadamente.
+**Correção candidata (auditoria, achado 4):** `AUREN_MODEL` passa a determinar o modelo usado pela fachada, pelo prompt e pelo provider, preservando a verificação de versão e o literal do modelo **padrão** para verificadores estáticos antigos. O identificador configurado deve ser de um modelo acessível à conta/API; **nenhuma chamada real à API foi validada**. O modelo padrão permanece `gpt-5.6-luna`; veja [a auditoria de modelo e memória](docs/architecture/03-modelo-sessao-memoria.md).
 
 ## Testes
 

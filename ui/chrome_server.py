@@ -64,6 +64,14 @@ class LocalChromeApp:
                 event = self.worker.events.get_nowait()
             except Empty:
                 break
+            # Os eventos podem ter sido emitidos antes de Desligar/reativar.
+            # Nao deixar idle/off/confirm de uma sessao anterior afetar a atual.
+            event_generation = getattr(event, "generation", None)
+            worker_generation = getattr(self.worker, "generation", None)
+            if event_generation is not None and event_generation != worker_generation:
+                if event.kind == "confirm" and isinstance(event.payload, ConfirmationChoice):
+                    event.payload.answer(False)
+                continue
             if event.kind == "confirm":
                 choice = event.payload
                 if not isinstance(choice, ConfirmationChoice):

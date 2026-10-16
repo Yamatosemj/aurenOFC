@@ -745,7 +745,9 @@ def run_smoke_tests() -> None:
             all(valor == "auto" for valor in politica_uia.values())
             and classificacoes == {
                 "inspecao": "auto",
-                "clique_normal": "auto",
+                # UI Automation: um clique aciona controles e exige confirmacao,
+                # mesmo para nomes simples. A allowlist de cliques AUTO e do navegador.
+                "clique_normal": "confirm",
                 "clique_sensivel": "confirm",
                 "preenchimento_sensivel": "confirm",
             }
@@ -756,7 +758,7 @@ def run_smoke_tests() -> None:
             "clicar_mouse_windows",
             {"x": 10, "y": 10, "botao": "esquerdo", "descricao": "botao Pesquisar"},
         )
-        record("Clique por coordenada exige confirmacao", mouse_level.value == "confirm" and "coordenada" in mouse_reason.lower(), f"nivel={mouse_level.value}; motivo={mouse_reason}")
+        record("Clique por coordenada exige confirmacao", mouse_level.value == "confirm" and "clique" in mouse_reason.lower() and "confirmacao" in mouse_reason.lower(), f"nivel={mouse_level.value}; motivo={mouse_reason}")
     except Exception as exc:
         record("Permissoes e risco da UI Automation", False, repr(exc))
 

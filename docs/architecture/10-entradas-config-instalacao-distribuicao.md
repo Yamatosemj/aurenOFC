@@ -34,12 +34,12 @@ Todos os canais de conversa reaproveitam o mesmo ponto de montagem `auren.criar_
 | `MEMORY_DB_PATH` | `data/memory/auren_memory.sqlite3` | Caminho da memória local; ignorado por Git |
 | `AUREN_VERSION` | **47** | Identificação técnica estável atual, não avaliação do voice V48 |
 | `DEFAULT_MODEL` | `gpt-5.6-luna` | Modelo padrão definido no código |
-| `MODEL` | `os.getenv("AUREN_MODEL", "").strip() or DEFAULT_MODEL` | A variável é lida no import; configuração alternativa **não funciona de ponta a ponta** na fachada |
+| `MODEL` | `os.getenv("AUREN_MODEL", "").strip() or DEFAULT_MODEL` | Valor efetivo usado por fachada/prompt/provider após correção candidata; aceitação pela API não validada |
 | `CACHE_KEY` | `auren-v47` | Namespace de cache derivado da versão |
 | `ARCHITECTURE_NAME` | `V47 ARI NATIVE VISUAL GEOMETRY` | Identificação da arquitetura |
 | `RESPONSE_CACHE_MAX_ITEMS` e `TTL_SECONDS` | **50 itens**, **600 segundos** | Defaults do cache de resposta textual, não validade de estados do Windows |
 
-**Contradição concreta:** `auren.py` mantém os literais `AUREN_VERSION=47`, `MODEL="gpt-5.6-luna"`, `CACHE_KEY` e `ARCHITECTURE_NAME` para compatibilidade e **compara todos com `config.py`**. Se `AUREN_MODEL` for diferente do padrão, o import da fachada gera `RuntimeError` de configuração incoerente. [`tests/test_model_config.py`](../../tests/test_model_config.py) comprova leitura da variável em `config.py` e pelo provider, **não** essa inicialização completa. O prompt também fixa a identidade textual, como detalha a [Etapa 3](03-modelo-sessao-memoria.md). Não instruir o proprietário a “trocar o modelo pelo ambiente” como se já estivesse funcional.
+**Correção candidata do achado 4:** `auren.py` mantém os literais `AUREN_VERSION=47`, `MODEL="gpt-5.6-luna"`, `CACHE_KEY` e `ARCHITECTURE_NAME` para verificação **estática do modelo padrão** e compatibilidade, mas passa a comparar esse literal com `config.DEFAULT_MODEL` e a usar `config.MODEL` em execução. O prompt anuncia o identificador efetivamente escolhido. Os novos testes de [startup isolado](../../tests/test_model_override_startup.py) cobrem a fachada e requisições simuladas sem rede; modelo externo, API real, custo e funcionamento final ainda exigem avaliação própria.
 
 Outras configurações ambientais no runtime, **com escopo próprio**, incluem `OPENAI_API_KEY` usada pelo SDK (não gravada no repositório), `AUREN_TEST_MODE=1` para limites e confirmações de teste, `AUREN_EXPERIMENT_CAPABILITY_AUDIO` para experimento opt-in, `AUREN_MIC_DEVICE` para captura de áudio, `AUREN_ASR_MODEL` para escolha da origem do modelo STT e `AUREN_TTS_VOICE`/`LANG`/`SPEED` para síntese. Os parâmetros exatos e riscos dessas flags estão nas [Etapas 6](06-voz-stt-tts.md), [8](08-skills-capacidades-extensibilidade.md) e [9](09-testes-ci-controle-remoto.md).
 
@@ -58,7 +58,7 @@ Outras configurações ambientais no runtime, **com escopo próprio**, incluem `
 **Diferenças importantes dos instaladores:**
 
 1. **Nenhum desses scripts cria automaticamente uma `.venv`**. Se ela não existir, a instalação pode usar Python global (ou um ambiente de outro escopo, dependendo do comando). O Python escolhido para instalar precisa corresponder ao usado depois para iniciar.
-2. O instalador de voz diz **“Limpando apenas cache ASR incompleto”**, mas executa `rmdir /s /q` sobre **todo o diretório de cache ASR especificado se existir**, independentemente do estado; pode exigir novo download. O script **não verifica o código de falha do `rmdir`** e termina imprimindo código zero depois da instalação de pacotes bem-sucedida. Não vender como reinstalação preservadora do cache.
+2. **Correção candidata do achado 5:** o instalador de voz **não apaga mais o cache ASR** ao reinstalar dependências, evitando o uso destrutivo de `rmdir /s /q`; mantém o tratamento de falha de `pip`. Se faltarem arquivos obrigatórios do modelo, o próprio STT tenta completar o download no primeiro uso. O teste [`test_voice_installer_cache.py`](../../tests/test_voice_installer_cache.py) verifica o BAT estaticamente e no Windows, por cópia isolada com `py` simulado e cache fictício; isso **não** testa uma instalação real ou o comportamento do download.
 3. Ambos os instaladores apenas usam `pip`; **não** executam a instalação do browser Chromium do Playwright. O pacote Python `playwright` instalado não prova existência do navegador binário, driver/microfone, dispositivos áudio, permissões de UIA ou perfil Windows adequado. Essas pré-condições exigem verificação e orientação específicas numa futura melhoria de onboarding.
 
 O repositório não possui nesta revisão arquivo de build/distribuição como `pyproject.toml`, `setup.py`, instalador MSI ou executável portátil gerado. O processo documentado é **checkout do código-fonte + ambiente Python + scripts de instalação + execução por Python**. Não anunciar um instalador completo “um clique”, serviço Windows ou distribuição em EXE que o código não fornece.
@@ -98,7 +98,7 @@ O controle remoto [`auren-update-pc.yml`](../../.github/workflows/auren-update-p
 
 | Evidência | O que oferece | O que fica pendente |
 | --- | --- | --- |
-| [`tests/test_model_config.py`](../../tests/test_model_config.py) | Leitura de variável e provider isolado | Provar override em `import auren` / entrypoint; hoje existe verificação contraditória |
+| [`tests/test_model_config.py`](../../tests/test_model_config.py) e [`tests/test_model_override_startup.py`](../../tests/test_model_override_startup.py) | Variável de ambiente, startup de fachada e montagem de requisição simulada | Não verifica disponibilidade/compatibilidade de modelo na API real |
 | [`tests/test_dependency_pins.py`](../../tests/test_dependency_pins.py) | Regras de pin direto e deduplicação | Pip install num sistema limpo, transitivas, vulnerabilidades, dependências nativas |
 | [`tests/test_scripts_layout.py`](../../tests/test_scripts_layout.py) | Caminhos de launchers e preservação de entradas | Execução real de BAT e instalação/voz/GUI |
 | [`tests/test_desktop_ui_backend.py`](../../tests/test_desktop_ui_backend.py) | Contrato simulado de GUI e sintaxe do frontend | Janela Tk física, DPI, foco e política Windows |
@@ -111,8 +111,8 @@ O controle remoto [`auren-update-pc.yml`](../../.github/workflows/auren-update-p
 ## 8. Pendências após completar o inventário inicial
 
 1. **Entrada e ambiente:** unificar bootstrap Python GUI/voz/instalação/testes, inclusive fallback e mensagens de erro; adicionar testes sobre a seleção do interpretador.
-2. **Instalador de voz:** corrigir política de cache ASR, lógica de remoção/verificação e retorno de erro em PR própria, preservando modelos existentes.
-3. **Modelo configurável:** resolver divergência `config.py` ↔ `auren.py` ↔ prompt com testes reais de entrada, sem mudanças silenciosas de identificação/compatibilidade.
+2. **Instalador de voz:** correção candidata em PR própria remove a limpeza destrutiva do cache; validar as provas offline e preservar caches reais. Ausência de limpeza não prova funcionamento físico do STT.
+3. **Modelo configurável:** a candidata corrige a divergência `config.py` ↔ `auren.py` ↔ prompt com tests de import em subprocesso; faltam validação real de modelos alternativos na API e revisão antes de integrar, sem mudanças silenciosas de versão/compatibilidade.
 4. **Preparação do navegador:** documentar/automatizar verificação ou instalação de Chromium Playwright sob consentimento adequado, sem alegar que `pip install` basta.
 5. **Distribuição:** decidir futuramente se deve existir empacotamento portátil, instalador, ambiente isolado e estratégia de atualização/rollback. **Não criar EXE nem serviço automaticamente**.
 6. **Recuperação:** revisar backups de dados de memória, caches, configurações pessoais e permissões, sem copiar segredos para Git.
