@@ -1,0 +1,14 @@
+{
+  "name": "auren-desktop",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Janela Electron para a interface Chrome original do Auren",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "check": "node --check main.cjs"
+  },
+  "devDependencies": {
+    "electron": "44.7.2"
+  }
+}

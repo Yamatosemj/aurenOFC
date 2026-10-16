@@ -10,6 +10,7 @@ BAT_FILES = {
     "iniciar/ABRIR_AUREN_GUI.bat": "interface_auren.py",
     "iniciar/AUREN_VOZ.bat": "voice\\main.py",
     "iniciar/AUREN_CHROME.bat": "ui\\chrome_server.py",
+    "iniciar/AUREN_DESKTOP.bat": "desktop\\electron\\main.cjs",
     "instalar/INSTALAR_AUREN.bat": "requirements.txt",
     "instalar/INSTALAR_VOZ.bat": "requirements-voice.txt",
     "testar/TESTAR_AUREN.bat": "testes_auren.py",
