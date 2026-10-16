@@ -5,6 +5,7 @@ import os
 from config import (
     AUREN_VERSION as _CONFIG_AUREN_VERSION,
     MODEL as _CONFIG_MODEL,
+    DEFAULT_MODEL as _CONFIG_DEFAULT_MODEL,
     CACHE_KEY as _CONFIG_CACHE_KEY,
     ARCHITECTURE_NAME as _CONFIG_ARCHITECTURE_NAME,
 )
@@ -16,8 +17,17 @@ AUREN_VERSION = 47
 MODEL = "gpt-5.6-luna"
 CACHE_KEY = f"auren-v{AUREN_VERSION}"
 ARCHITECTURE_NAME = "V47 ARI NATIVE VISUAL GEOMETRY"
-if (AUREN_VERSION, MODEL, CACHE_KEY, ARCHITECTURE_NAME) != (_CONFIG_AUREN_VERSION, _CONFIG_MODEL, _CONFIG_CACHE_KEY, _CONFIG_ARCHITECTURE_NAME):
-    raise RuntimeError("config.py e auren.py estao com versao/modelo incoerentes.")
+# O literal acima e a identidade DEFAULT para verificadores legados que leem
+# a fachada sem importa-la. A escolha efetiva pertence a config.MODEL.
+# Conferimos a coerencia do DEFAULT, mas nao rejeitamos um override valido.
+if (AUREN_VERSION, MODEL, CACHE_KEY, ARCHITECTURE_NAME) != (
+    _CONFIG_AUREN_VERSION,
+    _CONFIG_DEFAULT_MODEL,
+    _CONFIG_CACHE_KEY,
+    _CONFIG_ARCHITECTURE_NAME,
+):
+    raise RuntimeError("config.py e auren.py estao com versao/modelo padrao incoerentes.")
+MODEL = _CONFIG_MODEL
 
 
 from core import usage

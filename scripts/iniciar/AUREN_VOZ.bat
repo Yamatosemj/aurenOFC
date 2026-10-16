@@ -2,12 +2,10 @@
 setlocal
 cd /d "%~dp0..\.."
 
-if exist ".venv\Scripts\python.exe" (
-    ".venv\Scripts\python.exe" voice\main.py
-) else (
-    py -3 voice\main.py
-)
+call "%~dp0..\lib\SELECIONAR_PYTHON.cmd"
+if errorlevel 1 exit /b 1
 
+%AUREN_PYTHON% voice\main.py
 set "AUREN_EXIT_CODE=%ERRORLEVEL%"
 echo.
 echo ========================================

@@ -2,20 +2,17 @@
 setlocal
 rem Entrada: ui\chrome_server.py (via modulo Python ui.chrome_server)
 cd /d "%~dp0..\.."
-if exist ".venv\Scripts\python.exe" (
-    ".venv\Scripts\python.exe" -m ui.chrome_server
-) else (
-    where py >nul 2>&1
-    if %ERRORLEVEL%==0 (
-        py -3 -m ui.chrome_server
-    ) else (
-        python -m ui.chrome_server
-    )
-)
+call "%~dp0..\lib\SELECIONAR_PYTHON.cmd"
 if errorlevel 1 (
+    pause
+    exit /b 1
+)
+%AUREN_PYTHON% -m ui.chrome_server
+set "AUREN_EXIT_CODE=%ERRORLEVEL%"
+if not "%AUREN_EXIT_CODE%"=="0" (
     echo.
     echo Falha ao iniciar a interface Chrome do Auren.
     echo Confira o ambiente Python e os pacotes do Auren.
     pause
 )
-endlocal
+exit /b %AUREN_EXIT_CODE%
