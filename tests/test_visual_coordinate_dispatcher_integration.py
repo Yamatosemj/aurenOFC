@@ -352,9 +352,13 @@ def test_harness_exige_nova_observacao_apos_acao_visual(monkeypatch, tmp_path):
     snapshot = harness.task_manager.current_snapshot()
 
     assert tratado is False
-    assert resposta.output_text == "ok"
+    # A segunda tentativa usa um snapshot invalidado e e rejeitada. Uma
+    # recaptura posterior nao reexecuta nem repara esse clique: a tarefa
+    # inteira nao pode terminar como "completed" apenas por ler a tela.
+    assert "etapa falhou sem recuperacao" in resposta.output_text
     assert snapshot is not None
-    assert snapshot.state.value == "completed"
+    assert snapshot.state.value == "failed"
+    assert snapshot.error == "step_failed_unrecovered"
     assert provider.calls == 5
 
     cliques = [item for item in calls if item[0] == "clique"]

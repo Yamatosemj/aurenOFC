@@ -532,3 +532,99 @@ def test_browser_verification_stays_pending_when_verifier_cannot_determine_resul
     assert state["argumentos"] == '{"alvo":"Pesquisar","indice":1}'
     assert state["dados_acao"]["clique"]["navegacao"] is False
 
+
+def _rodada_com_falhas(chamadas, retornos, pendentes, *, falha_anterior=False):
+    """Exercita a politica real sem API ou automacao do Windows."""
+    respostas = iter(retornos)
+    return _executar_chamadas_rodada(
+        chamadas,
+        historico=[],
+        task_manager=_TaskManager(),
+        task_id="falhas-regressao",
+        rodada=1,
+        executar_ferramenta=lambda _: next(respostas),
+        trace=None,
+        vision_state_mutating_tools=set(),
+        vision_reobserve_pending=False,
+        falha_nao_recuperada=falha_anterior,
+        falhas_pendentes=pendentes,
+        max_tool_result_chars=1000,
+        get_active_vision_geometry=lambda: None,
+        clear_active_vision_geometry=lambda: None,
+        write_log=lambda *_args, **_kwargs: None,
+    )
+
+
+def test_falha_seguida_de_sucesso_em_outra_ferramenta_permanece_pendente():
+    pendentes = set()
+    resultados, quantidade, falhou, _, _ = _rodada_com_falhas(
+        [_item("clicar_elemento", "c1", '{"alvo":"Salvar"}'),
+         _item("obter_status_windows", "c2")],
+        [ToolResult.failure("Nao consegui clicar.", tool_name="clicar_elemento"),
+         ToolResult.success("CPU 10%.", tool_name="obter_status_windows")],
+        pendentes,
+    )
+    assert quantidade == 2
+    assert [item["sucesso"] for item in resultados] == [False, True]
+    assert falhou is True
+    assert pendentes == {("clicar_elemento", '{"alvo":"Salvar"}')}
+
+
+def test_repetir_a_mesma_operacao_com_sucesso_recupera_falha():
+    pendentes = set()
+    _, _, falhou, _, _ = _rodada_com_falhas(
+        [_item("clicar_elemento", "c1", '{"alvo":"Salvar"}'),
+         _item("clicar_elemento", "c2", '{"alvo":"Salvar"}')],
+        [ToolResult.failure("Nao consegui clicar.", tool_name="clicar_elemento"),
+         ToolResult.success("Clique realizado.", tool_name="clicar_elemento")],
+        pendentes,
+    )
+    assert falhou is False
+    assert pendentes == set()
+
+
+def test_sucesso_da_mesma_ferramenta_em_outro_alvo_nao_recupera_falha():
+    pendentes = set()
+    _, _, falhou, _, _ = _rodada_com_falhas(
+        [_item("clicar_elemento", "c1", '{"alvo":"Salvar"}'),
+         _item("clicar_elemento", "c2", '{"alvo":"Cancelar"}')],
+        [ToolResult.failure("Falhou Salvar.", tool_name="clicar_elemento"),
+         ToolResult.success("Cliquei em Cancelar.", tool_name="clicar_elemento")],
+        pendentes,
+    )
+    assert falhou is True
+    assert pendentes == {("clicar_elemento", '{"alvo":"Salvar"}')}
+
+
+def test_falhas_pendentes_persistem_entre_rodadas_e_so_retry_exato_recupera():
+    pendentes = set()
+    _rodada_com_falhas(
+        [_item("clicar_elemento", "c1", '{"alvo":"Salvar"}')],
+        [ToolResult.failure("Falha.", tool_name="clicar_elemento")],
+        pendentes,
+    )
+    _, _, falhou, _, _ = _rodada_com_falhas(
+        [_item("obter_status_windows", "c2")],
+        [ToolResult.success("Status consultado.", tool_name="obter_status_windows")],
+        pendentes,
+        falha_anterior=True,
+    )
+    assert falhou is True
+    _, _, falhou, _, _ = _rodada_com_falhas(
+        [_item("clicar_elemento", "c3", '{"alvo":"Salvar"}')],
+        [ToolResult.success("Agora cliquei.", tool_name="clicar_elemento")],
+        pendentes,
+        falha_anterior=True,
+    )
+    assert falhou is False
+    assert not pendentes
+
+
+def test_sem_rastreador_legado_sucesso_nao_apaga_falha_anterior():
+    _, _, falhou, _, _ = _rodada_com_falhas(
+        [_item("obter_status_windows", "c1")],
+        [ToolResult.success("CPU 10%.")],
+        None,
+        falha_anterior=True,
+    )
+    assert falhou is True
