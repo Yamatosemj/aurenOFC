@@ -241,6 +241,12 @@ class AurenDesktop:
         for _ in range(80):
             try:
                 event: UiEvent = self.worker.events.get_nowait()
+                # A fila pode conter eventos da geracao anterior apos
+                # Desligar e reativar rapidamente a mesma janela.
+                if event.generation is not None and event.generation != self.worker.generation:
+                    if event.kind == "confirm" and isinstance(event.payload, ConfirmationChoice):
+                        event.payload.answer(False)
+                    continue
             except Empty:
                 break
             if event.kind == "reply":
