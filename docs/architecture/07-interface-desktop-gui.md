@@ -112,7 +112,7 @@ A fila de estratégias em background recebe `shutdown(cancel_pending=False)` no 
 ## 8. Backlog documental/operacional para PRs separadas
 
 1. **Standby não é pausa do backend:** esclarecer semântica desejada para tarefa/confirmacão em execução e submit por outras fontes antes de alterar código.
-2. **Resposta antiga após Desligado:** reproduzir ordenação de `reply/error/idle/off` com tarefa longa e transição de geração; decidir se a GUI deve ocultar output obsoleto.
+2. **Eventos antigos após Desligado — correção candidata do achado 10:** testes com `Event` e trabalhador bloqueado em [test_ui_stale_session_events.py](../../tests/test_ui_stale_session_events.py) cobrem `idle/off/reply` obsoletos, modal tardio negado e primeira resposta de confirmação preservada. O worker segue cancelamento cooperativo; ainda requer validação de GUI/Electron físicos em etapa autorizada.
 3. **Cancelamento e fechamento:** testar tarefa externa demorada e evento `close`. Evitar prometer deadline de encerramento e confirmar o comportamento de limpeza de recursos/sessão.
 4. **Confirmações e concorrência:** garantir no Windows físico que modal de 45 s, nova confirmação, Standby, Desligado e fechamento não resultam em autorizações indevidas nem modais presos.
 5. **Retenção visual de conversa:** definir política de limpeza/privacidade quando desligar, reabrir ou mudar modo; o widget não é banco nem exclusão de memória persistente.
