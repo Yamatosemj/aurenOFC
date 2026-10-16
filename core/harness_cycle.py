@@ -33,6 +33,9 @@ def executar_ciclo(
     exigir_ferramenta = harness._parece_tarefa_de_acao(objetivo)
     empty_response_retries = 0
     falha_nao_recuperada = False
+    # Uma falha so sai deste conjunto apos repetir com sucesso o mesmo passo.
+    # Nao usar apenas o resultado da ultima ferramenta da rodada.
+    falhas_pendentes: set[tuple[str, str]] = set()
     ferramentas_executadas = 0
     tentativas_verificacao_fechamento = 0
     tentativas_confirmacao_repetida = 0
@@ -415,6 +418,7 @@ def executar_ciclo(
             browser_verification_tool=harness.BROWSER_VERIFICATION_TOOL,
             browser_verifier=verificar_resultado_navegador,
             falha_nao_recuperada=falha_nao_recuperada,
+            falhas_pendentes=falhas_pendentes,
             max_tool_result_chars=harness.MAX_TOOL_RESULT_CHARS,
             get_active_vision_geometry=get_active_vision_geometry,
             clear_active_vision_geometry=clear_active_vision_geometry,

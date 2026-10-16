@@ -16,6 +16,7 @@ class UiEvent:
     kind: str
     text: str = ""
     payload: Any = None
+    generation: int | None = None
 
 
 @dataclass
@@ -25,11 +26,14 @@ class ConfirmationChoice:
     tool_name: str
     decided: Event = field(default_factory=Event)
     approved: bool = False
+    _answer_lock: Lock = field(default_factory=Lock, repr=False)
 
     def answer(self, approve: bool) -> None:
-        if not self.decided.is_set():
-            self.approved = bool(approve)
-            self.decided.set()
+        # A interface e o cancelamento podem responder em threads diferentes.
+        with self._answer_lock:
+            if not self.decided.is_set():
+                self.approved = bool(approve)
+                self.decided.set()
 
 
 class GuiConfirmationChannel:
@@ -41,10 +45,14 @@ class GuiConfirmationChannel:
         register_pending: Callable[[ConfirmationChoice | None], None],
         *,
         timeout: float = 45.0,
+        generation: int | None = None,
+        is_current: Callable[[], bool] | None = None,
     ) -> None:
         self.events = events
         self.register_pending = register_pending
         self.timeout = timeout
+        self.generation = generation
+        self.is_current = is_current
 
     def confirmar(self, request: Any) -> bool:
         choice = ConfirmationChoice(
@@ -53,15 +61,22 @@ class GuiConfirmationChannel:
             tool_name=str(request.tool_name),
         )
         self.register_pending(choice)
-        self.events.put(UiEvent("confirm", payload=choice))
         try:
+            # Cancelamento/Desligado pode ocorrer antes da publicacao do modal.
+            # Nao deixar uma confirmacao antiga esperando 45 s ou ser aprovada.
+            if self.is_current is not None and not self.is_current():
+                choice.answer(False)
+                return False
+            if choice.decided.is_set():
+                return False
+            self.events.put(UiEvent("confirm", payload=choice, generation=self.generation))
             if not choice.decided.wait(self.timeout):
                 choice.answer(False)
-                self.events.put(UiEvent("notice", "Confirmacao expirada. Acao negada."))
+                self.events.put(UiEvent("notice", "Confirmacao expirada. Acao negada.", generation=self.generation))
             return bool(choice.approved)
         finally:
             self.register_pending(None)
-            self.events.put(UiEvent("confirm_done", payload=choice))
+            self.events.put(UiEvent("confirm_done", payload=choice, generation=self.generation))
 
 
 class AurenUiWorker:
@@ -86,9 +101,21 @@ class AurenUiWorker:
     def alive(self) -> bool:
         return self._thread.is_alive()
 
+    @property
+    def generation(self) -> int:
+        with self._lock:
+            return self._generation
+
+    def _generation_is_active(self, generation: int) -> bool:
+        with self._lock:
+            return self._enabled and generation == self._generation and not self._closing.is_set()
+
     def activate(self) -> None:
         with self._lock:
             if not self._closing.is_set():
+                if not self._enabled:
+                    # Reativar invalida o "off" ainda aguardando no worker.
+                    self._generation += 1
                 self._enabled = True
 
     def submit(self, text: str) -> bool:
@@ -141,8 +168,12 @@ class AurenUiWorker:
         self.cancel_current()
         self._requests.put(("quit", "", generation))
 
-    def _make_harness(self) -> Any:
-        channel = GuiConfirmationChannel(self.events, self._set_pending)
+    def _make_harness(self, generation: int) -> Any:
+        channel = GuiConfirmationChannel(
+            self.events, self._set_pending,
+            generation=generation,
+            is_current=lambda: self._generation_is_active(generation),
+        )
         if self._harness_factory is not None:
             return self._harness_factory(confirmation_channel=channel)
         # Import tardio: abrir a janela nao conecta a API nem inicia a voz.
@@ -178,7 +209,7 @@ class AurenUiWorker:
                     break
                 if operation == "off":
                     self._dispose_harness()
-                    self.events.put(UiEvent("off"))
+                    self.events.put(UiEvent("off", generation=generation))
                     continue
                 if operation != "message":
                     continue
@@ -187,12 +218,12 @@ class AurenUiWorker:
                 if not valid:
                     continue
 
-                self.events.put(UiEvent("busy", "Processando..."))
+                self.events.put(UiEvent("busy", "Processando...", generation=generation))
                 try:
                     with self._lock:
                         harness = self._harness
                     if harness is None:
-                        harness = self._make_harness()
+                        harness = self._make_harness(generation)
                         with self._lock:
                             self._harness = harness
                     with self._lock:
@@ -214,9 +245,9 @@ class AurenUiWorker:
                     snapshot = harness.current_task()
                     status = getattr(getattr(snapshot, "state", None), "value", "")
                     if status == "failed":
-                        self.events.put(UiEvent("error", answer))
+                        self.events.put(UiEvent("error", answer, generation=generation))
                     else:
-                        self.events.put(UiEvent("reply", answer))
+                        self.events.put(UiEvent("reply", answer, generation=generation))
                 except Exception as exc:
                     with self._lock:
                         still_current = (
@@ -225,9 +256,9 @@ class AurenUiWorker:
                             and not self._closing.is_set()
                         )
                     if still_current:
-                        self.events.put(UiEvent("error", f"Erro ao processar: {exc}"))
+                        self.events.put(UiEvent("error", f"Erro ao processar: {exc}", generation=generation))
                 finally:
-                    self.events.put(UiEvent("idle"))
+                    self.events.put(UiEvent("idle", generation=generation))
         finally:
             self.deny_pending()
             self._dispose_harness()
