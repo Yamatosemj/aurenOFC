@@ -8,6 +8,8 @@
 
 ## 1. Situação e trabalho em foco
 
+- **Live A01 — correção candidata nesta branch (ainda não integrada):** pedidos com caminho absoluto para executável `.exe` deixam de passar por pesquisa fuzzy de aplicativos. O caminho solicitado precisa existir e exige confirmação explícita pelo PermissionManager, pois pode apontar para qualquer programa. `Popen` confirma apenas a solicitação de inicialização, não a janela pronta; mensagem foi ajustada. Testes adicionados, mas **não há validação Live, pytest ou CI confirmado para esta mudança**. A semântica global de falhas de foco, continuação do Harness e verificação independente permanecem pendentes.
+
 - **Projeto:** Auren, assistente pessoal para desktop/voz no Windows, escrito em Python; o proprietário quer evolução por **uma tarefa/PR de cada vez**, com mudanças e testes rastreáveis no GitHub.
 - **Versão técnica configurada:** **V47** em [`config.py`](config.py), modelo padrão `gpt-5.6-luna`. O código de voz candidato à **V48** foi integrado pela [PR #119](https://github.com/Yamatosemj/aurenOFC/pull/119), **sem validação física de microfone/PTT/latência**. Não promover V48 a versão estável por decisão documental.
 - **Documentação:** inventário inicial **Etapas 0–10 auditado estaticamente**, com referências em [`docs/architecture/`](docs/architecture/01-nucleo.md) e [`docs/INVENTARIO.md`](docs/INVENTARIO.md). Isso **não** comprova funcionamento Live nem encerra o desenvolvimento do Auren.
