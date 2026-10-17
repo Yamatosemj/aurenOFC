@@ -91,18 +91,20 @@ def _format_timestamp(timestamp: float | None) -> str | None:
         return None
 
 
-def _readable_probe(path: Path) -> bool:
+def _readable_probe(path: Path, authorization=None) -> bool:
     try:
-        with path.open("rb") as handle:
+        with _open_read(path, "rb", authorization=authorization) as handle:
             handle.read(1)
         return True
+    except FileTargetChanged:
+        raise
     except (OSError, PermissionError):
         return False
 
 
-def _sha256(path: Path) -> str:
+def _sha256(path: Path, authorization=None) -> str:
     digest = hashlib.sha256()
-    with path.open("rb") as handle:
+    with _open_read(path, "rb", authorization=authorization) as handle:
         while chunk := handle.read(1024 * 1024):
             digest.update(chunk)
     return digest.hexdigest()
@@ -121,8 +123,8 @@ def _decode_sample(data: bytes) -> tuple[str, str]:
     return data.decode("utf-8", errors="replace"), "utf-8-replace"
 
 
-def _detect_encoding(path: Path) -> str:
-    with path.open("rb") as handle:
+def _detect_encoding(path: Path, authorization=None) -> str:
+    with _open_read(path, "rb", authorization=authorization) as handle:
         sample = handle.read(128 * 1024)
     if not sample:
         return "utf-8"
@@ -130,7 +132,7 @@ def _detect_encoding(path: Path) -> str:
     return encoding
 
 
-def _detect_type(path: Path) -> tuple[str, str, str | None]:
+def _detect_type(path: Path, authorization=None) -> tuple[str, str, str | None]:
     extension = path.suffix.lower()
     mime = mimetypes.guess_type(path.name, strict=False)[0]
     if extension == ".md" and not mime:
@@ -141,18 +143,24 @@ def _detect_type(path: Path) -> tuple[str, str, str | None]:
     if extension == ".json":
         try:
             if path.stat().st_size <= 1_000_000:
-                text = path.read_text(encoding=_detect_encoding(path), errors="strict")
+                with _open_read(path, "r", encoding=_detect_encoding(path, authorization), errors="strict", authorization=authorization) as handle:
+                    text = handle.read()
                 json.loads(text)
                 return "JSON", "extensao+conteudo_validado", "application/json"
+        except FileTargetChanged:
+            raise
         except (OSError, UnicodeDecodeError, json.JSONDecodeError):
             pass
         return "JSON", "extensao", mime or "application/json"
     if extension == ".csv":
         try:
-            sample = path.read_text(encoding=_detect_encoding(path), errors="strict")[:16_384]
+            with _open_read(path, "r", encoding=_detect_encoding(path, authorization), errors="strict", authorization=authorization) as handle:
+                sample = handle.read()[:16_384]
             if sample.strip():
                 csv.Sniffer().sniff(sample)
                 return "CSV", "extensao+estrutura_csv", "text/csv"
+        except FileTargetChanged:
+            raise
         except (OSError, UnicodeDecodeError, csv.Error):
             pass
         return "CSV", "extensao", "text/csv"
@@ -162,8 +170,10 @@ def _detect_type(path: Path) -> tuple[str, str, str | None]:
         return "Texto simples", "extensao", mime or "text/plain"
 
     try:
-        with path.open("rb") as handle:
+        with _open_read(path, "rb", authorization=authorization) as handle:
             signature = handle.read(16)
+    except FileTargetChanged:
+        raise
     except OSError:
         return "desconhecido", "nao_disponivel", mime
 
@@ -217,11 +227,11 @@ def _state(path: Path, file_stat: os.stat_result, readable: bool) -> dict[str, A
     }
 
 
-def _zone_identifier_text(path: Path) -> str | None:
+def _zone_identifier_text(path: Path, authorization=None) -> str | None:
     if os.name != "nt":
         return None
     try:
-        with open(f"{path}:Zone.Identifier", "r", encoding="utf-8", errors="replace") as handle:
+        with _open_read(Path(f"{path}:Zone.Identifier"), "r", encoding="utf-8", errors="replace", authorization=authorization) as handle:
             return handle.read(16 * 1024)
     except (OSError, PermissionError):
         return None
@@ -249,8 +259,8 @@ def _parse_zone_identifier(text_value: str | None) -> dict[str, Any]:
     return result
 
 
-def _origin(path: Path) -> FileOriginEvidence:
-    zone = _parse_zone_identifier(_zone_identifier_text(path))
+def _origin(path: Path, authorization=None) -> FileOriginEvidence:
+    zone = _parse_zone_identifier(_zone_identifier_text(path, authorization))
     zone_id = zone["zone_id"]
     internet_marked = "desconhecido"
     if zone_id is not None:
@@ -429,6 +439,40 @@ class FileReadPathPolicy:
     raiz_permitida: str | None
 
 
+class FileTargetChanged(OSError):
+    """O arquivo aberto nao corresponde ao alvo apresentado para autorizacao."""
+
+
+@dataclass(frozen=True)
+class FileReadAuthorization:
+    caminho: str
+    identity: tuple[int, int] | None
+
+
+def capture_read_authorization(path: Path) -> FileReadAuthorization:
+    try:
+        info = path.stat()
+        identity = (info.st_dev, info.st_ino)
+    except FileNotFoundError:
+        identity = None
+    return FileReadAuthorization(str(path), identity)
+
+
+def _open_read(path: Path, mode: str, *, authorization=None, **kwargs):
+    """Confere o objeto ABERTO antes de ler bytes, inclusive em reaberturas."""
+    handle = path.open(mode, **kwargs)
+    try:
+        if authorization is not None:
+            info = os.fstat(handle.fileno())
+            if (not authorization.identity or not info.st_ino
+                    or (info.st_dev, info.st_ino) != authorization.identity):
+                raise FileTargetChanged("O arquivo mudou depois da autorizacao; leitura cancelada.")
+        return handle
+    except BaseException:
+        handle.close()
+        raise
+
+
 def _read_allowed_roots() -> list[Path]:
     roots: list[Path] = []
     profile_value = os.environ.get("USERPROFILE", "").strip()
@@ -520,7 +564,7 @@ def _resolve_path(value: str) -> Path:
     return Path(str(value or "").strip()).expanduser().resolve(strict=False)
 
 
-def inspect_file(caminho: str, procurar_copias: bool = False, limite_copias: int = 5, *, caminho_confirmado: str | None = None) -> ToolResult:
+def inspect_file(caminho: str, procurar_copias: bool = False, limite_copias: int = 5, *, caminho_confirmado: str | None = None, authorization=None) -> ToolResult:
     tool_name = "inspecionar_arquivo"
     raw = str(caminho or "").strip()
     if not raw:
@@ -585,13 +629,15 @@ def inspect_file(caminho: str, procurar_copias: bool = False, limite_copias: int
             tool_name=tool_name,
         )
 
-    readable = _readable_probe(path)
-    detected_type, type_evidence, mime = _detect_type(path)
+    readable = _readable_probe(path, authorization)
+    detected_type, type_evidence, mime = _detect_type(path, authorization)
     digest = None
     hash_error = None
     if readable:
         try:
-            digest = _sha256(path)
+            digest = _sha256(path, authorization)
+        except FileTargetChanged:
+            raise
         except (OSError, PermissionError) as exc:
             hash_error = str(exc)
 
@@ -612,7 +658,7 @@ def inspect_file(caminho: str, procurar_copias: bool = False, limite_copias: int
         },
         estado=_state(path, file_stat, readable),
     )
-    origin = _origin(path)
+    origin = _origin(path, authorization)
     history = (
         _history(path, digest, max(1, min(int(limite_copias), 20)))
         if procurar_copias
@@ -645,8 +691,8 @@ def inspect_file(caminho: str, procurar_copias: bool = False, limite_copias: int
     return ToolResult.success(f"Arquivo inspecionado: {path.name}.", data=data, tool_name=tool_name)
 
 
-def _read_text_range(path: Path, encoding: str, start: int, limit: int) -> tuple[str, bool]:
-    with path.open("r", encoding=encoding, errors="strict", newline="") as handle:
+def _read_text_range(path: Path, encoding: str, start: int, limit: int, authorization=None) -> tuple[str, bool]:
+    with _open_read(path, "r", encoding=encoding, errors="strict", newline="", authorization=authorization) as handle:
         remaining = start
         while remaining > 0:
             chunk = handle.read(min(64 * 1024, remaining))
@@ -657,7 +703,7 @@ def _read_text_range(path: Path, encoding: str, start: int, limit: int) -> tuple
         return content, bool(handle.read(1))
 
 
-def read_file(caminho: str, inicio: int = 0, limite_caracteres: int = 12_000, *, caminho_confirmado: str | None = None) -> ToolResult:
+def read_file(caminho: str, inicio: int = 0, limite_caracteres: int = 12_000, *, caminho_confirmado: str | None = None, authorization=None) -> ToolResult:
     tool_name = "ler_arquivo"
     raw = str(caminho or "").strip()
     if not raw:
@@ -726,8 +772,8 @@ def read_file(caminho: str, inicio: int = 0, limite_caracteres: int = 12_000, *,
 
     encoding = None
     try:
-        encoding = _detect_encoding(path)
-        content, truncated = _read_text_range(path, encoding, inicio, limite_caracteres)
+        encoding = _detect_encoding(path, authorization)
+        content, truncated = _read_text_range(path, encoding, inicio, limite_caracteres, authorization)
     except UnicodeDecodeError as exc:
         return ToolResult.failure(
             f"Nao consegui decodificar o arquivo com seguranca: {exc}",

@@ -1,0 +1,1567 @@
+AUDITORIA TÉCNICA AUREN — RELATÓRIO FINAL DA BASE ESTÁTICA
+Data: 16/10/2026. Windows local; Python 3.13.15; pytest 9.1.1.
+Pasta externa: C:\Users\victo\OneDrive\Documentos
+Arquivos: AUDITORIA_NOTAS.txt e AUDITORIA_COMPLETA_AUREN.txt, UTF-8.
+Repositório privado: https://github.com/Yamatosemj/aurenOFC
+Commit local: a7a6fd3e647de2f62b6a51fe570dfe78c4dbe3e8
+Branch local: teste-pr-149-atualizada
+Main remota: 70b040d6191237e2f0a291a14b8ea8fb4b78a09d.
+Árvores idênticas por comparação de TODOS os nomes/hashes de blobs/trees na raiz,
+via git ls-tree HEAD e GitHub git/trees/main. Históricos diferentes por squash;
+divergência de commits NÃO significa diferença no código auditado.
+Linhas sem outra indicação referem-se ao HEAD local acima.
+
+Escopo concluído: leitura individual integral dos260 artefatos próprios versionados
+na base, análise de integração e reproduções seguras selecionadas. Revisão das PRs
+abertas delimitada em II: NÃO é auditoria integral das branches candidatas,
+dependências externas, dados pessoais ou funcionamento físico de todas ferramentas.
+Nenhuma edição de fonte/teste/config/documentação, branch, commit, push, merge ou PR.
+Exceção posterior expressamente autorizada: instalação do GitHub CLI e autenticação
+interativa para consulta read-only. Nenhum token foi registrado neste relatório.
+Nenhum teste Live, API de modelo paga, microfone, UIA real ou automação mutável executado.
+Nenhum banco, conversa, clipboard ou screenshot real do usuário foi aberto.
+
+I. RESUMO EXECUTIVO
+
+Diagnóstico: protótipo desktop integrado com muitas funcionalidades e uma fronteira
+de permissão concreta; ainda não demonstra confiabilidade para autonomia avançada.
+O maior problema é a distância entre ação proposta, efeito observado, estado persistido
+e sucesso comunicado. As falhas localizadas são corrigíveis incrementalmente por
+contrato; não há fundamento técnico demonstrado para reescrever o projeto inteiro.
+
+36 achados:25 BUG CONFIRMADO,3 RISCO DEMONSTRÁVEL,6 DÍVIDA TÉCNICA e2 SUSPEITA A VALIDAR.
+São35 na base/infraestrutura e um exclusivamente na candidata#137. O maior
+risco é consentimento de leitura não vinculado ao caminho efetivamente usado
+(AUD-001, alta), demonstrado com resolvedores falsos; não houve exploração do Windows.
+Nenhum achado crítico;1alta,30média,5baixa. Outros defeitos reproduzidos: negativas convertidas em sucesso;
+máscara de log usada como identidade de ação/valor de verificação; guard que permite
+prosseguir após esgotar; Tkinter preso em ocupado; chamada adicional de IA descartada;
+memória recusada tratada como sucesso; voz anunciando janela maximizada após falha;
+busca devolvendo arquivo sem correspondência. UIA perde o índice do controle na releitura
+por análise estática. Trechos, condições, recomendações e limites estão em V.
+
+Preservar: contrato antes da permissão (tools/dispatcher.py:204–303), BLOCKED antes
+da promoção por origem externa (core/permission_manager.py:499–507), processos com
+solicitação de taskkill distinta de saída comprovada (tools/windows_processes.py:
+265–281), snapshots/transições terminais protegidos (core/task_manager.py:45–73,149–163).
+Essas propriedades não comprovam segurança universal.
+
+305 testes pytest locais aprovados em quatro seleções seguras, mais scripts sintéticos
+T2–T5/T7/T10/T11. CI main:830 passed/31 skipped completo; Windows hospedado focado:
+185 passed, seguro:110 passed. Jobs sobrepostos não são cobertura única. Não medimos
+acerto real, latência ponta a ponta, CPU/RAM/GPU, custo ou resistência real a injection.
+
+Git antes/depois de cada execução:'?? desktop/'; HEAD inalterado a7a6fd3. Essa pasta
+não rastreada já continha node_modules/package-lock gerados; nada foi limpo. Diffs
+rastreado/index vazios. Status não mede byte a byte arquivos ignorados/preexistentes.
+Refs locais main5498b6ff e origin/main ba0801bd antigas não definem a main atual.
+Diff antigo de50 arquivos/2356 inserções/199 remoções NÃO é diferença contra main atual.
+
+GitHub atual: #149 integrada em70b040; #151 integrada em58b8668d89ccfa74326462fe2a6bb79d6decf7c3.
+#141 OPEN44f56a4, base main, CLEAN, três checks SUCCESS.
+#142 OPENd20cb0, base branch de#14144f56a4, CLEAN, checks vazios na consulta.
+#137 OPEN09a6765, base main, DIRTY/conflitos; três checks SUCCESS de11/10 anteriores
+à main atual. CLEAN informa mergeabilidade, não aprovação técnica/autorização de merge.
+https://github.com/Yamatosemj/aurenOFC/pull/141
+https://github.com/Yamatosemj/aurenOFC/pull/142
+https://github.com/Yamatosemj/aurenOFC/pull/137
+Outras abertas consultadas (número:HEAD):
+108:03ee21db3c4fecd0cab8385af4a72e7f74b935e9
+95:9c2334b109e60b8c9ae241bdbd6fe675dfe2b354
+92:2ad117123a336337a847583951374ed01af3f04a
+90:fdfa2035baa6e2837d815a2e32ed94881e076c07
+85:f6cc269504ce1b6ed648de590af3b9418c0c44a3
+84:61eec6df4b3263fb0845eab24830e7b329d35431
+81:12b72d144b80aaa9794098e4d8d6bcc8baa918a4
+80:ee74e0e98177191b2ff731ba530921983d644153
+79:335fcc87a9e9b2cfb39deb0462df5a394d36878c
+78:8b617be49050c659dce6d327317da0a802d53202
+77:b91d13b93bc77bb7aafd7d18456744bfb077e915
+54:16ce7b85494dfd588e014fcea0d4ee8c1f278b2f
+Não auditadas integralmente nem recomendadas para merge em cadeia. #95→#92→#90→#85
+é cadeia antiga de voz, com partes já transplantadas. Aberta não significa ausente.
+
+II. INVENTÁRIO E COBERTURA
+
+Método: git ls-files do checkout, excluindo distribuição/licenças de terceiros abaixo.
+Cada artefato próprio recebe uma única classe L/P/N. L exige linhas inteiras exibidas
+em saídas efetivamente lidas; contar ou pesquisar nomes não conta como leitura integral.
+P informa somente os intervalos realmente vistos; pesquisas esparsas não validam o
+arquivo inteiro. N indica ausência de leitura de conteúdo. Imports durante testes não
+promovem arquivos a L. Linhas físicas incluem vazias, comentários e documentação; não
+são contagem de instruções executáveis nem cobertura de testes.
+
+Exclusões de código próprio: ui/vendor/three-r128.min.js e THREE_LICENSE.txt, além de
+LICENSE_ARIVC_MIT.txt (licença externa). A biblioteca Three teve apenas buscas pontuais;
+NÃO foi auditada. node_modules e package-lock.json não rastreado são dependência/gerado
+preexistentes, fora do denominador. Caches, bancos, logs e modelos ignorados não foram
+abertos nem contados como fonte própria. Não houve exame de dependências transitivas,
+CVE, assinatura de pacotes ou binários ONNX. A ausência de arquivo próprio de lock não
+é prova de vulnerabilidade conhecida de qualquer pacote.
+
+COBERTURA DO CHECKOUT (nao inclui objetos candidatos #141/#142):
+Total versionado: 263; exclusoes externas: 3; artefatos proprios: 260; linhas fisicas: 42587.
+Nivel | arquivos | % arquivos | linhas dos arquivos classificados | % linhas
+L | 260 | 100.00% | 42587 | 100.00%
+P | 0 | 0.00% | 0 | 0.00%
+N | 0 | 0.00% | 0 | 0.00%
+Linhas comprovadamente lidas: 42587/42587 (100.00%) no denominador primário.
+A coluna linhas P acima mede o tamanho total dos arquivos P, nao linhas lidas.
+
+LISTA NOMINAL L/P/N: 260 artefatos próprios da base; P: nenhum; N: nenhum.
+arquivo | nivel | linhas fisicas | intervalos lidos | justificativa
+.github/runner-templates/auren-windows-live.yml.template | L | 101 | todas | Leitura integral; sem implicar validacao Live.
+.github/workflows/auren-chat-tests.yml | L | 115 | todas | Leitura integral; sem implicar validacao Live.
+.github/workflows/auren-file-intelligence.yml | L | 21 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+.github/workflows/auren-manual-tests.yml | L | 73 | todas | Leitura integral; sem implicar validacao Live.
+.github/workflows/auren-update-pc.yml | L | 208 | todas | Leitura integral; sem implicar validacao Live.
+.github/workflows/auren-visual-interaction.yml | L | 47 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+.github/workflows/auren-windows-connection.yml | L | 37 | todas | Leitura integral; sem implicar validacao Live.
+.github/workflows/auren-windows-live.yml | L | 101 | todas | Leitura integral; sem implicar validacao Live.
+.gitignore | L | 34 | todas | Leitura integral; sem implicar validacao Live.
+AGENTS.md | L | 56 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+AUREN_STATE.md | L | 79 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+README.md | L | 217 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+agent/__init__.py | L | 9 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+agent/ari_native/__init__.py | L | 12 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+agent/ari_native/audio_manager.py | L | 32 | todas | Leitura integral; sem implicar validacao Live.
+agent/ari_native/response_cache.py | L | 109 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+agent/ari_native/task_queue.py | L | 176 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+agent/models.py | L | 34 | todas | Leitura integral; sem implicar validacao Live.
+agent/orchestrator.py | L | 30 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+agent/planner.py | L | 36 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+auren.py | L | 188 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+config.py | L | 19 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/__init__.py | L | 1 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/browser_verification.py | L | 197 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/capabilities.py | L | 389 | todas | Leitura integral; sem implicar validacao Live.
+core/capability_audio_experiment.py | L | 190 | todas | Leitura integral; sem implicar validacao Live.
+core/capability_audio_runtime.py | L | 147 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/capability_resolver.py | L | 158 | todas | Leitura integral; sem implicar validacao Live.
+core/confirmation.py | L | 68 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/facade.py | L | 71 | todas | Leitura integral; sem implicar validacao Live.
+core/harness.py | L | 851 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/harness_closure.py | L | 307 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/harness_completion.py | L | 230 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/harness_cycle.py | L | 536 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/harness_fast_path.py | L | 110 | todas | Leitura integral; sem implicar validacao Live.
+core/harness_followup.py | L | 55 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/harness_guards.py | L | 266 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/harness_heuristics.py | L | 290 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/harness_intent_guard.py | L | 151 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/harness_logging.py | L | 148 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/harness_model.py | L | 88 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/harness_multitab.py | L | 101 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/harness_round_input.py | L | 113 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/harness_runtime.py | L | 151 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/harness_serialization.py | L | 35 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/harness_session.py | L | 44 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/harness_state.py | L | 80 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/harness_strategy.py | L | 66 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/harness_tools.py | L | 209 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/harness_turn.py | L | 26 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/intent_resolver.py | L | 437 | todas | Leitura integral; sem implicar validacao Live.
+core/intent_verification.py | L | 324 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/local_decision.py | L | 126 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/memory_context.py | L | 71 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/orchestrator.py | L | 126 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/permission_manager.py | L | 854 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/prompt.py | L | 106 | todas | Leitura integral; sem implicar validacao Live.
+core/response.py | L | 48 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/router.py | L | 470 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/session.py | L | 223 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/task_manager.py | L | 371 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/task_spec.py | L | 150 | todas | Leitura integral; sem implicar validacao Live.
+core/task_trace.py | L | 262 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/tool_contracts.py | L | 204 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/tool_result.py | L | 196 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/tools_registry.py | L | 939 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/usage.py | L | 73 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+core/utils.py | L | 27 | todas | Leitura integral; sem implicar validacao Live.
+core/vision.py | L | 540 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+docs/CONTROLE_REMOTO_GITHUB.md | L | 52 | todas | Leitura integral; execução real não implicada.
+docs/INVENTARIO.md | L | 94 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+docs/TESTES_GITHUB.md | L | 60 | todas | Leitura integral; execução real não implicada.
+docs/architecture/01-nucleo.md | L | 196 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+docs/architecture/02-roteamento-seguranca.md | L | 203 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+docs/architecture/03-modelo-sessao-memoria.md | L | 194 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+docs/architecture/04-windows-arquivos-visao.md | L | 167 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+docs/architecture/05-navegador-browser-intelligence.md | L | 164 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+docs/architecture/06-voz-stt-tts.md | L | 136 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+docs/architecture/07-interface-desktop-gui.md | L | 147 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+docs/architecture/08-skills-capacidades-extensibilidade.md | L | 135 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+docs/architecture/09-testes-ci-controle-remoto.md | L | 121 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+docs/architecture/10-entradas-config-instalacao-distribuicao.md | L | 121 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+docs/history/AUREN_STATE_SNAPSHOT_2026-10-10.md | L | 401 | todas | Leitura integral; execução real não implicada.
+experimental/__init__.py | L | 0 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+experimental/wake_word.py | L | 118 | todas | Leitura integral; sem implicar validacao Live.
+interface_auren.py | L | 298 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+main.py | L | 4 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+medir_metricas_router.py | L | 181 | todas | Leitura integral; execucao somente quando segura e registrada.
+medir_router_baseline.py | L | 132 | todas | Leitura integral; execucao somente quando segura e registrada.
+memory/__init__.py | L | 1 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+memory/store.py | L | 251 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+providers/__init__.py | L | 0 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+providers/openai_provider.py | L | 83 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+pytest.ini | L | 2 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+remote_tests/chat-control-functions.ps1 | L | 63 | todas | Leitura integral; sem implicar validacao Live.
+remote_tests/chat_request.py | L | 86 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+remote_tests/pr_job.py | L | 89 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+remote_tests/windows_watchdog.py | L | 221 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+requirements-voice.txt | L | 7 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+requirements.txt | L | 4 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+scripts/README.md | L | 14 | todas | Leitura integral; execucao somente quando segura e registrada.
+scripts/diagnosticos/AUREN_LISTAR_MICROFONES.bat | L | 9 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+scripts/diagnosticos/MEDIR_METRICAS_ROUTER.bat | L | 4 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+scripts/diagnosticos/MEDIR_ROUTER_BASELINE.bat | L | 4 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+scripts/diagnosticos/medir_capability_audio_experiment.py | L | 18 | todas | Leitura integral; execucao somente quando segura e registrada.
+scripts/diagnosticos/medir_custo_modelo.py | L | 91 | todas | Leitura integral; execucao somente quando segura e registrada.
+scripts/diagnosticos/testar_spotify_desktop_runtime.py | L | 39 | todas | Leitura integral; execucao somente quando segura e registrada.
+scripts/experimentos/ATIVAR_EXPERIMENTO_AUDIO.bat | L | 4 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+scripts/experimentos/DESATIVAR_EXPERIMENTO_AUDIO.bat | L | 4 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+scripts/iniciar/ABRIR_AUREN_GUI.bat | L | 16 | todas | Leitura integral; execucao somente quando segura e registrada.
+scripts/iniciar/AUREN_CHROME.bat | L | 18 | todas | Leitura integral; execucao somente quando segura e registrada.
+scripts/iniciar/AUREN_VOZ.bat | L | 15 | todas | Leitura integral; execucao somente quando segura e registrada.
+scripts/instalar/ATUALIZAR_WORKFLOW_CHAT_ASCII.ps1 | L | 76 | todas | Leitura integral; execucao somente quando segura e registrada.
+scripts/instalar/AUTORIZAR_TESTES_CHAT.ps1 | L | 111 | todas | Leitura integral; execucao somente quando segura e registrada.
+scripts/instalar/AUTORIZAR_TESTES_CHAT_SEM_GCM.ps1 | L | 77 | todas | Leitura integral; execucao somente quando segura e registrada.
+scripts/instalar/CORRIGIR_CREDENCIAL_CHAT.ps1 | L | 65 | todas | Leitura integral; execucao somente quando segura e registrada.
+scripts/instalar/DIAGNOSTICAR_TESTES_CHAT.ps1 | L | 64 | todas | Leitura integral; execucao somente quando segura e registrada.
+scripts/instalar/INSTALAR_AUREN.bat | L | 23 | todas | Leitura integral; execucao somente quando segura e registrada.
+scripts/instalar/INSTALAR_VOZ.bat | L | 30 | todas | Leitura integral; execucao somente quando segura e registrada.
+scripts/lib/SELECIONAR_PYTHON.cmd | L | 38 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+scripts/testar/TESTAR_AUREN.bat | L | 37 | todas | Leitura integral; execucao somente quando segura e registrada.
+scripts/testar/TESTAR_VOZ.bat | L | 9 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+skills/__init__.py | L | 3 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+skills/loader.py | L | 177 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+testes_auren.py | L | 12 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+testes_auren_live.py | L | 2051 | todas | Leitura integral; execução real não implicada.
+tests/__init__.py | L | 1 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+tests/test_ari_integration.py | L | 77 | todas | Leitura integral; execucao somente quando segura e registrada.
+tests/test_ari_native_components.py | L | 97 | todas | Leitura integral; execucao somente quando segura e registrada.
+tests/test_asr_fuzzy_matching.py | L | 10 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+tests/test_browser_context.py | L | 62 | todas | Leitura integral; sem implicar validacao Live.
+tests/test_browser_element_verification.py | L | 45 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+tests/test_browser_elements_module_boundary.py | L | 22 | todas | Leitura integral; sem implicar validacao Live.
+tests/test_browser_navigation_module_boundary.py | L | 16 | todas | Leitura integral; sem implicar validacao Live.
+tests/test_browser_navigation_scroll.py | L | 51 | todas | Leitura integral; sem implicar validacao Live.
+tests/test_browser_reading_module_boundary.py | L | 11 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+tests/test_browser_verification.py | L | 193 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+tests/test_browser_verification_p0.py | L | 39 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_cancellation_harness.py | L | 32 | todas | Leitura integral; execucao somente quando segura e registrada.
+tests/test_capability_audio_experiment.py | L | 34 | todas | Leitura integral; sem implicar validacao Live.
+tests/test_capability_audio_runtime.py | L | 87 | todas | Leitura integral; sem implicar validacao Live.
+tests/test_capability_registry.py | L | 288 | todas | Leitura integral; sem implicar validacao Live.
+tests/test_chat_ascii_workflow_installer.py | L | 103 | todas | Leitura integral; execucao somente quando segura e registrada.
+tests/test_chat_offline_installation.py | L | 94 | todas | Leitura integral; execucao somente quando segura e registrada.
+tests/test_chat_policy_setup.py | L | 145 | todas | Leitura integral; execucao somente quando segura e registrada.
+tests/test_chat_policy_stage_diagnostics.py | L | 47 | todas | Leitura integral; execucao somente quando segura e registrada.
+tests/test_chat_request.py | L | 100 | todas | Leitura integral; execucao somente quando segura e registrada.
+tests/test_chrome_ui.py | L | 319 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_close_intent_verification.py | L | 206 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_confirmation.py | L | 278 | todas | Leitura integral; sem implicar validacao Live.
+tests/test_dependency_pins.py | L | 38 | todas | Leitura integral; sem implicar validacao Live.
+tests/test_desktop_ui_backend.py | L | 183 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_dispatcher_contracts.py | L | 41 | todas | Leitura integral; execucao somente quando segura e registrada.
+tests/test_execution_single_path.py | L | 296 | todas | Leitura integral; sem implicar validacao Live.
+tests/test_file_intelligence.py | L | 525 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_force_process_termination.py | L | 145 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_gcm_installer_execution.py | L | 85 | todas | Leitura integral; execucao somente quando segura e registrada.
+tests/test_harness_completion.py | L | 362 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_harness_cycle_module_boundary.py | L | 15 | todas | Leitura integral; sem implicar validacao Live.
+tests/test_harness_fast_path.py | L | 170 | todas | Leitura integral; sem implicar validacao Live.
+tests/test_harness_guards.py | L | 331 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_harness_heuristics.py | L | 114 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_harness_loop_owner.py | L | 506 | todas | Leitura integral; sem implicar validacao Live.
+tests/test_harness_model.py | L | 231 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_harness_reasoning_continuity.py | L | 127 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_harness_round_preparation.py | L | 69 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_harness_runtime_module_boundary.py | L | 31 | todas | Leitura integral; sem implicar validacao Live.
+tests/test_harness_session.py | L | 144 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_harness_strategy.py | L | 218 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_harness_tools.py | L | 630 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_harness_turn.py | L | 118 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+tests/test_intent_multistep_progress.py | L | 148 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_intent_rejection_diagnostics.py | L | 67 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_intent_verification.py | L | 326 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_live_runner_discovery.py | L | 40 | todas | Leitura integral; execucao somente quando segura e registrada.
+tests/test_live_runner_facade.py | L | 14 | todas | Leitura integral; execucao somente quando segura e registrada.
+tests/test_metricas_router.py | L | 31 | todas | Leitura integral; execucao somente quando segura e registrada.
+tests/test_model_config.py | L | 47 | todas | Leitura integral; execucao somente quando segura e registrada.
+tests/test_model_override_startup.py | L | 145 | todas | Leitura integral; execucao somente quando segura e registrada.
+tests/test_p0_3_dispatcher.py | L | 21 | todas | Leitura integral; execucao somente quando segura e registrada.
+tests/test_permission_policy.py | L | 131 | todas | Leitura integral; execucao somente quando segura e registrada.
+tests/test_process_termination_progress.py | L | 235 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_prompt_injection.py | L | 318 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+tests/test_provider_boundary.py | L | 50 | todas | Leitura integral; execucao somente quando segura e registrada.
+tests/test_python_shortcut_selector.py | L | 149 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_remote_control_contract.py | L | 46 | todas | Leitura integral; execucao somente quando segura e registrada.
+tests/test_remote_live_safety.py | L | 174 | todas | Leitura integral; execucao somente quando segura e registrada.
+tests/test_router_baseline_matrix.py | L | 35 | todas | Leitura integral; execucao somente quando segura e registrada.
+tests/test_router_tool_selection.py | L | 177 | todas | Leitura integral; execucao somente quando segura e registrada.
+tests/test_routing_single_owner.py | L | 224 | todas | Leitura integral; sem implicar validacao Live.
+tests/test_scripts_layout.py | L | 99 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_session_context.py | L | 328 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_session_isolation.py | L | 117 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+tests/test_skills_path_safety.py | L | 186 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_steam_close_confirmation_regressions.py | L | 189 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_steam_live_followup_20261013.py | L | 210 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_steam_routing_followup.py | L | 169 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_task_manager.py | L | 163 | todas | Leitura integral; execucao somente quando segura e registrada.
+tests/test_task_manager_terminality.py | L | 53 | todas | Leitura integral; execucao somente quando segura e registrada.
+tests/test_task_queue_lifecycle.py | L | 71 | todas | Leitura integral; execucao somente quando segura e registrada.
+tests/test_task_spec.py | L | 83 | todas | Leitura integral; sem implicar validacao Live.
+tests/test_task_trace.py | L | 132 | todas | Leitura integral; execucao somente quando segura e registrada.
+tests/test_terminal_completion.py | L | 228 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_tool_contracts.py | L | 83 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+tests/test_tool_result.py | L | 50 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+tests/test_tool_schema_api_compat.py | L | 95 | todas | Leitura integral; execucao somente quando segura e registrada.
+tests/test_ui_stale_session_events.py | L | 185 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_vision_input.py | L | 419 | todas | Leitura integral; execução real não implicada.
+tests/test_visual_coordinate_dispatcher_integration.py | L | 494 | todas | Leitura integral; execução real não implicada.
+tests/test_visual_input.py | L | 255 | todas | Leitura integral; execução real não implicada.
+tests/test_voice.py | L | 621 | todas | Leitura integral; execução real não implicada.
+tests/test_voice_installer_cache.py | L | 121 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_voice_v3.py | L | 192 | todas | Leitura integral; execução real não implicada.
+tests/test_windows_audio_module_boundary.py | L | 16 | todas | Leitura integral; sem implicar validacao Live.
+tests/test_windows_clipboard.py | L | 43 | todas | Leitura integral; execucao somente quando segura e registrada.
+tests/test_windows_clipboard_module_boundary.py | L | 14 | todas | Leitura integral; sem implicar validacao Live.
+tests/test_windows_input_module_boundary.py | L | 26 | todas | Leitura integral; sem implicar validacao Live.
+tests/test_windows_process_module_boundary.py | L | 17 | todas | Leitura integral; sem implicar validacao Live.
+tests/test_windows_process_safety_consistency.py | L | 149 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_windows_process_toolresult.py | L | 211 | todas | Leitura integral; testes simulados distinguidos de Live.
+tests/test_windows_screenshot_module_boundary.py | L | 11 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+tests/test_windows_system_module_boundary.py | L | 14 | todas | Leitura integral; sem implicar validacao Live.
+tests/test_windows_uia_module_boundary.py | L | 29 | todas | Leitura integral; sem implicar validacao Live.
+tests/test_windows_window_module_boundary.py | L | 36 | todas | Leitura integral; sem implicar validacao Live.
+tests/v43_api_signatures.py | L | 62 | todas | Leitura integral; testes simulados distinguidos de Live.
+tools/__init__.py | L | 1 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+tools/applications.py | L | 369 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+tools/browser.py | L | 372 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+tools/browser_context.py | L | 49 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+tools/browser_elements.py | L | 221 | todas | Leitura integral; sem implicar validacao Live.
+tools/browser_navigation.py | L | 130 | todas | Leitura integral; sem implicar validacao Live.
+tools/browser_reading.py | L | 665 | todas | Leitura integral; sem implicar validacao Live.
+tools/dispatcher.py | L | 340 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+tools/fast_paths.py | L | 113 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+tools/file_intelligence.py | L | 780 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+tools/files.py | L | 349 | todas | Leitura integral; sem implicar validacao Live.
+tools/memory.py | L | 18 | todas | Leitura integral; sem implicar validacao Live.
+tools/windows.py | L | 118 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+tools/windows_audio.py | L | 266 | todas | Leitura integral; sem implicar validacao Live.
+tools/windows_clipboard.py | L | 111 | todas | Leitura integral; sem implicar validacao Live.
+tools/windows_input.py | L | 372 | todas | Leitura integral; sem implicar validacao Live.
+tools/windows_process_policy.py | L | 33 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+tools/windows_processes.py | L | 295 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+tools/windows_screenshot.py | L | 63 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+tools/windows_system.py | L | 94 | todas | Leitura integral; sem implicar validacao Live.
+tools/windows_uia.py | L | 937 | todas | Leitura integral; sem implicar validacao Live.
+tools/windows_window.py | L | 568 | todas | Leitura integral; sem implicar validacao Live.
+ui/__init__.py | L | 1 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+ui/backend.py | L | 265 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+ui/chrome.html | L | 360 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+ui/chrome_server.py | L | 382 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+voice/__init__.py | L | 20 | todas | Leitura integral; sem implicar validacao Live.
+voice/confirmation.py | L | 117 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+voice/input.py | L | 496 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+voice/list_devices.py | L | 33 | todas | Leitura integral; sem implicar validacao Live.
+voice/main.py | L | 368 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+voice/segmentation.py | L | 284 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+voice/speech_response.py | L | 166 | todas | Leitura integral; sem implicar validacao Live.
+voice/stt.py | L | 274 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+voice/tts.py | L | 173 | todas | Leitura integral; profundidade de teste depende da secao VIII.
+
+COBERTURA ADICIONAL DAS CANDIDATAS (fora dos260 arquivos da base):
+Não herdar L de versão antiga quando mudou. Nomes relativos à raiz; intervalos
+referem-se aos HEADs abaixo. Revisões candidatas são delimitadas, não completas.
+
+#141 HEAD44f56a4dff1538db0123fa5b911a439b2608c5a0:
+L desktop/electron/main.cjs1–179, desktop/electron/package.json1–14,
+scripts/iniciar/AUREN_DESKTOP.bat1–18, tests/test_electron_desktop.py1–90,
+ui/chrome_server.py1–401.
+N .gitignore, AUREN_STATE.md, README.md, tests/test_scripts_layout.py nessa revisão:
+não relidos integralmente no HEAD da candidata; versões da base estão L.
+
+#142 HEADd20cb0d34069141078774c3f4f6d175b19d66604:
+L desktop/electron/main.cjs1–187, preload.cjs1–9, ui/backend.py1–269,
+ui/chrome_server.py1–485, ui/chrome.html1–555, ui/conversation_history.py1–280,
+ui/legacy_chat_import.py1–115, tests/test_ui_conversation_history.py1–248,
+tests/test_legacy_chat_import.py1–362.
+N .gitignore, AUREN_STATE.md, README.md nesse HEAD: não relidos integralmente.
+Hipótese antiga de persistir resposta de geração antiga no chatnovo, baseada em
+63e3800: INVALIDADA no HEAD atual; chrome_server.py:71–94 filtra geração ANTES
+de persistir. Não contada como bug. Objeto Electron antigo fbd96be foi superado:
+main.cjs atual inclui .venv do pai, corrigindo observação antiga de ausência.
+
+#137 HEAD09a67659a82121449e3340538200780688c0b6de:
+L tools/reminders.py1–252, tests/test_reminders.py1–275.
+P ui/chrome.html349–385 (mais hunks vistos, não contados para cobertura integral).
+P ui/chrome_server.py13–29,38–51,55–90,160–193,246–253,370–379,385–391:
+hunks exibidos de criação/poll/snapshot/ACK/shutdown/endpoint; restante não avaliado.
+P AUREN_STATE.md11–32; README.md85–100,205–209; core/orchestrator.py65–72;
+core/permission_manager.py39–44,73–80,122–128; core/prompt.py47–60;
+core/router.py107–117,223–235; core/tool_contracts.py90–99;
+core/tools_registry.py1–61; tests/test_dispatcher_contracts.py36–41.
+N tests/test_tool_contracts.py e tools/dispatcher.py nessa revisão: conteúdo do diff
+combinado truncado, não reivindicado. Não são N da base: versões locais foram lidas.
+Conferência completa desses arquivos/servidor permanece pré-requisito de integração.
+É preciso resolver conflitos DIRTY e executar CI sobre a base final atualizada.
+
+III. ESTADO FUNCIONAL
+
+Base:49 schemas/handlers; Harness/ciclo/revisão de intenção; SQLite fatos/conversas/
+estratégias/traces; TaskManager em RAM; Tkinter textual; Chrome local WebGL/texto;
+PTT/VAD/ASR/TTS; skills textuais lexicais;14 capacidades declaratórias; experimento
+áudio desativado por padrão. Não implica49 ferramentas comprovadas em hardware.
+305pytest locais selecionados, não suite inteira. CI hospedado não mede uso pessoal.
+AUREN_STATE relata uso real anterior de Steam/orbe/Chrome: relato do proprietário,
+não reprodução independente desta investigação. V48 voz permanece candidata sem
+nova validação física. Wake word não integra o PTT padrão.
+
+Electron#141: implementado em branch aberta, ausente da main. nodeIntegration=false,
+contextIsolation=true, sandbox=true, webSecurity=true; bloqueia navegação externa,
+webviews, novas janelas/permissões. Python filho shell=false/windowsHide, .venv projeto/
+pai e fallback launcher, EOF e kill5s. Não iniciou Electron real. Testes majoritariamente
+textuais, node--check e subprocesso servidor não provam foco/crash/desligamento físico.
+
+Histórico#142 depende de#141 e não tem checks publicados no HEAD consultado.
+SQLite separado, busca/paginação/importação. UUID32hex, SQLparametrizado, texto10k,
+páginas100 e limite3MB de cópia de log lidos. Consultar conversa NÃO restaura chat_id
+nem contexto do modelo (chrome_server.py:213–228). Importação não é memória semântica.
+Importador abre SQLite legado readonly, copia registros e usa TASK_START como fallback;
+não reconstrói necessariamente todas respostas. Refresh30s carrega legado sob lock:
+possível custo de escala não medido (legacy_chat_import.py:32–49;
+conversation_history.py:84–109,123–133). Cópia de log exige caminho canônico contido,
+recusa symlink, entrega texto técnico sem nova redação, com aviso de privacidade.
+Não se abriram logs reais. Preload copyText/IPC validam sender/tipo/limite4milhões;
+é função da UI, não ferramenta autônoma do modelo.
+
+Lembretes#137: independente, conflituosa, ausente da main. SQLite/BEGIN IMMEDIATE,
+datas/operações/ACK implementados; alertas exigem Chrome/servidor abertos, sem consulta
+periódica ao modelo. Não é serviço Windows. T11 confirmou supressão do segundo aviso
+após adiar mesmoID (AUD-036). Testes do store não cobrem deduplicação do frontend.
+Cartões da main que mudam texto para 'Adiado' não agendam (ui/chrome.html:159–162).
+
+IV. ARQUITETURA
+
+Fluxo normal verificado:
+Entrada -> auren.criar_harness -> Harness -> Router -> provider/function_call
+-> revisão de intenção quando aplicável -> Dispatcher -> contrato -> preflight
+visual/UIA -> PermissionManager -> handler -> ToolResult -> Harness -> estado/resposta.
+Atalhos também usam Dispatcher. Revisão semântica não é autorização nem prova de efeito.
+O áudio experimental chama o executor normal, mas não recebe a mesma revisão semântica
+dos atalhos planejados; está desativado por padrão e não foi executado.
+
+Há fronteira real entre seleção, permissão e execução, sem sandbox de sistema
+operacional. core/facade.py:1–71 reexporta handlers por compatibilidade; consumidores
+normais convergem no Dispatcher. Testes/diagnósticos Live chamam handlers diretos:
+não oferecer fachada como API autorizada de plugins. Sua existência não demonstra
+bypass explorável por LLM. Entradas CLI/Tk/Chrome/voz usam o mesmo Harness; nenhum
+segundo executor normal do modelo foi encontrado nos arquivos próprios examinados.
+
+1. Complexidade: parcialmente excessiva para a validação demonstrada. Muitos guards
+   especializados convivem com estado textual curto. Os erros de representação em
+   AUD-003/004 demonstram custo concreto; quantidade de módulos sozinha não é defeito.
+2. Componentes removíveis: nenhum módulo inteiro foi provado dispensável. AgentOrchestrator
+   expõe fases, mas o Harness consome sobretudo plan.max_rounds (harness.py:645–659).
+   Reduzir superfície pública requer mapear consumidores, não apagar módulos às cegas.
+3. Duplicação: UI/worker/TaskManager/agent têm estados distintos com sincronização frágil.
+   Planner e heurística calculam profundidade separadamente (planner.py:24–33;
+   harness_heuristics.py:282–290). Cache de resposta e prompt cache são diferentes.
+4. Fronteiras: Dispatcher/permissão bem identificáveis. Observabilidade e operação se
+   misturam quando argumentos mascarados alimentam identidade/verificador. Browser,
+   orquestrador e store são compartilhados no processo; não equivalem a sessões isoladas.
+5. Abstrações antecipadas: TaskSpec/CapabilityResolver/catálogo ainda experimentais; não
+   há benefício de produção medido que justifique expandi-los agora. Existir não é bug.
+6. Dívida: retornos textuais, cortes sem estrutura, estados duplicados, retenção indefinida
+   e documentação de status conflitante já têm consequências demonstradas.
+7. Crescimento: globals, Win32 e caminhos locais dificultam servidor/celular/multiusuário.
+8. Preservar: contrato antes do handler; política fora do modelo; confirmação com negativa
+   por timeout; ToolResult explícito; snapshots imutáveis; solicitação de taskkill distinta
+   de encerramento comprovado; cancelamento cooperativo sem promessa de rollback.
+9. Simplificar: identidade operacional independente de log; resultado único; orçamento de
+   chamadas único; teardown público por canal; verificação estruturada com estado pendente.
+10. Sustentabilidade: evolução incremental é viável; ampliar funcionalidades antes de
+    fechar erros de integração aumenta dívida. Não há fundamento para reescrita completa.
+
+V. PROBLEMAS ENCONTRADOS
+
+BUG CONFIRMADO: contradição lógica reproduzida ou inequívoca no código; não significa
+ocorrência física no PC. RISCO DEMONSTRÁVEL: condição técnica concreta, sem alegar
+incidente. SUSPEITA A VALIDAR: encadeamento incompleto. Nenhuma correção foi aplicada.
+Linhas do HEAD principal, salvo indicação explícita de objeto candidato.
+
+AUD-001 — Consentimento não fica preso ao caminho resolvido aprovado
+Classificação: RISCO DEMONSTRÁVEL. Gravidade: alta.
+Arquivos/trecho: core/permission_manager.py:523–529 resolve/classifica antes da
+confirmação; tools/dispatcher.py:280–293 resolve novamente e define
+argumentos_execucao['_caminho_confirmado']=path_policy.caminho_resolvido.
+tools/file_intelligence.py:678–693 compara com essa última string. Trechos literais:
+  permitido, motivo = permission_manager.autorizar(nome, argumentos_execucao)
+  argumentos_execucao["_caminho_confirmado"] = path_policy.caminho_resolvido
+  if path_policy.status == "confirm" and caminho_confirmado != path_policy.caminho_resolvido:
+Causa: autorização retorna bool/motivo sem identidade do destino; Dispatcher fabrica
+novo caminho confirmado depois da decisão.
+Evidência: T3a alternou resoluções A/B por mocks e capturou B como confirmado no handler,
+com uma aprovação. Sem link real/leitura pessoal.
+Consequência: link/junction/diretório alterado durante confirmação pode permitir outro
+arquivo acessível fora das raízes AUTO. BLOCKED ainda é rechecado; não foi demonstrado
+bypass de AppData/.ssh/.aws.
+Reprodução: resolver entrada para A na política e B no Dispatcher após aprovação,
+ambos confirm; capturar _caminho_confirmado.
+Confiança: alta no mecanismo; exploração física não validada.
+Recomendação: vincular aprovação a caminho/identidade capturados antes da pergunta,
+rejeitar mudança e revalidar o objeto/handle aberto.
+Risco da correção: links legítimos/arquivos substituídos passam a exigir nova decisão.
+O que provaria erro: alvo aprovado imutavelmente vinculado ao handle de leitura antes
+da confirmação, sem nova resolução desvinculada observada no Dispatcher.
+
+AUD-002 — Negativas reais do executor podem virar sucesso
+Classificação: BUG CONFIRMADO. Gravidade: média.
+Arquivos/trecho: tools/windows_window.py:337–338 retorna 'Encontrei ... mas o Windows
+nao permitiu ...'; :562–564 'Encontrei ... mas nao consegui solicitar ...'.
+core/tool_result.py:180–196 reconhece prefixos e termina com ToolResult.success(texto).
+Causa: falha em linguagem natural não coincide com marcadores de falha.
+Evidência: T2f converteu a negativa exata de foco para ok=True. applications.py:313–317
+usa padrão semelhante para erro ao abrir atalho.
+Consequência: contadores/histórico/conclusão local podem comunicar sucesso falso.
+Reprodução: from_legacy com mensagem da negativa de SetForegroundWindow.
+Confiança: alta; Windows simulado, sem janela física.
+Recomendação: ToolResult.failure explícito com código estável nesses executores.
+Risco da correção: consumidores textuais precisam manter mensagens compatíveis; ampliar
+lista de prefixos por si só continua frágil.
+
+AUD-003 — Mascaramento causa colisão na identidade de recuperação
+Classificação: BUG CONFIRMADO. Gravidade: média.
+Trecho: core/harness_serialization.py:29–33 serializa _redact_value(dados);
+core/harness_logging.py:24–26,72–74 troca texto/valor por '[REDACTED]';
+core/harness_tools.py:54,173–177 usa assinatura=(nome, argumentos) nas pendências.
+Causa: representação de log é usada como identidade semântica de operação.
+Evidência: T2h falhou preenchimento com A e depois sucedeu com B no mesmo alvo/índice;
+falhas_pendentes ficou vazio embora os argumentos originais diferissem.
+Consequência: etapa diferente pode apagar falha que continua sem recuperação.
+Reprodução: duas preencher_elemento, mudando só texto, retornos False/True.
+Confiança: alta; helper real e TaskManager simulado.
+Recomendação: hash canônico dos argumentos originais em memória separado do log;
+não registrar valores em claro como correção.
+Risco da correção: canonicalização unir/separar operações indevidamente; testar
+sensíveis, ordem JSON e tentativas em rodadas distintas.
+
+AUD-004 — Verificador recebe valor preenchido já mascarado
+Classificação: BUG CONFIRMADO. Gravidade: média.
+Trecho: core/harness_tools.py:89–100 envia argumentos redigidos ao browser_verifier;
+core/browser_verification.py:97–103 extrai texto; :138–142 busca 'valor={esperado_texto}'.
+Causa: valor operacional foi perdido antes da verificação.
+Evidência: T3b, página com ALFA: argumentos originais verificam True; serializados por
+_argumentos_da_chamada retornam False.
+Consequência: preenchimento correto pode levar a repetição/falha em tarefa composta,
+com chamadas/confirmacões extras. Não é necessário usar segredo para reproduzir.
+Reprodução: alvo pesquisa, texto ALFA, índice1, duas formas de argumentos.
+Confiança: alta no encadeamento lido.
+Recomendação: evidência operacional privada e comparação estruturada; redação só nas
+fronteiras apropriadas. Campo protegido deve permanecer explicitamente não verificável.
+Risco da correção: vazar texto em novos metadados persistidos.
+Relacionado: T3c aceita ALFA em valor=ALFABETO no helper com argumentos originais
+(comparação por substring). Corrigir mascaramento sem corrigir igualdade habilita outro
+falso positivo; não foi alegada exploração ponta a ponta no fluxo atual mascarado.
+
+AUD-005 — Abas incompletas podem prosseguir após esgotar guard
+Classificação: BUG CONFIRMADO. Gravidade: média.
+Trecho: core/harness_guards.py:210–215 exige contador<2 para entrar no guard;
+:261–266 devolve 'prosseguir'; harness_cycle.py:169–287 pode finalizar como sucesso.
+Causa: falta estado de falha quando continua incompleto após tentativas.
+Evidência: T4c com destinos conhecidos, contador2 e multitab_concluida=False retornou
+prosseguir. Sem modelo real.
+Consequência: resposta final pode ser aceita sem prova dos destinos quando outros
+guards não estiverem pendentes; não ocorre em todas as tarefas compostas.
+Reprodução: guard sem tools, ferramentas_executadas>0, contador2 e destino incompleto.
+Confiança: alta.
+Recomendação: falha explícita ao esgotar pendência; testar ciclo e mensagem final.
+Risco da correção: tarefas antes encerradas permissivamente passam a falhar; tratar
+redirecionamentos e destinos suportados de forma explícita.
+
+AUD-006 — Destino de aba aceita outro host com prefixo igual
+Classificação: BUG CONFIRMADO. Gravidade: média.
+Trecho: core/harness_multitab.py:87–93, url_norm.startswith(esperado_norm).
+Causa: comparação de URL textual sem limite de hostname/caminho.
+Evidência: T5a True para pedido https://github.com na primeira aba e estado
+https://github.com.evil.invalid. T4b com nome github foi False porque não está no
+KNOWN_SERVICES; tentativa inadequada preservada nas notas.
+Consequência: validação específica pode atestar destino errado; não houve navegação
+maliciosa nem bypass de permissão demonstrados.
+Reprodução: _multitab_concluida com URL explícita e linha Aba1 no host acima.
+Confiança: alta no helper.
+Recomendação: comparar componentes normalizados e definir redirecionamentos permitidos.
+Risco da correção: rejeitar redirecionamento legítimo; exceções precisam ser estreitas.
+
+AUD-007 — Tkinter pode ficar ocupado após Desligar/reativar
+Classificação: BUG CONFIRMADO. Gravidade: média.
+Trecho: interface_auren.py:158–167 muda modo sem limpar busy; :246–249 descarta evento
+antigo; :266–267 limpa busy só em idle aceito; :174–175 recusa envio com busy.
+ui/backend.py:150–158 invalida geração.
+Causa: rejeição de eventos antigos não estabelece nova ocupação visual.
+Evidência: T4a criou AurenDesktop sem janela, desligou busy=True, consumiu idle antigo
+e reativou: active/busy=True persistiram.
+Consequência: campo/botão podem ficar bloqueados até reiniciar. Chrome faz reset de
+busy em _go_off e não é idêntico.
+Reprodução: tarefa ativa, Desligado, fim antigo, Ativo.
+Confiança: alta na lógica; sem Tk físico.
+Recomendação: ocupação pela geração atual, preservando bloqueio real do worker.
+Risco da correção: habilitar envio antes de descarte ou reaceitar confirmação antiga.
+
+AUD-008 — Teto PTT não limita buffer enquanto tecla segue presa
+Classificação: BUG CONFIRMADO. Base da confirmação: por fluxo estático. Gravidade: média.
+Trecho: voice/input.py:393–403 alcança max_seconds e aguarda liberar hotkey;
+:243–246 segue _frames.append(chunk) com recording=True; :280–285 só desliga essa
+flag em _registrar_fim, chamado em :431.
+Causa: espera após o teto mantém captura/gravação ativas.
+Evidência: ramo completo lido; sem microfone/tecla global/teste físico.
+Consequência: áudio pode exceder30s e RAM cresce enquanto combinação fica presa;
+concatenação/ASR podem custar mais. Não foi medido consumo real.
+Reprodução futura segura: hotkey/stream/tempo simulados, chunks falsos após limite.
+Confiança: alta no fluxo; impacto físico não medido.
+Recomendação: encerrar buffer/gravação no teto antes de aguardar liberação.
+Risco da correção: perder pós-roll ou iniciar captura nova com tecla ainda ativa.
+
+AUD-009 — Última iteração solicita resposta que será descartada
+Classificação: BUG CONFIRMADO. Gravidade: média.
+Trecho: core/harness_cycle.py:70 limita iterações, mas :511–524 chama rodada seguinte
+incondicionalmente após tools; :526–535 falha quando sai do loop.
+Causa: orçamento é esgotado depois de solicitar rodada limite+1.
+Evidência: T3d limite1, tool sintética não terminal e provider falso: duas chamadas,
+tarefa failed e segunda resposta não executada pelo ciclo.
+Consequência: custo/latência evitáveis no teto. Não houve consumo de API na reprodução.
+Reprodução: executar_ciclo com uma iteração, resposta sempre com tool, conclusão localFalse.
+Confiança: alta.
+Recomendação: verificar saldo antes da chamada; contabilizar revisão/guards/retries no
+orçamento observável sem ocultar custo.
+Risco da correção: mudar último passo ou códigos de limite; testar final exatamente no
+teto e cancelamento durante chamada.
+
+AUD-010 — Persistência recusada fica sem diagnóstico no Harness
+Classificação: BUG CONFIRMADO. Gravidade: média.
+Trecho: memory/store.py:150–151 retorna ok=False por substrings como token/senha;
+core/harness_turn.py:19–26 ignora retorno e só registra MEMORY_ERROR por exceção.
+harness_strategy.py:30–36,53–59 também ignora recusa. AgentTaskQueue:163–165 considera
+callback sem exceção completed.
+Causa: consumidores não interpretam contrato de erro por retorno.
+Evidência: T2a frase benigna sobre significado de token: sem turno salvo, sem evento
+de erro. Banco sintético sem segredo.
+Consequência: perda silenciosa de histórico/estratégia; resposta saudável não comprova
+memória. Filtro lexical também recusa conteúdo benigno.
+Reprodução: _registrar_turno com contexto persistente e texto contendo token; contar
+turnos e eventos, sem lançar exceção.
+Confiança: alta.
+Recomendação: verificar ok e sinalizar motivo seguro; revisar filtro por campo sem
+começar a guardar credenciais.
+Risco da correção: avisos excessivos ou retenção indevida se o bloqueio for apenas removido.
+
+AUD-011 — Contexto sem chat_id recupera conversas de outros chats
+Classificação: BUG CONFIRMADO. Base da confirmação: no contrato interno. Gravidade: média.
+Trecho: core/session.py:11 diz 'sem chat_id nao ha historico'; :200–202 passa
+chat_id or None; memory/store.py:188–191 busca global quando ID falta.
+Causa: ausência de identidade tem semânticas diferentes em turnos e busca.
+Evidência: T2b gravou ALFA em chat-A; build(None,'projeto sintetico') incluiu ALFA.
+Consequência: consumidor interno/futuro sem ID pode misturar histórico. O Harness normal
+garante sessão antes de build (harness.py:495,525–529); não foi mostrado vazamento no
+caminho normal ou entre usuários reais.
+Reprodução: store externo com chat-A; comparar build(None) e build(chat-B).
+Confiança: alta, alcance interno delimitado.
+Recomendação: contexto sem ID falhar fechado; busca global como API distinta; fatos
+globais podem permanecer conforme política explícita.
+Risco da correção: quebrar chamadores legados que dependem da busca global.
+
+AUD-012 — Corte de resultado quebra JSON e remove cursor
+Classificação: BUG CONFIRMADO. Gravidade: média.
+Trecho: core/harness_tools.py:141,155–158,193 usa for_model e corta texto;
+core/harness_serialization.py:17 faz texto[:limite]+aviso; harness.py:147 fixa2200.
+file_intelligence.py:751–761 permite conteúdo até20000 e coloca cursor depois dele.
+Causa: serialização estruturada é truncada como string genérica, com limites incompatíveis.
+Evidência: T4d resultado com5000 caracteres virou JSON inválido e perdeu proximo_inicio.
+'dados' completos continuam em resultados_rodada, mas harness_round_input.py:59–62
+manda ao modelo só resultado['resultado'] como function_call_output.
+Consequência: perde texto já lido e informação de continuação; resumo pode ser incompleto.
+Reprodução: ToolResult com conteúdo longo/cursor, corte2200, json.loads e busca do cursor.
+Confiança: alta.
+Recomendação: limitar campo de conteúdo antes de serializar; preservar truncado/cursor
+referentes ao texto realmente entregue.
+Risco da correção: inflar tokens ou quebrar formatos legados; manter orçamento explícito.
+
+AUD-013 — Anti-loop bloqueia ação diferente após duas falhas iguais
+Classificação: BUG CONFIRMADO. Gravidade: média.
+Trecho: core/permission_manager.py:435–443 bloqueia qualquer ação contável quando
+same_failed_action_count>=max_same_failed_actions, sem comparar assinatura_atual.
+Causa: contador específico de repetição vira bloqueio global da tarefa.
+Evidência: T2d duas falhas navegar_navegador; autorizar mover_mouse_windows negado antes
+da classificação AUTO da alternativa.
+Consequência: autocorreção por alternativa segura fica impedida, embora mensagem diga
+'a mesma acao falhou'. A intenção de produto pode ser bloquear tudo, mas não está clara.
+Reprodução: duas registrar_resultado(False) da mesma assinatura; pedir outra ação.
+Confiança: alta no comportamento.
+Recomendação: decidir regra por assinatura versus parada global; alinhar mensagem e
+testes, preservando limite geral de falhas.
+Risco da correção: permitir mais tentativas do que desejado se a guarda for relaxada.
+
+AUD-014 — Origem externa não eleva escrita de clipboard
+Classificação: RISCO DEMONSTRÁVEL. Gravidade: média.
+Trecho: core/permission_manager.py:55 define clipboard.write=AUTO; :120–131 não inclui
+essa capacidade em COUNTED_CAPABILITIES; :509–521 só eleva contáveis.
+Causa: o conjunto de orçamento também decide alcance da guarda de origem.
+Evidência: T2e, após registrar_fonte_nao_confiavel('ler_pagina'), nível de
+'definir_area_transferencia_windows' permaneceu AUTO; clipboard real não foi tocado.
+Consequência possível: página influencia proposta de sobrescrita sem confirmação
+adicional por origem. Não foi demonstrada injeção semântica bem-sucedida ou execução de
+comando colado; revisão de intenção ainda pode bloquear a proposta.
+Reprodução: consultar nível antes/depois do marcador, sem executar handler.
+Confiança: alta no mecanismo, ataque ponta a ponta pendente.
+Recomendação: separar 'tem efeito mutável' de 'conta para orçamento'; política explícita
+por origem para cada capacidade.
+Risco da correção: fadiga de confirmação; não usar isso para retirar guardas existentes.
+
+AUD-015 — Contexto perde restrições e estado de estratégias
+Classificação: DÍVIDA TÉCNICA. Gravidade: média.
+Trecho: core/session.py:24 prioriza turnos,tarefa,fatos,memoria,estrategias,skills;
+:129–135 corta seções; harness_state.py:38–39 inclui contexto condicional;
+harness_round_input.py:30–34 usa incluir_contexto=False nas continuações.
+store.py:227–239 recupera estratégias inclusive sucesso=False; session.py:209–214
+renderiza só objetivo/passos, omitindo sucesso/resultado.
+Causa: orçamento por caracteres e texto recente substituem restrições estruturadas.
+Evidência: payload/cortes lidos; T2c recuperou estratégia falha sem indicar sua falha.
+Consequência possível: restrição de turno anterior some após primeira rodada; tentativa
+ruim reaparece sem qualificação. Não houve LLM real violando restrição nesta auditoria.
+Reprodução: contexto com restrição anterior; inspecionar inputs das rodadas; inserir
+estratégia False e examinar seção estrategias.
+Confiança: alta para omissão, impacto de inteligência a validar.
+Recomendação: restrições/progresso estruturados por tarefa, proveniência/validade dos
+fatos e estado de estratégia explícito; medir antes de adotar embeddings.
+Risco da correção: reter texto externo como regra privilegiada ou aumentar tokens sem ganho.
+
+AUD-016 — Inspeção CSV lê arquivo integral antes de limitar amostra
+Classificação: RISCO DEMONSTRÁVEL. Gravidade: média.
+Trecho: tools/file_intelligence.py:152,
+sample=path.read_text(encoding=_detect_encoding(path),errors='strict')[:16_384].
+:588–595 chama detecção e SHA-256 na inspeção; :103–108 hash lê arquivo inteiro.
+Causa: slice limita resultado final, não leitura/alocação já realizada.
+Evidência: ordem de avaliação e encadeamento lidos; sem abrir CSV grande ou medir RAM.
+Hash integral tem justificativa de identidade, mas precisa de orçamento próprio.
+Consequência: alocação proporcional ao CSV e latência não cancelável naquele trecho;
+sem limiar de tamanho/tempo inventado.
+Reprodução futura: CSV externo sintético em tamanhos graduais, ou mock de leitura,
+medindo bytes/alocação sem dados pessoais.
+Confiança: alta no custo assintótico, impacto real não medido.
+Recomendação: handle.read(limite) para amostra; orçamento de hash/varredura separado.
+Risco da correção: amostra menor perder delimitador; testar encoding/linhas longas.
+
+AUD-017 — Override de origem ASR reutiliza cache de outro modelo
+Classificação: BUG CONFIRMADO. Base da confirmação: por fluxo estático. Gravidade: média.
+Trecho: voice/stt.py:10 fixa ASR_DIR; :116–117 muda repo_id por AUREN_ASR_MODEL, mas
+model_dir segue ASR_DIR; :134–157 só baixa se faltarem nomes esperados.
+Causa: identidade do cache não inclui repo/revisão; presença de arquivos basta.
+Evidência: fonte inteira lida; módulo NÃO importado porque :11 cria pasta no repo.
+Não foi testada inferência/download de outro modelo.
+Consequência: cache completo antigo faz override continuar nos arquivos anteriores;
+cache parcial pode misturar origens.
+Reprodução futura segura: model_dir sintético completo, repo_id diferente, downloader
+falso; observar ausência de download/checagem de identidade, sem cache pessoal.
+Confiança: alta no fluxo condicional.
+Recomendação: namespace repo+revisão e manifesto validado; download atômico/digest.
+Risco da correção: migração desperdiçar download ou apagar cache; preservar dados antigos.
+Nota: snapshot_download não fixa revisão (:154–157); TTS usa URLs, .part e replace
+(tts.py:53–100), mas não confere digest explícito. Isso é limite de reprodutibilidade,
+não prova de dependência comprometida.
+
+AUD-019 — Retenção/privacidade locais sem política integrada demonstrada
+Classificação: DÍVIDA TÉCNICA. Gravidade: média.
+Trecho: memory/store.py:31–68 tabelas sem TTL; :247 apaga só memorias;
+windows_screenshot.py:29–37 grava nova captura de todas as telas;
+harness_runtime.py:139–146 grava evento em log do chat, legado e tarefa.
+Causa: persistência/observabilidade sem contrato único de retenção/eliminação.
+Evidência: módulos lidos; nenhum arquivo real, screenshot, ACL ou configuração de
+criptografia do Windows foi examinado. Esquecer fato não remove conversa/estratégia,
+trace/log nesses métodos. Redação é lexical, não universal.
+Consequência: dados/disco podem acumular; Desligado/esquecer chave não é eliminação
+global. Backup e OneDrive não foram auditados.
+Reprodução: em banco externo sintético, salvar fato e conversa equivalente; esquecer
+fato e consultar conversa. Diretórios de log/captura devem ser sintéticos.
+Confiança: alta no escopo lido; não se afirma ausência de rotina externa não examinada.
+Recomendação: retenção por classe, exportação/exclusão explícitas e visibilidade ao usuário.
+Risco da correção: apagar evidência de diagnóstico ou dados úteis; nada deve ser limpo
+implicitamente durante manutenção.
+
+AUD-022 — Proveniência externa pode se perder entre tarefas
+Classificação: SUSPEITA A VALIDAR. Gravidade: média.
+Trecho: permission_manager.py:317 limpa marcador por tarefa; session.py:168–181,200–214
+reintroduz resultados/conversas como texto; dispatcher.py:311–324 arma origem só nas
+três tools de leitura listadas.
+Causa suspeita: recuperação da memória não transporta proveniência estruturada.
+Evidência: encadeamento e esquema das tabelas lidos; nenhuma exploração do modelo ou
+ação indevida demonstrada. Prefixos ainda rotulam dado; revisor pode bloquear proposta.
+Consequência possível: dado externo relembrado influencia tarefa sem mesma confirmação
+por origem. Não afirmar vulnerabilidade explorada.
+Reprodução futura: duas tarefas sintéticas, primeira lê texto adversarial, segunda
+recupera; inspecionar contexto/política com modelo e handlers falsos.
+Confiança: média no risco, baixa na explorabilidade semântica.
+Recomendação: rastrear proveniência e validar propagação antes de mudar política.
+Risco da correção: promover memória a instrução ou exigir confirmação em toda consulta.
+
+AUD-023 — Busca de cópias não reaplica política a cada candidato
+Classificação: SUSPEITA A VALIDAR. Gravidade: média.
+Trecho: file_intelligence.py:345–368 filtra symlinks de diretório, mas resolve/stat/hash
+de arquivos candidatos sem _classify_read_path; :617 chama essa busca.
+Causa suspeita: autorização do arquivo principal extrapolada aos candidatos da varredura.
+Evidência: código lido; sem varredura no PC ou criação de link real.
+Consequência possível: hash de symlink de arquivo para destino protegido ou junction
+não filtrada; revela existência/igualdade. Não se demonstrou extração de conteúdo.
+Reprodução futura: raízes externas sintéticas, link para destino sintético bloqueado,
+_sha256 instrumentado; verificar que não se abre candidato proibido.
+Confiança: média; junction/os.walk no Windows requer validação isolada.
+Recomendação: política/contenção por alvo efetivo antes de hash; teto de tempo/bytes.
+Risco da correção: omitir cópia legítima; sinalizar escopo parcial ao usuário.
+
+AUD-024 — Teardown de voz e filas divergem dos outros canais
+Classificação: DÍVIDA TÉCNICA. Gravidade: média.
+Trecho: voice/main.py:359–364 só sinaliza stop e fecha navegador; compare shutdown/sessão
+em harness.py:835–844 e ui/backend.py:183–202. voice/main.py:239–240 Queue sem maxsize;
+:81 enfileira áudio independentemente do consumidor. :150 faz join sem timeout;
+tts.py:141–159 consulta cancelamento só entre chunks.
+Causa: ciclo de vida/contrapressão implementados por canal.
+Evidência: fontes lidas; nenhuma execução física. Fila de estratégia é daemon
+(task_queue.py:48–53), portanto NÃO se afirma que bloqueie saída do processo.
+Consequência possível: tarefas de memória pendentes perdidas, sessão sem encerramento,
+áudio acumulado durante operação lenta; cancelar fala não cancela tarefa automaticamente.
+Reprodução futura: STT/TTS/Harness falsos e writer de estratégia bloqueado; encerrar e
+verificar cleanup, fila e prazo, sem dispositivos.
+Confiança: alta no descompasso, efeitos temporais a medir.
+Recomendação: contrato público de teardown e limites/descarte de fila explícitos.
+Risco da correção: perder áudio útil, cortar gravação ou bloquear desligamento.
+
+AUD-025 — Contexto browser declara sucesso mesmo quando leitura falha
+Classificação: BUG CONFIRMADO. Gravidade: média.
+Trecho: tools/browser_context.py:15–16 recebe strings de listar_abas/ler_pagina;
+:31–32 ignora exceção de scroll; :39–48 retorna ToolResult.success incondicionalmente.
+Causa: composição de resultado não interpreta falha/estado parcial dos componentes.
+Evidência: T2g substituiu as funções por leitura com 'Nao consegui ler a pagina: falha
+simulada', sem abas e sem scroll; obter_contexto_navegador devolveu ok=True.
+Consequência: Harness/contadores veem consulta saudável apesar de não haver observação
+utilizável. O comparador de browser pode continuar False/None; isso NÃO prova que todo
+guard concluirá falsamente, mas a semântica de sucesso da tool está incorreta/incompleta.
+Reprodução: callbacks falsos para browser.listar_abas/ler_pagina/obter_pagina; consultar ok.
+Confiança: alta; nenhum navegador iniciado.
+Recomendação: resultados estruturados por componente, com estado parcial/falha e evidência
+explícita. Não decidir isso apenas pelo idioma de string.
+Risco da correção: consumidores dependem de sucesso parcial; preservar informação de
+abas válida sem alegar que leitura DOM falha foi completada.
+
+AUD-026 — Consulta sem prova reinicia contador do guard browser
+Classificação: BUG CONFIRMADO. Base da confirmação: por fluxo estático. Gravidade: média.
+Trecho: core/harness_cycle.py:431–436 zera _browser_verification_guard_attempts quando
+obter_contexto_navegador tem sucesso; harness_tools.py:108–113 mantém pending quando
+verificador não retorna True; harness_guards.py:151–207 conta tentativas da pendência.
+Causa: sucesso de observação confundido com progresso da verificação.
+Evidência: encadeamento lido integralmente; não houve simulação dedicada do ciclo longo.
+Condição de reprodução: alternar resposta sem tools, consulta bem-sucedida com verificador
+False/None e outra resposta final; cada consulta zera a tentativa apesar de pendência.
+Consequência: limite prometido de duas tentativas pode ser evitado até esgotar rodadas,
+com custo e latência adicionais. O limite geral continua existindo: NÃO é loop infinito.
+Comparador suporta só subconjunto das ações (browser_verification.py:84–112); clique,
+tecla e fechar aba podem permanecer None mesmo com leitura disponível.
+Confiança: alta no reset; frequência/latência real não medidas.
+Recomendação: zerar por evidência positiva/progresso definido, distinguir ação não
+verificável de observação falha e cobrir alternância no teste do ciclo.
+Risco da correção: encerrar cedo demais uma aplicação lenta; prazo/retry devem refletir
+evidência, sem relaxar a exigência de comprovação.
+
+AUD-027 — Voz anuncia sucesso de uma etapa que falhou
+Classificação: BUG CONFIRMADO. Gravidade: média.
+Arquivo/trecho: voice/speech_response.py:29–35:
+  if tool and step_result:
+      especial = cls._format_tool(tool, objetivo_text, step_result)
+  if especial: return especial
+voice/speech_response.py:107–108:
+  if tool == "maximizar_janela_windows": return "Janela maximizada."
+voice/main.py:200–206 passa snapshot se tratado ou snapshot.steps, sem exigir sucesso.
+Causa técnica: formatter escolhe pelo nome da última ferramenta, ignora step.success/
+estado terminal e pode sobrepor a resposta final correta com frase fixa de sucesso.
+Evidência: T7a, snapshot failed, step.success=False, resultado 'Não consegui maximizar',
+produziu 'Janela maximizada.'; não executou janela/áudio/LLM.
+Consequência: comunicação falsa; em tarefa composta, último passo não resume objetivo.
+Condições: snapshot contém ferramenta com resposta fixa e resultado não vazio após falha.
+Confiança: alta, reprodução sintética e encadeamento da entrada de voz lido.
+Recomendação: respeitar status/success/cancelamento e resposta final; resumir passos
+concluídos/pendentes explicitamente, sem derivar sucesso apenas do nome da tool.
+Risco da correção: perder concisão e alterar fala de tarefas parciais; validar esses casos.
+
+AUD-028 — JSON de recusa da memória vira ToolResult de sucesso
+Classificação: BUG CONFIRMADO. Gravidade: média.
+Arquivo/trecho: tools/memory.py:9–10:
+  return json.dumps(store.salvar(chave, valor, categoria), ensure_ascii=False, separators=(",", ":"))
+core/tool_result.py:180–196 adapta strings por prefixos de erro, não por ok do JSON.
+Causa: duas representações de status sem contrato de conversão compatível.
+Evidência: T7b store falso retornou {ok:False}; adapter produziu ToolResult.ok=True,
+com okFalse embutido no texto. Não foi salvo dado pessoal.
+Consequência: Harness registra sucesso/contagem embora operação tenha sido recusada.
+Condições: salvar/esquecer retorna JSON de falha serializado; dispatcher usa adapter legado.
+Confiança: alta. Distinto de AUD-010: lá é gravação automática ignorada; aqui é tool explícita.
+Recomendação: retornar ToolResult estruturado consistente, sem serializar status antes
+que o consumidor o interprete; validar pipeline real store→handler→dispatcher→Harness.
+Risco: consumidores legados esperam string; adaptar de forma coordenada e incremental.
+
+AUD-029 — Busca de nome inexistente devolve arquivos sem correspondência
+Classificação: BUG CONFIRMADO. Gravidade: média.
+Arquivo/trecho: tools/files.py:276–288:
+  pontuacao = sum(3 for termo in termos if termo in nome_normalizado)
+  candidatos.append((pontuacao, estatisticas.st_mtime, arquivo))
+:305–311 ordena todos; :330–335 enumera candidatos[:10] mesmo com pontuação zero.
+Causa: termos são apenas ranking, sem mínimo de correspondência nem indicação de fallback.
+Evidência: T7c, filesystem inteiramente falso: consulta inexistente devolveu qualquer.txt.
+Consequência: modelo/usuário pode escolher arquivo errado como se correspondesse ao pedido;
+não foi demonstrada operação destrutiva automática, inexistente nesse handler.
+Condições: busca textual sem match, porém existem arquivos nos demais filtros.
+Confiança: alta. Recomendação: exigir relevância mínima ou rotular explicitamente
+alternativas sem correspondência; esclarecer pedido quando necessário.
+Risco: filtro demasiado rígido piora tolerância a ASR/nomes incompletos; medir ranking.
+
+AUD-030 — UIA perde o índice do controle durante a verificação/fallback
+Classificação: BUG CONFIRMADO. Base da confirmação: por leitura estática. Gravidade: média.
+Arquivo/trecho: tools/windows_uia.py:363–378:
+  $indice = [int]$payload.indice
+  $item = $matches[$indice - 1].Item
+:443–449:
+  $freshMatches = Find-Controls $freshItems $target 'Value'
+  $freshItem = $freshMatches[0].Item
+  $item = $freshItem
+  $valuePattern = $freshPattern
+:462 testa $item.IsPassword -or $confirmado -ne $textoDesejado; :667–671 repete índice0.
+Causa: refresh descarta identidade/índice do alvo originalmente autorizado/selecionado.
+Evidência: fluxo seleciona índice2, mas confirma primeiro candidato e passa esse item
+para fallback. Não foi executado PowerShell/UIA nem digitado em aplicativo real.
+Consequência: falsa falha/sucesso ou possível preenchimento do controle errado no fallback.
+Condições: mais de um match, índice>1 e refresh retorna primeiro diferente; impacto real
+depende do provider/estado dos campos. Defeito do índice é inequívoco; efeito físico pendente.
+Confiança: alta no código; não quantificada para apps reais.
+Recomendação: manter identidade estável/runtimeID, índice e janela; após refresh revalidar
+identidade, ambiguidade e proteção, falhando fechado se mudou antes de digitar.
+Risco: runtimeIDs podem mudar em interfaces dinâmicas; recuperação segura precisa nova observação.
+
+AUD-033 — Instalação inicial de testes por chat não satisfaz sua própria política
+Classificação: BUG CONFIRMADO. Base da confirmação: por leitura estática. Gravidade: média.
+Arquivo/trecho: scripts/instalar/AUTORIZAR_TESTES_CHAT.ps1:101–103 copia política atual,
+mas grava approval somente {"enabled":true,"workflow_blob":...}.
+remote_tests/chat-control-functions.ps1:16–19:
+  $ChatApproval.offline_hosted_validation -ne $true
+  throw 'Workflow do chat nao autorizado pelo proprietario local.'
+AUTORIZAR_TESTES_CHAT_SEM_GCM.ps1:32–37:
+  if ($installed.Contains($offlineMarker) -or $approval.offline_hosted_validation -eq $true)
+  ... throw 'Instalacao incompleta detectada; nao sobrescrever.'
+Causa: instalador inicial copia policy já offline, mas não grava aprovação offline;
+migrador reconhece marcador e recusa combinação como incompleta.
+Evidência: encadeamento literal atual, sem executar instaladores ou políticas pessoais.
+Consequência: instalação nova aparentemente concluída fica bloqueada; migrador não conclui.
+É falha fechada de disponibilidade, NÃO bypass de autorização nem prova de runner atual quebrado.
+Condições: instalação inicial com hook legado compatível, seguida do uso/migrador indicado.
+Confiança: alta no incompatível estado gerado; reprodução integrada em fixture ainda pendente.
+Recomendação: definir instalação/migração explicitamente autorizadas para estado atual,
+sem aprovar offline silenciosamente; testar sequência real em USERPROFILE fictício.
+Risco: mudar aprovação de runner é sensível; preservar consentimento, backups e falha fechada.
+
+AUD-034 — Asserts comentados e fixture que substitui a função supostamente real
+Classificação: DÍVIDA TÉCNICA. Gravidade: média.
+Arquivo/trecho: tests/test_intent_multistep_progress.py:67 e123 contêm sequência literal
+\n dentro de comentário, incluindo 'assert proposta_simples_exata(...) is True' e
+'assert len(revisoes) == 0'. São comentários físicos de uma linha, não instruções.
+tests/test_file_intelligence.py:23–26:
+  @pytest.fixture(autouse=True)
+  monkeypatch.setattr(file_intelligence, "_read_allowed_roots", lambda: [tmp_path.resolve()])
+:318–319:
+  real_read_allowed_roots = file_intelligence._read_allowed_roots
+  monkeypatch.setattr(file_intelligence, "_read_allowed_roots", real_read_allowed_roots)
+Causa: dois asserts não executam; teste de raízes captura a função DEPOIS da fixture,
+portanto restaura a própria lambda. Resultado não comprova descoberta das raízes reais.
+Evidência: leitura integral desses testes; cabeçalhos/nomes não correspondem às garantias.
+Consequência: regressões relevantes podem passar; não invalida os demais asserts/suite.
+Condições: executar testes como estão; fixture autouse antecede corpo do teste.
+Confiança: alta. Recomendação: restaurar assertions executáveis e isolar teste de
+raiz real com ambiente fictício; casos negativos para escopo por chat e status de tool.
+Risco: testes podem revelar divergências existentes ou depender de OS; manter dados fictícios.
+
+AUD-035 — Tester Live de processos ainda espera strings após migração a ToolResult
+Classificação: BUG CONFIRMADO. Gravidade: média.
+Arquivo/trecho: testes_auren_live.py:677–681:
+  guard = auren.encerrar_processo_windows(pid=os.getpid(), nome="")
+  ok = "proprio processo do auren" in guard.lower()
+:857–861 usa 'Processos encontrados:' in processos e processos.splitlines();
+:866–875 repete guard.lower(). tools/windows_processes.py:62–124,127–294 devolvem
+ToolResult.success/failure, por exemplo :64 'return ToolResult.failure('.
+Causa: consumidores de validação não acompanharam o contrato estruturado.
+Evidência: T10b/c somente com ToolResult sintético: lower→AttributeError, in→TypeError.
+Nenhum tester Live ou processo Windows foi executado.
+Consequência: bateria pode reportar FAIL na proteção funcionando e perder capacidade
+de discriminar regressão real; relatório Live não pode ser aceito sem revisar contrato.
+Condições: executar trechos na camada correspondente, com retorno ToolResult atual.
+Confiança: alta. Recomendação: validar ok/message/error_code/data e efeito observado;
+conservar separação L0–L5 e autorizações, sem converter contrato de produção em string.
+Risco: adaptar só texto pode voltar a permitir falso PASS; testar proteções com mocks primeiro.
+
+AUD-036 — Lembrete adiado é confirmado como entregue sem renderizar novo aviso
+Classificação: BUG CONFIRMADO. Gravidade: média. ESCOPO EXCLUSIVO PR#137.
+Commit:09a67659a82121449e3340538200780688c0b6de, NÃO pertence à main auditada.
+Arquivo/trecho: ui/chrome.html:349–367:
+  const avisosExibidos=new Set(),avisosAckEmAndamento=new Set();
+  if(!avisosExibidos.has(id)){ avisosExibidos.add(id); ... addCard(...); ... }
+  if(!avisosAckEmAndamento.has(id)){ ... postApi("/api/reminders/ack",{id}) ... }
+tools/reminders.py:140–151 adia mesmoID, volta pendente e zera entregue_em.
+tests/test_reminders.py:157–168 verifica reabertura no store sem executar frontend.
+Causa: deduplicação usa ID permanente, não identidade da ocorrência; Set nunca é
+invalidado ao adiar. ACK é enviado mesmo quando o novo aviso foi suprimido.
+Evidência: T11 executou SOMENTE função/sets extraídos do HEAD remoto, com DOM/window/
+postApi inteiramente falsos em Node: mesmoID com horários distintos gerou1 cartão e2ACKs.
+Nenhum navegador/notificação/servidor real ou chamada ao modelo iniciado.
+Consequência: enquanto página permanece aberta, vencimento posterior pode não gerar
+novo cartão/Notification, e banco recebe ACK. Cartão anterior pode continuar visível;
+não significa que toda informação desaparece, mas o novo alerta é perdido.
+Condições: primeiro aviso exibido, adiar mesmoID, manter página aberta até novo vencimento.
+Confiança: alta na deduplicação e ACK, reprodução isolada; UX física não foi medida.
+Recomendação: chave por ocorrência/versão/horário e ACK vinculado a essa ocorrência;
+invalidar estado visual com confirmação de adiamento, validar dois vencimentos completos.
+Risco: aviso duplicado ou ACK antigo confirmando vencimento novo; precisa versão no protocolo.
+
+AUD-018 — Cache direto ignora identidade de continuação
+Classificação: BUG CONFIRMADO. Base da confirmação: no uso direto. Gravidade: baixa.
+Trecho: core/orchestrator.py:71–81 chave sem response_id/reasoning_effort; :93–105
+retorna hit antes de passar esses argumentos ao provider.
+Causa: identidade incompleta em entrada textual elegível.
+Evidência: T5b duas chamadas 'ola' com response_id A/B geraram uma chamada ao provider
+falso. T5c mostrou estado padrão do Harness inelegível; não extrapolar ao fluxo normal.
+Consequência: consumidor direto futuro recebe resposta de contexto errado; economia
+atual do cache no Harness não foi demonstrada.
+Reprodução: AurenOrchestrator(provider falso), texto estável curto, IDs A/B.
+Confiança: alta; alcance atual limitado à API interna direta.
+Recomendação: desativar cache em continuação ou incluir identidade completa; medir hits.
+Risco da correção: diminuir hit rate; não registrar contexto em claro nas chaves/logs.
+
+AUD-020 — Custo/latência por tarefa não incluem toda interação
+Classificação: DÍVIDA TÉCNICA. Gravidade: baixa.
+Trecho: task_trace.py:225–236 conta respostas passadas a record_model;
+harness_model.py:19–24 registra rodadas normais; harness_intent_guard.py:79 chama revisor
+sem record_model; openai_provider.py:82 registra uso global. usage.py:36–39 usa preços
+fixos, :59–63 soma globais do processo.
+Causa: contagem por tarefa e por processo têm escopos diferentes.
+Evidência: chamadas lidas; nenhum preço atual consultado ou estimativa de fatura afirmada.
+Consequência: trace subconta revisão; modelo alternativo usa coeficientes genéricos;
+contador chamado session não reseta por chat nesse módulo.
+Reprodução futura: provider/revisor falsos com usage distinto; comparar trace e soma
+global, sem API.
+Confiança: alta no encadeamento.
+Recomendação: medir todas chamadas por categoria e tarifário de modelo configurado;
+estimativa deve continuar identificada como estimativa.
+Risco da correção: dupla contagem ao integrar instrumentos; testar soma exata.
+
+AUD-021 — Documentos ainda descrevem problemas já corrigidos no checkout
+Classificação: DÍVIDA TÉCNICA. Gravidade: baixa.
+Trecho: docs/architecture/01-nucleo.md:165 descreve falha substituída pela última tool,
+mas harness_tools.py:166–178 já rastreia pendências; docs/architecture/
+03-modelo-sessao-memoria.md:179 pede corrigir override bloqueado, mas auren.py:23–30
+usa config.MODEL; docs/architecture/07-interface-desktop-gui.md:143 diz que Standby
+recusa mensagem, mas chrome_server.py:174–178 reativa automaticamente.
+Causa: corpo, backlog e apêndices receberam atualizações desiguais.
+Evidência: confronto das linhas no mesmo SHA; não reabrir achado antigo automaticamente.
+Consequência: correção duplicada ou inferência de estado de outra branch.
+Reprodução: comparar trechos com implementações atuais.
+Confiança: alta.
+Recomendação: manter fatos vigentes e histórico por links, sem apagar snapshots.
+Risco da correção: perder evidência histórica ou inventar status remoto sem consulta.
+
+AUD-031 — Temporário UIA não é removido quando processo falha/expira
+Classificação: BUG CONFIRMADO. Base da confirmação: por leitura estática. Gravidade: baixa.
+Arquivo/trecho: tools/windows_uia.py:780–784 cria NamedTemporaryFile(delete=False)
+com sufixo _auren_uia.json; :819–822 retorna em TimeoutExpired/Exception.
+:823–828 finally remove só script_path; :842–847 remove output_path posteriormente,
+bloco que não é alcançado com o retorno antecipado.
+Causa: cleanup separado de caminhos de saída. Evidência: fluxo de controle lido integralmente.
+Consequência: acúmulo de temporário vazio ou saída parcial em falhas; não se comprovou
+presença de segredo nesses arquivos, nem vazamento real.
+Condições: timeout20s ou exceção após criação do JSON. Sem executar UIA para reproduzir.
+Confiança: alta estática. Recomendação: cleanup abrangente após coletar diagnóstico.
+Risco: apagar antes de ler evidência; preservar ordem e testar falha com subprocesso falso.
+
+AUD-032 — Métrica não extrai estado de TASK_END multilinha
+Classificação: BUG CONFIRMADO. Gravidade: baixa.
+Arquivo/trecho: medir_metricas_router.py:25:
+  TASK_END_RE = re.compile(rf"(?m)^(?P<ts>{TS}) TASK_END\n(?P<body>.*?)(?=^{TS} [A-Z_]+\n|\Z)")
+:92–109 procura match e devolve status vazio se body ausente.
+Causa: flag (?m) não faz ponto atravessar quebra de linha; falta estratégia de parsing
+multilinha, enquanto evento tem task_id e estado em linhas distintas.
+Evidência: T10a com TASK_START/TASK_END/CHAT_END sintéticos, estado completed: status=''.
+Consequência: métricas comportamentais omitem estado, enfraquecem avaliação de conclusão.
+Condições: formato multilinha gerado pelo próprio runtime. Nenhum log real foi lido.
+Confiança: alta. Recomendação: parser por eventos/campos ou regex delimitada adequada,
+extraindo estado por nome; teste com eventos adjacentes/ausentes/erro.
+Risco: DOTALL ingênuo absorver outro evento ou considerar última linha como status indevido.
+
+VI. CÓDIGO DESNECESSÁRIO OU COMPLEXO
+
+Não foi provado que seja seguro remover um componente inteiro. Recomendações delimitadas:
+- Separar representação operacional/log de argumentos (AUD-003/004) antes de qualquer
+  refatoração de diretórios. Um objeto de ação com identidade, estado e evidência deve
+  sobreviver à redação destinada ao log.
+- Consolidar resultados textuais gradualmente em ToolResult; não aumentar indefinidamente
+  vocabulário de erros. Preservar formato público onde houver consumidores legados.
+- Unificar orçamento de chamadas: ciclo, retry vazio, guards e revisão são custos da mesma
+  tarefa. Planner e heurística podem ser coordenados sem criar outro executor.
+- Publicar close/shutdown do Harness, em vez de interfaces manipularem _background_queue,
+  fechar e _encerrar_sessao_chat separadamente. O objetivo é lifecycle testável.
+- Reavaliar ResponseCache pelo uso medido: no estado padrão ele não é elegível (T5c).
+  Removê-lo agora por estilo seria prematuro, mas expandi-lo sem identidade é inseguro.
+- Manter TaskSpec/CapabilityResolver fora do fluxo padrão até justificar benefício por
+  cenários e medir regressões. O experimento de áudio falho retorna False após tentar
+  ferramenta (capability_audio_runtime.py:122–147), permitindo fallback normal. Efeito
+  parcial seguido de repetição é SUSPEITA, não reprodução realizada nesta entrega.
+- ToolContract é subconjunto de JSON Schema (tool_contracts.py:34–87), sem validação
+  recursiva/genérica de pattern/oneOf. Os schemas atuais lidos são simples; não inventar
+  bypass atual de contrato complexo inexistente. Ao expandir schemas, falhar fechado
+  nos tipos/constraints não suportados e adicionar negativos relevantes.
+
+VII. SEGURANÇA E CONFIABILIDADE
+
+Prioridade alta: vincular consentimento ao destino efetivo (AUD-001). Isso não depende
+de confiar que um LLM reconhecerá mudança de alvo. Seguem os problemas de integridade
+operacional (AUD-002/003/004/005/006/012), pois sucesso falso reduz o valor de todos os
+guards posteriores.
+
+Proteções concretas lidas: contrato antes de efeito; falha fechada para desconhecido;
+confirmação fora do modelo; processos protegidos e identidade de PID; recusa de caminho
+sensível no leitor; transformação de coordenadas exige snapshot/DPI/proporção; HTTP
+bind127.0.0.1, Host/origin/Sec-Fetch-Site, token aleatório, JSON limitado e CSP com nonce
+(chrome_server.py:215–242,255–328,341–342). Texto da UI usa textContent, não interpretação
+de resposta como HTML (chrome.html:146–147,327–335).
+
+Limites: autenticação local não isola outro processo da mesma conta; raiz HTTP entrega
+página/token a cliente local autorizado por Host/origem, sem autenticar identidade do
+usuário do Windows. Não é vulnerabilidade nova comprovada: é modelo de confiança local.
+Não expor o servidor à rede/celular só alterando endereço de escuta.
+
+Prompt injection: tests/test_prompt_injection.py verifica por mocks negação de clique
+e promoção de AUTO após leitura, inclusive retornos pré-marcados. Isso não mede sucesso
+de um atacante frente ao modelo. A política não cobre todo efeito (AUD-014), nem foi
+comprovada propagação de origem por memória (AUD-022). Skills têm texto rotulado como
+não confiável; validação de caminho não autentica o conteúdo. Skills loader recusa
+symlinks/junctions nos caminhos verificados e faz os.replace; o próprio módulo exige
+raiz controlada pelo usuário (:101–103). Não prometer resistência total a corrida hostil.
+
+Processos: políticas por nome foram centralizadas e ToolResult é explícito. Identidade
+consultada por PID e execução posterior de taskkill não são atômicas; reutilização de
+PID permanece risco conhecido (windows_processes.py:191–255). /IM aceita nome e pode
+alcançar várias instâncias; confirmação não equivale a rollback de dados não salvos.
+Nenhum tasklist/taskkill foi executado pela investigação.
+
+Remote tests: chat_request.py valida dono, repositório privado, PR interna/aberta e SHA
+exato; watchdog cria processo suspenso, vincula a Job Object antes de liberar, limita
+memória/processos/tempo e fecha a árvore. Isso não é sandbox de filesystem/rede nem
+rollback do desktop. before-job.ps1/STOP-LIVE/políticas efetivas fora do repo não foram
+inspecionados. Não alterar proteções para facilitar testes.
+
+Segredos: nenhum valor sensível real foi incluído. A auditoria não abriu .env, bancos,
+logs pessoais ou cache de credenciais. Não certifica ausência de segredo no histórico
+Git ou em arquivos não lidos. Dependências/binários terceiros não receberam auditoria
+completa ou consulta de vulnerabilidades; não há alegação de versão vulnerável específica.
+
+VIII. TESTES E EVIDÊNCIAS DE EXECUÇÃO
+
+Ambiente efetivo: Windows local, py -3.13 (Python3.13.15), pytest9.1.1.
+Não é GitHub-hosted, runner remoto disparado por comentário nem Live/API/hardware.
+Antes de CADA T1–T11 (T2–T5 são scripts, não seleções pytest): git status --porcelain e git rev-parse HEAD foram registrados nas
+notas; depois de cada execução, novo status e comparação. Todas:
+ANTES = ?? desktop/
+DEPOIS = ?? desktop/
+HEAD = a7a6fd3e647de2f62b6a51fe570dfe78c4dbe3e8
+Comparação textual do status = igual. Nenhuma alteração nova detectada; nada do repo
+foi limpo/corrigido. Esta comparação não inclui conteúdo byte a byte de dados ignorados.
+
+Isolamento dos processos de teste:
+PYTHONDONTWRITEBYTECODE=1; Python com -B; PYTEST_DISABLE_PLUGIN_AUTOLOAD=1;
+pytest -p no:cacheprovider; TEMP/TMP/TMPDIR apontados para
+C:\Users\victo\OneDrive\Documentos\AUREN_AUDIT_TEMP
+Basetemp próprio por seleção. Plugins externos não foram autocarregados.
+Não importamos auren.py nem voice/stt.py nos scripts de reprodução para inicializar
+banco/cache reais; factories e ferramentas mutáveis foram substituídas por callbacks.
+
+T1 comando:
+py -3.13 -B -m pytest -p no:cacheprovider --basetemp C:\Users\victo\OneDrive\Documentos\AUREN_AUDIT_TEMP\pytest-t1 tests/test_harness_turn.py tests/test_tool_result.py tests/test_tool_contracts.py -q
+Resultado real: 15 passed in0.21s; exit0; sem falhas/skips/warnings no resumo.
+
+T6 comando:
+py -3.13 -B -m pytest -p no:cacheprovider --basetemp C:\Users\victo\OneDrive\Documentos\AUREN_AUDIT_TEMP\pytest-t6 tests/test_browser_element_verification.py tests/test_browser_verification.py tests/test_prompt_injection.py -q
+Resultado real: 25 passed in0.23s; exit0; sem falhas/skips/warnings no resumo.
+Subtotal T1+T6:40 testes aprovados em seis arquivos. Total final T1+T6+T8+T9:305 aprovados em35 arquivos, zero falhas nessas seleções.
+Duração de pytest não é benchmark do assistente.
+
+T2–T5: scripts Python via stdin (py -3.13 -B -), sem salvar/modificar testes no repo.
+T2 usou SQLite exclusivamente em subdiretório synthetic-* de AUREN_AUDIT_TEMP, criados
+para esta investigação, com dados fictícios. T3/T4/T5 usaram objetos falsos e patches
+em memória; nenhum servidor HTTP/navegador/microfone/teclado real iniciado.
+Resultados efetivamente observados:
+T2a persistência recusada sem log=True; T2b build semID recupera outrochat=True;
+T2c estratégia falha renderizada sem estado=True; T2d alternativa bloqueada=True;
+T2e clipboard AUTO após origem externa=True; T2f negativa janela vira sucesso=True;
+T2g contexto browser ok com erro de leitura=True; T2h valor diferente limpa falha=True.
+T3a caminho reautorizado implicitamente=True; T3b valor correto falha com máscara=True;
+T3c comparador aceita prefixo de valor=True; T3d limite1 pede2 respostas=True.
+T4a Tk ocupado preso=True; T4b nome github comprovaria host-prefixo=False;
+T4c guard multitab esgotado prossegue=True; T4d JSON/cursor perdido por corte=True.
+T5a URL explícita comprova host-prefixo=True; T5b cache ignora response_id=True;
+T5c estado padrão do Harness inelegível ao cache=True.
+T2/T3/T4/T5 exit0. São condições observadas, não número adicional de testes pytest;
+o False inicial T4b foi preservado e o caso foi corrigido em T5a, sem mudar o projeto.
+
+Leitura dos testes versus força da evidência:
+- test_browser_element_verification.py:15–23 testa helper com argumentos originais;
+  não passa por serialização redigida do Harness. Assim aprova enquanto AUD-004 existe.
+- test_tool_result.py:23–26 verifica um prefixo de falha, mas não a negativa de foco
+  que começa por 'Encontrei'. O teste positivo não estabelece semântica de todas strings.
+- test_harness_turn.py:80–101 só injeta exceção, não retorno ok=False; recusa silenciosa
+  AUD-010 ficou fora desse contrato testado.
+- test_prompt_injection.py:74–113 prova que handler falso de clique não roda quando
+  confirmação falsa nega; não prova resistência semântica do modelo a página hostil.
+- Testes de fronteira de módulo conferem identidade/import, não efeito físico.
+
+Suíte integral NÃO executada localmente: após leitura, imports de voice/__init__/stt
+criam cache (voice/stt.py:11); criação padrão de Harness/trace/log também pode gravar
+no repo. Muitos testes são seguros individualmente, mas a suite integral não foi
+executada presumindo ausência de efeitos apenas por estar em tests/. O propósito
+foi preservar estado e provar cenários relevantes, não maximizar contagem de pass.
+Não executados: Live/hardware/desktop real/Electron real/download/API/instaladores
+ou políticas do runner pessoal. Não foi iniciado workflow remoto por esta auditoria.
+CI hospedado foi CONSULTADO autenticado; números distinguem execução local/remota.
+
+T7: py -3.13 -B - (stdin). runpy.run_path('voice/speech_response.py') evita import
+voice/__init__ e inicialização de cache; snapshot/store/path/FS falsos.
+Resultado exit0: T7a Janela maximizada para snapshotfailed; T7b ToolResult.okTrue com
+okFalse embutido; T7c nome sem match retornou arquivo fictício. Sem API/hardware.
+
+T8 comando, mesmas variáveis/flags e basetemp externo:
+py -3.13 -B -m pytest -p no:cacheprovider --basetemp C:\Users\victo\OneDrive\Documentos\AUREN_AUDIT_TEMP\pytest-t8 tests/test_capability_registry.py tests/test_task_spec.py tests/test_capability_audio_runtime.py tests/test_capability_audio_experiment.py tests/test_browser_context.py tests/test_browser_navigation_scroll.py tests/test_harness_fast_path.py tests/test_execution_single_path.py -q
+Resultado real:70 passed in0.92s, exit0.
+
+T9 comando, mesmas variáveis/flags e basetemp externo:
+py -3.13 -B -m pytest -p no:cacheprovider --basetemp C:\Users\victo\OneDrive\Documentos\AUREN_AUDIT_TEMP\pytest-t9 tests/test_force_process_termination.py tests/test_windows_process_safety_consistency.py tests/test_windows_process_toolresult.py tests/test_windows_clipboard.py tests/test_desktop_ui_backend.py tests/test_ui_stale_session_events.py tests/test_chrome_ui.py tests/test_harness_tools.py tests/test_harness_model.py tests/test_harness_strategy.py tests/test_harness_completion.py tests/test_harness_guards.py tests/test_harness_heuristics.py tests/test_harness_round_preparation.py tests/test_harness_reasoning_continuity.py tests/test_harness_session.py tests/test_task_manager_terminality.py tests/test_task_queue_lifecycle.py tests/test_ari_integration.py tests/test_ari_native_components.py tests/test_permission_policy.py -q
+Resultado real:195 passed in7.12s, exit0. HTTP somente loopback/worker falso; Windows/
+processos/clipboard simulados. Nenhuma falha/skips/warnings no resumo observado.
+
+T10 comando py -3.13 -B - (stdin), código mínimo realmente executado:
+import medir_metricas_router as m
+from core.tool_result import ToolResult
+sample='[2026-10-16T12:00:00] TASK_START\n  task_id: "sintetico"\n[2026-10-16T12:00:01] TASK_END\n  task_id: "sintetico"\n  estado: "completed"\n[2026-10-16T12:00:02] CHAT_END\n'
+print(repr(m.parse_tasks(sample)[0]['status']))
+r=ToolResult(ok=False,message='Teste sintetico')
+# try/except separados registraram tipo da exceção em r.lower() e 'Processos encontrados:' in r.
+Resultados reais: status='', AttributeError, TypeError; processo exit0 por captura das
+exceções esperadas. Nenhum arquivo de log ou processo Windows consultado.
+
+T11 comando: gh api -H 'Accept: application/vnd.github.raw+json'
+repos/Yamatosemj/aurenOFC/contents/ui/chrome.html?ref=09a67659a82121449e3340538200780688c0b6de;
+seleção em memória das linhas349–369, pipe ao node via stdin. Prefixo define window={},
+cap={},document={}, addCard incrementa cards, define() vazio, postApi incrementa acks e
+retorna Promise.resolve(). Executa mostrarAviso({id:1,texto:'sintetico',horario:'13:00'}),
+espera setImmediate para encerrar finally, repete mesmoID com13:10.
+Resultado real: alertas_renderizados=1 ACKs=2, exit0. Somente função examinada foi
+executada, não página inteira/DOM real/Notification/servidor/modelo/clipboard.
+
+T7–T11: antes status '?? desktop/' e HEADa7a6fd3, depois status idêntico; nenhuma nova
+modificação detectada ou limpeza feita. T10/T11 não criam caches de pytest/arquivos.
+GitHub CLI lê credenciais já autorizadas para consulta do repositório privado;
+isso não envolve credenciais de API do Auren nem chamadas pagas de modelo.
+
+CI CONSULTADO — mesma árvore da base, SHA main70b040:
+https://github.com/Yamatosemj/aurenOFC/actions/runs/38830371647
+Job completo SUCCESS:830 passed,31 skipped,21.70s (resumo do log efetivamente lido).
+https://github.com/Yamatosemj/aurenOFC/actions/runs/38830371658
+Linux focado170 passed15 skipped2.74s; seguro110 passed1.02s.
+Windows hospedado focado185 passed11.77s; seguro110 passed1.23s.
+Todos SUCCESS. Não é teste no PC pessoal ou validação Live/hardware.
+SHA local a7a6fd3: checks38829942157/38829942173 SUCCESS consultados;
+contagens específicas desses dois runs não foram extraídas e não são inventadas.
+#141: runs38831135128/38831135100 SUCCESS no HEAD44f56a4.
+#137: runs38162556827/38162557010 SUCCESS no HEAD09a6765,11/10; branch hoje DIRTY.
+#142: statusCheckRollup=[] no HEADd20cb0; ausência de checks não significa falha,
+mas não há aprovação de CI verificável desse HEAD na consulta.
+
+Lacunas de testes prioritárias: regressão ponta a ponta para representação dos
+argumentos, recusa estruturada do store, consentimento/canonicalização concorrente,
+UIA índice>1, voz com stepfailed, reativação Tk, modelos locais de fontes distintas,
+limites de buffer/resultados, instalação/migração conjunta, frontend do lembrete
+em dois vencimentos. Testes físicos são uma etapa futura expressamente autorizada.
+
+Reproduções mínimas copiáveis, somente sintéticas (rodar com env/B/TEMP acima):
+
+A. Negativa textual, prefixo de host e corte JSON:
+from core.tool_result import ToolResult, from_legacy
+from core.harness_multitab import _multitab_concluida
+from core.harness_serialization import _texto_seguro
+assert from_legacy("Encontrei 'sintetico', mas o Windows nao permitiu coloca-la em primeiro plano.").ok
+assert _multitab_concluida('abra https://github.com na primeira aba', [
+ {'ferramenta':'listar_abas','resultado':'Aba 1: Sintetico | https://github.com.evil.invalid [ATIVA]'}])
+s = _texto_seguro(ToolResult.success('sintetico',data={
+ 'file_content':{'conteudo':'X'*5000,'proximo_inicio':5000}}).for_model(),2200)
+assert 'proximo_inicio' not in s
+# json.loads(s) levanta JSONDecodeError; é condição defeituosa demonstrada, não expectativa desejada.
+
+B. Valor correto versus versão mascarada:
+import json
+from types import SimpleNamespace as NS
+from core.browser_verification import verificar_resultado_navegador
+from core.harness_serialization import _argumentos_da_chamada
+args={'alvo':'pesquisa','texto':'ALFA','indice':1}
+data={'abas':'Aba ativa: 1\nAba 1: Teste | https://example.invalid [ATIVA]',
+      'pagina':'- pesquisa valor=ALFA'}
+assert verificar_resultado_navegador('preencher_elemento',json.dumps(args),data) is True
+masked=_argumentos_da_chamada(NS(arguments=json.dumps(args)))
+assert verificar_resultado_navegador('preencher_elemento',masked,data) is False
+
+C. Persistência sintética sem usar banco padrão:
+import tempfile
+from pathlib import Path
+from memory.store import PersistentMemoryStore
+from core.session import SessionContextManager
+from core.harness_turn import _registrar_turno
+folder=Path(tempfile.mkdtemp(prefix='repro-',dir=tempfile.gettempdir()))
+store=PersistentMemoryStore(folder/'synthetic.sqlite3'); ctx=SessionContextManager(store)
+events=[]
+_registrar_turno('user','Explique a palavra token',context=ctx,chat_id='synthetic-A',
+ task_id='synthetic',write_log=lambda *a,**k:events.append((a,k)))
+assert store.ultimas_conversas('synthetic-A')['total']==0 and not events
+store.registrar_conversa('synthetic-A','user','projeto sintetico ALFA')
+assert 'ALFA' in ctx.build(None,'projeto sintetico').texto
+
+D. Reprodução da vinculação de caminho (nenhum arquivo alvo é aberto):
+import json
+from pathlib import Path
+from types import SimpleNamespace as NS
+from unittest.mock import patch
+import tools.dispatcher as d
+from core.permission_manager import PermissionManager
+from core.tool_result import ToolResult
+paths=iter([Path('C:/synthetic/approved.txt'),Path('C:/synthetic/different.txt')])
+seen={}
+class Consent:
+ def confirmar(self,request): return True
+policy=lambda p:NS(status='confirm',caminho_resolvido=str(p),motivo='synthetic')
+def handler(args,*ignored):
+ seen['path']=args['_caminho_confirmado']; return ToolResult.success('sintetico')
+with patch('core.permission_manager._resolve_path',side_effect=lambda _:next(paths)), patch('core.permission_manager._classify_read_path',side_effect=policy), patch.object(d.file_intelligence,'_resolve_path',side_effect=lambda _:next(paths)), patch.object(d.file_intelligence,'_classify_read_path',side_effect=policy), patch.dict(d.TOOL_HANDLERS,{'ler_arquivo':handler}):
+ r=d.executar_ferramenta(NS(name='ler_arquivo',arguments=json.dumps({
+  'caminho':'C:/synthetic/link.txt','inicio':0,'limite_caracteres':100})),
+  PermissionManager(confirmation_channel=Consent()),None)
+assert r.ok and seen['path'].endswith('different.txt')
+
+IX. CAPACIDADE PRÁTICA DO ASSISTENTE
+
+Avaliação baseada em código, não nota subjetiva de uso real. Funcionalidade numerosa
+não equivale a interpretar, completar e comunicar bem uma tarefa. Gargalos concretos:
+
+Interpretação: LocalDecisionEngine exige frases estreitas/fullmatch (local_decision.py:
+61–123); fallback para modelo é correto para abstinência, mas o toolset continua por
+regex (router.py:351–459). _parece_tarefa_de_acao usa primeira palavra de lista fixa
+(harness_heuristics.py:198–236); 'por favor abra...' e 'você consegue...' podem não
+exigir ferramenta. Isso não prova que o modelo falhará, apenas que a garantia local
+muda com fraseado. Não há benchmark de gírias ou ambiguidade. Os valores confidence
+locais são constantes de regras, não probabilidades calibradas por amostra de uso.
+
+Tarefas compostas: planner divide frases e estima 12/15/18 rodadas (planner.py:11–36);
+não implementa grafo durável de dependências ou rollback. O Harness é o dono do ciclo;
+TaskManager é em RAM. Recuperar conversa antiga não retoma passos. Limite de10 ações
+contáveis por tarefa (permission_manager.py:31,445–455) pode acabar antes das rodadas
+adaptativas. Contexto reduzido e guards específicos de fechamento/browser não são
+planejamento geral robusto. AUD-005/006/009/012/015/026 afetam essa capacidade.
+
+Memória útil: fatos globais são ranqueados por substring; conversas/estratégias usam
+janelas recentes de300/200 registros (store.py:183–239); termos têm mínimo3 caracteres
+e até12 (memory_context.py:6–20). Informação antiga, sinônimo ou acento diferente pode
+não ser recuperado. Omissão por corte é comprovada; taxa real de recordação não foi
+medida. Não há validade/expiração/confiança semântica de fato neste esquema. Esquecer
+chave não remove todas cópias. #142 adiciona consulta visual, não retomada do contexto.
+
+Autocorreção: retorno textual pode mascarar erro; assinatura redigida pode apagar falha;
+alternativa pode ser bloqueada; verificador pode rejeitar valor correto. São defeitos
+reproduzidos, não apenas limitações de IA. AUD-027/028 acrescentam sucesso falado e status da memória incoerentes. Falha não
+recuperada só sai por sucesso da
+mesma assinatura, mesmo quando outra ferramenta provaria recuperação equivalente.
+Isso é postura conservadora a decidir, não motivo para simplesmente apagar a guarda.
+
+Comunicação: mensagens de erro do provider são controladas (harness.py:643,661–679).
+Revisor bloqueado pede reformular, enquanto diagnóstico específico fica no log
+(harness_intent_guard.py:95–104,140–145). Bom para não executar proposta errada, mas pode
+obrigar usuário a adivinhar o erro; avaliar mensagem contextual segura sem exibir segredos.
+Falhas/cancelamentos não têm registro universal como turno assistant (_encerrar_falha/
+_cancelado em harness.py:701–711); próxima mensagem pode ter contexto assimétrico.
+'Needs clarification' é marcado como task complete (harness_cycle.py:216–224), embora
+objetivo ainda não tenha sido cumprido. Não confundir estado operacional do turno com
+resolução do pedido humano. Tk busy preso é falha concreta de comunicação/controle.
+
+Latência percebida/custo: resposta padrão não é stream incremental para o usuário;
+worker publica busy e resposta final (ui/backend.py:221–250). Revisão de intenção é
+chamada separada ao mesmo modelo para ações não triviais. Produção usa timeout/retries
+padrões do SDK, enquanto só testmode configura45s/0retries (provider.py:29–30). Não foi
+verificado prazo efetivo do SDK instalado. Há chamada extra descartada no limite,
+consultas de browser sem progresso e buscas locais potencialmente caras.
+Chrome mostra texto palavra a palavra com70ms (chrome.html:146–147), adicionando duração
+visual à resposta já pronta. GPU renderiza continuamente (chrome.html:250–288), mesmo
+com estado off/standby. São mecanismos verificáveis; RAM/CPU/GPU/tempo real não medidos.
+A geometria IcosahedronGeometry(1,28) foi vista, mas biblioteca vendorizada não foi
+auditada: NÃO se concluiu explosão exponencial nem bug por esse parâmetro.
+
+Cenários reais PROPOSTOS, não executados; ações/credenciais/hardware só em etapa
+expressamente autorizada e com alvos de teste descartáveis:
+1. Mesmo objetivo em10 paráfrases (direta, cortês, gíria, incompleta). Registrar ferramenta,
+   perguntas, acerto do alvo e se afirma ter agido sem evidência. Isolar dados de usuário.
+2. Pedir4 passos com restrição anterior 'não feche nada'; forçar falha no passo2;
+   conferir que não repete efeito mutável e informa passos completados/pendentes.
+3. Salvar fato sintético, corrigir valor, reiniciar sessão, perguntar por sinônimo e
+   consultar histórico #142. Distinguir visualização, recuperação e contexto do modelo.
+4. Aplicativo de teste com duas janelas de título semelhante; foco recusado e fechamento
+   com diálogo de salvar. Exigir nova observação antes de declarar concluído.
+5. Página local controlada com pesquisa ALFA, valor ALFABETO, redirecionamento e conteúdo
+   adversarial. Validar cada evidência, sem conta real nem compra/formulário externo.
+6. Tk: enviar tarefa simulada longa, Desligado, esperar fim, Ativo e enviar novamente;
+   confirmar que botões, busy e geração ficam consistentes e modais velhos negados.
+7. Voz: primeiro unitário de teto com stream falso; depois, se autorizado, silêncio,
+   fala baixa, nomes PT-BR, microfone16/44,1/48kHz, hotkey, interrupção e confirmação.
+   Medir desde pressionar PTT até primeiro áudio e até finalizar, não só ASR.
+8. Latência/custo: tarefas representativas repetidas com logs sintéticos de cada chamada,
+   mediana/p95 e tokens por categoria. Medir cold/warm sem inferir preço de coeficiente
+   fixo; incluir segunda revisão e tempo visual da UI.
+9. Arquivos: links sintéticos alterados durante consentimento; CSV grande externo;
+   arquivo com marcador no final e paginação. Confirmar bytes efetivamente entregues
+   ao modelo, integridade do cursor, política e tempo/cancelamento.
+
+X. ESCALABILIDADE
+
+Base atual serve melhor a um operador/processo desktop. Limites por leitura:
+- browser.py:8–12 guarda contexto/página globais e perfil persistente em config.py:8.
+  Novos chats não isolam cookies/abas; execução simultânea exigirá ownership por sessão.
+- auren.py:74–79 cria store/permissão/contexto no import; criar_harness sem canal usa
+  gerenciador global (:131–169). Não usar vários Harness concorrentes como servidor
+  multiusuário sem redimensionar escopos e testar isolamento.
+- SQLite abre conexões por operação, usa RLock por store; fatos fazem SELECT de toda
+  tabela e ranking em Python (store.py:110–140). Tabelas conversas/estratégias não têm
+  índices dedicados chat_id no schema lido. Crescimento aumenta trabalho, mas não há
+  medida que justifique substituir SQLite agora.
+- Logs duplicados, screenshots integrais e bancos sem retention precisam orçamento
+  de disco. Trace grava spans com conexão/commit por chamada (task_trace.py:106–116).
+- Worker serial; filas sem limite em backend/voz; tempo de chamada externa pode reter
+  o canal. Uma fila daemon de estratégia não oferece retomada após queda.
+- Bibliotecas e ONNX fixam parte da instalação; transitivas, revisões de modelos,
+  binário Chromium e ambiente Python não ficam todos congelados por requirements.
+  helper valida existência de executável, não compatibilidade do ambiente escolhido.
+- Novas ferramentas exigem alinhar registry, categoria, política, handler, Router e
+  testes; validação central é boa fronteira, mas alterações manuais em vários pontos
+  precisam de checagem de consistência e um contrato único de efeitos/evidência.
+
+Celular: definir canal autenticado/rede e identidade por sessão; não reutilizar token
+local como autenticação remota. Servidor: separar adaptador Windows de núcleo e injetar
+store/provider/browser por escopo. Isso é evolução incremental de fronteiras, não
+justificativa para trocar tudo ou começar microserviços. Memória semântica só após medir
+falhas lexicais; paralelismo só depois de provar segurança dos estados compartilhados.
+
+XI. ROADMAP TÉCNICO RECOMENDADO
+
+Plano proposto, não implementado. Cada linha abaixo é tarefa/PR focalizada; não
+abrir todas simultaneamente. Os critérios estão no roadmap priorizado final após XII.
+1. Consentimento/identidade/resultado/verificação, antes de ampliar autonomia.
+2. Guards/estados/limites e comunicação fiel de falhas.
+3. Memória/proveniência/retention/lifecycle e instalação reprodutível.
+4. Testes representativos e métricas antes de otimização arquitetural.
+5. Revalidar candidatas e experiência física autorizada; depois celular/servidor.
+
+XII. VEREDITO TÉCNICO
+
+Qualidade arquitetural: base aproveitável de execução autorizada, contratos e estados,
+mas integrações violam a identidade de ação, status e verificação. Muitos guards e
+representações não substituem um contrato de operação que atravesse todo o fluxo.
+Correções incrementais com casos negativos são mais fundamentadas que reescrita.
+
+Funcionalidades: amplitude razoável de protótipo,49 ferramentas e múltiplas entradas.
+Histórico visual, memória útil, planejamento recuperável e agendamento são coisas
+diferentes. Nem Electron/histórico/lembretes propostos devem ser anunciados como main.
+
+Experiência prática: não medida ponta a ponta nesta investigação. Defeitos reproduzidos
+mostram situações em que o assistente relata sucesso falso, perde contexto útil ou
+impede continuação. A base não está demonstrada como assistente autônomo avançado e
+confiável. Maturidade: protótipo desktop integrado com controles reais e dívida operacional
+relevante, dependente de validação física e de recuperação orientada a efeitos.
+Não há nota numérica inventada ou garantia de ausência de outras falhas.
+
+Estado da auditoria: leitura estática integral da BASE concluída, L260/P0/N0,
+42587linhas físicas. Revisão das candidatas é parcial e delimitada nominalmente em II.
+Não se afirma auditoria completa de todo ecossistema/PRs/hardware/dependências.
+Não examinados: fonte das dependências/vendorizadas, binários/modelos ONNX, transitivas,
+CVE/assinaturas, histórico Git inteiro, dados/cache/logs/conversas reais, policies
+instaladas fora do repo e ambiente pessoal de hardware. Outros PRs abertos receberam
+somente reconhecimento de metadados, sem auditoria dos códigos propostos.
+
+Continuidade/revalidação: achadosAUD-001–026 MANTIDOS no mesmo commit após completar
+leitura dos módulos e testes relevantes; não houve mudança de fonte no intervalo.
+AUD-027–036 adicionados com evidência acima. SuspeitasAUD-022/023 continuam suspeitas,
+sem exploração real. Observações antigas de Electron sem .venv pai e histórico aceitando
+geração antiga INVALIDADAS no HEAD atual das candidatas, não contadas como bugs.
+Se código mudar: git diff --stat SHA_AUDITADO NOVO_SHA, depois ler diff e trechos inteiros
+necessários e marcar cada achado MANTIDO/CORRIGIDO/INVALIDADO com justificativa.
+Diff vazio de tree remota confirma aplicabilidade de linhas à main70b040 atual.
+
+ROADMAP FINAL PRIORIZADO — DEPENDÊNCIAS, RISCOS, BENEFÍCIOS E CONCLUSÃO
+
+P0. AUD-001: prender consentimento à identidade/destino efetivo, sem reaprovação implícita.
+Dependência: contrato de canonicalização e leitura; benefício: ação no alvo aprovado.
+Risco: links/Windows longpaths/arquivos substituídos; não basta comparar texto duas vezes.
+Concluído quando mudança concorrente simulada é rejeitada e mesma identidade funciona,
+com testes negativos de sensíveis/fora da raiz e confirmação no destino correto.
+
+P1a. AUD-002/003/004/025/027/028: resultado estruturado e estado operacional independente
+do log redigido. Dependência:P0/contratos de consumidores, benefício: cessar falso sucesso.
+Risco: compatibilidade textual/privacidade. Conclusão: falha de tool/store/voz permanece
+falha no Dispatcher/Harness/UI; valor correto verifica; outro valor não limpa pendência;
+nenhum argumento sensível passa a ser registrado em claro para corrigir identidade.
+
+P1b. AUD-005/006/007/008/009/012/013/026/030: guards, alvos e limites coerentes.
+Dependência:P1a. Benefício: parar cedo/comunicar falha e permitir recuperação segura.
+Risco: bloquear fluxos legítimos ou aceitar falso progresso. Conclusão: esgotamento
+não libera sucesso; host comparado por URL estruturada; Tk reativa; PTT limitado;
+última resposta não é descartada; JSON/cursor íntegros; índice UIA preservado e alvo
+revalidado; alternativas seguras não barradas só por repetição de erro anterior.
+
+P2a. AUD-010/011/014/015/017/019/022/023/024: memória/proveniência/privacidade/lifecycle.
+Dependência:P1a e decisão explícita de escopo/retention. Benefício: contexto útil com
+origem e término previsíveis. Risco: apagar dados úteis ou ampliar confiança indevida.
+Conclusão: recusas observáveis; ausência dechatID isolada; restrições/falhas preservadas;
+cache identificado por modelo/revisão; leitura só do alvo aprovado; shutdown único
+por canal, sem confundir cancelamento cooperativo com rollback garantido.
+
+P2b. AUD-033/034/035: instalação e força da evidência. Dependência: definir estados
+suportados de policy/ambiente. Benefício: reduzir falso PASS/FAIL e bloqueio de setup.
+Risco: aprovação indevida se migrador for afrouxado; preservar failclosed/consentimento.
+Conclusão: instalação+migração em USERPROFILE fictício passam/rejeitam estados certos;
+asserts executam; teste de raízes chama função correta; tester consome ToolResult.
+CI no HEAD final de cada correção, sem modificar políticas pessoais para fazê-lo passar.
+
+P3. AUD-016/018/020/021/029/031/032: custo/latência, busca e diagnóstico.
+Dependência: evidência confiável P1/P2. Benefício: otimizar gargalo real e localizar erros.
+Risco: trocar simplicidade por complexidade sem ganho. Conclusão: métricas incluem
+revisão/retry e estado; arquivo grande lido por amostra real; busca rotula fallback;
+temporários recolhidos em falha; documentação atual; benchmarks sintéticos cold/warm
+com mediana/p95/CPU/RAM/bytes e sem preço inferido de coeficientes fixos antigos.
+
+P4. Candidatas: revisar #141→#142 na base final, concluir os N/P de II, exigir CI de#142
+no HEAD, validar lifecycle/Electron/histórico sem confundir consulta com retomada.
+#137 separada: resolver conflitos e AUD-036, versionar ocorrência/ACK; validar dois
+vencimentos com adiamento e reinício. Benefício: integrar capacidades comprovadas.
+Risco: regressão por bases antigas/ACK concorrente/duplicação de dados privados.
+Conclusão: CI final e cenários de integração isolados aprovados, lacunas nomeadas;
+merge somente em tarefa autorizada posterior, não por existir esta recomendação.
+
+P5. Experiência física autorizada: cenáriosIX em apps/páginas/contas fictícias antes
+de dados reais, depois voz e hardware. Medir objetivo corretamente cumprido, evidência
+de efeito, falsos sucessos, recuperação, perguntas, tokens e latência percebida.
+Dependência:P0–P2 e autorização específica; risco: efeitos Windows/consumo de API.
+Conclusão: amostra representativa reproduzível por SHA/ambiente, falhas comunicadas,
+limites documentados. Só então decidir recuperação semântica, expansão de ferramentas,
+celular/servidor com identidade/autorização por sessão. Não iniciar microserviços ou
+substituir SQLite sem medição que demonstre necessidade e benefício superior.

@@ -9,7 +9,7 @@ from typing import Any
 
 from core.confirmation import ConfirmationChannel, ConfirmationRequest, TextConfirmationChannel
 from core.tool_contracts import capability_for_tool
-from tools.file_intelligence import _classify_read_path, _resolve_path
+from tools.file_intelligence import _classify_read_path, _resolve_path, capture_read_authorization
 
 
 class PermissionLevel(str, Enum):
@@ -400,6 +400,19 @@ class PermissionManager:
         argumentos: dict[str, Any],
     ) -> tuple[bool, str]:
         """Retorna (permitido, motivo) antes da execucao real."""
+
+        if nome_ferramenta in {"ler_arquivo", "inspecionar_arquivo"}:
+            # Nunca aceitar uma autorizacao antiga ou fornecida pelo chamador.
+            argumentos.pop("_file_read_authorization", None)
+            try:
+                path = _resolve_path(str(argumentos.get("caminho", "")))
+                policy = _classify_read_path(path)
+                if policy.status == "blocked":
+                    return False, policy.motivo
+                argumentos["_file_read_authorization"] = capture_read_authorization(path)
+                argumentos["caminho"] = str(path)
+            except OSError:
+                return False, "Nao foi possivel identificar o arquivo antes da autorizacao."
 
         capacidade = self._capability(nome_ferramenta)
         conta_para_limite = capacidade in self.COUNTED_CAPABILITIES
@@ -792,6 +805,8 @@ class PermissionManager:
         partes: list[str] = []
 
         for chave, valor in argumentos.items():
+            if chave == "_file_read_authorization":
+                continue
             chave_normalizada = str(chave).lower()
 
             sensivel = any(

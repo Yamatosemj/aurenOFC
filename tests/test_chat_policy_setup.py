@@ -70,7 +70,15 @@ def test_installer_preserves_old_hook_and_is_idempotent(tmp_path):
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="PowerShell tests require Windows")
-def test_local_guard_requires_owner_and_correct_comment_format(tmp_path):
+@pytest.mark.parametrize("invalid_case,expected_error", [
+    ("$ev.comment.body = 'AUREN_TESTE_V1 shell ' + ('b' * 40)", "Comando de teste invalido."),
+    ("$ev.sender.login = 'outro-usuario-ficticio'", "Comentario nao autorizado ou nao pertence a uma PR."),
+    ("$ctx.actor = 'outro-usuario-ficticio'", "Workflow, contexto ou tentativa do chat nao autorizado."),
+    ("$approval.offline_hosted_validation = $false", "Workflow do chat nao autorizado pelo proprietario local."),
+    ("$elevated = $true", "Runner elevado ou parada de emergencia ativa."),
+    ("$stopped = $true", "Runner elevado ou parada de emergencia ativa."),
+])
+def test_local_guard_requires_owner_and_correct_comment_format(tmp_path, invalid_case, expected_error):
     gh = tmp_path / "auren-remote/gh/bin/gh.exe"
     gh.parent.mkdir(parents=True)
     gh.write_text("dummy", encoding="utf-8")  # checked with Test-Path; never run
@@ -103,7 +111,7 @@ def test_local_guard_requires_owner_and_correct_comment_format(tmp_path):
     script = r"""
 $ErrorActionPreference = 'Stop'
 $env:GITHUB_JOB = 'executar'
-. '__POLICY__'
+__POLICY_SOURCE__
 function Invoke-BoundedLocalTool {
     param([string]$Executable,[string]$Arguments,[string]$InputText,[string]$Token)
     if ($Arguments -like '*credential fill*') { return "password=fakecredential`n" }
@@ -117,19 +125,26 @@ function Invoke-BoundedLocalTool {
 $ctx = '__CTX__' | ConvertFrom-Json
 $ev = '__EVENT__' | ConvertFrom-Json
 $approval = '{"enabled":true,"workflow_blob":"__BLOB__","offline_hosted_validation":true}' | ConvertFrom-Json
-Test-ChatControlRequest -Context $ctx -Event $ev -ChatApproval $approval -Elevated $false -Stopped $false -RunId '123' -Attempt '1'
-$ev.comment.body = 'AUREN_TESTE_V1 shell ' + ('b' * 40)
+$elevated = $false
+$stopped = $false
+Test-ChatControlRequest -Context $ctx -Event $ev -ChatApproval $approval -Elevated $elevated -Stopped $stopped -RunId '123' -Attempt '1'
+__INVALID_CASE__
 $rejected = $false
 try {
-    Test-ChatControlRequest -Context $ctx -Event $ev -ChatApproval $approval -Elevated $false -Stopped $false -RunId '123' -Attempt '1'
+    Test-ChatControlRequest -Context $ctx -Event $ev -ChatApproval $approval -Elevated $elevated -Stopped $stopped -RunId '123' -Attempt '1'
 } catch {
+    if ($_.Exception.Message -cne '__EXPECTED_ERROR__') { throw }
     $rejected = $true
 }
-if (-not $rejected) { throw 'Accepted invalid command format' }
-Write-Output 'REJECTED_BAD_COMMAND'
+if (-not $rejected) { throw 'Accepted invalid request' }
+Write-Output 'REJECTED_INVALID_REQUEST'
 exit 0
 """
-    script = (script.replace("__POLICY__", str(FUNCTIONS).replace("'", "''"))
+    # Test the versioned function in the command already run by this unit test.
+    # No dot-sourcing of a .ps1 file, policy changes, or ExecutionPolicy override.
+    script = (script.replace("__POLICY_SOURCE__", FUNCTIONS.read_text(encoding="utf-8"))
+                    .replace("__INVALID_CASE__", invalid_case)
+                    .replace("__EXPECTED_ERROR__", expected_error)
                     .replace("__BLOB__", PINNED_BLOB)
                     .replace("__PR__", json.dumps(pr))
                     .replace("__CTX__", json.dumps(context))
@@ -142,4 +157,4 @@ exit 0
     )
     assert result.returncode == 0, result.stdout + "\n" + result.stderr
     assert "Politica do chat aprovada" in result.stdout
-    assert "REJECTED_BAD_COMMAND" in result.stdout
+    assert "REJECTED_INVALID_REQUEST" in result.stdout
