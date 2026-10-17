@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import ntpath
 import os
 from pathlib import Path
 import subprocess
@@ -263,7 +264,39 @@ def _nome_programa_ambiguo(programa):
     )
     return any(frase in texto for frase in frases_ambiguous)
 
+def _caminho_absoluto_solicitado(programa):
+    """Reconhece caminhos absolutos antes de qualquer busca fuzzy por nome."""
+    nome = str(programa).strip()
+    if len(nome) >= 2 and nome[0] == nome[-1] and nome[0] in ("'", '"'):
+        nome = nome[1:-1].strip()
+    if ntpath.isabs(nome) or os.path.isabs(nome):
+        return nome
+    return None
+
+
 def abrir_programa(programa):
+    caminho_explicito = _caminho_absoluto_solicitado(programa)
+    if caminho_explicito is not None:
+        # Nao substituir um caminho exato por um aplicativo encontrado por nome.
+        # So aceita .exe aqui: BAT/CMD/URLs nao devem virar execucao implicita.
+        if ntpath.splitext(caminho_explicito)[1].lower() != ".exe":
+            return "ACAO NAO EXECUTADA: caminho explicito nao e um executavel .exe."
+        if not os.path.isfile(caminho_explicito):
+            return "ACAO NAO EXECUTADA: executavel solicitado nao existe ou nao e arquivo."
+        try:
+            subprocess.Popen(
+                [caminho_explicito],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except OSError as erro:
+            return f"ACAO NAO EXECUTADA: nao consegui iniciar o executavel: {erro}"
+        # Popen confirma a solicitacao de inicio, nao a prontidao da GUI.
+        return (
+            f"Inicializacao de {ntpath.basename(caminho_explicito)} solicitada. "
+            "A abertura da janela ainda nao foi verificada."
+        )
+
     if _nome_programa_ambiguo(programa):
         return (
             "ACAO NAO EXECUTADA: nome do programa nao foi identificado "
