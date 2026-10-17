@@ -3,6 +3,7 @@ from __future__ import annotations
 from enum import Enum
 import hashlib
 import json
+import ntpath
 import re
 import unicodedata
 from typing import Any
@@ -708,6 +709,15 @@ class PermissionManager:
         programa = self._normalizar_texto(
             argumentos.get("programa", "")
         )
+
+        # Caminhos absolutos podem apontar a qualquer .exe fora dos apps
+        # reconhecidos. Nao autorizar automaticamente codigo arbitrario.
+        alvo = str(argumentos.get("programa", "")).strip().strip("\"'")
+        if ntpath.isabs(alvo):
+            return (
+                PermissionLevel.CONFIRM,
+                "Executar um programa por caminho absoluto exige confirmacao explicita.",
+            )
 
         if self._contem_termo(programa, self.RISKY_PROGRAM_TERMS):
             return (
