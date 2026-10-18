@@ -140,6 +140,17 @@ function Get-ElementInfo($Element) {
     }
 }
 
+function Resolve-AuthorizedControl($Matches, [int]$Index, [string]$RuntimeId, [bool]$Password) {
+    if ($Index -lt 1 -or $Index -gt $Matches.Count) { throw 'O controle autorizado nao esta mais disponivel.' }
+    $candidate = $Matches[$Index - 1].Item
+    $id = @($candidate.Element.GetRuntimeId()) -join ','
+    if ([string]::IsNullOrWhiteSpace($id) -or $id -cne $RuntimeId -or
+        $candidate.IsPassword -ne $Password -or -not $candidate.Enabled -or $candidate.Offscreen) {
+        throw 'A identidade ou a protecao do controle mudou; escrita interrompida.'
+    }
+    return $candidate
+}
+
 function Get-RootElement($Hwnd) {
     $handle = [IntPtr]::new([int64]$Hwnd)
     if ($handle -eq [IntPtr]::Zero) { throw 'Handle de janela invalido.' }
@@ -376,6 +387,8 @@ try {
         }
 
         $item = $matches[$indice - 1].Item
+        $authorizedRuntimeId = @($item.Element.GetRuntimeId()) -join ','
+        $authorizedPassword = [bool]$item.IsPassword
         if (-not $item.Enabled) { throw "O controle '$($item.Name)' esta desabilitado." }
         if ($item.Offscreen) { throw "O controle '$($item.Name)' esta fora da area visivel." }
 
@@ -441,15 +454,15 @@ try {
                     $freshRoot = Get-RootElement ([string]$payload.hwnd)
                     $freshItems = Get-AllControls $freshRoot
                     $freshMatches = Find-Controls $freshItems $target 'Value'
-                    if ($freshMatches.Count -gt 0) {
-                        $freshItem = $freshMatches[0].Item
+                    if ($freshMatches.Count -ge $indice) {
+                        $freshItem = Resolve-AuthorizedControl $freshMatches $indice $authorizedRuntimeId $authorizedPassword
                         $freshPattern = $freshItem.Element.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
                         $confirmado = Safe-String $freshPattern.Current.Value
                         $item = $freshItem
                         $valuePattern = $freshPattern
-                    }
+                    } else { throw 'O controle autorizado desapareceu.' }
                 } catch {
-                    try { $confirmado = Safe-String $valuePattern.Current.Value } catch { $confirmado = '' }
+                    throw
                 }
             }
 
@@ -665,12 +678,12 @@ public static class AurenUiWin32 {
                     $freshRoot = Get-RootElement ([string]$payload.hwnd)
                     $freshItems = Get-AllControls $freshRoot
                     $freshMatches = Find-Controls $freshItems $target 'Value'
-                    if ($freshMatches.Count -gt 0) {
-                        $freshItem = $freshMatches[0].Item
+                    if ($freshMatches.Count -ge $indice) {
+                        $freshItem = Resolve-AuthorizedControl $freshMatches $indice $authorizedRuntimeId $authorizedPassword
                         $freshPattern = $freshItem.Element.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
                         $confirmado = Safe-String $freshPattern.Current.Value
-                    }
-                } catch {}
+                    } else { throw 'O controle autorizado desapareceu.' }
+                } catch { throw }
             }
 
             $confirmadoBool = ($confirmado -eq $textoDesejado)

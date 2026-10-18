@@ -6,6 +6,16 @@ Data: 17/10/2026. Branch: `correcoes-auditoria`.
 
 ## O que foi corrigido
 
+### P1b — AUD-005, 006, 007, 009, 012, 026, 030 e LIV-004
+
+Todos estavam **MANTIDOS**; oito reproduções falharam antes de corrigir. A verificação esgotada de abas agora encerra com falha; endereços são comparados por servidor e caminho, não por prefixo. Desligar libera o estado visual de ocupado sem aceitar eventos antigos. A última rodada de ferramentas não pede outra resposta que ficaria sem processamento. Uma leitura isolada do navegador não cria uma falsa obrigação de verificação e uma observação sem prova não reinicia seu contador.
+
+O corte de resultados de arquivos preserva JSON válido e calcula a continuação a partir do texto realmente entregue. Para outros resultados estruturados grandes, informa a omissão sem produzir JSON quebrado. A atualização de um controle de tela conserva a ocorrência e confere sua identidade e proteção; se o controle mudar ou desaparecer, a escrita para. O teste executou o trecho real de atualização com controles PowerShell fictícios, sem aplicativo ou dispositivo real.
+
+**AUD-008:** MANTIDO por leitura, pulado por ser voz. **AUD-013:** MANTIDO, pulado por depender da decisão sobre parar toda a tarefa ou permitir alternativas após falhas repetidas. A regra existente foi preservada.
+
+Testes focados: **77 aprovados**. Suíte ampla: **801 aprovados, zero falhas, oito ignorados, dois casos de voz excluídos**, em 45,22 segundos. Não houve teste visual real nem medição de custo/latência de API.
+
 ### P1a — AUD-002, AUD-003, AUD-004, AUD-025, AUD-028 e LIV-003
 
 Todos esses achados estavam **MANTIDOS** na releitura. Os novos testes reproduziram onze falhas antes das alterações (um controle já passava).

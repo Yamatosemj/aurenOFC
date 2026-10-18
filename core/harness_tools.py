@@ -90,7 +90,7 @@ def _executar_chamadas_rodada(
                 browser_verification_state["argumentos"] = argumentos
                 browser_verification_state["argumentos_operacionais"] = str(getattr(item, "arguments", "{}"))
                 browser_verification_state["dados_acao"] = dict(resultado_estruturado.data or {})
-        elif ferramenta_sucesso and nome == browser_verification_tool:
+        elif ferramenta_sucesso and nome == browser_verification_tool and browser_verification_pending:
             verificado = None
             if browser_verifier is not None and browser_verification_state is not None:
                 verificado = browser_verifier(

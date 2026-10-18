@@ -160,6 +160,7 @@ class AurenDesktop:
             return
         if mode == "off" and self.mode != "off":
             self.worker.go_off()
+            self.busy = False
             self._dismiss_confirmation()
         elif mode == "active":
             self.worker.activate()

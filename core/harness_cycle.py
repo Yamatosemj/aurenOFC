@@ -428,11 +428,7 @@ def executar_ciclo(
         if not harness._browser_verification_pending:
             harness._browser_verification_state.clear()
             harness._browser_verification_state["pending"] = False
-        if any(
-            item.get("ferramenta") == harness.BROWSER_VERIFICATION_TOOL
-            and item.get("sucesso")
-            for item in resultados_rodada
-        ):
+        if not harness._browser_verification_pending:
             harness._browser_verification_guard_attempts = 0
         if cancelado:
             return harness._encerrar_cancelado("cancelado durante execucao", rodada)
@@ -493,6 +489,9 @@ def executar_ciclo(
                 criar_resposta=resposta_wrapper,
             )
             return False, resposta
+
+        if rodada >= limite_rodadas:
+            break
 
         # Nova rodada completamente nova: sem previous_response_id.
         proximo_input, estado_enviado = _montar_input_e_estado_da_rodada(

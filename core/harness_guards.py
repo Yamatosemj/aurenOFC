@@ -207,6 +207,14 @@ def _tratar_rodada_sem_ferramentas(
             browser_verification_guard_attempts=browser_verification_guard_attempts,
         )
 
+    if (multitab_guard_attempts >= 2
+        and parece_tarefa_multietapa_browser(objetivo)
+        and extrair_destinos_abas(objetivo)
+        and not multitab_concluida(objetivo, historico)):
+        return _ResultadoGuardSemFerramentas(
+            "falhar", resposta, vision_guard_attempts, multitab_guard_attempts,
+            "multitab_verification_missing", "Os destinos das abas nao foram comprovados; tarefa interrompida.")
+
     if (
         parece_tarefa_multietapa_browser(objetivo)
         and extrair_destinos_abas(objetivo)
