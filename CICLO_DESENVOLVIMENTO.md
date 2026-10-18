@@ -2,21 +2,22 @@
 
 ## Estado para retomada — 18/10/2026
 
-**Fases 0 a 3 validadas; Fase 4 implementada, aguardando CI final. Fase 5 não iniciada.** Base: PR #157, `2313f1d`, CI `39129372163` aprovado (1.055 Windows; 1.011 Linux/44 ignorados). Nenhum merge.
+**Fases 0–4 em PRs; Fase 5 reprovada no Live real. Orçamento de US$ 2 autorizado; duas falhas documentadas, inclusive política CONFIRM ignorada. Sequência interrompida para correção segura, sem merge.** [Live real de 18/10](docs/desenvolvimento/fase5/LIVE_API_2026-10-18.md).
 
-- Branch: `desenvolvimento/fase-4-interface-tarefas`, empilhada na Fase 3.
-- Relatório: [FASE_4.md](docs/desenvolvimento/FASE_4.md); evidências em `docs/desenvolvimento/fase4/RESULTADOS_FASE_4.json`.
-- Suíte local: 1.055 aprovados, zero falhas, oito ignorados. Painel Chrome e tabela Tk usam o worker/Harness existentes; Chrome cadastra e autoriza rotinas em passos separados.
-- Worker padrão passa banco operacional explícito e encerra pelo Harness.shutdown. Não abre banco até pedido de carregar tarefas ou mensagem. Não se retomam objetivos ou aprovam rascunhos automaticamente.
-- Corrida de Desligar antes da criação do objetivo reproduzida e corrigida; controles/autorizações e execução obedecem à geração da sessão.
-- Nenhuma API paga, dados pessoais, Live sensível, mudança de main ou runner. `desktop/` intocada.
+- Branch: `desenvolvimento/fase-5-validacao-integrada`, empilhada na Fase 4.
+- Relatório simples: [RELATORIO_DESENVOLVIMENTO.md](RELATORIO_DESENVOLVIMENTO.md). Detalhes: [FASE_5.md](docs/desenvolvimento/FASE_5.md).
+- Suíte local: 1.057 aprovados, zero falhas, oito ignorados, 62,50 s. Integração real entre processos: 16 passos, pausa após oito, saída abrupta e retomada sem repetir observações; outra queda após efeito recusa retomada.
+- Interface real isolada: oito controles aprovados, Chromium temporário com sandbox e origem local, Tk com janela retirada. Modelo fictício, quatro chamadas fictícias, zero API, zero efeitos pessoais e nenhuma confirmação positiva automatizada no browser. Supervisor terminou com código zero; banco reaberto com pausa intacta.
+- Tentativas anteriores preservadas: recusa do Chrome instalado e erro de seletor no script de validação. Não foram alterados perfil/política pessoal, instalação do runner ou workflow para contornar erros.
+- Nenhum dado pessoal, hardware/voz, aplicativo/perfil pessoal ou alteração de main. `desktop/` permanece intocada.
 
 ## Como retomar
 
-1. Conferir main, HEADs, PRs e CI da Fase 4 no SHA final. Só avançar com suíte completa e ambos os jobs aprovados.
-2. Fase 5: bateria integrada com dados fictícios, tarefa longa, pausas/reinício, reserva/efeito incerto, falhas de armazenamento, negação de permissões, gerações antigas e revogação. Reutilizar banco e ciclo existentes.
-3. Quando possível, validar a interface real em browser isolado com perfil temporário, rede externa bloqueada e provider/efeitos fictícios. Não usar perfil/browser pessoal nem chamar a API real.
-4. Distinguir teste integrado/componentes reais de Live completo do Auren. Modelo/API reais e ações sensíveis continuam sem orçamento autorizado; documentar o que falta e interromper nesse limite, sem inventar aprovação.
+1. Conferir GitHub, branch e o relatório Live atual. Orçamento já autorizado: US$ 2; não solicitar novamente.
+2. Corrigir F5-LIVE-002 (política mais restritiva), com reprodução que falhe antes e passe depois; manter confirmações e testes existentes.
+3. Corrigir F5-LIVE-001 sem retirar proteção de dados externos ou dispensar evidência.
+4. Executar regressões e novo Live autorizado. Preservar o registro global de gastos; 19 chamadas/reserva preventiva US$ 1,539 já consumida no controle conservador, sem zerar a contagem.
+5. Manter main intacta e PRs em rascunho; ciclo ainda não aprovado.
 
 ## Critérios de avanço propostos
 
