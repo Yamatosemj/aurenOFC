@@ -2,9 +2,11 @@
 
 17/10/2026 — branch `correcoes-auditoria`, criada a partir de `a7a6fd3e647de2f62b6a51fe570dfe78c4dbe3e8`.
 
-As fases foram executadas na ordem pedida. Cada fase só avançou após os testes permitidos passarem. Há um commit por fase. Não houve merge, push, instalação de dependências ou alteração da main. As PRs #141, #142 e #137 ficaram fora.
+As fases iniciais foram executadas na ordem pedida, com um commit por fase. Depois da autorização para continuar os itens antes excluídos, foram feitos commits complementares identificando suas fases e achados. A main não foi alterada. As PRs #141, #142 e #137 não foram incorporadas.
 
-Os achados tratados continuavam presentes na releitura (**MANTIDO**). Não houve item pulado como “JÁ CORRIGIDO” ou “INVALIDADO” por suposição. AUD-023, antes suspeita, teve seu mecanismo confirmado com arquivos fictícios. AUD-022 continua suspeita, sem ataque demonstrado. Os relatórios originais foram copiados sem alteração para `docs/auditoria/`, pois essa pasta não existia no checkout.
+Os achados tratados continuavam presentes na releitura (**MANTIDO**). Não houve item pulado como “JÁ CORRIGIDO” ou “INVALIDADO” por suposição. AUD-023 teve seu mecanismo confirmado com arquivos fictícios; em AUD-022 foi reproduzida a perda da confirmação entre tarefas, sem ataque demonstrado contra um modelo real. Os relatórios originais foram copiados sem alteração para `docs/auditoria/`, pois essa pasta não existia no checkout.
+
+**Estado atual:** as correções locais previstas e os itens antes pendentes foram tratados. Última suíte completa: **953 aprovados, zero falhas e oito ignorados**. As atualizações da continuação ao final deste arquivo prevalecem sobre exclusões e limitações da primeira passagem. Não houve teste físico, API paga ou limpeza de dados reais. Não houve instalação nem aprovação do runner real.
 
 ## O que foi corrigido, fase por fase
 
@@ -76,7 +78,7 @@ Uma pergunta pendente deixa de depender da primeira palavra do pedido. Respostas
 
 As oito reproduções falharam antes das correções; a seleção focada terminou com 68 aprovados. A primeira execução ampla revelou uma simulação antiga que fornecia apenas a chamada de ferramenta e dependia do encerramento automático. A simulação passou a fornecer também a resposta final, mantendo as verificações de aprovação e execução. LIV-003 e LIV-004 já haviam sido tratados nas fases anteriores. **LIV-006 foi pulado por decisão de produto; o veto continua impedindo a ação.**
 
-## O que foi pulado e por quê
+## Itens que ficaram pendentes na primeira passagem
 
 Todos os itens abaixo foram relidos e permanecem presentes; não são declarados corrigidos.
 
@@ -92,16 +94,18 @@ Todos os itens abaixo foram relidos e permanecem presentes; não são declarados
 | AUD-033 | Corrigido no instalador, sem instalar nem aprovar o runner real |
 | LIV-006 | Corrigido no ciclo do modelo: uma alternativa diferente, revisada e limitada |
 
-AUD-036 pertence exclusivamente à PR #137 e ficou fora por instrução expressa. AUD-020 tem a parte de contagem corrigida e as limitações de custo e falhas anteriores à decisão descritas acima.
+AUD-036 pertence exclusivamente à PR #137 e ficou fora do escopo de fases pedido. AUD-020 recebeu o complemento de contagem de falhas e tarifas descrito na atualização ao final.
 
-## Perguntas para decisão
+## Decisões resolvidas na continuação autorizada
 
-1. Após duas falhas iguais, deve parar toda a tarefa ou permitir uma alternativa diferente, mantendo os outros limites? (AUD-013)
-2. Por quanto tempo guardar conversas, lembranças, registros e capturas? Ao pedir para esquecer, quais classes devem ser apagadas? (AUD-019)
-3. Quais tipos de memória devem carregar origem externa e exigir confirmação em tarefas futuras? Como tratar registros antigos sem essa origem? (AUD-022)
-4. Qual aprovação explícita deve autorizar a modalidade de testes sem consulta online? (AUD-033)
-5. Depois de um veto, o Auren deve apenas explicá-lo ou pode elaborar outra proposta? Se puder, qual o limite? (LIV-006)
-6. Resolvido: o proprietário autorizou continuar os itens antes excluídos. Os testes simulados de voz passaram a fazer parte da validação; isso não comprova funcionamento físico.
+1. AUD-013: uma alternativa diferente passa pela política normal; continuam os limites globais e as confirmações.
+2. AUD-019: limpeza manual, com simulação prévia, prazos por classe e preservação dos fatos salvos. Não há limpeza automática ou de backups.
+3. AUD-022: todo contexto recuperado é tratado conservadoramente como dado sem autoridade de instrução, inclusive registros antigos.
+4. AUD-033: a opção explícita do instalador autoriza a modalidade sem consulta online; nenhuma instalação ou aprovação real ocorreu.
+5. LIV-006: no ciclo do modelo, no máximo uma alternativa após veto; ela precisa ser diferente e passar novamente pela revisão e permissões. Atalhos vetados continuam encerrando.
+6. Testes simulados de voz incluídos após autorização. Nenhum teste físico foi feito.
+
+Não restou pergunta de produto necessária para estas correções locais. Alterar essas escolhas no futuro é uma nova decisão do proprietário.
 
 ## Resultado real das suítes amplas
 
@@ -131,15 +135,15 @@ Windows, Python 3.13.15. Os testes rodaram em cópias temporárias contendo font
 
 As saídas de texto e XML de cada execução foram preservadas em `C:\Windows\Temp\auren-correcoes-c704711e41bd461887318de7ea40b7b6`, em pastas identificadas pela fase e por `red`, `green` ou `full`. O executor isolado está em `C:\Windows\Temp\run_auren_audit_tests.py`. São evidências desta manutenção, não logs reais do Auren. A suíte final usa a pasta `live-full-final`.
 
-A main remota consultada foi `70b040d6191237e2f0a291a14b8ea8fb4b78a09d`, com checks anteriores aprovados. Não houve push, disparo de workflow nem validação CI deste branch. Os testes locais não são apresentados como CI remoto.
+A main remota consultada foi `70b040d6191237e2f0a291a14b8ea8fb4b78a09d`, com checks anteriores aprovados. Sua árvore de arquivos é idêntica à base local `a7a6fd3`, embora o histórico de commits seja diferente. A revisão fica no [branch correcoes-auditoria](https://github.com/Yamatosemj/aurenOFC/tree/correcoes-auditoria); a main não foi alterada. Os testes locais não são apresentados como CI remoto. O resultado de CI deve ser conferido no SHA da PR.
 
 ## O que não foi testado
 
 - Auren com modelo real, API paga, navegador real, foco de janelas, escrita em controles reais, clipboard real ou screenshots.
-- Voz, microfone, reprodução de som e dispositivos reais; os itens de voz pendentes também não receberam correção.
+- Microfone, reprodução de som e dispositivos reais; os itens de voz foram corrigidos e testados com simulações na continuação.
 - Links simbólicos nos oito casos ignorados, junctions e trocas hostis em todos os sistemas de arquivos do Windows.
 - Conteúdo e estado de dados pessoais, bancos, logs, perfis e `.env` reais.
-- Uso autônomo após veto, política nova de retenção, migração de origem das memórias ou aprovação de runner.
+- Uso após veto e retenção com modelo ou dados reais; foram testados apenas cenários fictícios. Não houve migração de bancos reais nem aprovação do runner real.
 - PRs #141, #142 e #137; Electron e lembretes não foram incorporados.
 - Preços atuais, fatura, saldo ou resistência universal a instruções maliciosas.
 
@@ -202,3 +206,11 @@ MANTIDO na releitura e tratado com política explícita e uma limpeza manual com
 Esquecer um fato agora informa que conversas e outras cópias não foram apagadas. A limpeza recusa links e junctions, preserva fatos e tarefas sem término e remove os detalhes dos rastros vencidos. Não apaga backups, OneDrive ou todas as ocorrências de uma frase; não promete apagamento seguro do disco nem proteção universal contra troca hostil de diretórios.
 
 Duas reproduções falharam antes. Depois, 31 testes focados passaram; a suíte completa desta etapa passou com 948 aprovados, zero falhas e oito ignorados em 50,09 segundos (`retention-full-final/result.xml`). Apenas o arquivo ainda vermelho da etapa seguinte, AUD-020, ficou fora dessa seleção. Uma seleção inicial apontou para um arquivo de teste inexistente e não executou casos; a seleção foi corrigida. Os testes usaram banco e arquivos fictícios; nenhuma limpeza real foi executada.
+
+## Continuação autorizada — complemento de AUD-020
+
+MANTIDO na releitura e corrigido. Revisões que falham passam a contar na tarefa: quando há resposta inválida com tokens informados, esses tokens são preservados; quando a consulta falha sem informar uso, a tentativa e a duração são registradas com uso desconhecido. Nada é executado por causa da falha do revisor. O relatório dos registros também inclui o uso conhecido dessas falhas.
+
+O cálculo aceita tarifas configuradas por identificador de modelo e usa a mesma regra no processo, nos rastros e no relatório. Sem tarifa válida, os coeficientes antigos aparecem como referência genérica, não como fatura. Não foram inventados preços atuais. Veja [CUSTOS_ESTIMADOS.md](docs/CUSTOS_ESTIMADOS.md). Contadores gerais continuam abrangendo o processo inteiro; a separação por tarefa fica nos rastros.
+
+As três reproduções iniciais falharam antes das mudanças. Um teste adicional mostrou divergência no relatório, corrigida antes da validação final. Foram 56 testes focados aprovados antes do controle adicional de rotulagem. A suíte completa final, incluindo todos os arquivos novos e os testes simulados de voz, passou com **953 aprovados, zero falhas e oito ignorados, em 49,28 segundos** (`review-usage-full-final/result.xml`). Não houve comparação com fatura real, API paga ou preços atuais. Os valores de tarifas nos testes são fictícios.

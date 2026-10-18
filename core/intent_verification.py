@@ -11,6 +11,14 @@ import re
 from typing import Any, Sequence
 
 
+class IntentVerificationFailure(RuntimeError):
+    """Uma consulta tentada que falhou; uso ausente permanece desconhecido."""
+
+    def __init__(self, message: str, metricas_uso: dict | None = None):
+        super().__init__(message)
+        self.metricas_uso = metricas_uso
+
+
 # Leituras nao alteram o ambiente; ferramentas desconhecidas sao verificadas.
 READ_ONLY_TOOLS = frozenset({
     "obter_status_windows", "obter_audio_windows", "listar_janelas_windows",
@@ -95,7 +103,7 @@ class IntentDecision:
     decisao: str
     motivo: str
     pergunta: str = ""
-    metricas_uso: dict[str, int] | None = field(default=None, compare=False, repr=False)
+    metricas_uso: dict[str, Any] | None = field(default=None, compare=False, repr=False)
 
 
 def precisa_verificar(chamadas: Sequence[Any]) -> bool:

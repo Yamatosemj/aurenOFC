@@ -19,7 +19,7 @@ AUD-022 (correção candidata): `ContextSnapshot.fontes_nao_confiaveis` identifi
 | [memory/store.py](../../memory/store.py) | SQLite: fatos, conversas e estratégias; valida dados, filtra termos de credenciais e consulta registros |
 | [tools/memory.py](../../tools/memory.py) | Wrappers JSON das três ferramentas de fatos; o Dispatcher adapta o retorno para ToolResult |
 | [core/harness_runtime.py](../../core/harness_runtime.py) | Identidade de chat e contexto de logs; diferente da composição de memória |
-| [core/usage.py](../../core/usage.py) | Contadores globais do processo e custo estimado com coeficientes fixos |
+| [core/usage.py](../../core/usage.py) | Contadores do processo; tarifas configuráveis por modelo ou referência genérica explicitamente identificada; [limites](../CUSTOS_ESTIMADOS.md) |
 
 A cadeia oficial continua passando pelo Harness. Métodos Python públicos de store/provider são APIs internas; não representam novas ferramentas autorizadas ao modelo.
 

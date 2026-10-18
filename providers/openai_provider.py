@@ -7,7 +7,7 @@ from dataclasses import replace
 from config import CACHE_KEY, MODEL
 from core.prompt import instrucoes
 from core import usage
-from core.intent_verification import INSTRUCTIONS, RESPONSE_FORMAT, criar_entrada_verificacao, interpretar_decisao
+from core.intent_verification import INSTRUCTIONS, RESPONSE_FORMAT, IntentVerificationFailure, criar_entrada_verificacao, interpretar_decisao
 
 
 class OpenAIProvider:
@@ -70,16 +70,22 @@ class OpenAIProvider:
     def verify_intent(self, objetivo, chamadas, historico):
         """Segunda leitura sem ferramentas: nenhuma acao e executada nesta chamada."""
         entrada = criar_entrada_verificacao(objetivo, chamadas, historico)
-        resposta = self.get_client().responses.create(
-            model=MODEL,
-            instructions=INSTRUCTIONS,
-            input=entrada,
-            tools=[],
-            reasoning={"effort": "none"},
-            text={"format": RESPONSE_FORMAT},
-            max_output_tokens=300,
-            store=False,
-        )
+        try:
+            resposta = self.get_client().responses.create(
+                model=MODEL,
+                instructions=INSTRUCTIONS,
+                input=entrada,
+                tools=[],
+                reasoning={"effort": "none"},
+                text={"format": RESPONSE_FORMAT},
+                max_output_tokens=300,
+                store=False,
+            )
+        except Exception as exc:
+            raise IntentVerificationFailure("Falha ao consultar o revisor; uso desconhecido.") from exc
         usage.registrar_uso(resposta)
-        decisao = interpretar_decisao(getattr(resposta, "output_text", ""))
+        try:
+            decisao = interpretar_decisao(getattr(resposta, "output_text", ""))
+        except ValueError as exc:
+            raise IntentVerificationFailure("Resposta invalida do revisor.", usage.extrair_metricas_uso(resposta)) from exc
         return replace(decisao, metricas_uso=usage.extrair_metricas_uso(resposta))

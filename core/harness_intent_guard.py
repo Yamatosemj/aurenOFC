@@ -7,7 +7,7 @@ import re
 import time
 from dataclasses import dataclass
 
-from core.intent_verification import precisa_verificar, proposta_simples_exata
+from core.intent_verification import IntentVerificationFailure, precisa_verificar, proposta_simples_exata
 from core.utils import normalizar_nome
 
 
@@ -89,11 +89,26 @@ def verificar_antes_de_agir(
         if getattr(decisao, "decisao", None) not in {"aprovar", "esclarecer", "bloquear"}:
             raise ValueError("Decisao semantica desconhecida.")
     except Exception as exc:
+        review_ms = (time.perf_counter() - review_started) * 1000.0
+        review_usage = getattr(exc, "metricas_uso", None)
+        trace = getattr(harness, "_trace", None)
+        if trace is not None and isinstance(exc, IntentVerificationFailure):
+            try:
+                trace.record_model(rodada, review_ms, review_usage or {})
+                record_stage = getattr(trace, "record_stage", None)
+                if callable(record_stage):
+                    record_stage("intent_review_error", review_ms, category="review_error",
+                                 success=False, metadata={"uso_conhecido": review_usage is not None})
+            except Exception as trace_error:
+                write_log("TRACE_ERROR", task_id=harness._task_id, etapa="intent_review_error", erro=str(trace_error))
         write_log(
             "INTENT_VERIFICATION_ERROR",
             task_id=harness._task_id,
             rodada=rodada,
             erro=str(exc),
+            uso_conhecido=review_usage is not None,
+            latencia_ms=round(review_ms, 3),
+            **({"uso": review_usage} if review_usage is not None else {}),
         )
         return harness._encerrar_falha(
             "intent_verification_unavailable",
