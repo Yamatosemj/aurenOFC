@@ -204,6 +204,7 @@ def validar_registry_handlers() -> tuple[bool, str]:
 
 
 def executar_ferramenta(item, permission_manager, memory_store) -> ToolResult:
+    from core.execution_scope import scope_allows
     nome = str(item.name)
     try:
         argumentos = json.loads(item.arguments)
@@ -240,6 +241,9 @@ def executar_ferramenta(item, permission_manager, memory_store) -> ToolResult:
             tool_name=nome,
         )
 
+    if not scope_allows(item):
+        return ToolResult.failure('Escopo de execucao nao permite esta chamada.',
+                                  error_code='execution_scope_denied', tool_name=nome)
     contexto = {}
     argumentos_execucao = dict(argumentos)
     vision_transform = None
@@ -288,6 +292,10 @@ def executar_ferramenta(item, permission_manager, memory_store) -> ToolResult:
             tool_name=nome,
         )
 
+    if not scope_allows(item):
+        permission_manager.registrar_resultado(False, nome, argumentos)
+        return ToolResult.failure('Rotina revogada, expirada ou fora do escopo antes da execucao.',
+                                  error_code='execution_scope_denied', tool_name=nome)
     if nome in {"inspecionar_arquivo", "ler_arquivo"}:
         path = file_intelligence._resolve_path(str(argumentos_execucao.get("caminho", "")))
         path_policy = file_intelligence._classify_read_path(path)
