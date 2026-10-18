@@ -21,6 +21,7 @@ def main():
     from ui.chrome_server import LocalChromeApp, ChromeServer
     checks, requests, decisions = [], [], []
     first_entered, release = Event(), Event()
+    notice_ready, publish_notice = Event(), Event()
     current = {}
     documents = Path(os.environ['USERPROFILE'])/'Documents'
     files = [documents/'alfa.txt', documents/'beta.txt']
@@ -99,6 +100,7 @@ def main():
             yield worker, request, wait, snapshot
         finally:
             release.set()
+            publish_notice.set()
             server.shutdown()
             server.server_close()
             app.shutdown()
@@ -161,6 +163,16 @@ def main():
             checks.extend(['factory_copies_stricter_policy', 'real_ui_confirmation_denied', 'file_content_not_read', 'failure_not_success'])
     elif scenario == 'routines':
         with application() as (worker, request, wait, snapshot):
+            # Force the valid interleaving seen in Windows CI: storage commits
+            # the occurrence before the UI notification is put on its queue.
+            # The UI is asynchronous; both outcomes must eventually be observed.
+            original_put = worker.events.put
+            def gated_put(event, *args, **kwargs):
+                if event.kind == 'notice' and 'Pendencia ficticia integrada' in event.text:
+                    notice_ready.set()
+                    assert publish_notice.wait(10)
+                return original_put(event, *args, **kwargs)
+            worker.events.put = gated_put
             value = snapshot()
             assert task_control(request, value, 'load')[0]==200
             value = wait(lambda v:bool(v['tasks'].get('chat_id')) and not v['busy'])
@@ -174,7 +186,12 @@ def main():
             routine = value['tasks']['routines'][0]
             assert routine['status']=='draft' and not requests
             assert request('/api/routine-action', dict(payload, action='authorize', routine_id=routine['id'], spec=None))[0]==200
+            assert notice_ready.wait(10)
             value = wait(lambda v:v['tasks']['routines'][0]['status']=='exhausted')
+            assert not any(e['kind']=='notice' and 'Pendencia ficticia integrada' in e['text'] for e in value['events'])
+            publish_notice.set()
+            value = wait(lambda v:any(e['kind']=='notice' and 'Pendencia ficticia integrada' in e['text'] for e in v['events']))
+            assert value['tasks']['routines'][0]['status']=='exhausted'
             assert sum(e['kind']=='notice' and 'Pendencia ficticia integrada' in e['text'] for e in value['events'])==1
             assert not requests
             checks.extend(['routine_draft_separate_from_authorization', 'authorized_local_reminder_once', 'reminder_without_model'])

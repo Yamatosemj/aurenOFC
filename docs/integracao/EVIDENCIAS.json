@@ -882,13 +882,43 @@
         "pid": 19476,
         "duration_seconds": 73.15
       }
+    },
+    {
+      "directory": "integrated-after-ci",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 4,
+      "failed_cases": [],
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 0,
+        "pid": 18804,
+        "duration_seconds": 12.71
+      }
+    },
+    {
+      "directory": "final-suite-after-ci",
+      "tests": 1081,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 8,
+      "passed": 1073,
+      "failed_cases": [],
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 0,
+        "pid": 21608,
+        "duration_seconds": 73.29
+      }
     }
   ],
   "source_hashes": {
     "tests/test_audit_p1b.py": "41464c1f55f8c69c3a74db86ce9a25fb2d719b7a1fe01ded5e3eee75e75a1661",
     "tests/test_chat_policy_setup.py": "0af4eda90976722365d8c37610d88a1885ed8710289622f151a2ba080ea5dae8",
     "tests/test_integration_consolidated.py": "d27b0f11fa93c97b15339fe894e367f0550b9a4cc6987bac27448a4ccf110db2",
-    "remote_tests/integration_fixture.py": "efd9ecb7eac5465f3e28e62c62d1cf2dd3bf10067d7f8423ca2a975c44942966"
+    "remote_tests/integration_fixture.py": "1362b1045003fe6def2e6532823fa3aa86f3c28d999fff181160d0c879797786"
   },
   "interface": {
     "directory": "ui-consolidated",
@@ -977,5 +1007,24 @@
     }
   ],
   "production_changed_during_preparation": false,
-  "new_paid_api_calls": 0
+  "new_paid_api_calls": 0,
+  "ci_first_attempt": {
+    "run": 39137508131,
+    "sha": "0f36396d671c7a2707cedfba785850a90510d193",
+    "windows": {
+      "passed": 1080,
+      "failed": 1,
+      "skipped": 0,
+      "seconds": 75.15,
+      "failure": "test_consolidated_application_through_local_http[routines]",
+      "cause": "Fixture observed exhausted SQL state before the asynchronous notice reached the UI event queue."
+    },
+    "linux": {
+      "passed": 1037,
+      "failed": 0,
+      "skipped": 44,
+      "seconds": 19.75
+    },
+    "resolution": "Fixture forces that valid interleaving and waits for persisted state and exactly one notice independently; no production change."
+  }
 }

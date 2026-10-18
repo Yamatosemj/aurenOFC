@@ -4,7 +4,7 @@
 
 **Candidata consolidada preparada para teste manual isolado no Windows.** Branch `integracao/prs-153-160-20261018`, criada em worktree separado. Nenhuma alteração ou merge na main; nenhum commit exclusivo das PRs #141/#142 incluído. Nenhuma funcionalidade nova. O CI final Windows/Linux e seu SHA devem ser consultados na PR desta candidata.
 
-Os testes locais terminaram com **1.073 aprovados, zero falhas, oito ignorados e zero avisos**, em **72,34 segundos**, sob supervisor Windows. A execução promoveu avisos de exceção em thread a erro. Os oito ignorados dependem de links simbólicos indisponíveis no ambiente. Os oito controles manuais automatizados da interface também passaram. Isso permite começar a avaliação humana da candidata; não equivale a autorizar merge, produção ou uso de dados pessoais.
+Os testes locais terminaram com **1.073 aprovados, zero falhas, oito ignorados e zero avisos**, em **72,54 segundos**, sob supervisor Windows. A execução promoveu avisos de exceção em thread a erro. Os oito ignorados dependem de links simbólicos indisponíveis no ambiente. Os oito controles manuais automatizados da interface também passaram. Isso permite começar a avaliação humana da candidata; não equivale a autorizar merge, produção ou uso de dados pessoais.
 
 ## Dependências e consolidação
 
@@ -47,6 +47,8 @@ O mapa completo de arquivos em comum e SHAs está em [EVIDENCIAS.json](docs/inte
 A suíte inicial passou 1.069/8 ignorados, porém emitiu sete avisos de falha na decodificação de saída do PowerShell. A reprodução com esses avisos tratados como erro produziu seis falhas nos casos do guard local; o sétimo aviso vinha do teste de UI Automation com controles fictícios. A captura supunha UTF-8 mesmo quando o PowerShell escrevia em outra codificação. Agora stdout/stderr são preservados como bytes; os mesmos marcadores ASCII e códigos de retorno são exigidos. Não há `errors=ignore`, supressão de avisos ou retirada de asserções. Os 17 focados passaram depois, e a suíte final passou sem os avisos.
 
 Primeira execução dos quatro cenários novos: dois passaram/dois falharam por erros da fixture — o modelo fictício tentava ler outro arquivo após a negação e o controlador tentava selecionar conversa antes do idle da carga. A fixture passou a responder a negação sem criar nova proposta e a esperar o estado real de idle. Critérios de persistência/negação não foram afrouxados. Segunda execução: quatro aprovados. Tentativas anteriores preservadas no JSON.
+
+O primeiro CI completo [39137508131](https://github.com/Yamatosemj/aurenOFC/actions/runs/39137508131), no SHA `0f36396`, aprovou Linux (1.037/44 ignorados), mas Windows reprovou o teste novo de rotinas (1.080 aprovados/uma falha). O estado esgotado no banco ficou visível antes de o aviso ser publicado na fila da UI. O teste supunha observação atômica desses dois resultados assíncronos. A fixture agora força essa ordem com eventos controlados e espera estado e aviso separadamente; continua exigindo exatamente um aviso e ausência de repetição após reabrir. Não houve alteração de produção, aumento de timeout ou remoção de asserção para passar. Quatro integrados e a suíte local completa passaram novamente (1.073/8 ignorados, zero avisos, 72,54 s). O primeiro run e suas falhas permanecem registrados; o CI do novo HEAD é a referência para liberação.
 
 ## O que foi comprovado nesta etapa
 
