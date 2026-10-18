@@ -2,7 +2,7 @@
 
 ## Estado para retomada — 18/10/2026
 
-**Fase 0 concluída; Fase 1 implementada e testada localmente, aguardando CI antes da Fase 2. Fases 2 a 5 não iniciadas.** O HEAD `60033fd` da Fase 0 passou no [CI completo final](https://github.com/Yamatosemj/aurenOFC/actions/runs/39100456150): 986 aprovados no Windows e 945 aprovados/41 ignorados no Linux. A Fase 1 usa essa base e estende o TaskManager existente; não cria executor paralelo nem retoma ações automaticamente. Relatório e limites em [FASE_1.md](docs/desenvolvimento/FASE_1.md).
+**Sequência interrompida por segurança: Fase 1 implementada, mas bloqueada no CI Windows. Fases 2 a 5 não iniciadas.** O HEAD `60033fd` da Fase 0 passou no [CI completo final](https://github.com/Yamatosemj/aurenOFC/actions/runs/39100456150): 986 aprovados no Windows e 945 aprovados/41 ignorados no Linux. A Fase 1 usa essa base e estende o TaskManager existente; não cria executor paralelo nem retoma ações automaticamente. Relatório e limites em [FASE_1.md](docs/desenvolvimento/FASE_1.md).
 
 - Branch atual: `desenvolvimento/fase-1-tarefas-persistentes`, derivada de `60033fdbf7ee1636c9ee4bf362a910f01de86f03` da PR #154. A PR de Fase 1 deve usar `desenvolvimento/fase-0-base-auditoria` como base, sem merge à main.
 - Fase 0 e falhas anteriores preservadas em [REVISAO_FINAL.md](docs/desenvolvimento/fase0/REVISAO_FINAL.md), [SUPERVISOR_WINDOWS.md](docs/desenvolvimento/fase0/SUPERVISOR_WINDOWS.md) e seus JSONs. O run `39099859051` falhou; somente a conferência posterior aprovada permitiu avançar.
@@ -14,7 +14,7 @@
 
 1. Conferir novamente main, HEADs, estado e CI das PRs; os hashes abaixo são referências da revisão, não valores permanentes.
 2. Conferir a reconciliação na PR #154: a identificação de caminhos é compartilhada entre permissão e executor; mantém confirmação, retorno estruturado e uma única implementação de abertura. A #152 não deve ser mesclada por cima dessa implementação sem nova revisão.
-3. Conferir o relatório da Fase 1 e o CI do seu HEAD publicado. Só avançar com todos os critérios aprovados; SQLite recuperado não equivale a continuação de execução entregue.
+3. Resolver primeiro a recorrência do encerramento de processos descrita em [BLOQUEIO_CI.md](docs/desenvolvimento/fase1/BLOQUEIO_CI.md). O CI `39101893307` teve 1.012 aprovados/uma falha no Windows e 972 aprovados/41 ignorados no Linux. A PR #155 permanece em rascunho. Conferir o relatório da Fase 1 e o CI do seu HEAD publicado. Só avançar com todos os critérios aprovados; SQLite recuperado não equivale a continuação de execução entregue.
 4. Na Fase 2, auditar PlanBuilder e o ciclo existente, especialmente dados exatos, verificação de resultados, orçamento acumulado e estado dos guards após retomada. Implementar a continuação em branch própria derivada da Fase 1, sem segundo executor nem restauração de aprovações.
 
 Não foi definido orçamento para API paga neste ciclo. Chamadas pagas e ações sensíveis ficam pendentes de autorização e orçamento explícitos. Autorizações Live de investigações anteriores não são orçamento para estas fases.

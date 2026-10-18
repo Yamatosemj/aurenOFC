@@ -60,3 +60,7 @@ Ainda não há interface de lista/retomada (Fase 4), rotina proativa (Fase 3), e
 Os dez testes iniciais falharam antes de existir persistência. As verificações adicionais reproduziram quatro problemas de retomada/concorrência, dois de formato do banco, um de listagem arquivada, dois das fronteiras do Harness e quatro de tipos de checkpoint antes dos ajustes respectivos. Houve também duas falhas de compatibilidade em fixtures antigas de shutdown, corrigidas no código sem relaxar os testes. Todas as execuções preservadas estão em [fase1/RESULTADOS_FASE_1.json](fase1/RESULTADOS_FASE_1.json), com contagens, caminhos das cópias e hashes do código utilizado.
 
 Os testes usam Windows/Python 3.13.15, SQLite e subprocessos reais, mas somente perfil, arquivos e dados fictícios. As oito exclusões da suíte completa são testes de links simbólicos não permitidos no ambiente local. Rede/modelo, dispositivos e programas pessoais não foram usados. O CI no HEAD exato será registrado na PR da fase; nenhum merge à main é autorizado por esses resultados.
+
+## Resultado do CI: fase bloqueada
+
+O CI do código `6f220aab9bf6a0a5aee4488daa0cd6e170c1f144` reprovou no Windows: 1.012 aprovados e uma falha na garantia de término dos processos descendentes do supervisor. Linux: 972 aprovados e 41 ignorados. A recorrência é um risco de segurança; a sequência foi interrompida, sem iniciar a Fase 2. Detalhes e condições de retomada em [BLOQUEIO_CI.md](fase1/BLOQUEIO_CI.md). A entrega está em rascunho na [PR #155](https://github.com/Yamatosemj/aurenOFC/pull/155).
