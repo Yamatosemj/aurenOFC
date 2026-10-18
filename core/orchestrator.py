@@ -90,7 +90,7 @@ class AurenOrchestrator:
         requested_brain: str | None = None,
     ) -> Any:
         cache_key = None
-        if self._cacheable_input(entrada, tool_choice):
+        if not response_id and reasoning_effort == "none" and self._cacheable_input(entrada, tool_choice):
             cache_key = self._cache_key(entrada, requested_brain)
             cached = self.response_cache.get(cache_key)
             if cached is not None:

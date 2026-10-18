@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any, Callable
 import json
 import re
+import time
 
 from core.intent_verification import precisa_verificar, proposta_simples_exata
 from core.utils import normalizar_nome
@@ -68,6 +69,7 @@ def verificar_antes_de_agir(
         rodada=rodada,
         quantidade=len(chamadas),
     )
+    review_started = time.perf_counter()
     try:
         historico_revisor = list(historico)
         pergunta_confirmada = getattr(harness, "_confirmacao_esclarecimento", None)
@@ -92,11 +94,21 @@ def verificar_antes_de_agir(
             rodada,
         )
 
+    review_ms = (time.perf_counter() - review_started) * 1000.0
+    review_usage = getattr(decisao, "metricas_uso", None)
+    trace = getattr(harness, "_trace", None)
+    if trace is not None and review_usage is not None:
+        try:
+            trace.record_model(rodada, review_ms, review_usage)
+        except Exception as exc:
+            write_log("TRACE_ERROR", task_id=harness._task_id, etapa="intent_review", erro=str(exc))
+
     write_log(
         "INTENT_VERIFICATION_RESULT",
         task_id=harness._task_id,
         rodada=rodada,
         decisao=decisao.decisao,
+        **({"uso": review_usage, "latencia_ms": round(review_ms, 3)} if review_usage is not None else {}),
         **({
             "motivo": str(decisao.motivo or "")[:350],
             "propostas": _diagnostico_propostas_bloqueadas(chamadas),

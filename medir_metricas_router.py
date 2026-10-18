@@ -19,10 +19,10 @@ from typing import Any
 
 TS = r"\[\d{4}-\d{2}-\d{2}T[^\]\n]+\]"
 TASK_RE = re.compile(rf"(?ms)^{TS} TASK_START\n.*?(?=^{TS} TASK_START\n|^{TS} CHAT_END\n|\Z)")
-RESPONSE_RE = re.compile(rf"(?ms)^{TS} MODEL_ROUND_RESPONSE\n(.*?)(?=^{TS} [A-Z_]+\n|\Z)")
+RESPONSE_RE = re.compile(rf"(?ms)^{TS} (?:MODEL_ROUND_RESPONSE|INTENT_VERIFICATION_RESULT)\n(.*?)(?=^{TS} [A-Z_]+\n|\Z)")
 FAST_RE = re.compile(rf"(?ms)^{TS} TASK_FAST_PATH\n.*?(?=^{TS} [A-Z_]+\n|\Z)")
 LOCAL_RE = re.compile(rf"(?m)^{TS} TASK_LOCAL_COMPLETION\b")
-TASK_END_RE = re.compile(rf"(?m)^(?P<ts>{TS}) TASK_END\n(?P<body>.*?)(?=^{TS} [A-Z_]+\n|\Z)")
+TASK_END_RE = re.compile(rf"(?ms)^(?P<ts>{TS}) TASK_END\n(?P<body>.*?)(?=^{TS} [A-Z_]+\n|\Z)")
 FLOAT_RE = re.compile(r"^  latencia_ms: ([0-9]+(?:\.[0-9]+)?)$", re.M)
 JSON_FIELD_RE = re.compile(r"^  (uso|router): (.+)$", re.M)
 
@@ -60,6 +60,8 @@ def parse_responses(text: str) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for match in RESPONSE_RE.finditer(text):
         block = match.group(1)
+        if "INTENT_VERIFICATION_RESULT" in match.group(0) and not re.search(r"^  uso:", block, re.M):
+            continue
         usage = _parse_json_field(block, "uso")
         router = _parse_json_field(block, "router")
         round_match = re.search(r"^  rodada: (\d+)$", block, re.M)
@@ -91,6 +93,7 @@ def parse_tasks(text: str) -> list[dict[str, Any]]:
         local = bool(LOCAL_RE.search(block))
         task_end_match = next(TASK_END_RE.finditer(block), None)
         task_end = task_end_match.group("body") if task_end_match else ""
+        status = re.search(r"^  (?:status|estado):\s*([^\n]+)", task_end, re.M)
         tokens = {
             key: sum(row[key] for row in responses)
             for key in ("input_tokens", "output_tokens", "cached_tokens", "cache_write_tokens")
@@ -106,7 +109,7 @@ def parse_tasks(text: str) -> list[dict[str, Any]]:
                 "task_id": task_id,
                 "fast_path": fast,
                 "local_completion": local,
-                "status": task_end.strip().splitlines()[-1].strip() if task_end.strip() else "",
+                "status": status.group(1).strip() if status else "",
                 "model_rounds": len(responses),
                 "tokens": tokens,
                 "custo_estimado_usd": cost,

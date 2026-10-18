@@ -6,6 +6,16 @@ Data: 17/10/2026. Branch: `correcoes-auditoria`.
 
 ## O que foi corrigido
 
+### P3 — AUD-016, 018, 020, 021, 029, 031 e 032
+
+Todos estavam **MANTIDOS**. As nove reproduções falharam antes das correções. A identificação de CSV lê somente a amostra de 16.384 caracteres. O cache não reutiliza uma resposta quando há continuação de outra resposta ou esforço diferente do padrão. A revisão de intenção transmite seus contadores de uso ao registro da tarefa, e o agregador também os reconhece. O contador global é apresentado como do processo, não de um chat.
+
+A documentação deixa de apresentar o override, a recuperação de falhas e o Standby do Chrome como se ainda tivessem os comportamentos antigos. A busca por nome não apresenta arquivos com pontuação zero como correspondência. Os dois temporários de UIA são removidos também em erro de início e timeout. O agregador lê o campo de estado de TASK_END sem misturar o evento seguinte.
+
+**Limite de AUD-020:** os coeficientes de custo existentes continuam estimativas genéricas; não foram escolhidos preços novos nem consultado faturamento. Sem retorno de uso do serviço, tokens desconhecidos não podem ser inventados. As chamadas que falham antes de produzir decisão válida continuam sem uso individualizado no registro da tarefa.
+
+Seleção focada: **54 aprovados**. Suíte ampla: **819 aprovados, zero falhas, oito ignorados, dois casos de voz excluídos**, em 45,02 segundos.
+
 ### P2b — AUD-034 e AUD-035
 
 Ambos estavam **MANTIDOS**. Três reproduções falharam antes de corrigir. Duas verificações que estavam dentro de comentários agora executam de verdade. O teste de raízes restaura a função original capturada antes da substituição e verifica também a recusa de um arquivo fora das raízes permitidas. O testador manual de processos usa o resultado estruturado e exige os códigos corretos de proteção, em vez de chamar métodos de texto nesse resultado.

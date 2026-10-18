@@ -155,7 +155,7 @@ def _detect_type(path: Path, authorization=None) -> tuple[str, str, str | None]:
     if extension == ".csv":
         try:
             with _open_read(path, "r", encoding=_detect_encoding(path, authorization), errors="strict", authorization=authorization) as handle:
-                sample = handle.read()[:16_384]
+                sample = handle.read(16_384)
             if sample.strip():
                 csv.Sniffer().sniff(sample)
                 return "CSV", "extensao+estrutura_csv", "text/csv"

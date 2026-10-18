@@ -176,13 +176,13 @@ O CI hospedado da PR deve ser conferido pelo SHA em [AUREN_STATE.md](../../AUREN
 
 | Pendência | Evidência e próximo teste necessário |
 | --- | --- |
-| Override bloqueado na fachada e identidade fixa no prompt | Inicialização reproduzida; corrigir em PR de runtime com teste de entrada, não só config |
-| Build sem ID faz busca global | Reprodução local; decidir contrato de ausência de ID e testar todas as seções |
-| Cache direto ignora identidade de continuação | Reprodução com provider falso; revisar chave/elegibilidade antes de ampliar uso |
+| Override da fachada e do prompt | Configuração efetiva validada por testes de entrada; aceitação pela API depende do modelo e da conta |
+| Contexto sem identidade de chat | Não recupera conversas ou estratégias; fatos globais mantêm seu contrato próprio |
+| Cache direto em continuação | Desabilitado quando há identidade de resposta anterior ou esforço diferente do padrão |
 | Memória sem proveniência estruturada | Leitura do esquema/fluxo; avaliar cenário de reintrodução de conteúdo externo entre tarefas |
 | Esquecimento parcial e filtro lexical | Semântica implementada; eventual retenção/eliminação completa exige escopo próprio |
-| Gravações recusadas podem ficar sem diagnóstico | Retorno ok=False não inspecionado pelo wrapper; testar observabilidade |
-| Restrições perdidas por cortes/continuação | Contexto inicial não é reenviado integralmente; validar tarefa longa com restrição relevante |
+| Gravações recusadas | Recusas explícitas geram diagnóstico seguro; trabalhos de estratégia recusados falham |
+| Restrições e orçamento de contexto | Contexto acompanha continuações, mas permanece sujeito ao teto de caracteres; tarefa longa ainda exige validação real |
 
 Ao mudar memória, preserve distinção entre fatos globais e chats, migração de bancos antigos, confirmação das tools e tratamento de conteúdo não confiável. Ao mudar provider/modelo, revise fachada, prompt, contrato de resposta, tratamento de falhas, cache e estimativa de uso. Ao mudar budgets, teste conteúdo efetivamente enviado, não apenas tamanho do banco ou existência de registros.
 

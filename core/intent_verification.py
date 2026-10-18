@@ -5,7 +5,7 @@ PermissionManager, confirmacoes ou evidencia do resultado apos a execucao.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 import re
 from typing import Any, Sequence
@@ -95,6 +95,7 @@ class IntentDecision:
     decisao: str
     motivo: str
     pergunta: str = ""
+    metricas_uso: dict[str, int] | None = field(default=None, compare=False, repr=False)
 
 
 def precisa_verificar(chamadas: Sequence[Any]) -> bool:

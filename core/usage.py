@@ -64,7 +64,7 @@ def registrar_uso(resposta):
 
 def mostrar_uso():
     print(
-        "[sessao: "
+        "[processo: "
         f"entrada={session_input_tokens}, "
         f"saida={session_output_tokens}, "
         f"cache={session_cached_tokens}, "

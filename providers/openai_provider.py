@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 import os
+from dataclasses import replace
 
 from config import CACHE_KEY, MODEL
 from core.prompt import instrucoes
@@ -80,4 +81,5 @@ class OpenAIProvider:
             store=False,
         )
         usage.registrar_uso(resposta)
-        return interpretar_decisao(getattr(resposta, "output_text", ""))
+        decisao = interpretar_decisao(getattr(resposta, "output_text", ""))
+        return replace(decisao, metricas_uso=usage.extrair_metricas_uso(resposta))

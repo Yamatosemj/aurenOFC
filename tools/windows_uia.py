@@ -789,6 +789,7 @@ def _executar_ui_automation(operacao, dados):
     ).decode("ascii")
     output_path = None
     script_path = None
+    processo = None
     try:
         output_path = tempfile.NamedTemporaryFile(
             mode="wb",
@@ -837,6 +838,11 @@ def _executar_ui_automation(operacao, dados):
         if script_path:
             try:
                 os.unlink(script_path)
+            except OSError:
+                pass
+        if processo is None and output_path:
+            try:
+                os.unlink(output_path)
             except OSError:
                 pass
 
