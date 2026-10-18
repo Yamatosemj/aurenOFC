@@ -1,0 +1,270 @@
+{
+  "data": "2026-10-18",
+  "sha_base": "60033fdbf7ee1636c9ee4bf362a910f01de86f03",
+  "codigo_local_antes_do_commit": true,
+  "python": "3.13.15",
+  "metodo": "SQLite, travas e subprocessos reais; perfis/arquivos ficticios. Modelo, confirmacao positiva e efeitos das ferramentas simulados; negativa de permissao real no Dispatcher.",
+  "resultado_final": {
+    "full_passed": 1005,
+    "full_failed": 0,
+    "full_skipped": 8,
+    "full_seconds": 50.33,
+    "focused_passed": 47,
+    "new_persistence_cases": 27
+  },
+  "limites": "Checkpoint retomado nao executa a continuacao. Interface, planejamento executavel e proatividade ficam para as proximas fases. Nao houve API paga ou Live do Auren.",
+  "execucoes": [
+    {
+      "execucao": "phase1-persistence-red",
+      "pasta_local": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase1-persistence-red",
+      "tests": 10,
+      "failures": 10,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 0,
+      "sha256_codigo": {
+        "core/task_manager.py": "2875dee4052c2f07c2e5beb0f7f7af9d0e3a79ffd62203750c1f278840d6d50e",
+        "core/task_persistence.py": null,
+        "core/harness.py": "f57d7bee8c7686bd5101ed86d7005a0604d2fdf2f0b01fa7fd3b7f29ba3bcddc"
+      }
+    },
+    {
+      "execucao": "phase1-persistence-first",
+      "pasta_local": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase1-persistence-first",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 18,
+      "sha256_codigo": {
+        "core/task_manager.py": "f67743d0b0103ccb206e812cc42c51ff7580d5c9077d2507a776eced82fc49a7",
+        "core/task_persistence.py": "508ea1f1e3603e06c53bdfddc696173dfb41c2d4d476fd364b9cdb76161199f0",
+        "core/harness.py": "f57d7bee8c7686bd5101ed86d7005a0604d2fdf2f0b01fa7fd3b7f29ba3bcddc"
+      }
+    },
+    {
+      "execucao": "phase1-persistence-edges-red",
+      "pasta_local": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase1-persistence-edges-red",
+      "tests": 15,
+      "failures": 4,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 11,
+      "sha256_codigo": {
+        "core/task_manager.py": "f67743d0b0103ccb206e812cc42c51ff7580d5c9077d2507a776eced82fc49a7",
+        "core/task_persistence.py": "508ea1f1e3603e06c53bdfddc696173dfb41c2d4d476fd364b9cdb76161199f0",
+        "core/harness.py": "f57d7bee8c7686bd5101ed86d7005a0604d2fdf2f0b01fa7fd3b7f29ba3bcddc"
+      }
+    },
+    {
+      "execucao": "phase1-persistence-edges-green",
+      "pasta_local": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase1-persistence-edges-green",
+      "tests": 29,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 27,
+      "sha256_codigo": {
+        "core/task_manager.py": "c482a1c8ae5fb6a73f90d94c253cc5d065dc706f7af9dd7753d5751601723768",
+        "core/task_persistence.py": "2896aa56b75856e7ceb81d63448f9bc53a230a3fa4e366521a975c2490fd26fe",
+        "core/harness.py": "9fb48b3d461cba4c6d4cbad1bb1b96e7a890832f782c79855816e85605b55e69"
+      }
+    },
+    {
+      "execucao": "phase1-persistence-integration",
+      "pasta_local": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase1-persistence-integration",
+      "tests": 31,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 31,
+      "sha256_codigo": {
+        "core/task_manager.py": "c482a1c8ae5fb6a73f90d94c253cc5d065dc706f7af9dd7753d5751601723768",
+        "core/task_persistence.py": "2896aa56b75856e7ceb81d63448f9bc53a230a3fa4e366521a975c2490fd26fe",
+        "core/harness.py": "a81c3768fba692a6cbf46ad2be7981d91d84710a5a29a4169da2fbf2fb716369"
+      }
+    },
+    {
+      "execucao": "phase1-database-format-red",
+      "pasta_local": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase1-database-format-red",
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 0,
+      "sha256_codigo": {
+        "core/task_manager.py": "c482a1c8ae5fb6a73f90d94c253cc5d065dc706f7af9dd7753d5751601723768",
+        "core/task_persistence.py": "2896aa56b75856e7ceb81d63448f9bc53a230a3fa4e366521a975c2490fd26fe",
+        "core/harness.py": "a81c3768fba692a6cbf46ad2be7981d91d84710a5a29a4169da2fbf2fb716369"
+      }
+    },
+    {
+      "execucao": "phase1-persistence-focused-final",
+      "pasta_local": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase1-persistence-focused-final",
+      "tests": 33,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 33,
+      "sha256_codigo": {
+        "core/task_manager.py": "c482a1c8ae5fb6a73f90d94c253cc5d065dc706f7af9dd7753d5751601723768",
+        "core/task_persistence.py": "455f19a0ab627f4820759d4b0fa5ea7fcc7c98fad79600d85c27cc9335df075b",
+        "core/harness.py": "a81c3768fba692a6cbf46ad2be7981d91d84710a5a29a4169da2fbf2fb716369"
+      }
+    },
+    {
+      "execucao": "phase1-persistence-full",
+      "pasta_local": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase1-persistence-full",
+      "tests": 1005,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 8,
+      "passed": 997,
+      "sha256_codigo": {
+        "core/task_manager.py": "c482a1c8ae5fb6a73f90d94c253cc5d065dc706f7af9dd7753d5751601723768",
+        "core/task_persistence.py": "455f19a0ab627f4820759d4b0fa5ea7fcc7c98fad79600d85c27cc9335df075b",
+        "core/harness.py": "a81c3768fba692a6cbf46ad2be7981d91d84710a5a29a4169da2fbf2fb716369"
+      }
+    },
+    {
+      "execucao": "phase1-archive-list-red",
+      "pasta_local": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase1-archive-list-red",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 0,
+      "sha256_codigo": {
+        "core/task_manager.py": "c482a1c8ae5fb6a73f90d94c253cc5d065dc706f7af9dd7753d5751601723768",
+        "core/task_persistence.py": "455f19a0ab627f4820759d4b0fa5ea7fcc7c98fad79600d85c27cc9335df075b",
+        "core/harness.py": "a81c3768fba692a6cbf46ad2be7981d91d84710a5a29a4169da2fbf2fb716369"
+      }
+    },
+    {
+      "execucao": "phase1-persistence-final-focused",
+      "pasta_local": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase1-persistence-final-focused",
+      "tests": 34,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 34,
+      "sha256_codigo": {
+        "core/task_manager.py": "0c858fa2c5f995421f8bae33b02628b602751363a24ada7d03a9427689a45d01",
+        "core/task_persistence.py": "4f22db287e85ede70216052ca2fe24f8367cd553aac8d4a1987ed62690a47172",
+        "core/harness.py": "a81c3768fba692a6cbf46ad2be7981d91d84710a5a29a4169da2fbf2fb716369"
+      }
+    },
+    {
+      "execucao": "phase1-persistence-final-full",
+      "pasta_local": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase1-persistence-final-full",
+      "tests": 1006,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 8,
+      "passed": 998,
+      "sha256_codigo": {
+        "core/task_manager.py": "0c858fa2c5f995421f8bae33b02628b602751363a24ada7d03a9427689a45d01",
+        "core/task_persistence.py": "4f22db287e85ede70216052ca2fe24f8367cd553aac8d4a1987ed62690a47172",
+        "core/harness.py": "a81c3768fba692a6cbf46ad2be7981d91d84710a5a29a4169da2fbf2fb716369"
+      }
+    },
+    {
+      "execucao": "phase1-harness-boundaries-red",
+      "pasta_local": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase1-harness-boundaries-red",
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 0,
+      "sha256_codigo": {
+        "core/task_manager.py": "0c858fa2c5f995421f8bae33b02628b602751363a24ada7d03a9427689a45d01",
+        "core/task_persistence.py": "4f22db287e85ede70216052ca2fe24f8367cd553aac8d4a1987ed62690a47172",
+        "core/harness.py": "a81c3768fba692a6cbf46ad2be7981d91d84710a5a29a4169da2fbf2fb716369"
+      }
+    },
+    {
+      "execucao": "phase1-harness-boundaries-green",
+      "pasta_local": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase1-harness-boundaries-green",
+      "tests": 42,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 42,
+      "sha256_codigo": {
+        "core/task_manager.py": "7f21cd6678356c5d2e1f43c730cb5ce947a726f7a2fa118b7237796d88ed7c59",
+        "core/task_persistence.py": "4f22db287e85ede70216052ca2fe24f8367cd553aac8d4a1987ed62690a47172",
+        "core/harness.py": "1b8014df7c064379e86148b7354985a6897d481fc03c5e53a95770846249aa8d"
+      }
+    },
+    {
+      "execucao": "phase1-checkpoint-types-red",
+      "pasta_local": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase1-checkpoint-types-red",
+      "tests": 4,
+      "failures": 4,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 0,
+      "sha256_codigo": {
+        "core/task_manager.py": "7f21cd6678356c5d2e1f43c730cb5ce947a726f7a2fa118b7237796d88ed7c59",
+        "core/task_persistence.py": "4f22db287e85ede70216052ca2fe24f8367cd553aac8d4a1987ed62690a47172",
+        "core/harness.py": "1b8014df7c064379e86148b7354985a6897d481fc03c5e53a95770846249aa8d"
+      }
+    },
+    {
+      "execucao": "phase1-persistence-validated",
+      "pasta_local": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase1-persistence-validated",
+      "tests": 46,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 46,
+      "sha256_codigo": {
+        "core/task_manager.py": "736c15127ab7b1fcc3b340227722fa77dfb4a6318e343ae934ef116c2abf9a30",
+        "core/task_persistence.py": "4f22db287e85ede70216052ca2fe24f8367cd553aac8d4a1987ed62690a47172",
+        "core/harness.py": "1b8014df7c064379e86148b7354985a6897d481fc03c5e53a95770846249aa8d"
+      }
+    },
+    {
+      "execucao": "phase1-persistence-validated-full",
+      "pasta_local": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase1-persistence-validated-full",
+      "tests": 1012,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 8,
+      "passed": 1004,
+      "sha256_codigo": {
+        "core/task_manager.py": "736c15127ab7b1fcc3b340227722fa77dfb4a6318e343ae934ef116c2abf9a30",
+        "core/task_persistence.py": "4f22db287e85ede70216052ca2fe24f8367cd553aac8d4a1987ed62690a47172",
+        "core/harness.py": "1b8014df7c064379e86148b7354985a6897d481fc03c5e53a95770846249aa8d"
+      }
+    },
+    {
+      "execucao": "phase1-final-gates",
+      "pasta_local": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase1-final-gates",
+      "tests": 47,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 47,
+      "sha256_codigo": {
+        "core/task_manager.py": "736c15127ab7b1fcc3b340227722fa77dfb4a6318e343ae934ef116c2abf9a30",
+        "core/task_persistence.py": "4f22db287e85ede70216052ca2fe24f8367cd553aac8d4a1987ed62690a47172",
+        "core/harness.py": "1b8014df7c064379e86148b7354985a6897d481fc03c5e53a95770846249aa8d"
+      }
+    },
+    {
+      "execucao": "phase1-final-gates-full",
+      "pasta_local": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase1-final-gates-full",
+      "tests": 1013,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 8,
+      "passed": 1005,
+      "sha256_codigo": {
+        "core/task_manager.py": "736c15127ab7b1fcc3b340227722fa77dfb4a6318e343ae934ef116c2abf9a30",
+        "core/task_persistence.py": "4f22db287e85ede70216052ca2fe24f8367cd553aac8d4a1987ed62690a47172",
+        "core/harness.py": "1b8014df7c064379e86148b7354985a6897d481fc03c5e53a95770846249aa8d"
+      }
+    }
+  ]
+}
