@@ -49,6 +49,13 @@ class BasicAccounting(ctypes.Structure):
                  ("TotalPageFaultCount", "TotalProcesses", "ActiveProcesses", "TotalTerminatedProcesses")]
 
 
+class ProcessIdList(ctypes.Structure):
+    # The Job already restricts its entire tree to 64 active processes.
+    _fields_ = [("NumberOfAssignedProcesses", wintypes.DWORD),
+                ("NumberOfProcessIdsInList", wintypes.DWORD),
+                ("ProcessIdList", ctypes.c_size_t * 64)]
+
+
 class WindowsJob:
     def __init__(self):
         if sys.platform != "win32":
@@ -61,6 +68,9 @@ class WindowsJob:
             "TerminateJobObject": ([wintypes.HANDLE, wintypes.UINT], wintypes.BOOL),
             "QueryInformationJobObject": ([wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD, ctypes.c_void_p], wintypes.BOOL),
             "ResumeThread": ([wintypes.HANDLE], wintypes.DWORD),
+            "OpenProcess": ([wintypes.DWORD, wintypes.BOOL, wintypes.DWORD], wintypes.HANDLE),
+            "IsProcessInJob": ([wintypes.HANDLE, wintypes.HANDLE, ctypes.POINTER(wintypes.BOOL)], wintypes.BOOL),
+            "WaitForSingleObject": ([wintypes.HANDLE, wintypes.DWORD], wintypes.DWORD),
             "CloseHandle": ([wintypes.HANDLE], wintypes.BOOL),
         }
         for name, (args, result) in signatures.items():
@@ -85,10 +95,47 @@ class WindowsJob:
             self.handle = None
 
     def terminate(self):
-        if not self.api.TerminateJobObject(self.handle, 124):
-            raise ctypes.WinError(ctypes.get_last_error())
+        processes = []
+        try:
+            try:
+                listing = ProcessIdList()
+                if not self.api.QueryInformationJobObject(
+                        self.handle, 3, ctypes.byref(listing), ctypes.sizeof(listing), None):
+                    raise ctypes.WinError(ctypes.get_last_error())
+                if listing.NumberOfAssignedProcesses > listing.NumberOfProcessIdsInList:
+                    raise RuntimeError("Incomplete Job process list")
+                for pid in listing.ProcessIdList[:listing.NumberOfProcessIdsInList]:
+                    # Hold object identity through termination; never kill by PID.
+                    process = self.api.OpenProcess(0x1000 | 0x100000, False, pid)
+                    if not process:
+                        if ctypes.get_last_error() == 87:  # Already exited.
+                            continue
+                        raise ctypes.WinError(ctypes.get_last_error())
+                    processes.append(process)
+                    member = wintypes.BOOL()
+                    if not self.api.IsProcessInJob(process, self.handle, ctypes.byref(member)):
+                        raise ctypes.WinError(ctypes.get_last_error())
+                    if not member.value:
+                        raise RuntimeError("Job process identity changed")
+            finally:
+                # Enumeration failure must never skip containment cleanup.
+                if not self.api.TerminateJobObject(self.handle, 124):
+                    raise ctypes.WinError(ctypes.get_last_error())
+            deadline = time.monotonic() + 5.0
+            for process in processes:
+                state = self.api.WaitForSingleObject(
+                    process, max(0, int((deadline - time.monotonic()) * 1000)))
+                if state == 258:
+                    raise TimeoutError("Job process termination not confirmed")
+                if state != 0:
+                    raise ctypes.WinError(ctypes.get_last_error())
+            self._wait_empty(deadline)
+        finally:
+            for process in processes:
+                self.api.CloseHandle(process)
+
+    def _wait_empty(self, deadline):
         # Termination is asynchronous; waiting only for the parent is insufficient.
-        deadline = time.monotonic() + 5.0
         while True:
             accounting = BasicAccounting()
             if not self.api.QueryInformationJobObject(

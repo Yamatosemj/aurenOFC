@@ -64,3 +64,5 @@ Os testes usam Windows/Python 3.13.15, SQLite e subprocessos reais, mas somente 
 ## Resultado do CI: fase bloqueada
 
 O CI do código `6f220aab9bf6a0a5aee4488daa0cd6e170c1f144` reprovou no Windows: 1.012 aprovados e uma falha na garantia de término dos processos descendentes do supervisor. Linux: 972 aprovados e 41 ignorados. A recorrência é um risco de segurança; a sequência foi interrompida, sem iniciar a Fase 2. Detalhes e condições de retomada em [BLOQUEIO_CI.md](fase1/BLOQUEIO_CI.md). A entrega está em rascunho na [PR #155](https://github.com/Yamatosemj/aurenOFC/pull/155).
+
+O proprietário autorizou resolver o bloqueio e continuar. A correção adicional e seus limites estão em [CORRECAO_SUPERVISOR.md](fase1/CORRECAO_SUPERVISOR.md); o resultado reprovado permanece preservado. O avanço exige a aprovação do CI final.
