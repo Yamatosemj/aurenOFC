@@ -1,5 +1,7 @@
 # Auren
 
+> **Candidata de estabilização sobre #162:** [avisos persistentes no Chrome, validação offline e falhas encontradas com API real](docs/estabilizacao/AVISOS_DURAVEIS.md). Sem ferramentas novas de timer/lembrete pelo chat; aprovação geral da IA continua pendente.
+
 > **Candidata de integração #153–#160:** [relatório e evidências](RELATORIO_INTEGRACAO.md) · [como testar no Windows em pasta separada](TESTE_MANUAL_WINDOWS.md). Sem merge na main; sem Electron/#141 e histórico/#142.
 
 Assistente desktop/voz para Windows, versão técnica **V47**, usando o modelo configurado em `config.py` (snapshot atual: `gpt-5.6-luna`).

@@ -1,0 +1,97 @@
+{
+  "model": "gpt-5.6-luna",
+  "max_calls": 8,
+  "max_usd": 0.5,
+  "calls": [
+    {
+      "number": 1,
+      "status": "received",
+      "input_token_bound": 42230,
+      "max_output_tokens": 800,
+      "upper_usd": 0.0384,
+      "kind": "response",
+      "tokens": {
+        "input_tokens": 6639,
+        "output_tokens": 17,
+        "cached_tokens": 0,
+        "cache_write_tokens": 6636,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00168
+    },
+    {
+      "number": 2,
+      "status": "received",
+      "input_token_bound": 42554,
+      "max_output_tokens": 800,
+      "upper_usd": 0.0384,
+      "kind": "response",
+      "tokens": {
+        "input_tokens": 6715,
+        "output_tokens": 39,
+        "cached_tokens": 6447,
+        "cache_write_tokens": 265,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00024258999999999997
+    },
+    {
+      "number": 3,
+      "status": "received",
+      "input_token_bound": 43568,
+      "max_output_tokens": 800,
+      "upper_usd": 0.0384,
+      "kind": "response",
+      "tokens": {
+        "input_tokens": 6909,
+        "output_tokens": 21,
+        "cached_tokens": 6712,
+        "cache_write_tokens": 194,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00020853999999999998
+    },
+    {
+      "number": 4,
+      "status": "received",
+      "input_token_bound": 43683,
+      "max_output_tokens": 800,
+      "upper_usd": 0.0384,
+      "kind": "response",
+      "tokens": {
+        "input_tokens": 7023,
+        "output_tokens": 21,
+        "cached_tokens": 6447,
+        "cache_write_tokens": 573,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00029798999999999993
+    },
+    {
+      "number": 5,
+      "status": "received",
+      "input_token_bound": 43044,
+      "max_output_tokens": 800,
+      "upper_usd": 0.0384,
+      "kind": "response",
+      "tokens": {
+        "input_tokens": 6845,
+        "output_tokens": 32,
+        "cached_tokens": 6447,
+        "cache_write_tokens": 395,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00026669
+    }
+  ],
+  "estimated_usd": 0.00269581,
+  "reserved_upper_usd": 0.19199999999999998,
+  "billing_confirmed": false,
+  "rates_per_million": {
+    "input": 0.2,
+    "cached": 0.02,
+    "cache_write": 0.25,
+    "output": 1.2
+  },
+  "source": "https://developers.openai.com/api/docs/pricing"
+}

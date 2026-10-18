@@ -1,0 +1,78 @@
+{
+  "cases": [
+    {
+      "name": "real_greeting_has_no_pending_clarification",
+      "passed": true,
+      "answer": "Olá, Victor! Sou o Auren. Como posso ajudar?",
+      "task_id": "20261018-135647-946989-738eec",
+      "state": "completed",
+      "objective": "ola auren",
+      "model_calls": 1,
+      "model_limit": 2,
+      "steps": [],
+      "api_calls_so_far": 1
+    },
+    {
+      "name": "new_goal_uses_real_file_evidence_and_persists_state",
+      "passed": true,
+      "answer": "O arquivo contém:\n\n`CODIGO_FICTICIO_Z73: 19 itens.`",
+      "task_id": "20261018-135653-943749-0605b6",
+      "state": "completed",
+      "objective": "Leia \"../profile/Documents/x.txt\".",
+      "model_calls": 2,
+      "model_limit": 3,
+      "steps": [
+        {
+          "tool": "ler_arquivo",
+          "success": true,
+          "result": "{\"ok\":true,\"mensagem\":\"Conteudo lido de x.txt.\",\"conteudo_nao_confiavel\":true,\"dados\":{\"file_content\":{\"formato\":\"txt\",\"encoding\":\"utf-8\",\"inicio\":0,\"limite_caracteres\":20000,\"conteudo\":\"CODIGO_FICTICIO_Z73: 19 itens.\",\"vazio\":false,\"truncado\":false,\"proximo_inicio\":null},\"arquivo\":{\"nome\":\"x.txt\",\"caminho\":\"C:\\\\Windows\\\\Temp\\\\auren-integracao-20261018-4c38\\\\notifications-live-authorized\\\\profile\\\\Documents\\\\x.txt\",\"tamanho_bytes\":30},\"proxima_leitura\":null}}"
+        }
+      ],
+      "api_calls_so_far": 3
+    },
+    {
+      "name": "real_model_in_bounded_routine",
+      "passed": false,
+      "events": [
+        {
+          "routine_id": "4db69a5d47944232a0dcbbd59d78e4d9",
+          "kind": "completed",
+          "text": "Leia \"../profile/Documents/x.txt\" com inicio=0 e limite_caracteres=200.",
+          "task_id": "20261018-135657-767156-7e3e27"
+        }
+      ],
+      "state": "completed",
+      "model_calls": 1,
+      "steps": [],
+      "pending_notice_count": 1
+    },
+    {
+      "name": "missing_chat_reminder_is_not_claimed_as_created",
+      "passed": false,
+      "answer": "A proposta esta fora da rotina autorizada, revogada ou expirada. Nenhuma acao desta rodada foi executada.",
+      "task_id": "20261018-135659-943748-0c5058",
+      "state": "failed",
+      "objective": "Crie um lembrete para estudar daqui a 10 minutos sem abrir aplicativos nem navegar.",
+      "model_calls": 1,
+      "model_limit": 2,
+      "steps": [],
+      "api_calls_so_far": 5
+    }
+  ],
+  "passed": 2,
+  "failed": 2,
+  "calls": 5,
+  "estimated_usd": 0.00269581,
+  "reserved_upper_usd": 0.19199999999999998,
+  "billing_confirmed": false,
+  "model": "gpt-5.6-luna",
+  "confirmation_requests_denied": [],
+  "persistent_states_reopened": {
+    "20261018-135659-943748-0c5058": "failed",
+    "20261018-135657-767156-7e3e27": "completed",
+    "20261018-135653-943749-0605b6": "completed",
+    "20261018-135647-946989-738eec": "completed"
+  },
+  "personal_effects": 0,
+  "limitation": "No chat reminder/timer tool exists; routine registered explicitly by fixture, not by chat."
+}
