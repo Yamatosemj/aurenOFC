@@ -85,7 +85,7 @@ Todos os itens abaixo foram relidos e permanecem presentes; não são declarados
 | AUD-008 | Corrigido na continuação autorizada; veja a atualização abaixo |
 | AUD-013 | Corrigido na continuação autorizada: alternativa diferente passa pela política normal |
 | AUD-017 | Corrigido na continuação autorizada |
-| AUD-019 | Prazos de retenção e alcance da exclusão exigem decisão do proprietário |
+| AUD-019 | Política e limpeza manual por classe implementadas, sem execução em dados reais |
 | AUD-022 | Corrigido na continuação autorizada: contexto recuperado exige confirmação para efeitos externos |
 | AUD-024 | Corrigido na continuação autorizada, com limites físicos descritos abaixo |
 | AUD-027 | Corrigido na continuação autorizada; veja a atualização abaixo |
@@ -194,3 +194,11 @@ Três reproduções válidas falharam antes. Uma tentativa anterior foi impedida
 MANTIDO na releitura e corrigido no ciclo normal do modelo. Depois de um veto semântico, o Auren pode propor uma única alternativa diferente, se ainda houver rodadas disponíveis. A ação vetada não é executada e não pode reaparecer com argumentos equivalentes. A alternativa passa novamente pelo revisor e pelo caminho normal de permissões. Outro veto, repetição ou ausência de alternativa encerra sem declarar sucesso. Não se reinicia o orçamento de ações.
 
 Decisão adotada dentro da autorização para continuar: um replanejamento, nunca aprovação automática. Atalhos locais vetados continuam encerrando imediatamente; esta mudança trata o ciclo do modelo usado no achado Live. Quatro reproduções falharam antes e um controle passou. Depois foram 63 testes focados aprovados e suíte completa com 943 aprovados, zero falhas e oito ignorados (48,65 segundos; `veto-replan-full/result.xml`). Modelo e ferramentas eram fictícios.
+
+## Continuação autorizada — AUD-019
+
+MANTIDO na releitura e tratado com política explícita e uma limpeza manual comum às classes de dados. Decisão adotada: conversas por 30 dias, estratégias por 90, rastros concluídos e registros por 30, capturas por sete; fatos salvos até esquecimento explícito. Nada é apagado automaticamente. O comando mostra as quantidades primeiro e só remove com `--aplicar`, numa raiz indicada pelo proprietário e com o Auren fechado. Veja [RETENCAO_DADOS.md](docs/RETENCAO_DADOS.md).
+
+Esquecer um fato agora informa que conversas e outras cópias não foram apagadas. A limpeza recusa links e junctions, preserva fatos e tarefas sem término e remove os detalhes dos rastros vencidos. Não apaga backups, OneDrive ou todas as ocorrências de uma frase; não promete apagamento seguro do disco nem proteção universal contra troca hostil de diretórios.
+
+Duas reproduções falharam antes. Depois, 31 testes focados passaram; a suíte completa desta etapa passou com 948 aprovados, zero falhas e oito ignorados em 50,09 segundos (`retention-full-final/result.xml`). Apenas o arquivo ainda vermelho da etapa seguinte, AUD-020, ficou fora dessa seleção. Uma seleção inicial apontou para um arquivo de teste inexistente e não executou casos; a seleção foi corrigida. Os testes usaram banco e arquivos fictícios; nenhuma limpeza real foi executada.

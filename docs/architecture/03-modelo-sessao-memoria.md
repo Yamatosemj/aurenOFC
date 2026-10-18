@@ -181,8 +181,8 @@ O CI hospedado da PR deve ser conferido pelo SHA em [AUREN_STATE.md](../../AUREN
 | Override da fachada e do prompt | Configuração efetiva validada por testes de entrada; aceitação pela API depende do modelo e da conta |
 | Contexto sem identidade de chat | Não recupera conversas ou estratégias; fatos globais mantêm seu contrato próprio |
 | Cache direto em continuação | Desabilitado quando há identidade de resposta anterior ou esforço diferente do padrão |
-| Memória sem proveniência estruturada | Leitura do esquema/fluxo; avaliar cenário de reintrodução de conteúdo externo entre tarefas |
-| Esquecimento parcial e filtro lexical | Semântica implementada; eventual retenção/eliminação completa exige escopo próprio |
+| Contexto recuperado e origem | Seções recuperadas rearmam a confirmação de efeitos externos; teste com duas tarefas fictícias, sem ataque contra modelo real |
+| Esquecimento parcial e retenção | A ferramenta informa seu alcance; limpeza manual por classe em [RETENCAO_DADOS.md](../RETENCAO_DADOS.md), sem exclusão automática ou de backups |
 | Gravações recusadas | Recusas explícitas geram diagnóstico seguro; trabalhos de estratégia recusados falham |
 | Restrições e orçamento de contexto | Contexto acompanha continuações, mas permanece sujeito ao teto de caracteres; tarefa longa ainda exige validação real |
 
