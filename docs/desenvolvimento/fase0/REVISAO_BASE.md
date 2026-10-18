@@ -1,6 +1,6 @@
 # Fase 0 — revisão da base e das PRs #153 e #152
 
-Data: 18/10/2026. **Atualização: reconciliação autorizada e implementada na PR #154; F0-SEG-001 resolvido nos testes.** A revisão integral restante da #153 continua pendente, e a Fase 1 não foi iniciada. O registro da descoberta original foi preservado abaixo.
+Data: 18/10/2026. **Atualização: reconciliação autorizada e implementada na PR #154; F0-SEG-001 resolvido nos testes.** A revisão das alterações restantes foi concluída em [REVISAO_FINAL.md](REVISAO_FINAL.md), com limites explícitos. O registro da descoberta original foi preservado abaixo.
 
 ## Reconciliação após autorização do proprietário
 
@@ -10,7 +10,7 @@ A identificação de caminho foi concentrada em `core/utils.py::caminho_explicit
 
 Antes da correção, a seleção ampliada apresentou **10 falhas e cinco aprovações**. Depois, a seleção focada passou com **89 aprovados**. Suíte completa: **974 aprovados, zero falhas, oito ignorados**, em **49,79 segundos**. Nenhum teste foi marcado como falha esperada ou teve sua exigência reduzida. A seleção inclui recusa, confirmação positiva exclusivamente simulada, caminho exato, aspas, arquivo ausente, diretório, extensão inválida e falha de inicialização. `Popen` e efeitos são simulados; nenhum programa real foi executado e nenhuma confirmação real foi aprovada automaticamente.
 
-Evidência local em [RESULTADOS_RECONCILIACAO.json](RESULTADOS_RECONCILIACAO.json). Não houve API paga, Live ou alteração de main. Essa correção resolve a divergência examinada; o restante da revisão integral da #153 é um trabalho pendente da mesma Fase 0, antes de avançar.
+Evidência local em [RESULTADOS_RECONCILIACAO.json](RESULTADOS_RECONCILIACAO.json). Não houve API paga, Live ou alteração de main. Essa correção resolveu a divergência examinada; a revisão restante foi posteriormente encerrada no documento final, antes do avanço.
 
 ## Registro da revisão inicial — antes da reconciliação
 
