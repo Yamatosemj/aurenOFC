@@ -137,6 +137,8 @@ Não transforme esta lista em nova política. A enumeração exata de alvos, tec
 
 ## 6. Orçamento, anti-loop e origem não confiável
 
+AUD-013 (correção candidata): a trava de falhas iguais compara a assinatura da ação solicitada com a que falhou. Uma alternativa não é recusada por esse contador sozinho; continuam valendo três falhas consecutivas, orçamento total, política e confirmação de cada ação.
+
 | Guarda / contador | Regra efetiva |
 | --- | --- |
 | `max_actions=10` | Limite padrão **por tarefa** sobre tentativas das capacidades em `COUNTED_CAPABILITIES`. A verificação ocorre antes da autorização; uma tentativa contável negada também pode consumir orçamento. |

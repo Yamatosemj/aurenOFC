@@ -83,7 +83,7 @@ Todos os itens abaixo foram relidos e permanecem presentes; não são declarados
 | Item | Motivo |
 | --- | --- |
 | AUD-008 | Corrigido na continuação autorizada; veja a atualização abaixo |
-| AUD-013 | A regra após falhas repetidas exige decidir entre parada global e tentativa de alternativa |
+| AUD-013 | Corrigido na continuação autorizada: alternativa diferente passa pela política normal |
 | AUD-017 | Corrigido na continuação autorizada |
 | AUD-019 | Prazos de retenção e alcance da exclusão exigem decisão do proprietário |
 | AUD-022 | Origem de conteúdo lembrado continua sem transporte estruturado; ataque não demonstrado. A política para esse conteúdo exige decisão |
@@ -170,3 +170,9 @@ Ambos MANTIDOS na releitura e corrigidos. O reconhecimento de voz separa os arqu
 O modo de voz agora limita as filas, avisa quando descarta áudio excedente, sinaliza a parada da captura e encerra a sessão e os recursos do Harness. A espera pelo TTS cancelado tem prazo de um segundo; se ele não responder, o canal encerra. A gravação de memória que ultrapassar o prazo é informada. Não se promete interromper à força um driver ou uma escrita que já começou.
 
 As duas reproduções de AUD-017 e as três iniciais de AUD-024 falharam antes da correção. Após as correções e controles adicionais, 54 testes focados passaram. A suíte completa terminou com 931 aprovados, zero falhas e oito ignorados em 46,26 segundos (`voice-p2a-full/result.xml`). Foram simulados cache completo de origem diferente, manifesto incompatível, saída do canal, fila cheia, TTS sem resposta e gravação de memória bloqueada. Nenhum hardware foi acessado.
+
+## Continuação autorizada — AUD-013
+
+MANTIDO na releitura e corrigido. A trava de duas falhas iguais bloqueia repetir aquela mesma ação. Uma alternativa diferente continua sujeita às permissões e confirmações normais. Permanecem os limites de três falhas consecutivas e de ações por tarefa. Nenhuma confirmação é aprovada automaticamente.
+
+A decisão anterior foi resolvida dentro da autorização para continuar: permitir considerar uma alternativa, mantendo as outras travas. Duas reproduções falharam antes e um controle passou. Depois: 11 testes focados aprovados e suíte completa com 934 aprovados, zero falhas e oito ignorados (44,94 segundos; `alternative-guard-full/result.xml`).

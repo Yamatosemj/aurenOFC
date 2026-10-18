@@ -448,7 +448,9 @@ class PermissionManager:
                 ),
             )
 
-        if conta_para_limite and self.same_failed_action_count >= self.max_same_failed_actions:
+        if (conta_para_limite
+                and assinatura_atual == self.last_failed_action_signature
+                and self.same_failed_action_count >= self.max_same_failed_actions):
             return (
                 False,
                 (
