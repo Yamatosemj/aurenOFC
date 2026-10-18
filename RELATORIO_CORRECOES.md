@@ -6,6 +6,20 @@ Data: 17/10/2026. Branch: `correcoes-auditoria`.
 
 ## O que foi corrigido
 
+### P1a — AUD-002, AUD-003, AUD-004, AUD-025, AUD-028 e LIV-003
+
+Todos esses achados estavam **MANTIDOS** na releitura. Os novos testes reproduziram onze falhas antes das alterações (um controle já passava).
+
+- Recusas de foco e fechamento de janela, e erro ao abrir atalho, agora são falhas explícitas. Não foi alterada a capacidade do Windows de negar foco ou fechamento.
+- A recuperação de uma falha compara uma assinatura privada dos argumentos originais. Valores diferentes não se confundem por causa do mascaramento; mudar apenas a ordem dos campos JSON não cria outra operação. Os registros continuam mascarados.
+- A conferência de um campo preenchido usa o valor original apenas em memória durante a tarefa. Ela compara o valor inteiro e a ocorrência selecionada, sem aceitar um prefixo como resultado correto.
+- O contexto do navegador passa a respeitar falhas das leituras que o compõem e conserva informações parciais úteis. Componentes antigos ainda passam pelo adaptador legado; não foi migrado todo o navegador para um contrato novo.
+- A recusa de salvar ou esquecer uma lembrança permanece falha ao chegar ao executor comum.
+
+**AUD-027:** MANTIDO por releitura, mas pulado porque exige testes do formatador de voz, excluídos pela regra 10. Nenhuma correção sem reprodução foi aplicada.
+
+Os doze novos testes passaram. A seleção inicial detectou dois testes antigos que esperavam argumentos em claro na identidade das pendências; foram atualizados para conferir a mesma identidade em hash, conservando a exigência de que outra ação não apague a falha. Suíte ampla final: **793 aprovados, zero falhas, oito ignorados e dois casos de voz excluídos**, em 42,70 segundos. Uma execução intermediária incluiu dois testes simulados de voz de arquivos mistos por erro na seleção; nenhum dispositivo foi acessado. O executor de testes foi corrigido e a execução final excluiu esses casos.
+
 ### P0 — AUD-001
 
 Situação na releitura: **MANTIDO**. A versão inicial ainda podia pedir autorização para um arquivo e, depois da resposta, ler outro. Reproduzi a falha com arquivos fictícios antes de alterar o programa: seis testes falharam e quatro controles passaram.

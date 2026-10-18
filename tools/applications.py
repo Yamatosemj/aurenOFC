@@ -7,6 +7,7 @@ import subprocess
 import shutil
 
 from core.utils import normalizar_nome
+from core.tool_result import ToolResult
 
 
 def buscar_aplicativos_do_windows():
@@ -311,10 +312,10 @@ def abrir_programa(programa):
             return f"{atalho.stem} foi aberto."
 
         except Exception as erro:
-            return (
+            return ToolResult.failure(
                 f"Encontrei o atalho de "
                 f"{programa}, mas nao consegui "
-                f"abri-lo: {erro}"
+                f"abri-lo: {erro}", error_code="shortcut_open_failed"
             )
 
     executavel = procurar_executavel(programa)

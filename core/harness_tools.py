@@ -3,7 +3,7 @@ from __future__ import annotations
 import time
 from typing import Any, Callable
 
-from core.harness_serialization import _argumentos_da_chamada, _texto_seguro
+from core.harness_serialization import _argumentos_da_chamada, _texto_seguro, _identidade_da_chamada
 from core.tool_result import ToolResult, from_legacy
 
 
@@ -33,7 +33,7 @@ def _executar_chamadas_rodada(
 
     O ciclo compartilha ``falhas_pendentes`` entre rodadas. Uma falha so e
     recuperada por sucesso posterior da mesma ferramenta com os mesmos
-    argumentos normalizados para registro (sem expor valores sensiveis).
+    argumentos originais canonicos (hash privado, separado do log redigido).
     """
     resultados_rodada: list[dict[str, Any]] = []
     ferramentas_executadas = 0
@@ -88,13 +88,14 @@ def _executar_chamadas_rodada(
             if browser_verification_state is not None:
                 browser_verification_state["ferramenta"] = nome
                 browser_verification_state["argumentos"] = argumentos
+                browser_verification_state["argumentos_operacionais"] = str(getattr(item, "arguments", "{}"))
                 browser_verification_state["dados_acao"] = dict(resultado_estruturado.data or {})
         elif ferramenta_sucesso and nome == browser_verification_tool:
             verificado = None
             if browser_verifier is not None and browser_verification_state is not None:
                 verificado = browser_verifier(
                     str(browser_verification_state.get("ferramenta") or ""),
-                    str(browser_verification_state.get("argumentos") or "{}"),
+                    str(browser_verification_state.get("argumentos_operacionais") or browser_verification_state.get("argumentos") or "{}"),
                     resultado_estruturado.data or {},
                     browser_verification_state.get("dados_acao"),
                 )
@@ -113,6 +114,7 @@ def _executar_chamadas_rodada(
                 browser_verification_pending = False
                 browser_verification_state.pop("ferramenta", None)
                 browser_verification_state.pop("argumentos", None)
+                browser_verification_state.pop("argumentos_operacionais", None)
                 browser_verification_state.pop("dados_acao", None)
         if trace is not None:
             try:
@@ -170,7 +172,7 @@ def _executar_chamadas_rodada(
         else:
             # O ciclo compartilha este conjunto durante a tarefa inteira.
             # Um sucesso de outra ferramenta/alvo nao limpa falhas pendentes.
-            assinatura = (nome, argumentos)
+            assinatura = (nome, _identidade_da_chamada(item))
             if ferramenta_sucesso:
                 falhas_pendentes.discard(assinatura)
             else:

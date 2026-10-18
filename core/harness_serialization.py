@@ -1,9 +1,19 @@
 from __future__ import annotations
 
 import json
+import hashlib
 from typing import Any
 
 from core.harness_logging import _redact_value
+
+
+def _identidade_da_chamada(item: Any) -> str:
+    raw = getattr(item, "arguments", "")
+    try:
+        raw = json.dumps(json.loads(raw), ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    except (TypeError, ValueError):
+        raw = str(raw)
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
 def _texto_seguro(valor: Any, limite: int) -> str:
