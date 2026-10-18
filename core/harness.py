@@ -546,6 +546,7 @@ class AurenHarness:
         task_snapshot = self.task_manager.create(
             objetivo_efetivo,
             chat_id=self._session.chat_id if self._session else None,
+            **({"plan": plan} if getattr(self.task_manager, "persistent", False) else {}),
         )
         self._task_id = task_snapshot.task_id
         self.task_manager.start(self._task_id)
@@ -585,6 +586,11 @@ class AurenHarness:
             self._registrar_turno("assistant", mensagem_final)
             _write_log("TASK_END", task_id=self._task_id, status=status_continuacao)
             return False, _RespostaWrapper(mensagem_final)
+
+        if getattr(self.task_manager, "persistent", False):
+            # O atalho legado registra o passo depois do efeito. Objetivos
+            # duraveis usam o ciclo normal, que grava begin_step antes de agir.
+            return self._executar_ciclo(objetivo_efetivo)
 
         # Atalhos tambem precisam de revisao semantica ANTES do Dispatcher.
         # O planejamento apenas descreve a acao; nao realiza efeitos.
@@ -774,7 +780,11 @@ class AurenHarness:
 
     def shutdown(self, *, timeout: float = 1.0) -> str:
         """Finaliza a fila com prazo e encerra recursos e sessão do canal."""
-        self.cancel_current_task()
+        manager = getattr(self, "task_manager", None)
+        checkpoint = manager.current_snapshot() if getattr(manager, "persistent", False) else None
+        keep_checkpoint = checkpoint is not None and checkpoint.state in {TaskState.PAUSED, TaskState.INTERRUPTED}
+        if not keep_checkpoint and not getattr(manager, "closed", False):
+            self.cancel_current_task()
         try:
             state = self._background_queue.shutdown(cancel_pending=False, timeout=timeout)
             return state
@@ -782,7 +792,12 @@ class AurenHarness:
             try:
                 self.fechar()
             finally:
-                self._encerrar_sessao_chat("closed")
+                try:
+                    close_manager = getattr(getattr(self, "task_manager", None), "close", None)
+                    if callable(close_manager):
+                        close_manager()
+                finally:
+                    self._encerrar_sessao_chat("closed")
 
     def current_task(self):
         """Retorna um snapshot imutavel da tarefa atual, se existir."""

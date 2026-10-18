@@ -1,5 +1,7 @@
 # Arquitetura 01 — Nucleo de execucao, ciclo do Harness e tarefas
 
+Fase 1 candidata: TaskManager permanece a fonte operacional única e aceita `db_path` opcional para checkpoints e histórico transacional. Reutiliza ExecutionPlan/TaskStep/TaskSnapshot; estados recuperados ativos tornam-se INTERRUPTED, e PAUSED permanece pausado. Retomada de checkpoint não executa ferramentas e recusa incerteza, falha anterior ou cancelamento pendente. O Harness durável grava antes dos efeitos no ciclo normal e fecha o store; o padrão sem banco mantém os atalhos existentes. Escopo, API, provas e limites em [FASE_1.md](../desenvolvimento/FASE_1.md). O planejamento executável e a continuação após retomada pertencem à Fase 2, e a interface à Fase 4.
+
 LIV-006 (correção candidata): no ciclo do modelo, um veto permite no máximo uma proposta alternativa dentro do orçamento existente. Assinaturas vetadas não podem ser executadas, mesmo que uma revisão posterior mude de opinião. A alternativa mantém revisor, Dispatcher e permissões. Novo veto ou falta de alternativa encerra com falha. Atalhos locais vetados continuam sem replanejamento.
 
 > **Escopo:** auditoria estatica do codigo da main em 2026-10-10, revisao de testes automatizados e verificacao de CI desta PR. Este texto documenta a **implementacao observada**, nao promete desempenho real, operacao de hardware nem ausencia de defeitos.
