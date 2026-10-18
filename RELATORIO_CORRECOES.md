@@ -90,7 +90,7 @@ Todos os itens abaixo foram relidos e permanecem presentes; não são declarados
 | AUD-024 | Corrigido na continuação autorizada, com limites físicos descritos abaixo |
 | AUD-027 | Corrigido na continuação autorizada; veja a atualização abaixo |
 | AUD-033 | Corrigido no instalador, sem instalar nem aprovar o runner real |
-| LIV-006 | Replanejar depois de um veto exige decidir o limite de autonomia; veto preservado |
+| LIV-006 | Corrigido no ciclo do modelo: uma alternativa diferente, revisada e limitada |
 
 AUD-036 pertence exclusivamente à PR #137 e ficou fora por instrução expressa. AUD-020 tem a parte de contagem corrigida e as limitações de custo e falhas anteriores à decisão descritas acima.
 
@@ -188,3 +188,9 @@ A reprodução com duas tarefas fictícias mostrou que a segunda perdia a exigê
 MANTIDO na releitura e corrigido no instalador. Uma instalação nova exige a opção explícita `-AutorizarValidacaoOffline` e grava a aprovação correspondente à política copiada. Uma instalação antiga incompleta não é mais anunciada como concluída. O controle manual e os backups são preservados. O instalador não foi executado no perfil real e nenhuma autorização real foi concedida.
 
 Três reproduções válidas falharam antes. Uma tentativa anterior foi impedida pela política de execução do Windows; a preparação foi ajustada para executar apenas o texto revisado na pasta fictícia, sem mudar essa política. Depois, 12 testes focados passaram; suíte completa: 938 aprovados, zero falhas e oito ignorados (48,67 segundos; `chat-installer-full/result.xml`).
+
+## Continuação autorizada — LIV-006
+
+MANTIDO na releitura e corrigido no ciclo normal do modelo. Depois de um veto semântico, o Auren pode propor uma única alternativa diferente, se ainda houver rodadas disponíveis. A ação vetada não é executada e não pode reaparecer com argumentos equivalentes. A alternativa passa novamente pelo revisor e pelo caminho normal de permissões. Outro veto, repetição ou ausência de alternativa encerra sem declarar sucesso. Não se reinicia o orçamento de ações.
+
+Decisão adotada dentro da autorização para continuar: um replanejamento, nunca aprovação automática. Atalhos locais vetados continuam encerrando imediatamente; esta mudança trata o ciclo do modelo usado no achado Live. Quatro reproduções falharam antes e um controle passou. Depois foram 63 testes focados aprovados e suíte completa com 943 aprovados, zero falhas e oito ignorados (48,65 segundos; `veto-replan-full/result.xml`). Modelo e ferramentas eram fictícios.

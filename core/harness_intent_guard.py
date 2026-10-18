@@ -5,9 +5,15 @@ from typing import Any, Callable
 import json
 import re
 import time
+from dataclasses import dataclass
 
 from core.intent_verification import precisa_verificar, proposta_simples_exata
 from core.utils import normalizar_nome
+
+
+@dataclass(frozen=True)
+class PedidoReplanejamento:
+    motivo: str
 
 
 def _diagnostico_propostas_bloqueadas(chamadas: list[Any]) -> list[dict[str, Any]]:
@@ -45,7 +51,8 @@ def verificar_antes_de_agir(
     rodada: int,
     resposta_wrapper: Callable[[str], Any],
     write_log: Callable[..., Any],
-) -> tuple[bool, Any] | None:
+    permitir_replanejamento: bool = False,
+) -> tuple[bool, Any] | PedidoReplanejamento | None:
     """None = aprovado ou apenas leitura; tupla = tarefa interrompida sem executar."""
     if harness.verificar_intencao is None or not precisa_verificar(chamadas):
         return None
@@ -150,6 +157,8 @@ def verificar_antes_de_agir(
         return False, resposta_wrapper(pergunta)
 
     if decisao.decisao == "bloquear":
+        if permitir_replanejamento:
+            return PedidoReplanejamento(str(decisao.motivo or "")[:350])
         return harness._encerrar_falha(
             "intent_verification_blocked",
             "Nao executei a acao proposta porque ela nao corresponde com seguranca ao seu pedido. "

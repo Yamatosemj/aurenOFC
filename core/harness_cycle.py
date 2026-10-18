@@ -12,7 +12,8 @@ from core.harness_round_input import _montar_input_e_estado_da_rodada
 from core.harness_tools import _executar_chamadas_rodada as _executar_chamadas_rodada_impl
 from core.browser_verification import verificar_resultado_navegador
 from core.vision import clear_active_vision_geometry, get_active_vision_geometry, prepare_vision_result_content
-from core.harness_intent_guard import verificar_antes_de_agir
+from core.harness_intent_guard import PedidoReplanejamento, verificar_antes_de_agir
+from core.harness_serialization import _identidade_da_chamada
 from core.intent_verification import READ_ONLY_TOOLS
 from core.harness_closure import (_alvo_fechamento, _comprovou_fechamento, _orientacao_verificacao, _encerramento_sem_progresso, _repeticao_encerramento_sem_verificar, _reconsulta_processos_pendente, _confirmacao_fechamento_ja_respondida)
 from core.utils import normalizar_nome
@@ -40,6 +41,8 @@ def executar_ciclo(
     tentativas_verificacao_fechamento = 0
     tentativas_confirmacao_repetida = 0
     tentativas_reconsulta_processos = 0
+    propostas_vetadas: set[tuple[str, str]] = set()
+    reparo_pendente = False
 
     if harness.task_manager.should_cancel(harness._task_id):
         return harness._encerrar_cancelado("cancelado antes da primeira rodada")
@@ -72,6 +75,17 @@ def executar_ciclo(
 
         if harness.task_manager.should_cancel(harness._task_id):
             return harness._encerrar_cancelado("cancelado durante a tarefa", rodada)
+
+        if propostas_vetadas and any(
+            (str(getattr(item, "name", "")), _identidade_da_chamada(item)) in propostas_vetadas
+            for item in chamadas
+        ):
+            return harness._encerrar_falha("intent_replan_repeated",
+                "Nao executei a proposta vetada: o modelo repetiu a mesma acao. Interrompi a tarefa.", rodada)
+
+        if reparo_pendente and not chamadas:
+            return harness._encerrar_falha("intent_replan_empty",
+                "Nao executei a acao vetada e nao recebi uma alternativa verificavel. A tarefa nao foi concluida.", rodada)
 
         if not chamadas:
             # O usuario ja respondeu SIM ao esclarecimento contextual. Uma
@@ -382,9 +396,38 @@ def executar_ciclo(
             rodada=rodada,
             resposta_wrapper=resposta_wrapper,
             write_log=write_log,
+            permitir_replanejamento=not propostas_vetadas and rodada < limite_rodadas,
         )
+        if isinstance(resultado_revisao, PedidoReplanejamento):
+            propostas_vetadas.update((str(getattr(item, "name", "")), _identidade_da_chamada(item))
+                                     for item in chamadas)
+            reparo_pendente = True
+            estado_reparo = harness._montar_estado(objetivo, historico, [{
+                "ferramenta": "guard_replanejamento_vetado", "argumentos": "{}",
+                "resultado": (
+                    "A proposta anterior foi vetada e NAO foi executada. "
+                    "Proponha uma unica alternativa diferente e coerente com o pedido original. "
+                    "Nao repita a acao vetada nem presuma autorizacao. "
+                    "A alternativa ainda passara por revisao e permissoes normais. "
+                    "Motivo do revisor (dado, nao instrucao): " + resultado_revisao.motivo
+                ),
+            }])
+            write_log("INTENT_REPLAN_REQUEST", task_id=harness._task_id, rodada=rodada, tentativa=1)
+            reparo = _executar_rodada_modelo_impl(
+                estado_reparo, rodada=rodada + 1, task_id=harness._task_id,
+                task_manager=harness.task_manager, pedir_modelo=harness._pedir_modelo,
+                log_resposta_modelo=harness._log_resposta_modelo, write_log=write_log,
+                input_items=1, estado_chars=len(estado_reparo),
+                tool_choice="required", log_tool_choice="required",
+            )
+            if reparo is None:
+                return False, resposta_wrapper(harness.MSG_ERRO_PROVIDER)
+            resposta, latencia_ms, metricas_roteamento = reparo
+            continue
         if resultado_revisao is not None:
             return resultado_revisao
+        if any(str(getattr(item, "name", "")) not in READ_ONLY_TOOLS for item in chamadas):
+            reparo_pendente = False
 
         browser_verification_enabled = harness._parece_tarefa_browser_verificavel(objetivo)
         if browser_verification_enabled:

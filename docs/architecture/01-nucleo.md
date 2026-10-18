@@ -1,5 +1,7 @@
 # Arquitetura 01 — Nucleo de execucao, ciclo do Harness e tarefas
 
+LIV-006 (correção candidata): no ciclo do modelo, um veto permite no máximo uma proposta alternativa dentro do orçamento existente. Assinaturas vetadas não podem ser executadas, mesmo que uma revisão posterior mude de opinião. A alternativa mantém revisor, Dispatcher e permissões. Novo veto ou falta de alternativa encerra com falha. Atalhos locais vetados continuam sem replanejamento.
+
 > **Escopo:** auditoria estatica do codigo da main em 2026-10-10, revisao de testes automatizados e verificacao de CI desta PR. Este texto documenta a **implementacao observada**, nao promete desempenho real, operacao de hardware nem ausencia de defeitos.
 >
 > **Referencia auditada:** commit base da etapa 1: 525670c342b3aefb026b44d9ff5a4d2a250fbd9b. Consulte a main atual para mudancas posteriores.
