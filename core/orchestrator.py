@@ -124,3 +124,6 @@ class AurenOrchestrator:
 
     def get_response_cache_stats(self) -> dict[str, int]:
         return self.response_cache.stats()
+
+    def verify_completion(self, snapshot):
+        return self.provider.verify_completion(snapshot)

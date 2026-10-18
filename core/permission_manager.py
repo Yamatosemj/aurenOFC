@@ -324,6 +324,38 @@ class PermissionManager:
         """Indica se a capacidade da tool consome o orcamento de acoes."""
         return self._capability(nome_ferramenta) in self.COUNTED_CAPABILITIES
 
+    _CHECKPOINT_COUNTERS = ('actions_attempted', 'actions_executed', 'actions_failed',
+        'consecutive_failures', 'same_failed_action_count', 'same_successful_action_count')
+    _CHECKPOINT_LIMITS = ('max_actions', 'max_consecutive_failures',
+        'max_same_failed_actions', 'max_no_progress_repeats')
+    _CHECKPOINT_SIGNATURES = ('last_failed_action_signature', 'last_successful_action_signature')
+
+    def checkpoint_limits(self):
+        """Only restrictions and private hashes; never approvals or policies."""
+        return {name: getattr(self, name) for name in
+                self._CHECKPOINT_COUNTERS + self._CHECKPOINT_LIMITS + self._CHECKPOINT_SIGNATURES}
+
+    def restore_limits(self, state):
+        expected = self._CHECKPOINT_COUNTERS + self._CHECKPOINT_LIMITS + self._CHECKPOINT_SIGNATURES
+        if not isinstance(state, dict) or set(state) != set(expected):
+            raise RuntimeError('Checkpoint de limites invalido.')
+        for name in self._CHECKPOINT_COUNTERS + self._CHECKPOINT_LIMITS:
+            if type(state[name]) is not int or state[name] < (1 if name in self._CHECKPOINT_LIMITS else 0):
+                raise RuntimeError('Contador de permissoes invalido.')
+        for name in self._CHECKPOINT_SIGNATURES:
+            if state[name] is not None and (not isinstance(state[name], str)
+                    or not re.fullmatch(r'[0-9a-f]{64}', state[name])):
+                raise RuntimeError('Assinatura de permissoes invalida.')
+        for name in self._CHECKPOINT_COUNTERS:
+            setattr(self, name, max(getattr(self, name), state[name]))
+        for name in self._CHECKPOINT_LIMITS:
+            setattr(self, name, min(getattr(self, name), state[name]))
+        for name in self._CHECKPOINT_SIGNATURES:
+            setattr(self, name, state[name])
+        self.last_authorized_action_signature = None
+        self.last_authorized_action_tool = None
+        self.registrar_fonte_nao_confiavel('checkpoint_recuperado')
+
     def registrar_resultado(self, sucesso: bool, nome_ferramenta: str | None = None, argumentos: dict[str, Any] | None = None) -> None:
         """Registra o resultado da execucao e atualiza as travas anti-loop."""
         if nome_ferramenta is not None and self._capability(nome_ferramenta) not in self.COUNTED_CAPABILITIES:

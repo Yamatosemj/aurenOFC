@@ -1,0 +1,226 @@
+{
+  "base": "3e93696e66a003983c7f9061cf741cfff0c60984",
+  "environment": "Windows/Python 3.13.15; perfil ficticio; sem credenciais; modelo e efeitos pessoais simulados",
+  "runs": [
+    {
+      "label": "phase2-initial-red",
+      "artifact_directory": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase2-initial-red",
+      "tests": 8,
+      "failures": 8,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 0,
+      "seconds": 1.119,
+      "failed_cases": [
+        "test_plan_preserves_exact_data_and_only_splits_instruction_boundaries[Abra https://example.test/a.b?q=1.5 e depois consulte o volume.]",
+        "test_plan_preserves_exact_data_and_only_splits_instruction_boundaries[Digite \"a; depois b. c\" e depois consulte o volume.]",
+        "test_plan_preserves_exact_data_and_only_splits_instruction_boundaries[Abra C:\\\\fixture\\\\relatorio.v2.exe e depois consulte o volume.]",
+        "test_pause_restart_continues_same_goal_without_repeating_first_effect",
+        "test_restored_permission_limits_keep_loop_budget_without_restoring_approval",
+        "test_model_budget_is_reserved_before_call_and_survives_reopen",
+        "test_compound_goal_cannot_finish_on_model_claim_without_verification",
+        "test_wrong_chat_cannot_resume_even_safe_checkpoint"
+      ]
+    },
+    {
+      "label": "phase2-initial-green",
+      "artifact_directory": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase2-initial-green",
+      "tests": 35,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 34,
+      "seconds": 3.711,
+      "failed_cases": [
+        "test_pause_restart_continues_same_goal_without_repeating_first_effect"
+      ]
+    },
+    {
+      "label": "phase2-replay-red",
+      "artifact_directory": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase2-replay-red",
+      "tests": 2,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 1,
+      "seconds": 1.38,
+      "failed_cases": [
+        "test_successful_effect_cannot_be_replayed_after_restart"
+      ]
+    },
+    {
+      "label": "phase2-replay-green",
+      "artifact_directory": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase2-replay-green",
+      "tests": 86,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 86,
+      "seconds": 7.756,
+      "failed_cases": []
+    },
+    {
+      "label": "phase2-concurrent-red",
+      "artifact_directory": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase2-concurrent-red",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 0,
+      "seconds": 0.96,
+      "failed_cases": [
+        "test_concurrent_message_cannot_reset_active_task_limits"
+      ]
+    },
+    {
+      "label": "phase2-resume-safety",
+      "artifact_directory": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase2-resume-safety",
+      "tests": 43,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 43,
+      "seconds": 3.456,
+      "failed_cases": []
+    },
+    {
+      "label": "phase2-full-first",
+      "artifact_directory": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase2-full-first",
+      "tests": 1037,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 8,
+      "passed": 1028,
+      "seconds": 58.194,
+      "failed_cases": [
+        "test_visual_compound_prompt_rules_are_present_in_harness"
+      ]
+    },
+    {
+      "label": "phase2-url-semicolon-red",
+      "artifact_directory": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase2-url-semicolon-red",
+      "tests": 4,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 3,
+      "seconds": 0.9,
+      "failed_cases": [
+        "test_plan_preserves_exact_data_and_only_splits_instruction_boundaries[Abra https://example.test/a;b?q=depois e depois consulte o volume.]"
+      ]
+    },
+    {
+      "label": "phase2-final-focused",
+      "artifact_directory": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase2-final-focused",
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 0,
+      "seconds": 0.004,
+      "failed_cases": []
+    },
+    {
+      "label": "phase2-final-focused-valid",
+      "artifact_directory": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase2-final-focused-valid",
+      "tests": 106,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 106,
+      "seconds": 5.097,
+      "failed_cases": []
+    },
+    {
+      "label": "phase2-final-recovery-red",
+      "artifact_directory": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase2-final-recovery-red",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 0,
+      "seconds": 1.028,
+      "failed_cases": [
+        "test_missing_final_stage_gets_one_bounded_recovery"
+      ]
+    },
+    {
+      "label": "phase2-recovery-green",
+      "artifact_directory": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase2-recovery-green",
+      "tests": 66,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 66,
+      "seconds": 4.432,
+      "failed_cases": []
+    },
+    {
+      "label": "phase2-full-validated",
+      "artifact_directory": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase2-full-validated",
+      "tests": 1041,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 8,
+      "passed": 1032,
+      "seconds": 56.749,
+      "failed_cases": [
+        "test_strict_json_size_schema_and_content_type"
+      ]
+    },
+    {
+      "label": "phase2-http-rejection-red",
+      "artifact_directory": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase2-http-rejection-red",
+      "tests": 3,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 1,
+      "seconds": 0.238,
+      "failed_cases": [
+        "test_rejected_bounded_body_is_consumed_before_closing_response[403]",
+        "test_rejected_bounded_body_is_consumed_before_closing_response[415]"
+      ]
+    },
+    {
+      "label": "phase2-http-rejection-green",
+      "artifact_directory": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase2-http-rejection-green",
+      "tests": 34,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 34,
+      "seconds": 8.376,
+      "failed_cases": []
+    },
+    {
+      "label": "phase2-final-full",
+      "artifact_directory": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase2-final-full",
+      "tests": 1044,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 8,
+      "passed": 1036,
+      "seconds": 56.031,
+      "failed_cases": []
+    }
+  ],
+  "final_source_sha256": {
+    "agent/planner.py": "3abbe099edb333f75b9641b68f548b2ca57fa79adf67776f42db44956da64c45",
+    "auren.py": "416b88d07bb9926891953b4986a29f4de09940f20bc769d08d8da79c538a84c8",
+    "core/harness.py": "e3e9f08507b413c21e83272ec1118aa14ad31bd660e632b92cb8f77ea54fe95f",
+    "core/harness_cycle.py": "8194a382bb49cb73c26c9541d9ac60e5eda5c75e11e6acbcba4a4d16bcc582f7",
+    "core/harness_intent_guard.py": "a5cc89898dcbcdf492c62b003b97ff57de8937c590643a7525754de99bc76516",
+    "core/harness_state.py": "633f455113f4f207ea9bc4e539af58f4ae1149b1c8d15b355f1cb0cc54310d00",
+    "core/harness_tools.py": "3e8c0e2d81748b6931fc2a6ba6a3d4cd230ec9842e890f06e655eefb875784d2",
+    "core/task_manager.py": "e593811774c137b1a27741e82c912aa8adad61c81e12f61392a1a798078754cc",
+    "core/task_verification.py": "5a803f2930b57a0d4d7d67c914aebc608397c5c4241f3d9d3ae56f98c0091eb4",
+    "core/permission_manager.py": "177497cd7cea9bdf384c825326115e4e472c0fd38a0bd4d30ea38cab3b6fbc41",
+    "core/orchestrator.py": "c401601bd857d48cb51e2aded9a5e4215c698a8cdeb672876b39c2d7e7ed059b",
+    "core/response.py": "00fac2a25abeca417e5d3f34d3e3055d8186c63d3f6b284d24631be06e59fa5e",
+    "providers/openai_provider.py": "d0208162e30df4fb9fdd61dae323e5dd08c68f90b43c3450b63e279f3608fa08",
+    "ui/chrome_server.py": "73b6a2a85501dab43ebd9d6701f82f3719c381c1f32b5c9826c2434146a70521",
+    "tests/test_audit_resumable_execution.py": "739433c2c247fdf05c0781d3bce6aa960a1d0593e0f8d4c3c48c3e1f769bfa14",
+    "tests/test_audit_http_rejection.py": "8e1e5994f423deb421affff930a4ef9d3ce31d0712bac86df7b0ee5a2c49dd4a"
+  }
+}

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import time
+from threading import Lock
+from functools import wraps
 from pathlib import Path
 from typing import Any, Callable
 
@@ -128,6 +130,18 @@ class _ContextoLegado(SessionContextManager):
         return (str(hook(objetivo, chat_id or None) or "") if hook else ""), ""
 
 
+def _single_execution(method):
+    @wraps(method)
+    def run(self, *args, **kwargs):
+        if not self._execution_lock.acquire(blocking=False):
+            raise RuntimeError('Ja existe uma execucao neste Harness.')
+        try:
+            return method(self, *args, **kwargs)
+        finally:
+            self._execution_lock.release()
+    return run
+
+
 class AurenHarness:
     """Orquestra tarefas sem carregar uma cadeia infinita de contexto.
 
@@ -168,6 +182,8 @@ class AurenHarness:
         verificar_intencao: Callable[[str, list[Any], list[dict[str, str]]], Any] | None = None,
         planejar_atalho: Callable[[str], list[Any]] | None = None,
         registrar_fonte_nao_confiavel: Callable[[str], None] | None = None,
+        permission_manager: Any = None,
+        verificar_conclusao: Callable[..., Any] | None = None,
     ) -> None:
         if max_model_rounds < 1:
             raise ValueError("max_model_rounds deve ser maior que zero.")
@@ -182,6 +198,12 @@ class AurenHarness:
         self.fechar = fechar
         self.max_model_rounds = max_model_rounds
         self.task_manager = task_manager or TaskManager()
+        self.permission_manager = permission_manager
+        self.verificar_conclusao = verificar_conclusao
+        self._pause_requested = False
+        self._execution_lock = Lock()
+        self._resuming = False
+        self._resume_history = []
         self.obter_metricas_roteamento = obter_metricas_roteamento
         self.verificar_intencao = verificar_intencao
         self.planejar_atalho = planejar_atalho
@@ -364,6 +386,7 @@ class AurenHarness:
         resultado_atual: list[dict[str, str]] | None = None,
         incluir_contexto: bool = False,
     ) -> str:
+        snapshot = self.current_task() if getattr(getattr(self, 'task_manager', None), 'persistent', False) else None
         return _montar_estado(
             objetivo,
             historico,
@@ -376,6 +399,7 @@ class AurenHarness:
             max_history_items=self.DEFAULT_MAX_HISTORY_ITEMS,
             max_state_chars=self.MAX_STATE_CHARS,
             texto_seguro=self._texto_seguro,
+            plano=snapshot.plan if snapshot is not None else None,
         )
 
     def _montar_input_da_rodada(
@@ -495,6 +519,7 @@ class AurenHarness:
     def _processar_mensagem_impl(self, mensagem: str) -> tuple[bool, Any]:
         """Retorna (tratado_rapido, resposta)."""
         self._garantir_sessao_chat()
+        self._pause_requested = False
         self._trace_started_perf = time.perf_counter()
         context_started_perf = self._trace_started_perf
         self.iniciar_tarefa()
@@ -550,6 +575,8 @@ class AurenHarness:
         )
         self._task_id = task_snapshot.task_id
         self.task_manager.start(self._task_id)
+        if getattr(self.task_manager, 'persistent', False):
+            self.task_manager.configure_model_budget(self._limite_de_rodadas(objetivo_efetivo) * 3, self._task_id)
         try:
             self._trace = self.trace_store.start_task(
                 task_id=self._task_id,
@@ -677,6 +704,7 @@ class AurenHarness:
         """
         argumentos = (entrada, None, "none") + ((tool_choice,) if tool_choice is not None else ())
         try:
+            self._reserve_model_call()
             return self._chamar_modelo_medido(*argumentos)
         except Exception as exc:
             snapshot = self.task_manager.current_snapshot()
@@ -688,6 +716,96 @@ class AurenHarness:
                 self.task_manager.fail(f"provider_error: {exc}", task_id=self._task_id)
             _write_log("PROVIDER_ERROR", task_id=self._task_id, erro=str(exc))
             return None
+
+    def _reserve_model_call(self):
+        if getattr(self.task_manager, 'persistent', False):
+            self.task_manager.reserve_model_call(self._task_id)
+
+    def pause_current_task(self):
+        snapshot = self.current_task()
+        if snapshot is None or snapshot.state not in {TaskState.RUNNING, TaskState.WAITING}:
+            return False
+        self._pause_requested = True
+        return True
+
+    @_single_execution
+    def retomar_tarefa(self, task_id, *, chat_id):
+        """Continue the same goal only at a fully saved, safe round boundary."""
+        snapshot = self.task_manager.get_snapshot(task_id)
+        if not chat_id or snapshot.chat_id != chat_id:
+            raise RuntimeError('A tarefa nao pertence ao chat informado.')
+        if (not self.task_manager.persistent or self.permission_manager is None
+                or snapshot.checkpoint_steps != len(snapshot.steps)
+                or snapshot.permission_limits is None or not snapshot.model_limit):
+            raise RuntimeError('Nao ha checkpoint executavel seguro para esta tarefa.')
+        if snapshot.model_calls >= snapshot.model_limit:
+            raise RuntimeError('Orcamento acumulado esgotado.')
+        self.task_manager.resume_checkpoint(task_id)
+        self.iniciar_tarefa()
+        self.permission_manager.restore_limits(snapshot.permission_limits)
+        clear_active_vision_geometry()
+        self._vision_reobserve_pending = False
+        self._browser_verification_pending = False
+        self._browser_verification_state = {'pending': False}
+        self._vision_guard_attempts = self._browser_verification_guard_attempts = self._multitab_guard_attempts = 0
+        self._pergunta_pendente = self._confirmacao_esclarecimento = None
+        self._contexto_tarefa = ''
+        self._pause_requested = False
+        self._task_id = task_id
+        _register_redaction_values_from_objective(snapshot.objective)
+        self.agent.begin(snapshot.objective)
+        self._resume_history = [{'ferramenta': step.tool, 'argumentos': step.arguments,
+                                'resultado': step.result} for step in snapshot.steps]
+        self._resuming = True
+        try:
+            return self._executar_ciclo(snapshot.objective)
+        except Exception:
+            current = self.current_task()
+            if current.state in {TaskState.RUNNING, TaskState.WAITING}:
+                self.task_manager.fail('Falha durante retomada.', task_id=task_id)
+            raise
+        finally:
+            self._resuming = False
+            self._resume_history = []
+
+    def _checkpoint_between_rounds(self, *, safe):
+        if not getattr(self.task_manager, 'persistent', False) or self.permission_manager is None or not safe:
+            return None
+        if any(step.success is not True for step in self.current_task().steps):
+            return None
+        self.task_manager.save_execution_checkpoint(self.permission_manager.checkpoint_limits(), self._task_id)
+        if self._pause_requested:
+            self.task_manager.pause(self._task_id)
+            self._pause_requested = False
+            return False, _RespostaWrapper('Tarefa pausada em um ponto seguro. Pode ser retomada posteriormente.')
+        return None
+
+    def _requires_completion_verification(self):
+        if not getattr(self.task_manager, 'persistent', False):
+            return False
+        snapshot = self.current_task()
+        from core.intent_verification import READ_ONLY_TOOLS
+        return snapshot.plan is not None and (len(snapshot.plan.steps) >= 2
+                or snapshot.plan.complexity in {'multi_step', 'complex'}
+                or any(step.tool not in READ_ONLY_TOOLS for step in snapshot.steps))
+
+    def _verify_completion(self, objetivo):
+        if not self._requires_completion_verification():
+            return None
+        snapshot = self.current_task()
+        from core.task_verification import validate_completion, CompletionPending
+        try:
+            if self.verificar_conclusao is None:
+                raise RuntimeError('Verificador de conclusao indisponivel.')
+            self._reserve_model_call()
+            result = self.verificar_conclusao(snapshot)
+            validate_completion(result, snapshot)
+        except CompletionPending as pending:
+            return pending
+        except Exception:
+            return self._encerrar_falha('completion_verification_failed',
+                'Nao consegui comprovar todas as etapas do objetivo. A tarefa nao foi concluida.')
+        return None
 
     def _log_resposta_modelo(
         self,
@@ -721,6 +839,7 @@ class AurenHarness:
         _write_log("TASK_END", task_id=self._task_id, status="failed", motivo=codigo, **detalhes)
         return False, _RespostaWrapper(mensagem)
 
+    @_single_execution
     def processar_mensagem(self, mensagem: str) -> tuple[bool, Any]:
         """Executa uma tarefa com isolamento de falha e ciclo de vida rastreado."""
         self._garantir_sessao_chat()

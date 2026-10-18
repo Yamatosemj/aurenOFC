@@ -89,3 +89,12 @@ class OpenAIProvider:
         except ValueError as exc:
             raise IntentVerificationFailure("Resposta invalida do revisor.", usage.extrair_metricas_uso(resposta) or None) from exc
         return replace(decisao, metricas_uso=usage.extrair_metricas_uso(resposta))
+
+    def verify_completion(self, snapshot):
+        from core.task_verification import INSTRUCTIONS as completion_instructions, FORMAT, completion_input
+        resposta = self.get_client().responses.create(model=MODEL,
+            instructions=completion_instructions, input=completion_input(snapshot), tools=[],
+            reasoning={'effort': 'none'}, text={'format': FORMAT}, max_output_tokens=1200, store=False)
+        usage.registrar_uso(resposta)
+        import json
+        return json.loads(str(getattr(resposta, 'output_text', '') or ''))

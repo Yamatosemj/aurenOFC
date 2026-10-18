@@ -17,6 +17,7 @@ from core.harness_serialization import _identidade_da_chamada
 from core.intent_verification import READ_ONLY_TOOLS
 from core.harness_closure import (_alvo_fechamento, _comprovou_fechamento, _orientacao_verificacao, _encerramento_sem_progresso, _repeticao_encerramento_sem_verificar, _reconsulta_processos_pendente, _confirmacao_fechamento_ja_respondida)
 from core.utils import normalizar_nome
+from core.task_verification import CompletionPending
 
 
 def executar_ciclo(
@@ -25,24 +26,25 @@ def executar_ciclo(
     resposta_wrapper: Any,
     write_log: Any,
 ) -> tuple[bool, Any]:
-    historico: list[dict[str, str]] = []
+    historico: list[dict[str, str]] = list(getattr(harness, '_resume_history', []))
     resultados_rodada: list[dict[str, str]] = []
 
     # Se o usuario claramente pediu uma acao, a primeira rodada
     # precisa produzir uma ferramenta. Isso evita uma rodada vazia
     # em que o modelo responde sem executar nada.
-    exigir_ferramenta = harness._parece_tarefa_de_acao(objetivo)
+    exigir_ferramenta = harness._parece_tarefa_de_acao(objetivo) and not historico
     empty_response_retries = 0
     falha_nao_recuperada = False
     # Uma falha so sai deste conjunto apos repetir com sucesso o mesmo passo.
     # Nao usar apenas o resultado da ultima ferramenta da rodada.
     falhas_pendentes: set[tuple[str, str]] = set()
-    ferramentas_executadas = 0
+    ferramentas_executadas = len(historico)
     tentativas_verificacao_fechamento = 0
     tentativas_confirmacao_repetida = 0
     tentativas_reconsulta_processos = 0
     propostas_vetadas: set[tuple[str, str]] = set()
     reparo_pendente = False
+    completion_retries = 0
 
     if harness.task_manager.should_cancel(harness._task_id):
         return harness._encerrar_cancelado("cancelado antes da primeira rodada")
@@ -75,6 +77,15 @@ def executar_ciclo(
 
         if harness.task_manager.should_cancel(harness._task_id):
             return harness._encerrar_cancelado("cancelado durante a tarefa", rodada)
+
+        if getattr(harness, '_resuming', False):
+            previous = harness.current_task().steps
+            if any(str(getattr(item, 'name', '')) not in READ_ONLY_TOOLS
+                   and any(step.success is True and step.tool == str(getattr(item, 'name', ''))
+                           and step.signature == _identidade_da_chamada(item) for step in previous)
+                   for item in chamadas):
+                return harness._encerrar_falha('resume_effect_repeated',
+                    'Nao repeti um efeito ja registrado antes da interrupcao.', rodada)
 
         if propostas_vetadas and any(
             (str(getattr(item, "name", "")), _identidade_da_chamada(item)) in propostas_vetadas
@@ -286,6 +297,26 @@ def executar_ciclo(
             ):
                 harness._guardar_esclarecimento(objetivo, final_texto)
 
+            checked = harness._verify_completion(objetivo)
+            if isinstance(checked, CompletionPending):
+                if completion_retries >= 1:
+                    return harness._encerrar_falha('completion_recovery_exhausted',
+                        'A verificacao ainda encontrou etapas pendentes. Interrompi sem declarar conclusao.', rodada)
+                completion_retries += 1
+                estado_verificacao = harness._montar_estado(objetivo, historico, [{
+                    'ferramenta': 'guard_objetivo_incompleto', 'argumentos': '{}',
+                    'resultado': str(checked) + '. Proponha somente o proximo passo necessario ao objetivo original; nao repita efeitos ja concluidos.'}])
+                chamada_verificacao = _executar_rodada_modelo_impl(
+                    estado_verificacao, rodada=rodada + 1, task_id=harness._task_id,
+                    task_manager=harness.task_manager, pedir_modelo=harness._pedir_modelo,
+                    log_resposta_modelo=harness._log_resposta_modelo, write_log=write_log,
+                    input_items=1, estado_chars=len(estado_verificacao), tool_choice='required')
+                if chamada_verificacao is None:
+                    return False, resposta_wrapper(harness.MSG_ERRO_PROVIDER)
+                resposta, latencia_ms, metricas_roteamento = chamada_verificacao
+                continue
+            if checked is not None:
+                return checked
             resposta = _finalizar_resposta_sucesso(
                 objetivo,
                 historico,
@@ -476,6 +507,17 @@ def executar_ciclo(
         if cancelado:
             return harness._encerrar_cancelado("cancelado durante execucao", rodada)
 
+        paused = harness._checkpoint_between_rounds(safe=(
+            not falha_nao_recuperada and not propostas_vetadas and not completion_retries
+            and not harness._vision_reobserve_pending and not harness._browser_verification_pending
+            and not any((empty_response_retries, tentativas_verificacao_fechamento,
+                         tentativas_confirmacao_repetida, tentativas_reconsulta_processos,
+                         harness._vision_guard_attempts, harness._browser_verification_guard_attempts,
+                         harness._multitab_guard_attempts))
+            and _alvo_fechamento(objetivo) is None))
+        if paused is not None:
+            return paused
+
         # Depois de taskkill e de nova listagem: o MESMO PID ainda vivo
         # significa ausencia de progresso, mesmo que taskkill retornou 0.
         # Nao repetir o PID ate o limite de rodadas nem relatar sucesso.
@@ -503,7 +545,7 @@ def executar_ciclo(
         # Conclusao local so e permitida sem falha nao recuperada; com
         # falha, o ciclo segue para a proxima rodada do modelo (nunca
         # reexecuta as chamadas da rodada atual).
-        if not falha_nao_recuperada and harness._pode_encerrar_localmente(
+        if not falha_nao_recuperada and not harness._requires_completion_verification() and harness._pode_encerrar_localmente(
             objetivo,
             resultados_rodada,
             vision_reobserve_pending=harness._vision_reobserve_pending,
@@ -511,6 +553,9 @@ def executar_ciclo(
         ):
             if harness.task_manager.should_cancel(harness._task_id):
                 return harness._encerrar_cancelado("cancelado antes da conclusao local", rodada)
+            checked = harness._verify_completion(objetivo)
+            if checked is not None:
+                return checked
             ferramenta_final = resultados_rodada[-1]["ferramenta"]
             mensagem_final = harness._mensagem_conclusao_local(
                 objetivo,

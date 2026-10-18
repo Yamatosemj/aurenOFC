@@ -228,6 +228,7 @@ class ChromeRequestHandler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", mime)
         self.send_header("Content-Length", str(size))
+        self.send_header("Connection", "close")
         self.send_header("Cache-Control", "no-store")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("X-Frame-Options", "DENY")
@@ -250,6 +251,18 @@ class ChromeRequestHandler(BaseHTTPRequestHandler):
         self._bytes(code, json.dumps(data, ensure_ascii=False).encode("utf-8"))
 
     def _bad(self, code: int, message: str) -> None:
+        # An immediate close with unread TCP input can erase the error response
+        # on Windows. Discard only a bounded, declared body, never parse/run it.
+        if self.command == 'POST' and not getattr(self, '_body_consumed', False):
+            try:
+                length = int(self.headers.get('Content-Length', '-1'))
+                if 0 <= length <= MAX_REQUEST_BYTES:
+                    self.connection.settimeout(1.0)
+                    self.rfile.read(length)
+                    self._body_consumed = True
+            except (ValueError, OSError):
+                pass
+        self.close_connection = True
         self._json(code, {"error": message})
 
     def _authorized(self) -> bool:
@@ -306,7 +319,9 @@ class ChromeRequestHandler(BaseHTTPRequestHandler):
             self._bad(413, "Tamanho de requisicao invalido.")
             return
         try:
-            obj = json.loads(self.rfile.read(length))
+            body = self.rfile.read(length)
+            self._body_consumed = True
+            obj = json.loads(body)
             if not isinstance(obj, dict):
                 raise ValueError("O corpo precisa ser um objeto JSON.")
             path = urlsplit(self.path).path

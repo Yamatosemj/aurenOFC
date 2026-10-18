@@ -34,6 +34,10 @@ def verificar_intencao(objetivo, chamadas, historico):
     return _orchestrator.verify_intent(objetivo, chamadas, historico)
 
 
+def verificar_conclusao(snapshot):
+    return _orchestrator.verify_completion(snapshot)
+
+
 def obter_metricas_roteamento() -> dict[str, object]:
     """Retorna um snapshot observacional da ultima selecao do Router."""
     router = _orchestrator.router

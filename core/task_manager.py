@@ -7,6 +7,7 @@ from enum import Enum
 from threading import RLock
 from typing import Any
 import uuid
+import re
 from functools import wraps
 
 from agent.models import ExecutionPlan, PlanStep
@@ -87,6 +88,7 @@ class TaskStep:
     success: bool | None = None
     result: str = ""
     error: str = ""
+    signature: str = ""
 
 
 @dataclass(frozen=True)
@@ -106,6 +108,10 @@ class TaskSnapshot:
     error: str
     steps: tuple[TaskStep, ...]
     plan: ExecutionPlan | None = None
+    model_calls: int = 0
+    model_limit: int = 0
+    checkpoint_steps: int = -1
+    permission_limits: dict | None = None
 
 
 @dataclass
@@ -125,6 +131,10 @@ class _TaskRecord:
     error: str = ""
     steps: list[TaskStep] = field(default_factory=list)
     plan: ExecutionPlan | None = None
+    model_calls: int = 0
+    model_limit: int = 0
+    checkpoint_steps: int = -1
+    permission_limits: dict | None = None
 
 
 class TaskManager:
@@ -181,6 +191,14 @@ class TaskManager:
             plan['steps'] = tuple(PlanStep(**step) for step in plan['steps'])
             data['plan'] = ExecutionPlan(**plan)
         record = _TaskRecord(**data)
+        if (any(type(v) is not int or v < 0 for v in (record.model_calls, record.model_limit))
+                or record.model_calls > record.model_limit
+                or type(record.checkpoint_steps) is not int
+                or not -1 <= record.checkpoint_steps <= len(record.steps)):
+            raise RuntimeError('Checkpoint de orcamento invalido.')
+        if record.permission_limits is not None:
+            from core.permission_manager import PermissionManager
+            PermissionManager().restore_limits(record.permission_limits)
         if (type(record.cancel_requested) is not bool
                 or not all(isinstance(getattr(record, key), str) for key in
                            ('task_id', 'objective', 'created_at', 'started_at', 'finished_at', 'result', 'error'))
@@ -191,6 +209,8 @@ class TaskManager:
             raise RuntimeError('Checkpoint de tarefa possui tipos invalidos.')
         for step in record.steps:
             if (type(step.success) not in {bool, type(None)}
+                    or not isinstance(step.signature, str)
+                    or (step.signature and not re.fullmatch(r'[0-9a-f]{64}', step.signature))
                     or not all(isinstance(getattr(step, key), str) for key in
                                ('tool', 'arguments', 'started_at', 'finished_at', 'result', 'error'))
                     or type(step.step) is not int or step.step < 0
@@ -347,6 +367,7 @@ class TaskManager:
         *,
         task_id: str | None = None,
         step: int | None = None,
+        signature: str = '',
     ) -> TaskSnapshot:
         with self._lock:
             record = self._require(task_id)
@@ -360,6 +381,7 @@ class TaskManager:
                 )
 
             record.current_step = step if step is not None else record.current_step + 1
+            record.checkpoint_steps = -1
             record.current_tool = str(tool or "") or None
             record.attempts += 1
             record.steps.append(
@@ -369,6 +391,7 @@ class TaskManager:
                     arguments=str(arguments or ""),
                     attempt=record.attempts,
                     started_at=self._now(),
+                    signature=signature,
                 )
             )
             return self.snapshot(record.task_id)
@@ -401,6 +424,7 @@ class TaskManager:
                 success=bool(success),
                 result=str(result or ""),
                 error=str(error or ""),
+                signature=previous.signature,
             )
             record.current_tool = previous.tool
             return self.snapshot(record.task_id)
@@ -482,6 +506,10 @@ class TaskManager:
                 error=record.error,
                 steps=tuple(record.steps),
                 plan=record.plan,
+                model_calls=record.model_calls,
+                model_limit=record.model_limit,
+                checkpoint_steps=record.checkpoint_steps,
+                permission_limits=deepcopy(record.permission_limits),
             )
 
     def recent_snapshots(
@@ -539,6 +567,38 @@ class TaskManager:
             record.started_at = self._now()
         self._current_task_id = record.task_id
         return self.snapshot(record.task_id)
+
+    @_persistent_change
+    def configure_model_budget(self, limit, task_id=None):
+        record = self._require(task_id)
+        self._ensure_not_terminal(record, 'configurar orcamento')
+        if type(limit) is not int or limit < 1:
+            raise ValueError('Limite de chamadas invalido.')
+        if record.model_limit and limit > record.model_limit:
+            raise RuntimeError('Nao e permitido aumentar o orcamento ao retomar.')
+        if record.model_calls > limit:
+            raise RuntimeError('Orcamento solicitado ja consumido.')
+        record.model_limit = limit
+
+    @_persistent_change
+    def reserve_model_call(self, task_id=None):
+        record = self._require(task_id)
+        if record.state not in {TaskState.RUNNING, TaskState.WAITING}:
+            raise RuntimeError('Tarefa nao esta em execucao.')
+        if not record.model_limit or record.model_calls >= record.model_limit:
+            raise RuntimeError('Limite acumulado de chamadas atingido.')
+        record.model_calls += 1
+        record.checkpoint_steps = -1
+
+    @_persistent_change
+    def save_execution_checkpoint(self, permission_limits, task_id=None):
+        record = self._require(task_id)
+        if record.state is not TaskState.RUNNING or any(s.success is not True for s in record.steps):
+            raise RuntimeError('Checkpoint executavel exige passos sem incerteza ou falhas.')
+        from core.permission_manager import PermissionManager
+        PermissionManager().restore_limits(permission_limits)
+        record.permission_limits = deepcopy(permission_limits)
+        record.checkpoint_steps = len(record.steps)
 
     def _prune_history(self) -> None:
         if len(self._tasks) <= self.max_history:
