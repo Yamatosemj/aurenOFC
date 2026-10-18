@@ -8,7 +8,7 @@ Os achados tratados continuavam presentes na releitura (**MANTIDO**). Não houve
 
 **Etapa de correções e testes automatizados:** as correções locais previstas e os itens antes pendentes foram tratados. Última suíte completa: **954 aprovados, zero falhas e oito ignorados**. As atualizações da continuação ao final deste arquivo prevalecem sobre exclusões e limitações da primeira passagem. Revisão na [PR #153, em rascunho](https://github.com/Yamatosemj/aurenOFC/pull/153). Essa etapa não incluiu teste físico, API paga, limpeza de dados reais ou instalação/aprovação do runner real.
 
-**Validação Live posterior, em 18/10:** foram usados API, Windows, Chromium, microfone e saída de áudio reais, com dados fictícios. Das 17 verificações distintas, 16 passaram e uma tarefa composta pediu esclarecimento desnecessário e não concluiu. Essa pendência permanece aberta. Veja [RELATORIO_TESTES_LIVE.md](RELATORIO_TESTES_LIVE.md); as afirmações de ausência de Live neste documento descrevem a etapa anterior.
+**Validação Live posterior, em 18/10:** foram usados API, Windows, Chromium, microfone e saída de áudio reais, com dados fictícios. Na primeira bateria, 16 das 17 verificações distintas passaram; o pedido composto pediu esclarecimento desnecessário. A investigação posterior reproduziu e corrigiu essa falha: movimento e redimensionamento passaram no Windows real, e os seis controles finais do revisor passaram. A suíte automatizada atual passou com **959 aprovados, zero falhas e oito ignorados**. Veja [RELATORIO_TESTES_LIVE.md](RELATORIO_TESTES_LIVE.md), incluindo os limites e tentativas intermediárias; as afirmações de ausência de Live neste documento descrevem a etapa anterior.
 
 ## O que foi corrigido, fase por fase
 
