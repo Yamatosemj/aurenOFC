@@ -259,6 +259,13 @@ class TaskManager:
                 ids = ids[offset:offset + limit]
             return tuple(self.snapshot(task_id) for task_id in ids)
 
+    def list_chat_ids(self):
+        with self._lock:
+            if self._closed:
+                raise RuntimeError('Manager encerrado.')
+            return (self._storage.list_chat_ids() if self._storage is not None else
+                    tuple(sorted({r.chat_id for r in self._tasks.values() if r.chat_id})))
+
     @staticmethod
     def _now() -> str:
         return datetime.now().astimezone().isoformat(timespec="seconds")
@@ -537,6 +544,9 @@ class TaskManager:
     @_persistent_change
     def clear_current(self) -> None:
         with self._lock:
+            current = self.current_snapshot()
+            if current is not None and current.state in {TaskState.CREATED, TaskState.RUNNING, TaskState.WAITING}:
+                raise RuntimeError('Nao e permitido desanexar tarefa em execucao.')
             self._current_task_id = None
 
     @_persistent_change

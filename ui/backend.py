@@ -6,9 +6,11 @@ nas threads de trabalho; resultados e confirmacoes trafegam por Queue.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from queue import Queue
+from queue import Queue, Empty
+from pathlib import Path
 from threading import Event, Lock, Thread
 from typing import Any, Callable
+from core.execution_scope import current_session_guard
 
 
 @dataclass
@@ -82,11 +84,13 @@ class GuiConfirmationChannel:
 class AurenUiWorker:
     """Serializa tarefas em uma thread e mantém uma unica sessao do Harness."""
 
-    def __init__(self, harness_factory: Callable[..., Any] | None = None) -> None:
+    def __init__(self, harness_factory: Callable[..., Any] | None = None, *, task_db_path=None) -> None:
         self.events: Queue[UiEvent] = Queue()
-        self._requests: Queue[tuple[str, str, int]] = Queue()
+        self._requests: Queue[tuple[str, Any, int]] = Queue()
         self._harness_factory = harness_factory
         self._harness: Any = None
+        self._scheduler = None
+        self._task_db_path = task_db_path if task_db_path is not None else Path(__file__).resolve().parents[1]/'data'/'tasks'/'auren_tasks.sqlite3'
         self._pending: ConfirmationChoice | None = None
         self._lock = Lock()
         self._enabled = False
@@ -143,6 +147,9 @@ class AurenUiWorker:
             harness = self._harness
         if harness is not None:
             try:
+                snapshot = harness.current_task()
+                if getattr(getattr(snapshot, 'state', None), 'value', '') in {'paused', 'interrupted'}:
+                    return
                 harness.cancel_current_task()
             except Exception:
                 pass
@@ -178,12 +185,22 @@ class AurenUiWorker:
             return self._harness_factory(confirmation_channel=channel)
         # Import tardio: abrir a janela nao conecta a API nem inicia a voz.
         import auren
-        return auren.criar_harness(confirmation_channel=channel)
+        if self._task_db_path is False:
+            return auren.criar_harness(confirmation_channel=channel)
+        return auren.criar_harness(confirmation_channel=channel, task_db_path=self._task_db_path)
 
     def _dispose_harness(self) -> None:
         with self._lock:
             harness, self._harness = self._harness, None
         if harness is None:
+            return
+        self._scheduler = None
+        shutdown = getattr(harness, 'shutdown', None)
+        if callable(shutdown):
+            try:
+                shutdown(timeout=1.0)
+            except Exception:
+                self.events.put(UiEvent('notice', 'Nao foi possivel confirmar o encerramento completo da sessao.'))
             return
         # Mesma finalizacao de executar() no Harness, sem duplicar executores.
         try:
@@ -204,14 +221,18 @@ class AurenUiWorker:
     def _run(self) -> None:
         try:
             while True:
-                operation, text, generation = self._requests.get()
+                try:
+                    operation, text, generation = self._requests.get(timeout=1.0)
+                except Empty:
+                    self._poll_routines()
+                    continue
                 if operation == "quit" or self._closing.is_set():
                     break
                 if operation == "off":
                     self._dispose_harness()
                     self.events.put(UiEvent("off", generation=generation))
                     continue
-                if operation != "message":
+                if operation not in {"message", "task", "routine"}:
                     continue
                 with self._lock:
                     valid = self._enabled and generation == self._generation
@@ -219,6 +240,7 @@ class AurenUiWorker:
                     continue
 
                 self.events.put(UiEvent("busy", "Processando...", generation=generation))
+                session_token = current_session_guard.set(lambda: self._generation_is_active(generation))
                 try:
                     with self._lock:
                         harness = self._harness
@@ -230,7 +252,21 @@ class AurenUiWorker:
                         still_valid = self._enabled and generation == self._generation
                     if not still_valid or self._closing.is_set():
                         continue
-                    quick, response = harness.processar_mensagem(text)
+                    self._ensure_task_services(harness)
+                    if operation == 'task':
+                        if text['action'] == 'select':
+                            harness.selecionar_chat(text['chat_id'])
+                        if text['action'] in {'load', 'select'}:
+                            self.events.put(UiEvent('tasks', payload=self.task_dashboard(), generation=generation))
+                            continue
+                        harness.selecionar_chat(text['chat_id'])
+                        quick, response = harness.retomar_tarefa(text['task_id'], chat_id=text['chat_id'])
+                    elif operation == 'routine':
+                        self._routine_control(harness, text, generation)
+                        self.events.put(UiEvent('tasks', payload=self.task_dashboard(), generation=generation))
+                        continue
+                    else:
+                        quick, response = harness.processar_mensagem(text)
                     answer = response if quick else getattr(response, "output_text", str(response))
                     answer = str(answer or "").strip() or "(Sem resposta textual.)"
                     # Desligar/reativar invalida resultados da geracao anterior.
@@ -258,8 +294,136 @@ class AurenUiWorker:
                     if still_current:
                         self.events.put(UiEvent("error", f"Erro ao processar: {exc}", generation=generation))
                 finally:
+                    current_session_guard.reset(session_token)
                     self.events.put(UiEvent("idle", generation=generation))
         finally:
             self.deny_pending()
             self._dispose_harness()
             self.events.put(UiEvent("closed"))
+
+    def _ensure_task_services(self, harness):
+        manager = getattr(harness, 'task_manager', None)
+        if getattr(manager, 'persistent', False):
+            harness._garantir_sessao_chat()
+            if self._scheduler is None:
+                from core.routines import RoutineScheduler
+                self._scheduler = RoutineScheduler(manager)
+
+    def task_dashboard(self):
+        with self._lock:
+            harness, generation = self._harness, self._generation
+        empty = {'generation': generation, 'chat_id': '', 'chats': [], 'tasks': [], 'routines': []}
+        manager = getattr(harness, 'task_manager', None)
+        if not getattr(manager, 'persistent', False) or manager.closed:
+            return empty
+        try:
+            chat_id = getattr(getattr(harness, '_session', None), 'chat_id', '')
+            values = []
+            for task in manager.list_snapshots(chat_id, limit=50):
+                values.append({'task_id': task.task_id, 'objective': task.objective, 'state': task.state.value,
+                    'steps_done': sum(step.success is True for step in task.steps),
+                    'steps_total': len(task.steps), 'planned_steps': len(task.plan.steps) if task.plan else 0,
+                    'model_calls': task.model_calls, 'model_limit': task.model_limit,
+                    'current_tool': task.current_tool or '', 'cancel_requested': task.cancel_requested,
+                    'can_resume': task.state.value in {'paused', 'interrupted'} and not task.cancel_requested
+                        and task.checkpoint_steps == len(task.steps) and task.permission_limits is not None
+                        and task.model_calls < task.model_limit,
+                    'steps': [{'tool': s.tool, 'success': s.success, 'result': s.result[:300]} for s in task.steps[-20:]]})
+            return {'generation': generation, 'chat_id': chat_id,
+                'chats': sorted(set(manager.list_chat_ids()) | {chat_id}), 'tasks': values,
+                'routines': self._scheduler.list(chat_id=chat_id) if self._scheduler else []}
+        except RuntimeError:
+            return empty
+
+    def task_action(self, action, *, generation, task_id='', chat_id=''):
+        if action not in {'load', 'select', 'resume', 'pause', 'cancel'} or type(generation) is not int:
+            return False
+        with self._lock:
+            if not self._enabled or self._closing.is_set() or generation != self._generation:
+                return False
+            harness = self._harness
+        if action in {'pause', 'cancel'}:
+            if harness is None:
+                return False
+            task = harness.task_manager.get_snapshot(task_id)
+            if task.chat_id != chat_id:
+                return False
+            current = harness.current_task()
+            if action == 'pause':
+                return current is not None and current.task_id == task_id and harness.pause_current_task()
+            self.deny_pending()
+            if task.state.value in {'paused', 'interrupted'}:
+                harness.task_manager.cancel(task_id=task_id)
+                return True
+            return current is not None and current.task_id == task_id and harness.cancel_current_task()
+        self._requests.put(('task', {'action': action, 'task_id': task_id, 'chat_id': chat_id}, generation))
+        return True
+
+    def routine_action(self, action, *, generation, routine_id='', spec=None):
+        if action not in {'register', 'authorize', 'revoke'} or type(generation) is not int:
+            return False
+        if not self._generation_is_active(generation):
+            return False
+        if action == 'revoke':
+            if self._scheduler is None or self._harness is None:
+                return False
+            chat = self._harness._session.chat_id
+            self._scheduler.revoke(routine_id, chat_id=chat)
+            self.deny_pending()
+            return True
+        self._requests.put(('routine', {'action': action, 'routine_id': routine_id, 'spec': spec}, generation))
+        return True
+
+    def _routine_control(self, harness, data, generation):
+        if self._scheduler is None:
+            raise RuntimeError('Agenda persistente indisponivel.')
+        chat = harness._session.chat_id
+        if data['action'] == 'authorize':
+            with self._lock:
+                if not self._enabled or self._closing.is_set() or generation != self._generation:
+                    raise RuntimeError('Sessao invalidada antes da autorizacao.')
+                self._scheduler.authorize(data['routine_id'], chat_id=chat)
+            return
+        spec = data['spec']
+        fields = {'kind', 'objective', 'due_at', 'expires_at', 'interval_seconds', 'max_runs'}
+        if not isinstance(spec, dict) or set(spec) != fields:
+            raise ValueError('Cadastro de rotina invalido.')
+        options = {'read_volume': ('Qual o volume atual?', 'obter_audio_windows'),
+                   'read_status': ('Qual o status atual do sistema?', 'obter_status_windows')}
+        if spec['kind'] == 'reminder':
+            objective, mode, calls, budget = spec['objective'], 'suggest', [], 0
+        elif spec['kind'] in options:
+            objective, name = options[spec['kind']]
+            mode, calls, budget = 'execute', [{'name': name, 'arguments': {}}], 1
+        else:
+            raise ValueError('Tipo de rotina nao permitido nesta interface.')
+        self._scheduler.register(chat_id=chat, objective=objective, due_at=spec['due_at'],
+            expires_at=spec['expires_at'], interval_seconds=spec['interval_seconds'],
+            max_runs=spec['max_runs'], mode=mode, allowed_calls=calls, model_budget=budget)
+
+    def _poll_routines(self):
+        with self._lock:
+            harness, generation = self._harness, self._generation
+            valid = self._enabled and not self._closing.is_set()
+        if not valid or harness is None or self._scheduler is None:
+            return
+        try:
+            current = harness.current_task()
+            if current is not None and current.state.value not in {'completed', 'failed', 'cancelled'}:
+                return
+            chat = harness._session.chat_id
+            import time
+            if not any(r['status'] == 'enabled' and r['next_due'] <= time.time() for r in self._scheduler.list(chat_id=chat)):
+                return
+            self.events.put(UiEvent('busy', generation=generation))
+            token = current_session_guard.set(lambda: self._generation_is_active(generation))
+            try:
+                for event in self._scheduler.tick(harness, chat_id=chat):
+                    if self._generation_is_active(generation):
+                        self.events.put(UiEvent('notice', 'Rotina: ' + event['text'] + ' — ' + event['kind'], generation=generation))
+            finally:
+                current_session_guard.reset(token)
+        except Exception:
+            self.events.put(UiEvent('notice', 'A rotina encontrou um erro e nao foi confirmada. Confira suas tarefas.', generation=generation))
+        finally:
+            self.events.put(UiEvent('idle', generation=generation))

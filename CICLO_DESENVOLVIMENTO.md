@@ -2,20 +2,21 @@
 
 ## Estado para retomada — 18/10/2026
 
-**Fases 0 a 2 validadas; Fase 3 implementada, aguardando CI final. Fases 4 e 5 não iniciadas.** Base: PR #156, `a2b0961`, CI `39128640968` aprovado (1.044 Windows; 1.000 Linux/44 ignorados). Nenhum merge.
+**Fases 0 a 3 validadas; Fase 4 implementada, aguardando CI final. Fase 5 não iniciada.** Base: PR #157, `2313f1d`, CI `39129372163` aprovado (1.055 Windows; 1.011 Linux/44 ignorados). Nenhum merge.
 
-- Branch: `desenvolvimento/fase-3-proatividade-controlada`, empilhada na Fase 2.
-- Relatório: [FASE_3.md](docs/desenvolvimento/FASE_3.md); evidências em `docs/desenvolvimento/fase3/RESULTADOS_FASE_3.json`.
-- Suíte local: 1.047 aprovados, zero falhas, oito ignorados. Rotinas usam o mesmo TaskManager/SQLite; aprovação de agenda não substitui PermissionManager.
-- A agenda só dispara por tick explícito nesta fase. Sugestão não chama modelo ou ferramenta. Rotina executável exige escopo exato e orçamento, e fica interrompida diante de resultado incerto. Não é retomada sem escopo.
-- Sem API paga, dados pessoais, Live sensível, alteração de main ou runner. Pasta `desktop/` intocada.
+- Branch: `desenvolvimento/fase-4-interface-tarefas`, empilhada na Fase 3.
+- Relatório: [FASE_4.md](docs/desenvolvimento/FASE_4.md); evidências em `docs/desenvolvimento/fase4/RESULTADOS_FASE_4.json`.
+- Suíte local: 1.055 aprovados, zero falhas, oito ignorados. Painel Chrome e tabela Tk usam o worker/Harness existentes; Chrome cadastra e autoriza rotinas em passos separados.
+- Worker padrão passa banco operacional explícito e encerra pelo Harness.shutdown. Não abre banco até pedido de carregar tarefas ou mensagem. Não se retomam objetivos ou aprovam rascunhos automaticamente.
+- Corrida de Desligar antes da criação do objetivo reproduzida e corrigida; controles/autorizações e execução obedecem à geração da sessão.
+- Nenhuma API paga, dados pessoais, Live sensível, mudança de main ou runner. `desktop/` intocada.
 
 ## Como retomar
 
-1. Conferir main, HEADs, PRs e CI no SHA final da Fase 3. Só avançar com suíte completa e ambos os jobs aprovados.
-2. Auditar worker/Chrome/Tk existentes antes da Fase 4. Integrar progresso/pausa/cancelamento/retomada e confirmação pelo mesmo worker/Harness, sem outro executor.
-3. Mostrar as condições de uma rotina antes de autorizar; cadastro é rascunho e não pode ser aprovado por texto do modelo. Conferir geração/sessão antes de comandos e confirmações. Não ativar rascunhos ao abrir a interface. Rodar agenda somente para chat ativo e autorizado.
-4. Na Fase 5, testar integração, falhas e reinício com dados fictícios. API paga e ações sensíveis continuam sem orçamento aprovado; não executar nem declarar aprovados esses cenários.
+1. Conferir main, HEADs, PRs e CI da Fase 4 no SHA final. Só avançar com suíte completa e ambos os jobs aprovados.
+2. Fase 5: bateria integrada com dados fictícios, tarefa longa, pausas/reinício, reserva/efeito incerto, falhas de armazenamento, negação de permissões, gerações antigas e revogação. Reutilizar banco e ciclo existentes.
+3. Quando possível, validar a interface real em browser isolado com perfil temporário, rede externa bloqueada e provider/efeitos fictícios. Não usar perfil/browser pessoal nem chamar a API real.
+4. Distinguir teste integrado/componentes reais de Live completo do Auren. Modelo/API reais e ações sensíveis continuam sem orçamento autorizado; documentar o que falta e interromper nesse limite, sem inventar aprovação.
 
 ## Critérios de avanço propostos
 

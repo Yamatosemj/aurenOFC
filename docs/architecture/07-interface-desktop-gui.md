@@ -1,5 +1,7 @@
 # Arquitetura 07 — Interface desktop (Tkinter) e backend GUI
 
+Fase 4 candidata: o worker padrão usa banco operacional separado e encerramento completo; Chrome mostra tarefas/rotinas e Tk mostra acompanhamento/controles de tarefas. A guarda de sessão acompanha a execução e impede começo após Desligar. Interfaces preservam Dispatcher e confirmação. Cadastro não autoriza rotina; retomada exige checkpoint seguro. Escopo, caminho, diferenças entre telas e limites em [FASE_4.md](../desenvolvimento/FASE_4.md).
+
 > **Etapa 7 — auditoria estática** da `main` no commit `89755a2705b08b241e9f5e019b62f41ccda3d30d`. A presença de uma GUI, de seus estados e de testes com doubles **não comprova funcionamento visual no Windows real**. Esta revisão não executou janela física, API paga, automação desktop nem o notebook pessoal do proprietário. Só documenta contratos existentes.
 >
 > Documentos anteriores: [núcleo/Harness](01-nucleo.md), [Dispatcher e autorização](02-roteamento-seguranca.md), [sessão e memória](03-modelo-sessao-memoria.md) e [Windows/UIA](04-windows-arquivos-visao.md). A GUI é um **canal de entrada de texto** do mesmo Auren; não é um segundo agente nem inclui PTT. Para voz, consulte [Etapa 6](06-voz-stt-tts.md).
