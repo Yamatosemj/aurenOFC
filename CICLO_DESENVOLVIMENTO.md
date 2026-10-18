@@ -2,7 +2,7 @@
 
 ## Estado para retomada — 18/10/2026
 
-**Fase 0 concluída para desenvolvimento em branch; Fases 1 a 5 ainda não iniciadas.** A revisão das alterações da base e seus contratos foi concluída após reconciliar #152/#153. O bloqueio F0-SEG-001 passou nos testes. Escopo, evidências e limites em [REVISAO_FINAL.md](docs/desenvolvimento/fase0/REVISAO_FINAL.md). Isso não autoriza merge nem comprova todas as funcionalidades em uso real.
+**Fase 0: revisão e correções concluídas localmente; avanço condicionado ao CI do último HEAD. Fases 1 a 5 não iniciadas.** A conferência final encontrou F0-SEG-002 no supervisor Windows depois da reconciliação #152/#153. Foi corrigido sem relaxar testes ou proteções. A suíte posterior passou com 978 aprovados e oito ignorados. Escopo e limites em [REVISAO_FINAL.md](docs/desenvolvimento/fase0/REVISAO_FINAL.md) e [SUPERVISOR_WINDOWS.md](docs/desenvolvimento/fase0/SUPERVISOR_WINDOWS.md). Não avançar com o run anterior falhando nem fazer merge.
 
 - Branch: `desenvolvimento/fase-0-base-auditoria`, criada do HEAD `7df474bb2f6a315ffede684c712999addddb5873` da #153.
 - Base da PR de revisão: `correcoes-auditoria`, para mostrar somente a revisão, sem repetir os arquivos da #153. A Fase 1 deve derivar da branch reconciliada da #154, não diretamente da #153.

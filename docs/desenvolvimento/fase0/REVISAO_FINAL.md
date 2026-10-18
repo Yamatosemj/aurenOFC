@@ -1,5 +1,7 @@
 # Encerramento da Fase 0 — base reconciliada
 
+**Atualização após conferir o HEAD final:** o CI de `da85b5e` encontrou F0-SEG-002 no supervisor Windows. A sequência permaneceu na Fase 0. A correção e a suíte local posterior (978 aprovados, zero falhas, oito ignorados) estão em [SUPERVISOR_WINDOWS.md](SUPERVISOR_WINDOWS.md); o avanço exige o CI do novo HEAD aprovado. Os resultados abaixo descrevem o código anterior e não substituem essa conferência.
+
 18/10/2026. Base de código examinada: `2b4562c01dce6c09f1d2c2b16a0a7276cf4977a5`, na PR #154, empilhada sobre #153. Main consultada: `70b040d6191237e2f0a291a14b8ea8fb4b78a09d`. Nenhuma integração à main.
 
 Foi concluída a revisão das alterações da #153 e dos pontos de integração afetados, incluindo a reconciliação da #152. A revisão é do conjunto de mudanças e seus contratos; não é uma prova de ausência de defeitos em todo o produto.
