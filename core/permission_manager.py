@@ -9,6 +9,7 @@ from typing import Any
 
 from core.confirmation import ConfirmationChannel, ConfirmationRequest, TextConfirmationChannel
 from core.tool_contracts import capability_for_tool
+from core.utils import caminho_explicito_programa
 from tools.file_intelligence import _classify_read_path, _resolve_path, capture_read_authorization
 
 
@@ -723,6 +724,11 @@ class PermissionManager:
         self,
         argumentos: dict[str, Any],
     ) -> tuple[PermissionLevel, str]:
+        if caminho_explicito_programa(argumentos.get("programa", "")) is not None:
+            return (
+                PermissionLevel.CONFIRM,
+                "Executar um programa por caminho explicito exige confirmacao explicita.",
+            )
         programa = self._normalizar_texto(
             argumentos.get("programa", "")
         )

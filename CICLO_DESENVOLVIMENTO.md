@@ -2,20 +2,20 @@
 
 ## Estado para retomada — 18/10/2026
 
-**BLOQUEADO NA FASE 0. Fases 1 a 5 não iniciadas.** A revisão encontrou uma proteção da PR #152 ausente da #153. A regra do proprietário exige documentar e interromper a sequência diante de risco de segurança. Nenhuma mudança de produto foi feita nesta fase.
+**Reconciliação da Fase 0 implementada e testada; revisão integral da base ainda pendente. Fases 1 a 5 não iniciadas.** Após o proprietário autorizar a reconciliação, a proteção de caminhos explícitos da #152 foi conciliada com o retorno estruturado da #153. O bloqueio F0-SEG-001 passou nos testes; isso não conclui a revisão restante de todos os arquivos da #153.
 
 - Branch: `desenvolvimento/fase-0-base-auditoria`, criada do HEAD `7df474bb2f6a315ffede684c712999addddb5873` da #153.
 - Base da PR de revisão: `correcoes-auditoria`, para mostrar somente a revisão, sem repetir os arquivos da #153. Essa base é provisória e não está aprovada para a Fase 1.
 - Evidência e análise: [revisão da Fase 0](docs/desenvolvimento/fase0/REVISAO_BASE.md), [comparação executada](docs/desenvolvimento/fase0/RESULTADOS_COMPARACAO.json) e [testes de segurança](tests/test_phase0_executable_confirmation.py).
-- Suíte completa desta fase: **960 aprovados, três falhas de segurança confirmadas, oito ignorados**. O critério de avanço não foi atendido. Os testes que falham foram mantidos na coleta normal.
+- Suíte completa após a reconciliação: **974 aprovados, zero falhas, oito ignorados**, em **49,79 segundos**. Os testes de segurança permaneceram na coleta normal e agora passam. A revisão integral restante continua como critério de avanço pendente.
 - Não houve merge, alteração de main, chamada paga, acesso a dados pessoais ou execução de programas reais. A pasta preexistente `desktop/` não foi examinada nem alterada.
 - A revisão integral de todos os arquivos da #153 não foi concluída: a sequência foi interrompida no primeiro bloqueio de segurança confirmado.
 
 ## Como retomar
 
 1. Conferir novamente main, HEADs, estado e CI das PRs; os hashes abaixo são referências da revisão, não valores permanentes.
-2. Resolver o bloqueio entre #152 e #153 numa correção própria, mantendo a confirmação para caminhos explícitos, o retorno estruturado, os demais guards e uma única implementação de abertura.
-3. Transferir os testes desta revisão para a base reconciliada e fazê-los passar sem alterar suas exigências. Completar a revisão restante da #153 e executar a suíte completa.
+2. Conferir a reconciliação na PR #154: a identificação de caminhos é compartilhada entre permissão e executor; mantém confirmação, retorno estruturado e uma única implementação de abertura. A #152 não deve ser mesclada por cima dessa implementação sem nova revisão.
+3. Completar a revisão restante da #153 e conferir a evidência da suíte no HEAD reconciliado. A reconciliação e seus testes não substituem essa revisão.
 4. Registrar os resultados e a base reconciliada em PR, sem mesclar automaticamente à main. Só então avaliar a entrada na Fase 1.
 
 Não foi definido orçamento para API paga neste ciclo. Chamadas pagas e ações sensíveis ficam pendentes de autorização e orçamento explícitos. Autorizações Live de investigações anteriores não são orçamento para estas fases.

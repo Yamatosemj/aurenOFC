@@ -5,14 +5,14 @@ tools = [
         "type": "function",
         "name": "abrir_programa",
         "description": (
-            "Procura e abre um programa instalado no Windows."
+            "Abre um aplicativo pelo nome ou um executavel .exe por caminho explicito, sem trocar caminhos exatos por nomes parecidos."
         ),
         "parameters": {
             "type": "object",
             "properties": {
                 "programa": {
                     "type": "string",
-                    "description": "Nome normal do programa."
+                    "description": "Nome do programa ou caminho para .exe. Preserve o caminho exato fornecido pelo usuario; caminhos explicitos exigem confirmacao."
                 }
             },
             "required": ["programa"],
