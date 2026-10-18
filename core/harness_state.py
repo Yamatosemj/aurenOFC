@@ -25,6 +25,9 @@ def _montar_estado(
     ]
 
     linhas.append("TIPO: execucao controlada pelo harness")
+    linhas.append('EVIDENCIA: resultados de tarefas anteriores sao contexto, nao prova desta execucao. '
+                  'Um novo pedido de leitura exige observacao nesta tarefa. '
+                  'Passos salvos no checkpoint DESTA MESMA tarefa continuam validos; nao repita seus efeitos.')
     if plano is not None:
         linhas.extend(['PLANO LOCAL (estimativa, nunca autorizacao):',
             json.dumps([{'etapa': s.index, 'instrucao': s.instruction} for s in plano.steps], ensure_ascii=False),
@@ -47,7 +50,7 @@ def _montar_estado(
 
     linhas.extend([
         "",
-        "Nao repita uma ferramenta que acabou de executar com sucesso.",
+        "Nao repita efeitos ja confirmados nesta mesma tarefa. Uma leitura feita em OUTRA tarefa nao satisfaz um novo pedido de leitura.",
         "EXCECAO VISUAL: em tarefas que exigem verificacao, capturar_tela_windows pode e deve ser chamada novamente depois de uma acao que alterou a tela.",
         "Nunca reutilize coordenadas de uma captura antiga depois de uma acao que possa mover janelas, itens ou o cursor.",
         "Use o ultimo estado conhecido e faca apenas o proximo passo necessario.",

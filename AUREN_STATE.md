@@ -8,6 +8,8 @@
 
 ## 1. Situação e trabalho em foco
 
+- **Evidência por tarefa, candidata sobre #163:** o Harness recusa conclusão de leituras/ações reconhecidas sem passos adequados da própria tarefa; contexto anterior não é prova. Conversa e checkpoints próprios preservados. Local: 1.141 aprovados/8 ignorados; Live com conteúdo antigo no contexto e resumo posterior: 2 cenários aprovados, 3 chamadas novas, total 8/8 e US$ 0,00587470 estimados dentro de US$ 0,50. Sem saldo de chamadas nesta autorização. Identificação de capacidades indisponíveis segue pendente. [Causas, evidências e limites](docs/estabilizacao/EVIDENCIA_POR_TAREFA.md).
+
 - **Entrega de avisos, candidata sobre #162:** notificações persistidas no mesmo TaskManager, confirmação visual no Chrome e adiamento da entrega sem repetir a rotina. Correção de continuidade preservada; sem ferramentas novas de chat ou Electron. Live deste ciclo: 5 chamadas, 2 cenários aprovados/2 falhos, US$ 0,00269581 estimados. Conclusão de tarefa simples sem ferramenta e explicação de capacidade ausente continuam bloqueios; nenhum Live repetido para aprovação. [Resultados, protocolo e limites](docs/estabilizacao/AVISOS_DURAVEIS.md).
 
 - **Preparação de integração em 18/10:** candidata `integracao/prs-153-160-20261018` consolida #153–#160 por avanço linear, sem conflitos e sem reaplicar #152. #141/#142 excluídas. Produção idêntica à #160; quatro cenários novos pela fábrica real/HTTP e correção de captura nos testes PowerShell. Local: 1.073 aprovados/oito ignorados, zero avisos; oito controles visuais isolados aprovados. Conferir CI Windows/Linux do HEAD final na PR. Sem novas chamadas pagas, ações pessoais ou alteração da main. [Relatório de integração](RELATORIO_INTEGRACAO.md) e [teste manual](TESTE_MANUAL_WINDOWS.md).

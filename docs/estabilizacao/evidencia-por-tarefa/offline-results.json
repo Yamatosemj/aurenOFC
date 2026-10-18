@@ -1,0 +1,146 @@
+{
+  "runs": [
+    {
+      "run": "current-evidence-red",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 1,
+        "pid": 11512,
+        "duration_seconds": 3.46
+      },
+      "pytest": {
+        "tests": 26,
+        "failures": 16,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 10
+      },
+      "junit_sha256": "22744990814a98a59adca51d480f91b9ceef6a743639ea39cabd637eb4cfa1be"
+    },
+    {
+      "run": "current-evidence-green",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 1,
+        "pid": 27992,
+        "duration_seconds": 13.69
+      },
+      "pytest": {
+        "tests": 94,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 93
+      },
+      "junit_sha256": "de08449d9fcbe860b1af3639d2eb2122e87f1cb0fc24be6725136ffdcbf1cb88"
+    },
+    {
+      "run": "current-evidence-focused",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 0,
+        "pid": 17672,
+        "duration_seconds": 12.89
+      },
+      "pytest": {
+        "tests": 110,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 110
+      },
+      "junit_sha256": "d2a0f8bb66bfdf52f6117dee3c4a3f60be3faeb97cc5d9d42923a952c31ce29b"
+    },
+    {
+      "run": "current-evidence-budget",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 0,
+        "pid": 1416,
+        "duration_seconds": 6.05
+      },
+      "pytest": {
+        "tests": 36,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 36
+      },
+      "junit_sha256": "8e4515de0c73dc25e946982145a76647123da5fc36b31f1cf674f6e72f5b1d5b"
+    },
+    {
+      "run": "current-evidence-prelive",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 0,
+        "pid": 27284,
+        "duration_seconds": 22.05
+      },
+      "pytest": {
+        "tests": 68,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 68
+      },
+      "junit_sha256": "6db1835e971e2bbb8f49731b7c3f517e29fa33a0d6d9c5499dbcfe96592514b2"
+    },
+    {
+      "run": "current-evidence-full",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 1,
+        "pid": 21208,
+        "duration_seconds": 80.69
+      },
+      "pytest": {
+        "tests": 1147,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 8,
+        "passed": 1138
+      },
+      "junit_sha256": "ec15df30ecfdd6dd56fdd82eb75481269762a77e043e07c4fad75d38bf45523f"
+    },
+    {
+      "run": "current-evidence-regressions",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 0,
+        "pid": 26476,
+        "duration_seconds": 9.66
+      },
+      "pytest": {
+        "tests": 89,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 89
+      },
+      "junit_sha256": "588b1172f14b601bbb98fb4079818f697168fd55a3dba081e92c8d705d951620"
+    },
+    {
+      "run": "current-evidence-full-final",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 0,
+        "pid": 27152,
+        "duration_seconds": 82.64
+      },
+      "pytest": {
+        "tests": 1149,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 8,
+        "passed": 1141
+      },
+      "junit_sha256": "940a6efb07dc89858345dcb6b5ccb11c72f7318a1d2d49c5424785ffdda7179c"
+    }
+  ],
+  "production_sha256_equal_in_full_suite_live_and_delivery": {
+    "core/harness.py": "3ccdcaaa236101f0a0a662b81a1afdd8cab83d448756033df1cf0da0c53196cb",
+    "core/harness_cycle.py": "ac163625e8e17aa8d7d0eccbf443928a1efaa9e681b3e4fa59f58fa19667d5b5",
+    "core/harness_state.py": "e721beb311589487c550af0493978a49ee612faff0ff47b0476aea8175859948",
+    "core/task_evidence.py": "cf640598c66ef4d670a255c398aebe8026aaa61ee32908da734e7f852d7ef6a9"
+  }
+}
