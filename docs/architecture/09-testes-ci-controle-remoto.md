@@ -40,6 +40,8 @@ A política efetiva `before-job.ps1`, os arquivos de aprovação e o estado `STO
 
 ## 3. Teste pelo chat: fluxo efetivamente validado em 2026-10-10
 
+AUD-033 (correção candidata): novas instalações com `scripts/instalar/AUTORIZAR_TESTES_CHAT.ps1` exigem `-AutorizarValidacaoOffline` após revisão pelo proprietário. A aprovação gravada inclui `offline_hosted_validation=true`; instalações antigas inconsistentes são recusadas. A correção do arquivo versionado não instala nem autoriza o runner real.
+
 1. Em uma **PR aberta, não draft, interna e com base `main`**, o proprietário publica exatamente `AUREN_TESTE_V1 pytest <SHA de 40 caracteres minúsculos>` como comentário. Não é comando em shell; texto livre, nomes de branch, camadas Live e strings extras são rejeitados.
 2. O job hospedado `validar` carrega um [validador fixado](../../remote_tests/chat_request.py) no commit `b695fad7cc668d9a47e4dfc72f11a74b152d9cac`. Checa repo privado, autor/proprietário, tentativa original, comentário, PR aberta, origem interna e `head.sha` exato. O pedido não escolhe shell, scripts nem outro método.
 3. O job `executar` requer ambiente `auren-windows` e runner Windows privado. Faz checkout do **controlador confiável e imutável** `448a1f87a672278471d1d8dcc08a2a621e10b77c` e de **outro** checkout da PR no SHA confirmado. Também confere SHA exato do controlador e da PR.

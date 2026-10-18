@@ -89,7 +89,7 @@ Todos os itens abaixo foram relidos e permanecem presentes; não são declarados
 | AUD-022 | Corrigido na continuação autorizada: contexto recuperado exige confirmação para efeitos externos |
 | AUD-024 | Corrigido na continuação autorizada, com limites físicos descritos abaixo |
 | AUD-027 | Corrigido na continuação autorizada; veja a atualização abaixo |
-| AUD-033 | Não foi concedida silenciosamente a aprovação para testes sem consulta online |
+| AUD-033 | Corrigido no instalador, sem instalar nem aprovar o runner real |
 | LIV-006 | Replanejar depois de um veto exige decidir o limite de autonomia; veto preservado |
 
 AUD-036 pertence exclusivamente à PR #137 e ficou fora por instrução expressa. AUD-020 tem a parte de contagem corrigida e as limitações de custo e falhas anteriores à decisão descritas acima.
@@ -182,3 +182,9 @@ A decisão anterior foi resolvida dentro da autorização para continuar: permit
 MANTIDO como lacuna de propagação e corrigido de forma conservadora. As seções recuperadas carregam uma identificação separada do texto. O Harness informa essa origem ao mesmo gerenciador de permissões usado para executar ferramentas. Isso vale também para registros antigos: conteúdo lembrado não recebe a autoridade do pedido atual. Consultas continuam possíveis; ações com efeitos externos passam a exigir confirmação quando houver contexto recuperado. Isso pode aumentar os pedidos de confirmação em conversas longas.
 
 A reprodução com duas tarefas fictícias mostrou que a segunda perdia a exigência de confirmação. Falhou antes e passou depois; não se demonstrou um ataque contra um modelo real. Foram 40 testes focados aprovados e suíte completa com 935 aprovados, zero falhas e oito ignorados (47,78 segundos; `memory-origin-full/result.xml`). Não houve migração nem leitura de bancos reais.
+
+## Continuação autorizada — AUD-033
+
+MANTIDO na releitura e corrigido no instalador. Uma instalação nova exige a opção explícita `-AutorizarValidacaoOffline` e grava a aprovação correspondente à política copiada. Uma instalação antiga incompleta não é mais anunciada como concluída. O controle manual e os backups são preservados. O instalador não foi executado no perfil real e nenhuma autorização real foi concedida.
+
+Três reproduções válidas falharam antes. Uma tentativa anterior foi impedida pela política de execução do Windows; a preparação foi ajustada para executar apenas o texto revisado na pasta fictícia, sem mudar essa política. Depois, 12 testes focados passaram; suíte completa: 938 aprovados, zero falhas e oito ignorados (48,67 segundos; `chat-installer-full/result.xml`).

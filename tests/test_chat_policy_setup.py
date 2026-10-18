@@ -53,7 +53,7 @@ def test_installer_preserves_old_hook_and_is_idempotent(tmp_path):
     (policy / "control-approval.json").write_text('{"enabled":true}', encoding="utf-8")
     env = dict(os.environ, USERPROFILE=str(tmp_path))
     run = lambda: subprocess.run(
-        ["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", str(INSTALLER)],
+        ["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", str(INSTALLER), "-AutorizarValidacaoOffline"],
         cwd=ROOT, env=env, capture_output=True, text=True, timeout=25, check=False,
     )
     first = run()
@@ -64,7 +64,7 @@ def test_installer_preserves_old_hook_and_is_idempotent(tmp_path):
     assert "Get-ResolvedReviewedPrSha" in installed
     assert (policy / "before-job.pre-chat.bak").read_text(encoding="utf-8") == old
     approval = json.loads((policy / "chat-control-approval.json").read_text(encoding="utf-8"))
-    assert approval == {"enabled": True, "workflow_blob": PINNED_BLOB}
+    assert approval == {"enabled": True, "workflow_blob": PINNED_BLOB, "offline_hosted_validation": True}
     second = run()
     assert second.returncode == 0, second.stdout + "\n" + second.stderr
 
