@@ -767,6 +767,18 @@ class AurenHarness:
                 self._trace_started_perf = None
                 _CURRENT_SESSION.reset(token)
 
+    def shutdown(self, *, timeout: float = 1.0) -> str:
+        """Finaliza a fila com prazo e encerra recursos e sessão do canal."""
+        self.cancel_current_task()
+        try:
+            state = self._background_queue.shutdown(cancel_pending=False, timeout=timeout)
+            return state
+        finally:
+            try:
+                self.fechar()
+            finally:
+                self._encerrar_sessao_chat("closed")
+
     def current_task(self):
         """Retorna um snapshot imutavel da tarefa atual, se existir."""
         return self.task_manager.current_snapshot()

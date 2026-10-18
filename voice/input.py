@@ -4,7 +4,7 @@ import os
 import time
 from collections import deque
 from dataclasses import dataclass
-from threading import Lock
+from threading import Event, Lock
 from typing import Any
 
 from agent.ari_native.audio_manager import input_session
@@ -61,6 +61,7 @@ class PushToTalkRecorder:
         self._sd = sounddevice_module
         self._keyboard = keyboard_module
         self._lock = Lock()
+        self._stop_requested = Event()
         self._frames: list[Any] = []
         self._pre_roll: deque[Any] = deque()
         self._pre_roll_samples = 0
@@ -377,7 +378,7 @@ class PushToTalkRecorder:
             max_duration_reached = False
 
             while True:
-                if keyboard.is_pressed("esc"):
+                if self.pediu_saida():
                     esc_requested = True
                     break
 
@@ -399,7 +400,7 @@ class PushToTalkRecorder:
             started = time.perf_counter()
 
             while True:
-                if keyboard.is_pressed("esc"):
+                if self.pediu_saida():
                     esc_requested = True
                     break
 
@@ -417,13 +418,15 @@ class PushToTalkRecorder:
                     with self._lock:
                         self._recording = False
                     print("Auren voz: limite maximo de fala atingido.")
-                    while keyboard.is_pressed(self.hotkey) and not keyboard.is_pressed("esc"):
+                    while keyboard.is_pressed(self.hotkey) and not self.pediu_saida():
                         time.sleep(self.config.poll_interval)
 
-                if not keyboard.is_pressed("esc"):
+                if self.pediu_saida():
+                    esc_requested = True
+                else:
                     deadline = time.perf_counter() + max(0.0, self.config.post_roll_seconds)
                     while time.perf_counter() < deadline:
-                        if keyboard.is_pressed("esc"):
+                        if self.pediu_saida():
                             esc_requested = True
                             break
                         time.sleep(self.config.poll_interval)
@@ -507,8 +510,14 @@ class PushToTalkRecorder:
         return bool(self._keyboard.is_pressed(self.hotkey))
 
     def pediu_saida(self) -> bool:
+        if self._stop_requested.is_set():
+            return True
         self._load_dependencies()
         return bool(self._keyboard.is_pressed("esc"))
+
+    def solicitar_parada(self) -> None:
+        """Sinaliza o término cooperativo da espera ou captura PTT."""
+        self._stop_requested.set()
 
 
 AudioCapture = PushToTalkRecorder

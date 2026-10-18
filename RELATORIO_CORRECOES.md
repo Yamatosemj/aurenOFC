@@ -84,10 +84,10 @@ Todos os itens abaixo foram relidos e permanecem presentes; não são declarados
 | --- | --- |
 | AUD-008 | Corrigido na continuação autorizada; veja a atualização abaixo |
 | AUD-013 | A regra após falhas repetidas exige decidir entre parada global e tentativa de alternativa |
-| AUD-017 | Identidade do cache de reconhecimento de voz: testes de voz excluídos |
+| AUD-017 | Corrigido na continuação autorizada |
 | AUD-019 | Prazos de retenção e alcance da exclusão exigem decisão do proprietário |
 | AUD-022 | Origem de conteúdo lembrado continua sem transporte estruturado; ataque não demonstrado. A política para esse conteúdo exige decisão |
-| AUD-024 | Encerramento e filas da voz: testes de voz excluídos |
+| AUD-024 | Corrigido na continuação autorizada, com limites físicos descritos abaixo |
 | AUD-027 | Corrigido na continuação autorizada; veja a atualização abaixo |
 | AUD-033 | Não foi concedida silenciosamente a aprovação para testes sem consulta online |
 | LIV-006 | Replanejar depois de um veto exige decidir o limite de autonomia; veto preservado |
@@ -162,3 +162,11 @@ Não houve microfone, som, download de modelos, API paga ou interação física.
 MANTIDO na releitura e corrigido. O limite de áudio passou a valer dentro do recebimento dos blocos, incluindo o trecho anterior ao pressionamento da tecla. Ao atingir o tempo máximo, a gravação também para antes de esperar a tecla ser solta. Manter a tecla pressionada não faz o buffer crescer sem limite.
 
 As duas reproduções falharam antes: receberam 3.000 e 180 amostras para um limite de 100. Depois passaram, junto com os testes de voz existentes: 42 aprovados. A suíte completa passou com 922 aprovados, zero falhas e oito ignorados, em 44,72 segundos (`voice-buffer-full/result.xml`). Os oito ignorados continuam relacionados a links simbólicos no Windows. Nenhum dispositivo foi usado.
+
+## Continuação autorizada — AUD-017 e AUD-024
+
+Ambos MANTIDOS na releitura e corrigidos. O reconhecimento de voz separa os arquivos por origem e revisão e verifica a identificação do cache. Os arquivos antigos são preservados; pode ser necessário baixar o modelo novamente no primeiro uso. A revisão padrão ainda é `main`; para fixar uma versão, configure `AUREN_ASR_REVISION` com um commit remoto. Não houve download nesta manutenção.
+
+O modo de voz agora limita as filas, avisa quando descarta áudio excedente, sinaliza a parada da captura e encerra a sessão e os recursos do Harness. A espera pelo TTS cancelado tem prazo de um segundo; se ele não responder, o canal encerra. A gravação de memória que ultrapassar o prazo é informada. Não se promete interromper à força um driver ou uma escrita que já começou.
+
+As duas reproduções de AUD-017 e as três iniciais de AUD-024 falharam antes da correção. Após as correções e controles adicionais, 54 testes focados passaram. A suíte completa terminou com 931 aprovados, zero falhas e oito ignorados em 46,26 segundos (`voice-p2a-full/result.xml`). Foram simulados cache completo de origem diferente, manifesto incompatível, saída do canal, fila cheia, TTS sem resposta e gravação de memória bloqueada. Nenhum hardware foi acessado.
