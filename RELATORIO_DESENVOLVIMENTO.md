@@ -9,7 +9,7 @@ As mudanças estão em branches e PRs separadas. **Nada foi mesclado à main.** 
 - **Fase 2 — continuar e conferir:** continua o mesmo objetivo em pontos seguros, preserva os limites de execução e pede permissões novas. Antes de dizer que terminou uma tarefa composta, confere evidências das etapas. Pode tentar uma recuperação limitada quando falta uma etapa. [PR #156](https://github.com/Yamatosemj/aurenOFC/pull/156).
 - **Fase 3 — acompanhar rotinas:** uma rotina começa como rascunho e precisa de autorização explícita. Tem prazo, quantidade e ações limitadas; pode ser revogada. Uma interrupção com resultado incerto não dispara a mesma rotina de novo automaticamente. [PR #157](https://github.com/Yamatosemj/aurenOFC/pull/157).
 - **Fase 4 — mostrar e controlar:** o Chrome mostra tarefas e rotinas; o Tk mostra tarefas. É possível acompanhar estado, pausar, cancelar e retomar pelo mesmo Auren. O cadastro de rotina é separado da autorização. [PR #158](https://github.com/Yamatosemj/aurenOFC/pull/158).
-- **Fase 5 — integração:** um objetivo com 16 etapas foi interrompido após oito e terminou em outro processo, sem duplicação. Uma queda depois de um efeito deixou a retomada bloqueada. A interface real foi exercitada com dados e modelo fictícios. O Live completo com a API real continua pendente.
+- **Fase 5 — integração e Live:** integração/interface simulada passaram; Live real autorizado até US$ 2 executado com 19 chamadas. Leitura/pausa e negação fora da raiz permitida passaram, mas conclusão e política CONFIRM em raiz permitida falharam. [Live real de 18/10](docs/desenvolvimento/fase5/LIVE_API_2026-10-18.md).
 
 ## O que os testes realmente comprovaram
 
@@ -30,10 +30,10 @@ As execuções finais locais tiveram zero falhas e oito testes ignorados por lim
 
 ## O que ainda falta
 
-- Definir **cenários e orçamento máximo** para testar com a API real. Essas chamadas não foram executadas sem orçamento.
+- Corrigir as duas falhas encontradas no Live real e repetir os cenários com regressão. O orçamento de US$ 2 já foi autorizado; não é mais o bloqueio.
 - Validar qualidade do planejamento/revisor real, custos, latência, tarefas de horas/dias e uso humano das telas.
 - A janela Tk não tem o formulário de rotinas; ele está no Chrome. A agenda não roda com o aplicativo fechado nem em outra conversa não selecionada.
 - Pausa e cancelamento não cortam uma ação ao meio nem desfazem o que já aconteceu. Passos incertos exigem investigação; não há promessa de retomada automática de toda queda.
 - O banco guarda texto sem criptografia ou exclusão automática por prazo. Não houve importação de dados pessoais, teste de hardware/voz ou alteração do runner instalado.
 
-O ciclo não está integralmente validado em uso real. As mudanças estão disponíveis para revisão; a pendência de orçamento impede concluir a parte paga do Live com segurança.
+O ciclo não está integralmente validado em uso real. O Live real foi executado e reprovou dois comportamentos; a sequência foi interrompida diante desses achados, inclusive um de segurança. Evidências e limites no relatório Live acima.

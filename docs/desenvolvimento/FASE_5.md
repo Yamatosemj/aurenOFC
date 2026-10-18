@@ -2,7 +2,7 @@
 
 Base: Fase 4, `29dd494`, [CI 39130569555](https://github.com/Yamatosemj/aurenOFC/actions/runs/39130569555) aprovado: Windows 1.063; Linux 1.019/44 ignorados. Branch própria `desenvolvimento/fase-5-validacao-integrada`. Main consultada novamente em `70b040d6191237e2f0a291a14b8ea8fb4b78a09d`. Nenhum merge, push para main ou instalação pessoal foi realizado.
 
-**Estado: validação integrada e interface isolada executadas; Live com modelo/API reais pendente de orçamento e condições explícitas. Não declarar o ciclo integralmente concluído.**
+**Estado atual: Live com API real executado após autorização de US$ 2; duas falhas encontradas, inclusive política CONFIRM ignorada. Fase não aprovada.** [Resultados, custo e retomada](fase5/LIVE_API_2026-10-18.md). O restante abaixo documenta a bateria anterior com modelo fictício.
 
 ## Evidência entre processos
 
@@ -41,6 +41,6 @@ Contagens da suíte completa, resultados de tentativas, hashes das fontes e arte
 
 Suíte completa local final: **1.057 aprovados, zero falhas e oito ignorados**, em **62,50 segundos**. Os oito ignorados exigem links simbólicos indisponíveis neste Windows. A seleção entre processos teve dois aprovados e é parte da suíte completa; a interface isolada teve oito controles aprovados em 12,47 segundos de supervisão.
 
-Falta executar Live completo com o modelo configurado e efeitos reais especificamente autorizados. Não há orçamento monetário aprovado para esse ciclo, portanto essas chamadas não foram feitas e não podem ser marcadas como aprovadas. Também não foram testados hardware/voz, aplicativos/perfis pessoais, uso com app fechado, tarefas de horas/dias, escala grande, alterações hostis do banco, resistência universal a prompt injection, qualidade semântica do revisor real, custo/latência ou todas as formas de queda do sistema.
+Após a bateria descrita acima, houve autorização de até US$ 2 e execução com API real: 19 chamadas, estimativa conservadora US$ 0,01538. O orçamento deixou de ser bloqueio; os achados Live impedem aprovar esta fase. Consultar o relatório atual indicado no início.
 
-Para retomar: definir cenários e alvos fictícios/descartáveis para o Live real, limite monetário e condições de interrupção. Conferir CI/HEAD das PRs e permissões antes de executar. Não mudar runner, workflow, confirmação ou proteção como atalho. A sequência para aqui nesse limite explícito; as PRs permanecem em rascunho e a main intacta.
+Para retomar, seguir F5-LIVE-002 e F5-LIVE-001 no relatório atual, preservando o orçamento acumulado e a rota normal de permissões. A sequência foi interrompida devido aos achados; PRs em rascunho e main intacta.

@@ -2,7 +2,7 @@
 
 ## Estado para retomada — 18/10/2026
 
-**Fases 0 a 4 validadas; Fase 5 com integração e interface isolada verificadas, aguardando CI final e orçamento para Live real. O ciclo integral não está concluído.** Base: PR #158, `29dd494`, CI `39130569555` aprovado (1.063 Windows; 1.019 Linux/44 ignorados). Nenhum merge.
+**Fases 0–4 em PRs; Fase 5 reprovada no Live real. Orçamento de US$ 2 autorizado; duas falhas documentadas, inclusive política CONFIRM ignorada. Sequência interrompida para correção segura, sem merge.** [Live real de 18/10](docs/desenvolvimento/fase5/LIVE_API_2026-10-18.md).
 
 - Branch: `desenvolvimento/fase-5-validacao-integrada`, empilhada na Fase 4.
 - Relatório simples: [RELATORIO_DESENVOLVIMENTO.md](RELATORIO_DESENVOLVIMENTO.md). Detalhes: [FASE_5.md](docs/desenvolvimento/FASE_5.md).
@@ -13,10 +13,11 @@
 
 ## Como retomar
 
-1. Conferir main, HEADs, PRs e CI final da Fase 5. Resultados antigos não substituem os checks do SHA atual.
-2. **Parada no limite autorizado:** falta definir orçamento monetário e cenários para Live com API/modelo reais. Não executar essas chamadas sem autorização e orçamento; não aprovar confirmações automaticamente.
-3. Definir alvos fictícios/descartáveis, quantidade máxima de chamadas, valor máximo e critérios de interrupção. Preservar a rota normal de ferramentas e o supervisor; não mudar políticas do runner.
-4. Executar a bateria real permitida e registrar efeitos observados, falhas e limitações. Só depois avaliar uso real e eventual revisão/merge pelo proprietário. Nenhum merge está autorizado por este ciclo.
+1. Conferir GitHub, branch e o relatório Live atual. Orçamento já autorizado: US$ 2; não solicitar novamente.
+2. Corrigir F5-LIVE-002 (política mais restritiva), com reprodução que falhe antes e passe depois; manter confirmações e testes existentes.
+3. Corrigir F5-LIVE-001 sem retirar proteção de dados externos ou dispensar evidência.
+4. Executar regressões e novo Live autorizado. Preservar o registro global de gastos; 19 chamadas/reserva preventiva US$ 1,539 já consumida no controle conservador, sem zerar a contagem.
+5. Manter main intacta e PRs em rascunho; ciclo ainda não aprovado.
 
 ## Critérios de avanço propostos
 

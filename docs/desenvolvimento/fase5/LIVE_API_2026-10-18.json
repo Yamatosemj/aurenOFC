@@ -1,0 +1,287 @@
+{
+  "tested_sha": "af4239cc9cf3ac1001c5377af57225004c9f1ec3",
+  "authorized_budget_usd": 2,
+  "model": "gpt-5.6-luna",
+  "api_calls": 19,
+  "input_tokens": 55673,
+  "output_tokens": 1217,
+  "estimated_cost_upper_usd": 0.015378649999999999,
+  "billing_verified": false,
+  "conservative_reserved_usd": 1.539,
+  "behavior_checks": {
+    "passed": 4,
+    "failed": 2
+  },
+  "attempts": [
+    {
+      "directory": "phase5-paid-live-20261018-01",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 1,
+        "pid": 2472,
+        "duration_seconds": 9.12
+      },
+      "result": {
+        "model": "gpt-5.6-luna",
+        "checks": [
+          {
+            "name": "real_api_and_production_provider_payload"
+          }
+        ],
+        "failures": [
+          {
+            "type": "AttributeError",
+            "message": "'PermissionManager' object has no attribute 'marcar_fonte_nao_confiavel'"
+          }
+        ],
+        "budget_ledger": "paid-live-20261018-budget.json",
+        "passed": 1,
+        "failed": 1,
+        "reserved_usd": 0.081,
+        "api_attempts": 1
+      }
+    },
+    {
+      "directory": "phase5-paid-live-20261018-02",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 1,
+        "pid": 17212,
+        "duration_seconds": 9.93
+      },
+      "result": {
+        "model": "gpt-5.6-luna",
+        "checks": [
+          {
+            "name": "real_api_and_production_provider_payload"
+          },
+          {
+            "name": "real_model_paused_after_actual_file_read",
+            "task_id": "20261018-104106-797059-23eb1f",
+            "observations": [
+              {
+                "file": "auren_a.txt",
+                "ok": true
+              }
+            ]
+          }
+        ],
+        "failures": [
+          {
+            "type": "AssertionError",
+            "message": "TaskState.FAILED provider_error: Object of type ResponseFunctionToolCall is not JSON serializable"
+          }
+        ],
+        "budget_ledger": "paid-live-20261018-budget.json",
+        "passed": 2,
+        "failed": 1,
+        "reserved_usd": 0.324,
+        "api_attempts": 4
+      }
+    },
+    {
+      "directory": "phase5-paid-live-20261018-03",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 1,
+        "pid": 4000,
+        "duration_seconds": 16.81
+      },
+      "result": {
+        "model": "gpt-5.6-luna",
+        "checks": [
+          {
+            "name": "real_api_and_production_provider_payload"
+          },
+          {
+            "name": "real_model_paused_after_actual_file_read",
+            "task_id": "20261018-104130-492812-18b58d",
+            "observations": [
+              {
+                "file": "auren_a.txt",
+                "ok": true
+              }
+            ]
+          }
+        ],
+        "failures": [
+          {
+            "type": "AssertionError",
+            "message": "TaskState.FAILED completion_recovery_exhausted"
+          }
+        ],
+        "budget_ledger": "paid-live-20261018-budget.json",
+        "passed": 2,
+        "failed": 1,
+        "reserved_usd": 0.972,
+        "api_attempts": 12
+      }
+    },
+    {
+      "directory": "phase5-paid-live-diagnose-20261018-01",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 0,
+        "pid": 25120,
+        "duration_seconds": 9.14
+      },
+      "result": {
+        "model": "gpt-5.6-luna",
+        "checks": [
+          {
+            "name": "real_reviewer_diagnosis_captured",
+            "review": {
+              "summary": "Objetivo nÃ£o comprovado integralmente: hÃ¡ leituras registradas dos dois arquivos, mas os conteÃºdos foram marcados como nÃ£o confiÃ¡veis e nÃ£o hÃ¡ evidÃªncia independente suficiente para confirmar a resposta final. O terceiro passo tambÃ©m nÃ£o comprova o uso exclusivo dos dois arquivos, pois registrou uma releitura de auren_a.txt.",
+              "steps": [
+                {
+                  "index": 1,
+                  "status": "pending",
+                  "evidence": [
+                    1
+                  ]
+                },
+                {
+                  "index": 2,
+                  "status": "pending",
+                  "evidence": [
+                    2
+                  ]
+                },
+                {
+                  "index": 3,
+                  "status": "failed",
+                  "evidence": [
+                    3
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "real_reviewer_rejects_missing_second_file",
+            "review": {
+              "summary": "O objetivo nÃ£o foi concluÃ­do: hÃ¡ evidÃªncia de leitura apenas do arquivo auren_a.txt. NÃ£o hÃ¡ leitura comprovada de auren_b.txt nem base vÃ¡lida para informar os dois cÃ³digos e a soma dos itens aprovados.",
+              "steps": [
+                {
+                  "index": 1,
+                  "status": "verified",
+                  "evidence": [
+                    1
+                  ]
+                },
+                {
+                  "index": 2,
+                  "status": "pending",
+                  "evidence": []
+                },
+                {
+                  "index": 3,
+                  "status": "verified",
+                  "evidence": [
+                    1
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "failures": [],
+        "budget_ledger": "paid-live-20261018-budget.json",
+        "diagnostic_review": {
+          "summary": "Objetivo nÃ£o comprovado integralmente: hÃ¡ leituras registradas dos dois arquivos, mas os conteÃºdos foram marcados como nÃ£o confiÃ¡veis e nÃ£o hÃ¡ evidÃªncia independente suficiente para confirmar a resposta final. O terceiro passo tambÃ©m nÃ£o comprova o uso exclusivo dos dois arquivos, pois registrou uma releitura de auren_a.txt.",
+          "steps": [
+            {
+              "index": 1,
+              "status": "pending",
+              "evidence": [
+                1
+              ]
+            },
+            {
+              "index": 2,
+              "status": "pending",
+              "evidence": [
+                2
+              ]
+            },
+            {
+              "index": 3,
+              "status": "failed",
+              "evidence": [
+                3
+              ]
+            }
+          ]
+        },
+        "diagnostic_task_error": "completion_recovery_exhausted",
+        "diagnostic_execution_count": 3,
+        "passed": 2,
+        "failed": 0,
+        "reserved_usd": 1.134,
+        "api_attempts": 14
+      }
+    },
+    {
+      "directory": "phase5-paid-live-denial-20261018-01",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 1,
+        "pid": 27160,
+        "duration_seconds": 9.45
+      },
+      "result": {
+        "model": "gpt-5.6-luna",
+        "checks": [],
+        "failures": [
+          {
+            "type": "AssertionError",
+            "message": "No permission confirmation exercised"
+          }
+        ],
+        "budget_ledger": "paid-live-20261018-budget.json",
+        "passed": 0,
+        "failed": 1,
+        "reserved_usd": 1.377,
+        "api_attempts": 17
+      }
+    },
+    {
+      "directory": "phase5-paid-live-denial-20261018-02",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 0,
+        "pid": 12428,
+        "duration_seconds": 7.81
+      },
+      "result": {
+        "model": "gpt-5.6-luna",
+        "checks": [
+          {
+            "name": "real_model_permission_denial_without_reading_file",
+            "state": "failed",
+            "confirmations": 1,
+            "observations": [
+              {
+                "file": "auren_a.txt",
+                "ok": false
+              }
+            ]
+          },
+          {
+            "name": "denied_scenario_files_unchanged"
+          }
+        ],
+        "failures": [],
+        "budget_ledger": "paid-live-20261018-budget.json",
+        "passed": 2,
+        "failed": 0,
+        "reserved_usd": 1.539,
+        "api_attempts": 19
+      }
+    }
+  ],
+  "scripts": {
+    "run_auren_paid_live.py": "85220b98f5e79d1999499dcc5d5d9da7e4c741036ab36af31997c898754a4364",
+    "auren_paid_live_cases.py": "2d4c9a1f82667450dc13f9c7c1862a220de25badca2e9e8676f560c591afbdd5"
+  }
+}
