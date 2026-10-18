@@ -1,5 +1,7 @@
 # Arquitetura 02 — Roteamento, contratos, permissões e execução de ferramentas
 
+Correção F5-LIVE-002: file.read/file.inspect preservam a política CONFIRM mesmo em raiz permitida. BLOCKED, caminhos sensíveis e confirmação para caminhos externos permanecem. [Reprodução e validação](../desenvolvimento/fase5/CORRECOES_LIVE.md).
+
 Reconciliação da Fase 0: `caminho_explicito_programa`, em `core/utils.py`, identifica caminhos sem consultar o disco e é compartilhado por PermissionManager e executor. Caminhos absolutos, UNC, relativos com separador e relativos a uma unidade exigem confirmação; aspas externas correspondentes são removidas para identificar o mesmo alvo. O executor mantém a validação de `.exe` existente, o ToolResult com PID e a distinção entre inicialização solicitada e janela pronta. A confirmação acontece no Dispatcher antes do handler. Não há nova rota de execução ou aprovação automática.
 
 > **Auditoria estática da Etapa 2** — código da main em 2026-10-10, base `b306005bafefadee84a5d90ccb7ff62727ff85d8`. Conferimos implementação, entradas do runtime e testes. **Auditado estaticamente** não significa testado com aplicativos, navegador, microfone ou ações reais. Para execução de tarefas e estados, veja [01-nucleo.md](01-nucleo.md).

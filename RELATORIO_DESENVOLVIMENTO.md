@@ -9,7 +9,7 @@ As mudanças estão em branches e PRs separadas. **Nada foi mesclado à main.** 
 - **Fase 2 — continuar e conferir:** continua o mesmo objetivo em pontos seguros, preserva os limites de execução e pede permissões novas. Antes de dizer que terminou uma tarefa composta, confere evidências das etapas. Pode tentar uma recuperação limitada quando falta uma etapa. [PR #156](https://github.com/Yamatosemj/aurenOFC/pull/156).
 - **Fase 3 — acompanhar rotinas:** uma rotina começa como rascunho e precisa de autorização explícita. Tem prazo, quantidade e ações limitadas; pode ser revogada. Uma interrupção com resultado incerto não dispara a mesma rotina de novo automaticamente. [PR #157](https://github.com/Yamatosemj/aurenOFC/pull/157).
 - **Fase 4 — mostrar e controlar:** o Chrome mostra tarefas e rotinas; o Tk mostra tarefas. É possível acompanhar estado, pausar, cancelar e retomar pelo mesmo Auren. O cadastro de rotina é separado da autorização. [PR #158](https://github.com/Yamatosemj/aurenOFC/pull/158).
-- **Fase 5 — integração e Live:** integração/interface simulada passaram; Live real autorizado até US$ 2 executado com 19 chamadas. Leitura/pausa e negação fora da raiz permitida passaram, mas conclusão e política CONFIRM em raiz permitida falharam. [Live real de 18/10](docs/desenvolvimento/fase5/LIVE_API_2026-10-18.md).
+- **Fase 5 — integração e Live:** as duas falhas foram corrigidas; a validação pendente do contrato final passou na API real (três casos, zero falhas). Resposta correta aceita, cálculo errado e evidência ausente recusados. Suíte final do código: 1.069 locais/oito ignorados, Windows 1.077 e Linux 1.033/44 ignorados. [validação final e limites](docs/desenvolvimento/fase5/VALIDACAO_FINAL.md).
 
 ## O que os testes realmente comprovaram
 
@@ -24,16 +24,15 @@ As contagens completas, as falhas encontradas e as evidências estão nos [relat
 | 2 | 1036 | 1044 | 1000 |
 | 3 | 1047 | 1055 | 1011 |
 | 4 | 1055 | 1063 | 1019 |
-| 5 | 1057 | Conferir CI final na PR | Conferir CI final na PR |
+| 5, após correções Live | 1069 | 1077 | 1033 |
 
-As execuções finais locais tiveram zero falhas e oito testes ignorados por limitações de links simbólicos do ambiente. O CI final das Fases 0 a 4 passou sem falhas; Windows não ignorou testes, Linux ignorou 41 na Fase 0 e 44 nas demais. Os conjuntos se sobrepõem: não somar as linhas. A Fase 5 local levou 62,50 segundos, além dos oito controles da interface. O CI final da Fase 5 é conferido separadamente no SHA publicado.
+As execuções finais locais tiveram zero falhas e oito testes ignorados por limitações de links simbólicos do ambiente. O CI final das Fases 0 a 4 passou sem falhas; Windows não ignorou testes, Linux ignorou 41 na Fase 0 e 44 nas demais. Os conjuntos se sobrepõem: não somar as linhas. A su?te local final ap?s as corre??es da Fase 5 levou 62,64 segundos, além dos oito controles da interface. O CI final da Fase 5 é conferido separadamente no SHA publicado.
 
 ## O que ainda falta
 
-- Corrigir as duas falhas encontradas no Live real e repetir os cenários com regressão. O orçamento de US$ 2 já foi autorizado; não é mais o bloqueio.
-- Validar qualidade do planejamento/revisor real, custos, latência, tarefas de horas/dias e uso humano das telas.
+- Foram verificados três casos finais com o modelo real e registrada estimativa de custo. Qualidade geral, latência percebida, tarefas de horas/dias e uso humano das telas continuam fora da validação integral.
 - A janela Tk não tem o formulário de rotinas; ele está no Chrome. A agenda não roda com o aplicativo fechado nem em outra conversa não selecionada.
 - Pausa e cancelamento não cortam uma ação ao meio nem desfazem o que já aconteceu. Passos incertos exigem investigação; não há promessa de retomada automática de toda queda.
 - O banco guarda texto sem criptografia ou exclusão automática por prazo. Não houve importação de dados pessoais, teste de hardware/voz ou alteração do runner instalado.
 
-O ciclo não está integralmente validado em uso real. O Live real foi executado e reprovou dois comportamentos; a sequência foi interrompida diante desses achados, inclusive um de segurança. Evidências e limites no relatório Live acima.
+As correções e a validação pendente estão concluídas no escopo testado e documentadas na PR #160. O uso geral do produto continua sujeito aos limites acima; não houve merge ou implantação na main.

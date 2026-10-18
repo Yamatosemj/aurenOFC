@@ -578,6 +578,8 @@ class PermissionManager:
                 return PermissionLevel.BLOCKED, path_policy.motivo
             if path_policy.status == "confirm":
                 return PermissionLevel.CONFIRM, path_policy.motivo
+            if nivel_base == PermissionLevel.CONFIRM:
+                return nivel_base, "A politica da capacidade exige confirmacao mesmo dentro de uma raiz permitida."
             return PermissionLevel.AUTO, path_policy.motivo
 
         if capacidade == "windows.window.control":

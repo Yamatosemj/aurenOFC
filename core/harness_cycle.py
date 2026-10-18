@@ -301,7 +301,7 @@ def executar_ciclo(
             ):
                 harness._guardar_esclarecimento(objetivo, final_texto)
 
-            checked = harness._verify_completion(objetivo)
+            checked = harness._verify_completion(objetivo, candidate_answer=final_texto)
             if isinstance(checked, CompletionPending):
                 if completion_retries >= 1:
                     return harness._encerrar_falha('completion_recovery_exhausted',
@@ -309,12 +309,12 @@ def executar_ciclo(
                 completion_retries += 1
                 estado_verificacao = harness._montar_estado(objetivo, historico, [{
                     'ferramenta': 'guard_objetivo_incompleto', 'argumentos': '{}',
-                    'resultado': str(checked) + '. Proponha somente o proximo passo necessario ao objetivo original; nao repita efeitos ja concluidos.'}])
+                    'resultado': str(checked) + '. Corrija a resposta candidata quando faltou apenas texto ou calculo. Use ferramentas somente se faltam dados ou acoes do objetivo original; nao repita efeitos ja concluidos.'}])
                 chamada_verificacao = _executar_rodada_modelo_impl(
                     estado_verificacao, rodada=rodada + 1, task_id=harness._task_id,
                     task_manager=harness.task_manager, pedir_modelo=harness._pedir_modelo,
                     log_resposta_modelo=harness._log_resposta_modelo, write_log=write_log,
-                    input_items=1, estado_chars=len(estado_verificacao), tool_choice='required')
+                    input_items=1, estado_chars=len(estado_verificacao))
                 if chamada_verificacao is None:
                     return False, resposta_wrapper(harness.MSG_ERRO_PROVIDER)
                 resposta, latencia_ms, metricas_roteamento = chamada_verificacao

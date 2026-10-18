@@ -2,22 +2,22 @@
 
 ## Estado para retomada — 18/10/2026
 
-**Fases 0–4 em PRs; Fase 5 reprovada no Live real. Orçamento de US$ 2 autorizado; duas falhas documentadas, inclusive política CONFIRM ignorada. Sequência interrompida para correção segura, sem merge.** [Live real de 18/10](docs/desenvolvimento/fase5/LIVE_API_2026-10-18.md).
+**Correções e validação pendente concluídas na PR #160: três casos com o contrato final passaram na API real.** [validação final e limites](docs/desenvolvimento/fase5/VALIDACAO_FINAL.md). As PRs continuam para revisão, sem merge.
 
-- Branch: `desenvolvimento/fase-5-validacao-integrada`, empilhada na Fase 4.
+- Branch atual: `desenvolvimento/fase-5-correcoes-live`, PR #160 empilhada na #159.
 - Relatório simples: [RELATORIO_DESENVOLVIMENTO.md](RELATORIO_DESENVOLVIMENTO.md). Detalhes: [FASE_5.md](docs/desenvolvimento/FASE_5.md).
-- Suíte local: 1.057 aprovados, zero falhas, oito ignorados, 62,50 s. Integração real entre processos: 16 passos, pausa após oito, saída abrupta e retomada sem repetir observações; outra queda após efeito recusa retomada.
+- Suíte final do código: 1.069 aprovados, zero falhas, oito ignorados, 62,64 s. Integração anterior: 16 passos entre processos sem duplicação; outra queda após efeito incerto recusa retomada.
 - Interface real isolada: oito controles aprovados, Chromium temporário com sandbox e origem local, Tk com janela retirada. Modelo fictício, quatro chamadas fictícias, zero API, zero efeitos pessoais e nenhuma confirmação positiva automatizada no browser. Supervisor terminou com código zero; banco reaberto com pausa intacta.
 - Tentativas anteriores preservadas: recusa do Chrome instalado e erro de seletor no script de validação. Não foram alterados perfil/política pessoal, instalação do runner ou workflow para contornar erros.
 - Nenhum dado pessoal, hardware/voz, aplicativo/perfil pessoal ou alteração de main. `desktop/` permanece intocada.
 
 ## Como retomar
 
-1. Conferir GitHub, branch e o relatório Live atual. Orçamento já autorizado: US$ 2; não solicitar novamente.
-2. Corrigir F5-LIVE-002 (política mais restritiva), com reprodução que falhe antes e passe depois; manter confirmações e testes existentes.
-3. Corrigir F5-LIVE-001 sem retirar proteção de dados externos ou dispensar evidência.
-4. Executar regressões e novo Live autorizado. Preservar o registro global de gastos; 19 chamadas/reserva preventiva US$ 1,539 já consumida no controle conservador, sem zerar a contagem.
-5. Manter main intacta e PRs em rascunho; ciclo ainda não aprovado.
+1. A correção e sua validação pendente terminaram. Conferir a PR #160 e o CI do HEAD final antes de qualquer nova tarefa.
+2. O contrato final do revisor já passou nos três casos reais; não repetir a antiga pendência com base nos relatórios históricos.
+3. Preservar o registro global: 27 chamadas acumuladas, custo estimado US$ 0,02085, reserva preventiva US$ 1,9908. Não zerar contagem ou iniciar outra bateria automaticamente.
+4. As limitações de uso geral, horas/dias, hardware/voz e dados pessoais continuam explicitadas no relatório final. Não confundir encerramento desta correção com prova universal do produto.
+5. Manter PRs em rascunho e main intacta; nenhum merge automático autorizado.
 
 ## Critérios de avanço propostos
 

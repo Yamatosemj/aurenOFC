@@ -1,5 +1,7 @@
 # Arquitetura 01 — Nucleo de execucao, ciclo do Harness e tarefas
 
+Correção F5-LIVE-001: a revisão recebe a resposta candidata em cópia do snapshot, sem persistir sucesso antecipado. Exige answer_status=verified e etapas com evidência válida; a única recuperação pode corrigir texto sem forçar ferramenta. [Evidências e limite de validação Live](../desenvolvimento/fase5/CORRECOES_LIVE.md).
+
 Fase 2 candidata: o mesmo Harness pode continuar objetivos em checkpoints seguros, com orçamento acumulado e restrições do PermissionManager, sem restaurar aprovações. Conclusão composta é revisada com referências a passos reais; uma pendência permite uma recuperação limitada pelo próprio ciclo. Pausa não interrompe ferramentas ao meio. Sem interface/proatividade ou comprovação Live nesta fase; escopo e limites em [FASE_2.md](../desenvolvimento/FASE_2.md).
 
 Fase 1 candidata: TaskManager permanece a fonte operacional única e aceita `db_path` opcional para checkpoints e histórico transacional. Reutiliza ExecutionPlan/TaskStep/TaskSnapshot; estados recuperados ativos tornam-se INTERRUPTED, e PAUSED permanece pausado. Retomada de checkpoint não executa ferramentas e recusa incerteza, falha anterior ou cancelamento pendente. O Harness durável grava antes dos efeitos no ciclo normal e fecha o store; o padrão sem banco mantém os atalhos existentes. Escopo, API, provas e limites em [FASE_1.md](../desenvolvimento/FASE_1.md). O planejamento executável e a continuação após retomada pertencem à Fase 2, e a interface à Fase 4.
