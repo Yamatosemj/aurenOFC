@@ -1,0 +1,123 @@
+{
+  "base": "2313f1d",
+  "environment": "Windows/Python 3.13.15; SQLite, loopback e fixtures reais; modelo/efeitos pessoais ficticios; sem credenciais",
+  "runs": [
+    {
+      "label": "phase4-final-focused",
+      "artifacts": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase4-final-focused",
+      "tests": 43,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 43,
+      "seconds": 9.055,
+      "failed_cases": []
+    },
+    {
+      "label": "phase4-final-full",
+      "artifacts": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase4-final-full",
+      "tests": 1063,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 8,
+      "passed": 1055,
+      "seconds": 58.603,
+      "failed_cases": []
+    },
+    {
+      "label": "phase4-initial-red",
+      "artifacts": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase4-initial-red",
+      "tests": 4,
+      "failures": 3,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 1,
+      "seconds": 0.734,
+      "failed_cases": [
+        "test_worker_loads_selects_and_resumes_existing_goal_after_restart",
+        "test_stale_task_controls_are_refused_before_execution",
+        "test_explicit_cancel_of_paused_goal_is_persisted"
+      ]
+    },
+    {
+      "label": "phase4-off-gap-green",
+      "artifacts": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase4-off-gap-green",
+      "tests": 40,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 40,
+      "seconds": 8.84,
+      "failed_cases": []
+    },
+    {
+      "label": "phase4-off-gap-red",
+      "artifacts": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase4-off-gap-red",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 0,
+      "seconds": 0.665,
+      "failed_cases": [
+        "test_off_in_gap_before_goal_creation_prevents_provider_call"
+      ]
+    },
+    {
+      "label": "phase4-ui-first",
+      "artifacts": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase4-ui-first",
+      "tests": 28,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 28,
+      "seconds": 6.887,
+      "failed_cases": []
+    },
+    {
+      "label": "phase4-worker-green",
+      "artifacts": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase4-worker-green",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 16,
+      "seconds": 1.067,
+      "failed_cases": []
+    }
+  ],
+  "final_source_sha256": {
+    "core/execution_scope.py": "8b8778be2d6f2b174677dee56e60042ac6c941c5f85146b0b8e2819001d44abb",
+    "core/harness.py": "8c869a6cc845f671f3240f17fea72c07c13d0133a3e7d20aee03161470c18f7a",
+    "core/task_manager.py": "a626f1b50569e8a8c068287595c8188a5d780a23cb82b0368e9a752a2a0ee357",
+    "core/task_persistence.py": "e2fe5f565665c9d09200751144d3047ac41c9ceaab1ab627253506fff988a4e4",
+    "interface_auren.py": "d6a80b990f0a698887a803a3115a0763aad21a69efcf88fdc036f1c0551d4090",
+    "tests/test_audit_alternative_guard.py": "c4c99638f83716bf6267eabb22bff74f41795536a9d4fbc725e07dc8348850d4",
+    "tests/test_audit_asr_identity.py": "af9ce848381b8982aea9d023e930c2b2d127a4d1ed705c3160b2caf0932fdcb4",
+    "tests/test_audit_chat_installer.py": "2b676a259143cf10cc1863da84bd5b9b4d1eb874889fd66988fb50cc7a61b533",
+    "tests/test_audit_compound_intent_review.py": "bdd054724030caa1fbc9ae951f98308761c9d51aee2ff59d7790064ba0b4b729",
+    "tests/test_audit_controlled_routines.py": "345232b3860f83e5675524aea2e41c0397dd9fd75edd3f1e37599289cc7c09d0",
+    "tests/test_audit_http_rejection.py": "8e1e5994f423deb421affff930a4ef9d3ce31d0712bac86df7b0ee5a2c49dd4a",
+    "tests/test_audit_live.py": "d4cf4fd84f854e7d0f221d0ccc30a91beadcc696d6754b449bc1f7862e6ae7f2",
+    "tests/test_audit_memory_origin.py": "afc7b4bd33ff698cf67fab22f9e87825caf7589423b5b4fa15fbf6c78667bc34",
+    "tests/test_audit_p0.py": "e0938721f574187e5959006f6f6761f2a2ee53ac803104ff15fc1d7b1e447a22",
+    "tests/test_audit_p1a.py": "02b9385a491854cf22a9b6ad29efe19365d1025c9fbea3a2d120c39848e54d4c",
+    "tests/test_audit_p1b.py": "ebc318617c9216c85a9974c6be6dbddf04b109f49d4fe79725e6469292651eb3",
+    "tests/test_audit_p2a.py": "a6fd91ec1c24ee012af523f48276f04010f65998749f1cc6162f4ddd7084f9d3",
+    "tests/test_audit_p2b.py": "3ffc6dab2e154fdb7ab25313cbdb9b16c389260ca6264e349f228bc3b08aa7d8",
+    "tests/test_audit_p3.py": "2660cef3609184c0da1f6bb32881e5dfb4de2064fadadb0256cf654a60aa926f",
+    "tests/test_audit_persistent_tasks.py": "5bed8e06726fe1efd4492be8082b4d67cc798be8bd9e4d0f4777f523a5200145",
+    "tests/test_audit_resumable_execution.py": "739433c2c247fdf05c0781d3bce6aa960a1d0593e0f8d4c3c48c3e1f769bfa14",
+    "tests/test_audit_retention.py": "a6b1826ee14b570b592be19b8fb579e1ad154936a5a698e8250aafc1aca7cc5e",
+    "tests/test_audit_review_failures.py": "38d20167f7cb4ce4a471a3ef9f70c1dca0882e4c944bb2c9828dcddb85864398",
+    "tests/test_audit_task_interface.py": "fd0c9c9bfa43a2600101a0e7640bfc565c9f810396bbbe59e02dcd84c0ba05d7",
+    "tests/test_audit_veto_replan.py": "af3e5b4bef96786cb9547eab4939469c99e88883bd935ceede2ef03b8316e857",
+    "tests/test_audit_voice_buffer.py": "ea19434cb35982a72c7d769ef9f0403fb4685b5fdd1c6a1be0dda8b281140e55",
+    "tests/test_audit_voice_shutdown.py": "c5ab1e87f72d7788373b3a1fc98094aaaef353394f20bda1cd6977a61e00e20b",
+    "tests/test_audit_voice_status.py": "eed25e2ef8278f2d23320a9cc70c51354a51247b1bb00ce9d7c6c9f2581707cc",
+    "tests/test_audit_watchdog_cleanup.py": "ac653a9082d290d8d6d231de548c1ce16104598bdc8b8be44bd693b2b8fe124b",
+    "ui/backend.py": "f048900de446c662d4489b822447e5f25d4a4f7a15d176f76c6e72fb8942d9b5",
+    "ui/chrome.html": "b73ee2e5d5a92a9ec100853c988d1fb68cdc4438ae7f0a1ca3aff718f700b280",
+    "ui/chrome_server.py": "a7e7a2e60ef232a62e95163565d384374bbcc32e1b1a5b4dabe71e0689886641"
+  }
+}

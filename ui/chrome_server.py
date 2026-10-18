@@ -136,7 +136,43 @@ class LocalChromeApp:
                 "seq": self.counter,
                 "gap": gap,
                 "events": items,
+                "generation": getattr(self.worker, 'generation', 0),
+                "tasks": self.worker.task_dashboard() if callable(getattr(self.worker, 'task_dashboard', None)) else {},
             }
+
+    def task_action(self, obj):
+        fields = {'action', 'task_id', 'chat_id', 'generation'}
+        if (set(obj) != fields or type(obj['generation']) is not int
+                or any(not isinstance(obj[k], str) or len(obj[k]) > 200 for k in ('action', 'task_id', 'chat_id'))):
+            raise ValueError('Controle de tarefa invalido.')
+        with self.lock:
+            if obj['generation'] != getattr(self.worker, 'generation', 0):
+                raise ValueError('Esta sessao mudou. Atualize as tarefas.')
+            if obj['action'] == 'load':
+                self.worker.activate()
+                self.mode = 'active'
+                obj = dict(obj, generation=self.worker.generation)
+            elif self.mode == 'off':
+                raise ValueError('Ative o Auren antes de controlar uma tarefa.')
+            if self.busy and obj['action'] in {'select', 'resume'}:
+                raise ValueError('Aguarde a tarefa atual terminar.')
+            if not self.worker.task_action(**obj):
+                raise ValueError('Controle de tarefa recusado.')
+            self.last_activity = monotonic()
+            return {'accepted': True}
+
+    def routine_action(self, obj):
+        if (set(obj) != {'action', 'routine_id', 'spec', 'generation'}
+                or type(obj['generation']) is not int or not isinstance(obj['routine_id'], str)
+                or not isinstance(obj['action'], str) or len(obj['routine_id']) > 200):
+            raise ValueError('Controle de rotina invalido.')
+        with self.lock:
+            if self.mode == 'off' or (self.busy and obj['action'] != 'revoke'):
+                raise ValueError('Carregue as tarefas e aguarde a operacao atual.')
+            if not self.worker.routine_action(**obj):
+                raise ValueError('Controle de rotina recusado.')
+            self.last_activity = monotonic()
+            return {'accepted': True}
 
     def change_mode(self, mode: str) -> dict[str, Any]:
         with self.lock:
@@ -341,10 +377,14 @@ class ChromeRequestHandler(BaseHTTPRequestHandler):
                 ):
                     raise ValueError("Confirmacao invalida.")
                 result = self.server.app.confirm(obj["id"], obj["approved"])
+            elif path == '/api/task-action':
+                result = self.server.app.task_action(obj)
+            elif path == '/api/routine-action':
+                result = self.server.app.routine_action(obj)
             else:
                 self._bad(404, "Rota inexistente.")
                 return
-        except (ValueError, TypeError, UnicodeDecodeError) as exc:
+        except (ValueError, TypeError, RuntimeError, UnicodeDecodeError) as exc:
             self._bad(400, str(exc))
             return
         self._json(200, result)

@@ -76,6 +76,12 @@ class TaskStorage:
             WHERE json_extract(payload, '$.chat_id')=? ORDER BY rowid DESC LIMIT ? OFFSET ?''',
             (chat_id, limit, offset)))
 
+    def list_chat_ids(self):
+        chats = {row[0] for row in self.connection.execute("SELECT DISTINCT json_extract(payload, '$.chat_id') FROM tasks") if row[0]}
+        if self.connection.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='auren_routines'").fetchone():
+            chats.update(row[0] for row in self.connection.execute('SELECT DISTINCT chat_id FROM auren_routines'))
+        return tuple(sorted(chats))
+
     def save(self, records, current, operation, previous):
         with self.connection:
             for key, record in records.items():

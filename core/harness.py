@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from core.task_manager import TaskManager, TaskState
-from core.execution_scope import current_scope
+from core.execution_scope import current_scope, session_allows
 from core.utils import normalizar_nome
 from core import usage
 from core.task_trace import TaskTrace, TaskTraceStore
@@ -706,6 +706,9 @@ class AurenHarness:
         ciclo apenas devolve a mensagem de erro ao usuario.
         """
         argumentos = (entrada, None, "none") + ((tool_choice,) if tool_choice is not None else ())
+        if not session_allows():
+            self.task_manager.cancel(task_id=self._task_id, reason='Sessao da interface invalidada.')
+            return None
         try:
             self._reserve_model_call()
             return self._chamar_modelo_medido(*argumentos)
@@ -730,6 +733,20 @@ class AurenHarness:
             return False
         self._pause_requested = True
         return True
+
+    @_single_execution
+    def selecionar_chat(self, chat_id):
+        current = self._garantir_sessao_chat()
+        if chat_id == current:
+            return
+        if chat_id not in self.task_manager.list_chat_ids():
+            raise RuntimeError('Conversa nao encontrada.')
+        self.task_manager.clear_current()
+        self._encerrar_sessao_chat('switched')
+        fresh = _create_chat_session()
+        # Reuse logical chat identity, never a path read from persisted data.
+        self._session = SessionContext(chat_id, fresh.log_file)
+        clear_active_vision_geometry()
 
     @_single_execution
     def retomar_tarefa(self, task_id, *, chat_id):

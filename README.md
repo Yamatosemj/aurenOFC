@@ -215,3 +215,11 @@ Os componentes derivados/adaptados do Ari-VoiceCommand estão cobertos por `LICE
 ## Histórico
 
 A documentação de versões anteriores foi retirada do pacote principal para manter a raiz limpa. Ela deve ser mantida separadamente, fora do runtime.
+
+## Tarefas e rotinas — desenvolvimento candidato
+
+Na branch de desenvolvimento da Fase 4, abra **Tarefas e rotinas → Carregar histórico** no Chrome. Selecione uma conversa para consultar objetivos salvos, passos e estado. Pausar aguarda um ponto seguro; Cancelar não desfaz efeitos; Retomar só fica disponível quando há checkpoint seguro. Nenhum objetivo é retomado automaticamente ao abrir a página. Tk oferece a mesma consulta e os controles de tarefas.
+
+No Chrome, **Nova rotina** cadastra um lembrete local ou consulta de volume/status com horário, vencimento, intervalo e quantidade. Revise o rascunho e clique separadamente em **Autorizar agendamento**. Revogar impede novos passos. Consultas podem consumir créditos, com até uma chamada de IA por ocorrência; lembretes não usam IA. A agenda funciona somente com sessão habilitada e conversa selecionada, sem outra tarefa pendente; não é serviço com aplicativo fechado. Confirmações normais das ferramentas continuam independentes.
+
+O worker padrão guarda objetivos e rotinas em `data/tasks/auren_tasks.sqlite3`, em texto, sem criptografia ou exclusão automática por prazo. É separado da memória de conversas; não apague nem substitua um banco existente para contornar erro. Não foi importado banco pessoal. Essas mudanças ainda estão em PRs, sem integração automática à main. Evidências e limites em [FASE_4.md](docs/desenvolvimento/FASE_4.md).
