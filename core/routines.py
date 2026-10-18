@@ -22,6 +22,13 @@ class RoutineScheduler:
             with self._transaction() as connection:
                 connection.execute('CREATE TABLE IF NOT EXISTS auren_routines (id TEXT PRIMARY KEY, chat_id TEXT NOT NULL, payload TEXT NOT NULL)')
                 connection.execute('CREATE TABLE IF NOT EXISTS auren_routine_events (seq INTEGER PRIMARY KEY, routine_id TEXT NOT NULL, operation TEXT NOT NULL, payload TEXT NOT NULL)')
+                connection.execute('''CREATE TABLE IF NOT EXISTS auren_routine_notifications (
+                    id TEXT PRIMARY KEY, routine_id TEXT NOT NULL, chat_id TEXT NOT NULL,
+                    text TEXT NOT NULL, kind TEXT NOT NULL, task_id TEXT NOT NULL,
+                    available_at INTEGER NOT NULL, revision INTEGER NOT NULL,
+                    acknowledged_at INTEGER)''')
+                connection.execute('''CREATE INDEX IF NOT EXISTS auren_notifications_pending
+                    ON auren_routine_notifications(chat_id, acknowledged_at, available_at)''')
                 for routine_id, payload in connection.execute('SELECT id, payload FROM auren_routines').fetchall():
                     value = self._decode(payload)
                     if value['id'] != routine_id:
@@ -29,6 +36,7 @@ class RoutineScheduler:
                     if value['status'] == 'running':
                         value['status'] = 'interrupted'
                         self._put(connection, value, 'recover_uncertain')
+                        self._queue_notification(connection, value, 'interrupted')
             manager._routine_scheduler_attached = True
 
     @contextmanager
@@ -144,6 +152,58 @@ class RoutineScheduler:
                     and (str(getattr(item, 'name', '')), _identidade_da_chamada(item)) in allowed)
         return check
 
+    def _queue_notification(self, connection, value, kind):
+        # The occurrence ID is also the delivery ID: redelivery cannot claim a run.
+        connection.execute('''INSERT INTO auren_routine_notifications
+            VALUES (?, ?, ?, ?, ?, ?, ?, 1, NULL) ON CONFLICT(id) DO NOTHING''',
+            (value['run_id'], value['id'], value['chat_id'], value['objective'], kind,
+             value['last_task_id'], int(self.clock())))
+
+    def pending_notifications(self, *, chat_id):
+        with self._transaction() as connection:
+            rows = connection.execute('''SELECT id, routine_id, text, kind, task_id,
+                available_at, revision FROM auren_routine_notifications
+                WHERE chat_id=? AND acknowledged_at IS NULL AND available_at<=?
+                ORDER BY available_at, rowid LIMIT 50''', (chat_id, int(self.clock()))).fetchall()
+            keys = ('id', 'routine_id', 'text', 'kind', 'task_id', 'available_at', 'revision')
+            return [dict(zip(keys, row)) for row in rows]
+
+    @staticmethod
+    def _notification(connection, notification_id, revision, chat_id):
+        if (not isinstance(notification_id, str) or not notification_id or len(notification_id) > 200
+                or type(revision) is not int or revision < 1):
+            raise ValueError('Identidade de aviso invalida.')
+        row = connection.execute('''SELECT revision, available_at FROM auren_routine_notifications
+            WHERE id=? AND chat_id=?''', (notification_id, chat_id)).fetchone()
+        if row is None:
+            raise RuntimeError('Aviso nao encontrado neste chat.')
+        return row
+
+    def acknowledge_notification(self, notification_id, revision, *, chat_id):
+        with self._transaction() as connection:
+            current, due = self._notification(connection, notification_id, revision, chat_id)
+            now = int(self.clock())
+            if current != revision or due > now:
+                return False
+            connection.execute('''UPDATE auren_routine_notifications
+                SET acknowledged_at=COALESCE(acknowledged_at, ?) WHERE id=? AND chat_id=? AND revision=?''',
+                (now, notification_id, chat_id, revision))
+            return True
+
+    def snooze_notification(self, notification_id, revision, *, chat_id, seconds=600):
+        # Delay delivery only. Never re-enable or execute the underlying routine.
+        if type(seconds) is not int or not 60 <= seconds <= 604800:
+            raise ValueError('Adiamento deve ser de 60 segundos a 7 dias.')
+        with self._transaction() as connection:
+            current, due = self._notification(connection, notification_id, revision, chat_id)
+            now = int(self.clock())
+            if current != revision or due > now:
+                return False
+            connection.execute('''UPDATE auren_routine_notifications SET acknowledged_at=NULL,
+                available_at=?, revision=revision+1 WHERE id=? AND chat_id=? AND revision=?''',
+                (now + seconds, notification_id, chat_id, revision))
+            return True
+
     def tick(self, harness, *, chat_id):
         # No thread, model, network or external notification starts implicitly.
         if not self._tick_lock.acquire(blocking=False):
@@ -169,6 +229,12 @@ class RoutineScheduler:
                     value['next_due'] = now + value['interval_seconds']
                     value['status'] = 'running'
                     self._put(connection, value, 'claim_before_effect')
+                    if value['mode'] == 'suggest':
+                        # Claim, pending delivery and consumption commit together.
+                        self._queue_notification(connection, value, 'suggestion')
+                        value['status'] = ('enabled' if value['runs_left'] and value['interval_seconds'] else 'exhausted')
+                        self._put(connection, value, 'finish')
+                        return [{'routine_id': value['id'], 'kind': 'suggestion', 'text': value['objective']}]
                 event = {'routine_id': value['id'], 'kind': 'suggestion', 'text': value['objective']}
                 if value['mode'] == 'execute':
                     try:
@@ -178,6 +244,10 @@ class RoutineScheduler:
                         value['last_task_id'] = task.task_id
                         event['task_id'] = task.task_id
                         event['kind'] = task.state.value
+                        if event['kind'] == 'completed' and not any(step.success is True for step in task.steps):
+                            # Delivery must not advertise a model-only answer as
+                            # proof that an executable routine actually ran.
+                            event['kind'] = 'unverified'
                     except Exception:
                         event['kind'] = 'failed'
                 with self._transaction() as connection:
@@ -187,6 +257,7 @@ class RoutineScheduler:
                         current['status'] = ('failed' if event['kind'] not in {'suggestion', 'completed'} else
                                              'enabled' if current['runs_left'] and current['interval_seconds'] else 'exhausted')
                         self._put(connection, current, 'finish')
+                    self._queue_notification(connection, value, event['kind'])
                 return [event]
             return []
         finally:

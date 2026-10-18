@@ -136,7 +136,9 @@ def main():
             assert task_control(request, value, 'load')[0] == 200
             value = wait(lambda v:chat_id in v['tasks'].get('chats', []) and not v['busy'])
             assert task_control(request, value, 'select', chat_id=chat_id)[0] == 200
-            value = wait(lambda v:v['tasks']['chat_id']==chat_id)
+            # Selection publishes the new chat before its final idle event.
+            # Resume must wait for both, as the real UI requires.
+            value = wait(lambda v:v['tasks']['chat_id']==chat_id and not v['busy'])
             assert value['tasks']['tasks'][0]['state']=='paused'
             assert task_control(request, value, 'resume', task_id=task_id, chat_id=chat_id)[0] == 200
             wait(lambda v:v['tasks']['tasks'][0]['state']=='completed' and not v['busy'])
@@ -189,6 +191,9 @@ def main():
             assert notice_ready.wait(10)
             value = wait(lambda v:v['tasks']['routines'][0]['status']=='exhausted')
             assert not any(e['kind']=='notice' and 'Pendencia ficticia integrada' in e['text'] for e in value['events'])
+            assert len(value['notifications']) == 1
+            notice = value['notifications'][0]
+            assert notice['text'] == 'Pendencia ficticia integrada'
             publish_notice.set()
             value = wait(lambda v:any(e['kind']=='notice' and 'Pendencia ficticia integrada' in e['text'] for e in v['events']))
             assert value['tasks']['routines'][0]['status']=='exhausted'
@@ -203,6 +208,11 @@ def main():
             value = wait(lambda v:v['tasks']['chat_id']==chat_id and bool(v['tasks']['routines']))
             assert value['tasks']['routines'][0]['status']=='exhausted'
             assert not requests
+            assert value['notifications'] == [notice]
+            assert request('/api/notification-action', {'action':'ack','id':notice['id'],
+                'revision':notice['revision'],'chat_id':chat_id,'generation':value['generation']})[0] == 200
+            assert snapshot()['notifications'] == []
+            checks.extend(['pending_notice_survives_without_queue_or_ack', 'durable_ack_without_reexecuting_routine'])
             checks.append('completed_routine_survives_restart_without_replay')
     elif scenario == 'corrupt_database':
         db.write_bytes(b'not a database; synthetic fixture')

@@ -119,6 +119,7 @@ canvas{cursor:pointer}
     </div>
   </div>
   <div id="overlay">
+    <div id="routineNotices" aria-label="Avisos de rotinas" aria-live="polite" style="width:min(100%,640px);max-height:32vh;overflow:auto"></div>
     <div id="cards" aria-label="Lembretes e tarefas"></div>
     <div id="fala"><div id="eco"></div><div id="legenda" aria-live="polite"></div></div>
     <form id="busca" hidden autocomplete="off"><input type="text" id="msg" placeholder="Pergunte ao Auren" aria-label="Mensagem para o Auren" enterkeyhint="send"></form>
@@ -354,6 +355,7 @@ function evento(e){
  else if(e.kind==="idle"){ocupado=false}
  else if(e.kind==="reply"&&modoAtual!=="off"){void agir("normal",e.text)}
  else if(e.kind==="error"&&modoAtual!=="off"){void agir("confusa",e.text)}
+ else if(e.kind==="notice"&&modoAtual!=="off"){cap.textContent=e.text}
  else if(e.kind==="confirm"){
   pedidoPendente=e.payload;
   $("authAction").textContent=e.payload.action;
@@ -375,12 +377,49 @@ async function eventos(){
   if(d.gap)cap.textContent="Alguns eventos antigos não estão disponíveis. Confira o estado atual.";
   if(previous!==modoAtual)pintaModo();
   if(d.events.length&&modoAtual==="off")pintaModo();
+  renderNotifications(d.notifications||[],d.tasks&&d.tasks.chat_id||"",d.generation||0);
   $("connection").textContent="Auren local • "+(ocupado?"processando":modoAtual);
  }catch(err){$("connection").textContent="Sem conexão com o Auren local."}
  finally{consultando=false}
 }
 const connection=document.createElement("div");connection.id="connection";$("stage").append(connection);
 const taskStates={created:"Criada",running:"Executando",waiting:"Aguardando modelo",paused:"Pausada",interrupted:"Interrompida",completed:"Concluída",failed:"Falhou",cancelled:"Cancelada",draft:"Rascunho",enabled:"Autorizada",revoked:"Revogada",exhausted:"Quantidade esgotada",expired:"Vencida"};
+const noticeCards=new Map();let noticeContext="";
+async function notificationCommand(action,n,chat,generation){
+ return postApi("/api/notification-action",{action,id:n.id,revision:n.revision,chat_id:chat,generation});
+}
+function renderNotifications(notices,chat,generation){
+ const context=JSON.stringify([chat,generation,modoAtual!=="off"]),panel=$("routineNotices");
+ if(context!==noticeContext){panel.replaceChildren();noticeCards.clear();noticeContext=context}
+ if(modoAtual==="off")return;
+ for(const n of notices){
+  const key=n.id+":"+n.revision;
+  if(noticeCards.has(key))continue;
+  for(const [oldKey,entry] of noticeCards){if(entry.n.id===n.id){entry.card.remove();noticeCards.delete(oldKey)}}
+  const card=document.createElement("article"),txt=document.createElement("div"),title=document.createElement("strong"),state=document.createElement("small"),buttons=document.createElement("div"),error=document.createElement("span");
+  card.className="card";card.dataset.notificationId=n.id;card.dataset.revision=n.revision;txt.className="txt";buttons.className="acoes";
+  title.textContent=n.text;state.textContent=n.kind==="suggestion"?"Lembrete":n.kind==="interrupted"?"Execução interrompida — resultado incerto":n.kind==="unverified"?"Resultado da rotina não comprovado":n.kind==="completed"?"Rotina concluída":"Rotina: "+(taskStates[n.kind]||n.kind);
+  txt.append(state,title,error);card.append(txt,buttons);panel.append(card);
+  const entry={card,n,acked:false,inflight:false};noticeCards.set(key,entry);
+  for(const [label,action] of [["Adiar aviso 10 min","snooze"],["Dispensar","ack"]]){
+   const b=document.createElement("button");b.type="button";b.textContent=label;buttons.append(b);
+   b.onclick=async()=>{b.disabled=true;try{await notificationCommand(action,n,chat,generation);card.remove();noticeCards.delete(key)}catch(e){error.textContent=e.message}finally{b.disabled=false}};
+  }
+ }
+ // A successful fetch is not evidence of display. Wait for paint, require a
+ // visible document/card, then acknowledge this exact delivery revision.
+ requestAnimationFrame(()=>requestAnimationFrame(()=>{
+  if(document.visibilityState!=="visible"||noticeContext!==context)return;
+  for(const entry of noticeCards.values()){
+   const r=entry.card.getBoundingClientRect(),p=panel.getBoundingClientRect();
+   if(entry.acked||entry.inflight||!entry.card.isConnected||r.width<=0||r.height<=0||r.top<Math.max(0,p.top)||r.bottom>Math.min(innerHeight,p.bottom))continue;
+   const top=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+   if(!top||!entry.card.contains(top))continue;
+   entry.inflight=true;
+   void notificationCommand("ack",entry.n,chat,generation).then(()=>{entry.acked=true}).catch(()=>{}).finally(()=>{entry.inflight=false});
+  }
+ }));
+}
 async function taskCommand(action,task_id="",chat_id=taskData.chat_id||"",generation=taskGeneration){
  try{await postApi("/api/task-action",{action,task_id,chat_id,generation});$("taskHint").textContent=action==="pause"?"Pausa solicitada. Aguarde um ponto seguro entre etapas.":"Pedido enviado. Confira o estado atualizado."}
  catch(err){$("taskHint").textContent=err.message}

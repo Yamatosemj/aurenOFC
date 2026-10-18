@@ -255,11 +255,13 @@ class AurenUiWorker:
                     self._ensure_task_services(harness)
                     if operation == 'task':
                         if text['action'] == 'select':
-                            harness.selecionar_chat(text['chat_id'])
+                            with self._lock:
+                                harness.selecionar_chat(text['chat_id'])
                         if text['action'] in {'load', 'select'}:
                             self.events.put(UiEvent('tasks', payload=self.task_dashboard(), generation=generation))
                             continue
-                        harness.selecionar_chat(text['chat_id'])
+                        with self._lock:
+                            harness.selecionar_chat(text['chat_id'])
                         quick, response = harness.retomar_tarefa(text['task_id'], chat_id=text['chat_id'])
                     elif operation == 'routine':
                         self._routine_control(harness, text, generation)
@@ -334,6 +336,26 @@ class AurenUiWorker:
                 'routines': self._scheduler.list(chat_id=chat_id) if self._scheduler else []}
         except RuntimeError:
             return empty
+
+    def pending_notifications(self, *, chat_id=None, generation=None):
+        with self._lock:
+            if (not self._enabled or self._closing.is_set() or self._scheduler is None
+                    or self._harness is None or self._scheduler.manager.closed
+                    or (generation is not None and generation != self._generation)
+                    or (chat_id is not None and chat_id != self._harness._session.chat_id)):
+                return []
+            return self._scheduler.pending_notifications(chat_id=self._harness._session.chat_id)
+
+    def notification_action(self, action, *, notification_id, revision, chat_id, generation):
+        with self._lock:
+            if (action not in {'ack', 'snooze'} or type(generation) is not int
+                    or generation != self._generation or not self._enabled or self._closing.is_set()
+                    or self._harness is None or self._scheduler is None
+                    or self._harness._session.chat_id != chat_id):
+                return False
+            method = (self._scheduler.acknowledge_notification if action == 'ack'
+                      else self._scheduler.snooze_notification)
+            return method(notification_id, revision, chat_id=chat_id)
 
     def task_action(self, action, *, generation, task_id='', chat_id=''):
         if action not in {'load', 'select', 'resume', 'pause', 'cancel'} or type(generation) is not int:

@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 from queue import Empty
 import secrets
+import sqlite3
 import shutil
 import subprocess
 from threading import Lock
@@ -130,15 +131,33 @@ class LocalChromeApp:
             # Caso o navegador tenha perdido eventos, notificar da lacuna.
             gap = bool(self.history and after and after < self.history[0]["seq"] - 1)
             items = [item for item in self.history if item["seq"] > after]
+            generation = getattr(self.worker, 'generation', 0)
+            tasks = self.worker.task_dashboard() if callable(getattr(self.worker, 'task_dashboard', None)) else {}
+            notifications = (self.worker.pending_notifications(chat_id=tasks.get('chat_id', ''), generation=generation)
+                if callable(getattr(self.worker, 'pending_notifications', None)) else [])
             return {
                 "mode": self.mode,
                 "busy": self.busy,
                 "seq": self.counter,
                 "gap": gap,
                 "events": items,
-                "generation": getattr(self.worker, 'generation', 0),
-                "tasks": self.worker.task_dashboard() if callable(getattr(self.worker, 'task_dashboard', None)) else {},
+                "generation": generation,
+                "tasks": tasks,
+                "notifications": notifications,
             }
+
+    def notification_action(self, obj):
+        if (set(obj) != {'action', 'id', 'revision', 'chat_id', 'generation'}
+                or not isinstance(obj['action'], str) or not isinstance(obj['id'], str)
+                or not isinstance(obj['chat_id'], str) or len(obj['chat_id']) > 200
+                or type(obj['revision']) is not int or type(obj['generation']) is not int):
+            raise ValueError('Controle de aviso invalido.')
+        with self.lock:
+            if self.mode == 'off' or not self.worker.notification_action(obj['action'],
+                    notification_id=obj['id'], revision=obj['revision'],
+                    chat_id=obj['chat_id'], generation=obj['generation']):
+                raise ValueError('Aviso recusado ou atualizado. Recarregue a conversa.')
+            return {'recorded': True}
 
     def task_action(self, obj):
         fields = {'action', 'task_id', 'chat_id', 'generation'}
@@ -381,9 +400,14 @@ class ChromeRequestHandler(BaseHTTPRequestHandler):
                 result = self.server.app.task_action(obj)
             elif path == '/api/routine-action':
                 result = self.server.app.routine_action(obj)
+            elif path == '/api/notification-action':
+                result = self.server.app.notification_action(obj)
             else:
                 self._bad(404, "Rota inexistente.")
                 return
+        except sqlite3.Error:
+            self._bad(503, 'Nao foi possivel persistir a operacao. O aviso continua pendente.')
+            return
         except (ValueError, TypeError, RuntimeError, UnicodeDecodeError) as exc:
             self._bad(400, str(exc))
             return
