@@ -6,6 +6,14 @@ Data: 17/10/2026. Branch: `correcoes-auditoria`.
 
 ## O que foi corrigido
 
+### P2b — AUD-034 e AUD-035
+
+Ambos estavam **MANTIDOS**. Três reproduções falharam antes de corrigir. Duas verificações que estavam dentro de comentários agora executam de verdade. O teste de raízes restaura a função original capturada antes da substituição e verifica também a recusa de um arquivo fora das raízes permitidas. O testador manual de processos usa o resultado estruturado e exige os códigos corretos de proteção, em vez de chamar métodos de texto nesse resultado.
+
+Os quatro blocos reais do testador foram executados isoladamente com executores fictícios; a bateria Live não foi iniciada. **AUD-033:** MANTIDO por releitura, sem alteração porque aprovar o modo sem consulta online exige decisão explícita de autorização. Não gravei aprovações novas nem alterei a política instalada.
+
+Seleção focada: **45 aprovados e um ignorado**. Suíte ampla: **810 aprovados, zero falhas, oito ignorados, dois casos de voz excluídos**, em 44,86 segundos.
+
 ### P2a — AUD-010, 011, 014, 015 e 023
 
 Sete reproduções falharam antes de corrigir. AUD-010, 011, 014 e 015 estavam **MANTIDOS**; AUD-023, antes suspeita, foi confirmado em uma busca fictícia que tentava calcular a assinatura de um destino protegido.
