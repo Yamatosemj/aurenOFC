@@ -49,9 +49,19 @@
       "skipped": 8,
       "passed": 978,
       "sha256_supervisor": "7b19dbcd9a81d495660ca2bc7403111ee591fd82a612ec65662df3252b377858"
+    },
+    {
+      "execucao": "phase0-watchdog-final",
+      "pasta_local": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase0-watchdog-final",
+      "tests": 986,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 8,
+      "passed": 978,
+      "sha256_supervisor": "fb32c728dd7ffb68adb15da7b18a9a77c0ca1f39cbdc84702908275c714ade5e"
     }
   ],
-  "full_seconds": 49.32,
+  "full_seconds": 50.59,
   "api_paga": false,
   "live_auren": false,
   "limite": "A versao do arquivo no controlador confiavel instalado nao foi atualizada."

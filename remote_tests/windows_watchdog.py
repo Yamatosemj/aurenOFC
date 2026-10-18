@@ -178,14 +178,14 @@ def supervise(command, *, cwd, log_path, wall_seconds=1200, idle_seconds=120,
     except KeyboardInterrupt:
         result.update(reason="cancelled", exit_code=130)
     finally:
-        if thread is not None:
-            _winapi.CloseHandle(thread)
         try:
             job.terminate()
         except Exception as exc:
             result.update(reason="cleanup_failed", exit_code=125, cleanup_error=type(exc).__name__)
         finally:
             job.close()
+        if thread is not None:
+            _winapi.CloseHandle(thread)
         if process is not None:
             if _winapi.WaitForSingleObject(process, 5000) != _winapi.WAIT_OBJECT_0:
                 result.update(reason="cleanup_failed", exit_code=125, cleanup_error="ProcessWaitTimeout")

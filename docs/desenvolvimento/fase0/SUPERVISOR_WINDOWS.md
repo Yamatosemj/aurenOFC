@@ -18,7 +18,8 @@ Validação local isolada:
 | Primeira tentativa, seleção focada | 13 | 2 | 0 |
 | Segunda tentativa, seleção focada | 15 | 0 | 0 |
 | Suíte completa, incluindo novo controle de limpeza | 978 | 0 | 8 |
+| Suíte completa após conferir a ordem de limpeza dos handles | 978 | 0 | 8 |
 
-Suíte completa: 49,32 segundos, Windows/Python 3.13.15, dados e perfil temporários, credenciais removidas. Os oito ignorados exigem links simbólicos indisponíveis localmente. Artefatos e hashes em `RESULTADOS_SUPERVISOR.json`. Os testes focados se sobrepõem à suíte completa; não somar.
+Primeira suíte completa: 49,32 segundos; última: 50,59 segundos. A revisão preservou também a garantia de fechar o Job antes de liberar handles auxiliares: falha ao fechar um handle de thread não deve impedir o encerramento do Job. Windows/Python 3.13.15, dados e perfil temporários, credenciais removidas. Os oito ignorados exigem links simbólicos indisponíveis localmente. Artefatos e hashes em `RESULTADOS_SUPERVISOR.json`. Os testes focados se sobrepõem à suíte completa; não somar.
 
 Esta é uma mudança no arquivo versionado `remote_tests/windows_watchdog.py`. Nenhum controlador fixado, hook pessoal, aprovação, política local, workflow ou instalação do runner foi alterado. O runner confiável já instalado não recebe esta correção automaticamente; eventual atualização exige seu processo próprio de revisão. O CI final do novo HEAD deve ser registrado na PR #154 antes do avanço. A existência desta correção não constitui autorização para executar Live no PC.
