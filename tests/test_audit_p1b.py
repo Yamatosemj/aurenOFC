@@ -1,5 +1,8 @@
 import json
+import sys
 from types import SimpleNamespace
+
+import pytest
 
 from core.harness_guards import _tratar_rodada_sem_ferramentas
 from core.harness_multitab import _multitab_concluida
@@ -88,6 +91,7 @@ def test_aud026_observation_without_proof_does_not_reset_counter():
     assert h._browser_verification_guard_attempts == 2
 
 
+@pytest.mark.skipif(sys.platform != 'win32', reason='requer PowerShell e UI Automation do Windows')
 def test_aud030_refresh_preserves_second_control(tmp_path):
     import base64
     import subprocess

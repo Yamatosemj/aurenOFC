@@ -6,10 +6,10 @@ from core.harness_intent_guard import verificar_antes_de_agir
 from providers.openai_provider import OpenAIProvider
 
 
-@pytest.mark.parametrize('api_failed', [False, True])
-def test_aud020_failed_review_is_accounted_without_executing(api_failed):
+@pytest.mark.parametrize('api_failed,usage_known', [(False, True), (True, False), (False, False)])
+def test_aud020_failed_review_is_accounted_without_executing(api_failed, usage_known):
     response = SimpleNamespace(output_text='invalid fictional decision',
-        usage=SimpleNamespace(input_tokens=11, output_tokens=3, input_tokens_details=None))
+        usage=SimpleNamespace(input_tokens=11, output_tokens=3, input_tokens_details=None) if usage_known else None)
     def create(**kwargs):
         if api_failed:
             raise TimeoutError('fictional timeout')
@@ -28,10 +28,10 @@ def test_aud020_failed_review_is_accounted_without_executing(api_failed):
         write_log=lambda event, **data: events.append((event, data)))
     assert result == (False, 'blocked') and failures
     assert len(traces) == 1
-    assert traces[0][2] == ({} if api_failed else {
+    assert traces[0][2] == ({} if not usage_known else {
         'input_tokens': 11, 'output_tokens': 3, 'cached_tokens': 0, 'cache_write_tokens': 0})
     error = next(data for event, data in events if event == 'INTENT_VERIFICATION_ERROR')
-    assert error['uso_conhecido'] is (not api_failed)
+    assert error['uso_conhecido'] is usage_known
 
 
 def test_aud020_configured_model_tariff_is_used_instead_of_generic_reference(monkeypatch):

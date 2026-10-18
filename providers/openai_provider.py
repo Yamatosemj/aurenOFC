@@ -87,5 +87,5 @@ class OpenAIProvider:
         try:
             decisao = interpretar_decisao(getattr(resposta, "output_text", ""))
         except ValueError as exc:
-            raise IntentVerificationFailure("Resposta invalida do revisor.", usage.extrair_metricas_uso(resposta)) from exc
+            raise IntentVerificationFailure("Resposta invalida do revisor.", usage.extrair_metricas_uso(resposta) or None) from exc
         return replace(decisao, metricas_uso=usage.extrair_metricas_uso(resposta))

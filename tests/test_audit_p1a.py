@@ -14,6 +14,7 @@ from tools import applications, browser, browser_context, dispatcher, windows_wi
 @pytest.mark.parametrize("tool,method", [("focar_janela_windows", "SetForegroundWindow"),
                                         ("fechar_janela_windows", "PostMessageW")])
 def test_aud002_liv003_window_refusal_is_failure(monkeypatch, tool, method):
+    monkeypatch.setattr(windows_window, "os", SimpleNamespace(name="nt"))
     monkeypatch.setattr(windows_window, "_encontrar_janela_windows", lambda _: (42, "Ficticia"))
     monkeypatch.setattr(windows_window, "_user32", lambda: SimpleNamespace(
         ShowWindow=lambda *a: True, SetForegroundWindow=lambda *a: False,
@@ -28,7 +29,7 @@ def test_aud002_shortcut_failure_is_structured(monkeypatch, tmp_path):
     monkeypatch.setattr(applications, "procurar_atalho", lambda _: tmp_path / "app.lnk")
     def fail(*a):
         raise OSError("erro ficticio")
-    monkeypatch.setattr(applications.os, "startfile", fail)
+    monkeypatch.setattr(applications, "os", SimpleNamespace(startfile=fail))
     assert not from_legacy(applications.abrir_programa("Ficticio")).ok
 
 

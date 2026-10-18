@@ -6,7 +6,7 @@ As fases iniciais foram executadas na ordem pedida, com um commit por fase. Depo
 
 Os achados tratados continuavam presentes na releitura (**MANTIDO**). Não houve item pulado como “JÁ CORRIGIDO” ou “INVALIDADO” por suposição. AUD-023 teve seu mecanismo confirmado com arquivos fictícios; em AUD-022 foi reproduzida a perda da confirmação entre tarefas, sem ataque demonstrado contra um modelo real. Os relatórios originais foram copiados sem alteração para `docs/auditoria/`, pois essa pasta não existia no checkout.
 
-**Estado atual:** as correções locais previstas e os itens antes pendentes foram tratados. Última suíte completa: **953 aprovados, zero falhas e oito ignorados**. As atualizações da continuação ao final deste arquivo prevalecem sobre exclusões e limitações da primeira passagem. Não houve teste físico, API paga ou limpeza de dados reais. Não houve instalação nem aprovação do runner real.
+**Estado atual:** as correções locais previstas e os itens antes pendentes foram tratados. Última suíte completa: **954 aprovados, zero falhas e oito ignorados**. As atualizações da continuação ao final deste arquivo prevalecem sobre exclusões e limitações da primeira passagem. Revisão na [PR #153, em rascunho](https://github.com/Yamatosemj/aurenOFC/pull/153). Não houve teste físico, API paga ou limpeza de dados reais. Não houve instalação nem aprovação do runner real.
 
 ## O que foi corrigido, fase por fase
 
@@ -214,3 +214,11 @@ MANTIDO na releitura e corrigido. Revisões que falham passam a contar na tarefa
 O cálculo aceita tarifas configuradas por identificador de modelo e usa a mesma regra no processo, nos rastros e no relatório. Sem tarifa válida, os coeficientes antigos aparecem como referência genérica, não como fatura. Não foram inventados preços atuais. Veja [CUSTOS_ESTIMADOS.md](docs/CUSTOS_ESTIMADOS.md). Contadores gerais continuam abrangendo o processo inteiro; a separação por tarefa fica nos rastros.
 
 As três reproduções iniciais falharam antes das mudanças. Um teste adicional mostrou divergência no relatório, corrigida antes da validação final. Foram 56 testes focados aprovados antes do controle adicional de rotulagem. A suíte completa final, incluindo todos os arquivos novos e os testes simulados de voz, passou com **953 aprovados, zero falhas e oito ignorados, em 49,28 segundos** (`review-usage-full-final/result.xml`). Não houve comparação com fatura real, API paga ou preços atuais. Os valores de tarifas nos testes são fictícios.
+
+## Conferência final e portabilidade
+
+Um controle adicional confirmou que uma resposta inválida sem informação de tokens também deve indicar uso desconhecido. O caso falhou antes do ajuste e passou depois; a suíte focada teve 47 aprovados. A primeira execução Linux do GitHub teve 918 aprovados, quatro falhas de preparação dos testes e 39 ignorados. Os dois checks focados anteriores, Linux e Windows hospedados, passaram.
+
+As falhas Linux eram de simulações que presumiam Windows: três casos agora injetam o sistema falso somente no módulo testado. O caso que executa PowerShell com UI Automation é selecionado apenas no Windows, onde continua passando; não se alterou o executor de produção. Durante esse ajuste faltou inicialmente importar pytest, impedindo a coleta local; o import foi corrigido e os 26 casos focados passaram.
+
+A última suíte completa Windows terminou com **954 aprovados, zero falhas e oito ignorados, em 48,20 segundos** (`audit-final-portable-green/result.xml`). O branch foi enviado e a PR #153 foi aberta em rascunho. A main permanece no SHA consultado. Houve um merge apenas de histórico no branch de correções, depois de conferir que a main e a base auditada tinham árvores idênticas; ele não mudou os arquivos testados. Os checks remotos do novo SHA devem ser consultados na PR e não se confundem com esta execução local.
