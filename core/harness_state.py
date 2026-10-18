@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Callable
+import json
 
 
 def _montar_estado(
@@ -16,6 +17,7 @@ def _montar_estado(
     max_history_items: int,
     max_state_chars: int,
     texto_seguro: Callable[[Any, int], str],
+    plano: Any = None,
 ) -> str:
     linhas = [
         "CONTEXTO CONTROLADO DA TAREFA",
@@ -23,6 +25,11 @@ def _montar_estado(
     ]
 
     linhas.append("TIPO: execucao controlada pelo harness")
+    if plano is not None:
+        linhas.extend(['PLANO LOCAL (estimativa, nunca autorizacao):',
+            json.dumps([{'etapa': s.index, 'instrucao': s.instruction} for s in plano.steps], ensure_ascii=False),
+            'Confira o pedido integral, suas condicoes e dependencias. Execute somente o proximo passo necessario.',
+            'Antes de concluir, obtenha evidencia das etapas; sucesso de comando nao comprova o estado final.'])
 
     if esclarecimento_confirmado:
         linhas.extend([

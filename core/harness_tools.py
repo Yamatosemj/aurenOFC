@@ -57,6 +57,7 @@ def _executar_chamadas_rodada(
             argumentos,
             task_id=task_id,
             step=len(historico) + 1,
+            **({'signature': _identidade_da_chamada(item)} if getattr(task_manager, 'persistent', False) else {}),
         )
 
         write_log(

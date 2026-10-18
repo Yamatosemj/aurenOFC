@@ -78,6 +78,9 @@ def verificar_antes_de_agir(
     )
     review_started = time.perf_counter()
     try:
+        reserve = getattr(harness, '_reserve_model_call', None)
+        if callable(reserve):
+            reserve()
         historico_revisor = list(historico)
         pergunta_confirmada = getattr(harness, "_confirmacao_esclarecimento", None)
         if pergunta_confirmada:

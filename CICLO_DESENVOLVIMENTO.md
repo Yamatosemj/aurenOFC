@@ -2,22 +2,22 @@
 
 ## Estado para retomada — 18/10/2026
 
-**Retomada autorizada: correção adicional do supervisor implementada na Fase 1, aguardando validação final antes da Fase 2. Fases 2 a 5 não iniciadas.** O HEAD `60033fd` da Fase 0 passou no [CI completo final](https://github.com/Yamatosemj/aurenOFC/actions/runs/39100456150): 986 aprovados no Windows e 945 aprovados/41 ignorados no Linux. A Fase 1 usa essa base e estende o TaskManager existente; não cria executor paralelo nem retoma ações automaticamente. Relatório e limites em [FASE_1.md](docs/desenvolvimento/FASE_1.md).
+**Fases 0 e 1 validadas; Fase 2 implementada, aguardando suíte completa e CI final. Fases 3 a 5 não iniciadas.** Nenhuma PR foi mesclada. A Fase 1, incluindo a correção adicional do supervisor, passou no CI `39103014489`, SHA `3e93696e66a003983c7f9061cf741cfff0c60984`: Windows 1.022 aprovados; Linux 978 aprovados/44 ignorados.
 
-- Branch atual: `desenvolvimento/fase-1-tarefas-persistentes`, derivada de `60033fdbf7ee1636c9ee4bf362a910f01de86f03` da PR #154. A PR de Fase 1 deve usar `desenvolvimento/fase-0-base-auditoria` como base, sem merge à main.
-- Fase 0 e falhas anteriores preservadas em [REVISAO_FINAL.md](docs/desenvolvimento/fase0/REVISAO_FINAL.md), [SUPERVISOR_WINDOWS.md](docs/desenvolvimento/fase0/SUPERVISOR_WINDOWS.md) e seus JSONs. O run `39099859051` falhou; somente a conferência posterior aprovada permitiu avançar.
-- Fase 1: SQLite opcional, eventos transacionais, plano persistido, estados PAUSED/INTERRUPTED, trava de escritor e retomada conservadora de checkpoint. Sem ligação à interface ou execução continuada automática.
-- Suíte completa local atual: **1.005 aprovados, zero falhas, oito ignorados**, em **50,33 segundos**; seleção focada com 47 aprovados. [Evidências da Fase 1](docs/desenvolvimento/fase1/RESULTADOS_FASE_1.json).
-- Sem merge, alteração de main, API paga, Live sensível ou dados pessoais. Processos Python e arquivos das fixtures são reais e fictícios; não são programas pessoais. A pasta preexistente `desktop/` não foi examinada nem alterada.
+- Branch atual: `desenvolvimento/fase-2-planejamento-recuperacao`, derivada desse SHA da PR #155. A PR da Fase 2 usa a branch da Fase 1 como base.
+- Relatório: [FASE_2.md](docs/desenvolvimento/FASE_2.md). Evidências preservam as falhas iniciais, a regressão da fixture parcial e a falha HTTP local com suas correções.
+- O mesmo ciclo executa o objetivo retomado. Checkpoint seguro preserva orçamento e restrições; passos incertos, falhas anteriores, guards em recuperação e fechamentos não são retomados cegamente. Não há restauração de autorização, coordenada, PID ou imagem.
+- A verificação de conclusão exige evidências de todas as etapas; uma pendência pode gerar uma recuperação limitada. O julgamento semântico real ainda não foi validado com API.
+- Sem API paga, Live sensível, dados pessoais, alteração de main ou runner pessoal. `desktop/` permanece intocada.
 
 ## Como retomar
 
-1. Conferir novamente main, HEADs, estado e CI das PRs; os hashes abaixo são referências da revisão, não valores permanentes.
-2. Conferir a reconciliação na PR #154: a identificação de caminhos é compartilhada entre permissão e executor; mantém confirmação, retorno estruturado e uma única implementação de abertura. A #152 não deve ser mesclada por cima dessa implementação sem nova revisão.
-3. Validar a correção adicional descrita em [CORRECAO_SUPERVISOR.md](docs/desenvolvimento/fase1/CORRECAO_SUPERVISOR.md), preservando a evidência da recorrência descrita em [BLOQUEIO_CI.md](docs/desenvolvimento/fase1/BLOQUEIO_CI.md). O CI `39101893307` teve 1.012 aprovados/uma falha no Windows e 972 aprovados/41 ignorados no Linux. A PR #155 permanece em rascunho. Conferir o relatório da Fase 1 e o CI do seu HEAD publicado. Só avançar com todos os critérios aprovados; SQLite recuperado não equivale a continuação de execução entregue.
-4. Na Fase 2, auditar PlanBuilder e o ciclo existente, especialmente dados exatos, verificação de resultados, orçamento acumulado e estado dos guards após retomada. Implementar a continuação em branch própria derivada da Fase 1, sem segundo executor nem restauração de aprovações.
+1. Conferir main, branches, PRs e CI no SHA atual; não presumir que resultados de versões anteriores valham para o HEAD.
+2. Ler FASE_2.md e RESULTADOS_FASE_2.json. Só avançar com suíte completa e CI Windows/Linux aprovados no código final.
+3. Para a Fase 3, auditar a fila auxiliar e os agendamentos existentes. Implementar apenas rotinas explicitamente cadastradas e limites/revogação, com permissão negada por padrão e o mesmo Dispatcher. Sugestões não executam efeitos. Não criar aprovação automática ou tratar texto de arquivo/site como autorização.
+4. Fase 4 liga o acompanhamento à interface existente; Fase 5 integra e verifica limites. Não ativar execução de rotinas ao iniciar o aplicativo sem autorização cadastrada.
 
-Não foi definido orçamento para API paga neste ciclo. Chamadas pagas e ações sensíveis ficam pendentes de autorização e orçamento explícitos. Autorizações Live de investigações anteriores não são orçamento para estas fases.
+Não foi definido orçamento para API paga neste ciclo. Testes pagos e ações sensíveis continuam pendentes de autorização e orçamento explícitos. Autorizações de investigações anteriores não constituem orçamento para estas fases.
 
 ## Critérios de avanço propostos
 

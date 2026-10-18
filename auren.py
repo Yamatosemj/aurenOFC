@@ -34,7 +34,7 @@ from core import usage
 from core.capability_audio_runtime import try_execute as _try_experimental_audio
 from core.harness import AurenHarness
 from core.permission_manager import PermissionManager
-from core.response import criar_resposta, get_client, obter_metricas_roteamento, verificar_intencao
+from core.response import criar_resposta, get_client, obter_metricas_roteamento, verificar_intencao, verificar_conclusao
 from core.session import SessionContextManager
 from core.tools_registry import tools
 from skills.loader import SkillLibrary
@@ -126,11 +126,11 @@ def _client_lazy():
         client = get_client()
     return client
 
-def criar_harness(confirmation_channel=None) -> AurenHarness:
+def criar_harness(confirmation_channel=None, *, task_db_path=None) -> AurenHarness:
     """Unico ponto que monta o Harness. Todo canal (texto, voz, futuros) usa esta funcao."""
     task_permission_manager = permission_manager
 
-    if confirmation_channel is not None:
+    if confirmation_channel is not None or task_db_path is not None:
         task_permission_manager = PermissionManager(
             max_actions=permission_manager.max_actions,
             max_consecutive_failures=permission_manager.max_consecutive_failures,
@@ -160,13 +160,17 @@ def criar_harness(confirmation_channel=None) -> AurenHarness:
             return True, resposta
         return _comando_rapido(mensagem, _executar_ferramenta_canal)
 
+    from core.task_manager import TaskManager
     harness = AurenHarness(
+        task_manager=TaskManager(db_path=task_db_path),
+        permission_manager=task_permission_manager,
+        verificar_conclusao=verificar_conclusao,
         criar_resposta=criar_resposta,
-        executar_ferramenta=executar_ferramenta if confirmation_channel is None else _executar_ferramenta_canal,
+        executar_ferramenta=executar_ferramenta if confirmation_channel is None and task_db_path is None else _executar_ferramenta_canal,
         mostrar_uso=mostrar_uso,
         obter_chamadas=lambda resposta: [item for item in resposta.output if item.type == "function_call"],
-        comando_rapido=comando_rapido if confirmation_channel is None else _comando_rapido_canal,
-        iniciar_tarefa=permission_manager.iniciar_tarefa if confirmation_channel is None else task_permission_manager.iniciar_tarefa,
+        comando_rapido=comando_rapido if confirmation_channel is None and task_db_path is None else _comando_rapido_canal,
+        iniciar_tarefa=task_permission_manager.iniciar_tarefa,
         apos_tarefa=None,
         fechar=fechar_navegador,
         obter_metricas_roteamento=obter_metricas_roteamento,
