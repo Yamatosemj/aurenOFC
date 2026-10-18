@@ -1,0 +1,72 @@
+{
+  "attempts": [
+    {
+      "label": "phase5-ui-live-first",
+      "artifacts": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase5-ui-live-first",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 1,
+        "pid": 27128,
+        "duration_seconds": 4.24
+      },
+      "failure": "installed Chrome refused automation"
+    },
+    {
+      "label": "phase5-ui-live-bundled",
+      "artifacts": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase5-ui-live-bundled",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 1,
+        "pid": 11564,
+        "duration_seconds": 5.37
+      },
+      "failure": "validation-script selector matched two elements"
+    },
+    {
+      "label": "phase5-ui-live-validated",
+      "artifacts": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase5-ui-live-validated",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 0,
+        "pid": 18944,
+        "duration_seconds": 12.47
+      },
+      "result": {
+        "checks": [
+          "saved_goal_shown_as_text_without_html_execution",
+          "same_goal_resumed_without_repeating_saved_step",
+          "routine_draft_not_auto_authorized_and_revoked",
+          "real_confirmation_ui_denied_without_running_handler",
+          "live_waiting_progress_and_cooperative_pause_persisted",
+          "page_javascript_has_no_runtime_errors",
+          "browser_worker_closed_and_database_reopened_with_pause_intact",
+          "real_tk_widgets_show_saved_pause_and_cancel_it"
+        ],
+        "passed": 8,
+        "failed": 0,
+        "chrome_version": "153.0.8010.12",
+        "model": "scripted fake; no API",
+        "personal_effects": [],
+        "model_calls": 4,
+        "external_page_requests_aborted": 0,
+        "page_errors": [],
+        "screenshot": "chrome.png",
+        "tk": "real widgets with root withdrawn; no physical appearance validation"
+      }
+    }
+  ],
+  "final_source_sha256": {
+    "ui/chrome.html": "b73ee2e5d5a92a9ec100853c988d1fb68cdc4438ae7f0a1ca3aff718f700b280",
+    "ui/chrome_server.py": "a7e7a2e60ef232a62e95163565d384374bbcc32e1b1a5b4dabe71e0689886641",
+    "ui/backend.py": "f048900de446c662d4489b822447e5f25d4a4f7a15d176f76c6e72fb8942d9b5",
+    "interface_auren.py": "d6a80b990f0a698887a803a3115a0763aad21a69efcf88fdc036f1c0551d4090",
+    "core/harness.py": "8c869a6cc845f671f3240f17fea72c07c13d0133a3e7d20aee03161470c18f7a",
+    "core/execution_scope.py": "8b8778be2d6f2b174677dee56e60042ac6c941c5f85146b0b8e2819001d44abb",
+    "core/task_manager.py": "a626f1b50569e8a8c068287595c8188a5d780a23cb82b0368e9a752a2a0ee357",
+    "core/task_persistence.py": "e2fe5f565665c9d09200751144d3047ac41c9ceaab1ab627253506fff988a4e4",
+    "remote_tests/windows_watchdog.py": "168928918822f2924d38ff03225cbda3cb188fc7c317700e0a5dcbe7d0b53741",
+    "remote_tests/phase5_ui_smoke.py": "0b08ad5784df9642469bc54f638f8ee45c7b9e186f6e0ab519cfe297692a4cfa"
+  },
+  "screenshot_sha256": "c3a5f4f011cf2aa8e8cfcdf238f8d4e20015e71ef9ed282888a272610e7f20b2",
+  "limits": "Real isolated browser/Tk/worker/SQLite. Scripted model and fake handlers. No API, hardware or personal data. No positive browser confirmation."
+}
