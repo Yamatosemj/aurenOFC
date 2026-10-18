@@ -86,7 +86,7 @@ Todos os itens abaixo foram relidos e permanecem presentes; não são declarados
 | AUD-013 | Corrigido na continuação autorizada: alternativa diferente passa pela política normal |
 | AUD-017 | Corrigido na continuação autorizada |
 | AUD-019 | Prazos de retenção e alcance da exclusão exigem decisão do proprietário |
-| AUD-022 | Origem de conteúdo lembrado continua sem transporte estruturado; ataque não demonstrado. A política para esse conteúdo exige decisão |
+| AUD-022 | Corrigido na continuação autorizada: contexto recuperado exige confirmação para efeitos externos |
 | AUD-024 | Corrigido na continuação autorizada, com limites físicos descritos abaixo |
 | AUD-027 | Corrigido na continuação autorizada; veja a atualização abaixo |
 | AUD-033 | Não foi concedida silenciosamente a aprovação para testes sem consulta online |
@@ -176,3 +176,9 @@ As duas reproduções de AUD-017 e as três iniciais de AUD-024 falharam antes d
 MANTIDO na releitura e corrigido. A trava de duas falhas iguais bloqueia repetir aquela mesma ação. Uma alternativa diferente continua sujeita às permissões e confirmações normais. Permanecem os limites de três falhas consecutivas e de ações por tarefa. Nenhuma confirmação é aprovada automaticamente.
 
 A decisão anterior foi resolvida dentro da autorização para continuar: permitir considerar uma alternativa, mantendo as outras travas. Duas reproduções falharam antes e um controle passou. Depois: 11 testes focados aprovados e suíte completa com 934 aprovados, zero falhas e oito ignorados (44,94 segundos; `alternative-guard-full/result.xml`).
+
+## Continuação autorizada — AUD-022
+
+MANTIDO como lacuna de propagação e corrigido de forma conservadora. As seções recuperadas carregam uma identificação separada do texto. O Harness informa essa origem ao mesmo gerenciador de permissões usado para executar ferramentas. Isso vale também para registros antigos: conteúdo lembrado não recebe a autoridade do pedido atual. Consultas continuam possíveis; ações com efeitos externos passam a exigir confirmação quando houver contexto recuperado. Isso pode aumentar os pedidos de confirmação em conversas longas.
+
+A reprodução com duas tarefas fictícias mostrou que a segunda perdia a exigência de confirmação. Falhou antes e passou depois; não se demonstrou um ataque contra um modelo real. Foram 40 testes focados aprovados e suíte completa com 935 aprovados, zero falhas e oito ignorados (47,78 segundos; `memory-origin-full/result.xml`). Não houve migração nem leitura de bancos reais.

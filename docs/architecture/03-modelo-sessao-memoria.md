@@ -6,6 +6,8 @@
 
 ## 1. Responsabilidades e pontos de entrada
 
+AUD-022 (correção candidata): `ContextSnapshot.fontes_nao_confiaveis` identifica as seções recuperadas. A fábrica conecta o Harness ao marcador do PermissionManager, rearmado depois da montagem do contexto a cada tarefa. A política conservadora trata todos os registros recuperados, inclusive antigos e skills, como dados sem autoridade de instrução; efeitos externos exigem confirmação. Não há migração do banco nem afirmação de exploração por modelo real.
+
 | Componente | Responsabilidade observada |
 | --- | --- |
 | [auren.py](../../auren.py) | Compõe um store SQLite e um SessionContextManager compartilhados no processo; a fábrica injeta esse contexto no Harness |

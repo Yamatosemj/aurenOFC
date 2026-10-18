@@ -39,6 +39,14 @@ class ContextSnapshot:
     texto: str  # render final, pronto para o estado da tarefa
     erros: tuple[str, ...] = ()
 
+    @property
+    def fontes_nao_confiaveis(self) -> tuple[str, ...]:
+        """Conteúdo recuperado não herda a autoridade do pedido atual.
+
+        Registros antigos sem proveniência também recebem tratamento conservador.
+        """
+        return tuple(nome for nome, texto in self.secoes if texto)
+
     def secao(self, nome: str) -> str:
         return next((texto for n, texto in self.secoes if n == nome), "")
 
