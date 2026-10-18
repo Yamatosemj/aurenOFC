@@ -55,6 +55,8 @@ O ciclo **não** é um stream full-duplex de fala com o modelo: uma fala PTT é 
 
 ## 3. PTT e captura de microfone
 
+Correções candidatas da auditoria (branch de manutenção): o buffer de gravação tem teto em amostras, incluindo pré-roll, e para de receber áudio ao atingir o tempo máximo mesmo com a tecla pressionada. A resposta falada só anuncia sucesso de ferramenta quando a tarefa terminou e a última etapa confirmou sucesso. A validação usa captura e tarefas simuladas; não comprova comportamento físico.
+
 [`PushToTalkRecorder`](../../voice/input.py) usa por padrão **`right ctrl+right shift`** (Ctrl direito + Shift direito, juntos); ESC encerra. O PTT é observado por polling a cada **20 ms** com debounce padrão de **60 ms**. Pressionamento inicia captura e soltar termina; limite de fala **30 s** com espera de liberação da hotkey. Configuração: mono, `float32`, duração mínima de áudio **100 ms**, `pre_roll_seconds=0.18`, `post_roll_seconds=0.12`.
 
 O `InputStream` é aberto **antes** de detectar a hotkey. Enquanto aguarda, um callback guarda somente janela curta de pré-roll em **RAM**; ao pressionar, transfere esse pré-roll para os frames capturados. Ao soltar, retém pós-roll e fecha o stream antes de segmentar. Durante o TTS, `definir_saida_ativa(True)` impede o pré-roll de registrar a voz da própria saída, mas não é cancelamento acústico de eco e **não** bloqueia deliberadamente uma captura que já esteja gravando.

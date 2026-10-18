@@ -82,7 +82,7 @@ Todos os itens abaixo foram relidos e permanecem presentes; não são declarados
 
 | Item | Motivo |
 | --- | --- |
-| AUD-008 | Limite da gravação de voz: testes de voz foram excluídos pela regra 10 |
+| AUD-008 | Corrigido na continuação autorizada; veja a atualização abaixo |
 | AUD-013 | A regra após falhas repetidas exige decidir entre parada global e tentativa de alternativa |
 | AUD-017 | Identidade do cache de reconhecimento de voz: testes de voz excluídos |
 | AUD-019 | Prazos de retenção e alcance da exclusão exigem decisão do proprietário |
@@ -156,3 +156,9 @@ AUD-027: MANTIDO na releitura e corrigido. A fala só simplifica o resultado de 
 Antes da correção: cinco reproduções falharam e um controle passou. Depois: 17 testes focados passaram. A suíte ampla desta etapa passou com 920 aprovados, zero falhas e oito ignorados (46,96 segundos), incluindo testes simulados de voz e confirmação. A preparação de cinco snapshots antigos foi completada com os campos reais de estado e sucesso. Houve duas falhas intermediárias por esses dados ausentes; outra execução incluiu os dois testes ainda vermelhos de AUD-008. A validação de AUD-027 excluiu somente esse arquivo de reprodução da próxima etapa, ainda sem correção. Evidência: `voice-status-validated/result.xml` na pasta temporária já indicada.
 
 Não houve microfone, som, download de modelos, API paga ou interação física. Os demais itens pendentes continuam em andamento.
+
+## Continuação autorizada — AUD-008
+
+MANTIDO na releitura e corrigido. O limite de áudio passou a valer dentro do recebimento dos blocos, incluindo o trecho anterior ao pressionamento da tecla. Ao atingir o tempo máximo, a gravação também para antes de esperar a tecla ser solta. Manter a tecla pressionada não faz o buffer crescer sem limite.
+
+As duas reproduções falharam antes: receberam 3.000 e 180 amostras para um limite de 100. Depois passaram, junto com os testes de voz existentes: 42 aprovados. A suíte completa passou com 922 aprovados, zero falhas e oito ignorados, em 44,72 segundos (`voice-buffer-full/result.xml`). Os oito ignorados continuam relacionados a links simbólicos no Windows. Nenhum dispositivo foi usado.

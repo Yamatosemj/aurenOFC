@@ -66,6 +66,8 @@ class PushToTalkRecorder:
         self._pre_roll_samples = 0
         self._pre_roll_limit_samples = 0
         self._recording = False
+        self._recorded_samples = 0
+        self._recording_limit_samples = max(1, int(16_000 * self.config.max_seconds))
         self._output_active = False
         self._input_overflow_count = 0
         self._device_index = self._resolve_device_from_env()
@@ -242,7 +244,11 @@ class PushToTalkRecorder:
 
         with self._lock:
             if self._recording:
-                self._frames.append(chunk)
+                remaining = self._recording_limit_samples - self._recorded_samples
+                if remaining > 0 and chunk_samples > 0:
+                    chunk = chunk[:remaining]
+                    self._frames.append(chunk)
+                    self._recorded_samples += min(chunk_samples, remaining)
                 return
 
             if self._output_active:
@@ -263,6 +269,8 @@ class PushToTalkRecorder:
 
     def _preparar_buffer(self, sample_rate: int) -> None:
         with self._lock:
+            self._recording_limit_samples = max(1, int(sample_rate * self.config.max_seconds))
+            self._recorded_samples = 0
             self._pre_roll.clear()
             self._pre_roll_samples = 0
             self._pre_roll_limit_samples = max(
@@ -272,7 +280,15 @@ class PushToTalkRecorder:
 
     def _registrar_inicio(self) -> None:
         with self._lock:
-            self._frames = list(self._pre_roll)
+            self._frames = []
+            self._recorded_samples = 0
+            for chunk in self._pre_roll:
+                remaining = self._recording_limit_samples - self._recorded_samples
+                if remaining <= 0:
+                    break
+                bounded = chunk[:remaining]
+                self._frames.append(bounded)
+                self._recorded_samples += len(bounded)
             self._pre_roll.clear()
             self._pre_roll_samples = 0
             self._recording = True
@@ -398,6 +414,8 @@ class PushToTalkRecorder:
 
             if not esc_requested:
                 if max_duration_reached:
+                    with self._lock:
+                        self._recording = False
                     print("Auren voz: limite maximo de fala atingido.")
                     while keyboard.is_pressed(self.hotkey) and not keyboard.is_pressed("esc"):
                         time.sleep(self.config.poll_interval)
