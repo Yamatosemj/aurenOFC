@@ -54,10 +54,10 @@ def test_installer_preserves_old_hook_and_is_idempotent(tmp_path):
     env = dict(os.environ, USERPROFILE=str(tmp_path))
     run = lambda: subprocess.run(
         ["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", str(INSTALLER), "-AutorizarValidacaoOffline"],
-        cwd=ROOT, env=env, capture_output=True, text=True, timeout=25, check=False,
+        cwd=ROOT, env=env, capture_output=True, timeout=25, check=False,
     )
     first = run()
-    assert first.returncode == 0, first.stdout + "\n" + first.stderr
+    assert first.returncode == 0, first.stdout + b"\n" + first.stderr
     installed = (policy / "before-job.ps1").read_text(encoding="utf-8")
     assert "Test-ChatControlRequest" in installed
     assert "Test-RemoteControlRequest" in installed
@@ -66,7 +66,7 @@ def test_installer_preserves_old_hook_and_is_idempotent(tmp_path):
     approval = json.loads((policy / "chat-control-approval.json").read_text(encoding="utf-8"))
     assert approval == {"enabled": True, "workflow_blob": PINNED_BLOB, "offline_hosted_validation": True}
     second = run()
-    assert second.returncode == 0, second.stdout + "\n" + second.stderr
+    assert second.returncode == 0, second.stdout + b"\n" + second.stderr
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="PowerShell tests require Windows")
@@ -153,8 +153,11 @@ exit 0
         ["powershell.exe", "-NoProfile", "-NonInteractive", "-EncodedCommand",
          base64.b64encode(script.encode("utf-16-le")).decode("ascii")],
         env=dict(os.environ, USERPROFILE=str(tmp_path)),
-        capture_output=True, text=True, timeout=25, check=False,
+        # Windows PowerShell stderr may use the console code page even when
+        # Python runs in UTF-8 mode. Preserve raw diagnostics without a decoder
+        # thread failing silently; the asserted protocol markers are ASCII.
+        capture_output=True, timeout=25, check=False,
     )
-    assert result.returncode == 0, result.stdout + "\n" + result.stderr
-    assert "Politica do chat aprovada" in result.stdout
-    assert "REJECTED_INVALID_REQUEST" in result.stdout
+    assert result.returncode == 0, result.stdout + b"\n" + result.stderr
+    assert b"Politica do chat aprovada" in result.stdout
+    assert b"REJECTED_INVALID_REQUEST" in result.stdout

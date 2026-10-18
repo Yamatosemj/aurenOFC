@@ -126,6 +126,6 @@ function Safe-String($value) { [string]$value }
     script = setup + helper + source[start:end] + "\nif ($item.Element.Id -ne 2) { throw 'Controle errado' }; 'SEGUNDO_OK'"
     proc = subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive", "-EncodedCommand",
                            base64.b64encode(script.encode("utf-16-le")).decode()],
-                          capture_output=True, text=True, timeout=15, cwd=tmp_path)
+                          capture_output=True, timeout=15, cwd=tmp_path)
     assert proc.returncode == 0, proc.stdout + proc.stderr
-    assert "SEGUNDO_OK" in proc.stdout
+    assert b"SEGUNDO_OK" in proc.stdout

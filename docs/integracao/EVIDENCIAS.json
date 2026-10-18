@@ -1,0 +1,981 @@
+{
+  "main_at_preparation": "70b040d6191237e2f0a291a14b8ea8fb4b78a09d",
+  "stack_head": "f1ae0e91556321545ddd62f9e2a170bde7e5c8f8",
+  "dependency_audit": {
+    "main": "70b040d6191237e2f0a291a14b8ea8fb4b78a09d",
+    "consolidated_head": "f1ae0e91556321545ddd62f9e2a170bde7e5c8f8",
+    "strategy": "fast-forward through frozen ordered PR heads; no duplicate merge/cherry-pick of 152",
+    "phases": [
+      {
+        "pr": 153,
+        "head": "7df474bb2f6a315ffede684c712999addddb5873",
+        "base": "70b040d6191237e2f0a291a14b8ea8fb4b78a09d",
+        "base_matches_previous_head": true,
+        "previous_head_is_ancestor": true,
+        "head_is_ancestor_of_160": true,
+        "files_changed_in_phase": [
+          "AUREN_STATE.md",
+          "RELATORIO_CORRECOES.md",
+          "RELATORIO_TESTES_LIVE.md",
+          "auren.py",
+          "core/browser_verification.py",
+          "core/harness.py",
+          "core/harness_cycle.py",
+          "core/harness_guards.py",
+          "core/harness_heuristics.py",
+          "core/harness_intent_guard.py",
+          "core/harness_multitab.py",
+          "core/harness_round_input.py",
+          "core/harness_serialization.py",
+          "core/harness_strategy.py",
+          "core/harness_tools.py",
+          "core/harness_turn.py",
+          "core/intent_verification.py",
+          "core/orchestrator.py",
+          "core/permission_manager.py",
+          "core/retention.py",
+          "core/session.py",
+          "core/task_trace.py",
+          "core/usage.py",
+          "docs/CUSTOS_ESTIMADOS.md",
+          "docs/RETENCAO_DADOS.md",
+          "docs/architecture/01-nucleo.md",
+          "docs/architecture/02-roteamento-seguranca.md",
+          "docs/architecture/03-modelo-sessao-memoria.md",
+          "docs/architecture/04-windows-arquivos-visao.md",
+          "docs/architecture/06-voz-stt-tts.md",
+          "docs/architecture/07-interface-desktop-gui.md",
+          "docs/architecture/09-testes-ci-controle-remoto.md",
+          "docs/auditoria/AUDITORIA_COMPLETA_AUREN.txt",
+          "docs/auditoria/AUREN_LIVE_RELATORIO.txt",
+          "docs/auditoria/RESULTADOS_INTENCAO_COMPOSTA_2026-10-18.json",
+          "docs/auditoria/RESULTADOS_LIVE_2026-10-18.json",
+          "interface_auren.py",
+          "medir_metricas_router.py",
+          "memory/store.py",
+          "providers/openai_provider.py",
+          "scripts/instalar/AUTORIZAR_TESTES_CHAT.ps1",
+          "testes_auren_live.py",
+          "tests/test_audit_alternative_guard.py",
+          "tests/test_audit_asr_identity.py",
+          "tests/test_audit_chat_installer.py",
+          "tests/test_audit_compound_intent_review.py",
+          "tests/test_audit_live.py",
+          "tests/test_audit_memory_origin.py",
+          "tests/test_audit_p0.py",
+          "tests/test_audit_p1a.py",
+          "tests/test_audit_p1b.py",
+          "tests/test_audit_p2a.py",
+          "tests/test_audit_p2b.py",
+          "tests/test_audit_p3.py",
+          "tests/test_audit_retention.py",
+          "tests/test_audit_review_failures.py",
+          "tests/test_audit_veto_replan.py",
+          "tests/test_audit_voice_buffer.py",
+          "tests/test_audit_voice_shutdown.py",
+          "tests/test_audit_voice_status.py",
+          "tests/test_chat_policy_setup.py",
+          "tests/test_file_intelligence.py",
+          "tests/test_harness_reasoning_continuity.py",
+          "tests/test_harness_tools.py",
+          "tests/test_intent_multistep_progress.py",
+          "tests/test_intent_verification.py",
+          "tests/test_voice.py",
+          "tests/test_voice_v3.py",
+          "tools/applications.py",
+          "tools/browser_context.py",
+          "tools/dispatcher.py",
+          "tools/file_intelligence.py",
+          "tools/files.py",
+          "tools/memory.py",
+          "tools/windows_uia.py",
+          "tools/windows_window.py",
+          "voice/input.py",
+          "voice/main.py",
+          "voice/speech_response.py",
+          "voice/stt.py"
+        ],
+        "commit_count": 47
+      },
+      {
+        "pr": 154,
+        "head": "60033fdbf7ee1636c9ee4bf362a910f01de86f03",
+        "base": "7df474bb2f6a315ffede684c712999addddb5873",
+        "base_matches_previous_head": true,
+        "previous_head_is_ancestor": true,
+        "head_is_ancestor_of_160": true,
+        "files_changed_in_phase": [
+          "AUREN_STATE.md",
+          "CICLO_DESENVOLVIMENTO.md",
+          "core/permission_manager.py",
+          "core/tools_registry.py",
+          "core/utils.py",
+          "docs/architecture/02-roteamento-seguranca.md",
+          "docs/architecture/09-testes-ci-controle-remoto.md",
+          "docs/desenvolvimento/fase0/RESULTADOS_COMPARACAO.json",
+          "docs/desenvolvimento/fase0/RESULTADOS_RECONCILIACAO.json",
+          "docs/desenvolvimento/fase0/RESULTADOS_SUPERVISOR.json",
+          "docs/desenvolvimento/fase0/REVISAO_BASE.md",
+          "docs/desenvolvimento/fase0/REVISAO_FINAL.md",
+          "docs/desenvolvimento/fase0/SUPERVISOR_WINDOWS.md",
+          "remote_tests/windows_watchdog.py",
+          "tests/test_audit_watchdog_cleanup.py",
+          "tests/test_phase0_executable_confirmation.py",
+          "tests/test_remote_live_safety.py",
+          "tools/applications.py"
+        ],
+        "commit_count": 7
+      },
+      {
+        "pr": 155,
+        "head": "3e93696e66a003983c7f9061cf741cfff0c60984",
+        "base": "60033fdbf7ee1636c9ee4bf362a910f01de86f03",
+        "base_matches_previous_head": true,
+        "previous_head_is_ancestor": true,
+        "head_is_ancestor_of_160": true,
+        "files_changed_in_phase": [
+          "AUREN_STATE.md",
+          "CICLO_DESENVOLVIMENTO.md",
+          "core/harness.py",
+          "core/task_manager.py",
+          "core/task_persistence.py",
+          "docs/architecture/01-nucleo.md",
+          "docs/architecture/09-testes-ci-controle-remoto.md",
+          "docs/desenvolvimento/FASE_1.md",
+          "docs/desenvolvimento/fase1/BLOQUEIO_CI.md",
+          "docs/desenvolvimento/fase1/CORRECAO_SUPERVISOR.md",
+          "docs/desenvolvimento/fase1/RESULTADOS_FASE_1.json",
+          "remote_tests/windows_watchdog.py",
+          "tests/test_audit_persistent_tasks.py",
+          "tests/test_audit_watchdog_cleanup.py",
+          "tests/test_remote_live_safety.py"
+        ],
+        "commit_count": 3
+      },
+      {
+        "pr": 156,
+        "head": "a2b096138f4c68ccb0a431309f17a98f8c01f02d",
+        "base": "3e93696e66a003983c7f9061cf741cfff0c60984",
+        "base_matches_previous_head": true,
+        "previous_head_is_ancestor": true,
+        "head_is_ancestor_of_160": true,
+        "files_changed_in_phase": [
+          "AUREN_STATE.md",
+          "CICLO_DESENVOLVIMENTO.md",
+          "agent/planner.py",
+          "auren.py",
+          "core/harness.py",
+          "core/harness_cycle.py",
+          "core/harness_intent_guard.py",
+          "core/harness_state.py",
+          "core/harness_tools.py",
+          "core/orchestrator.py",
+          "core/permission_manager.py",
+          "core/response.py",
+          "core/task_manager.py",
+          "core/task_verification.py",
+          "docs/architecture/01-nucleo.md",
+          "docs/desenvolvimento/FASE_2.md",
+          "docs/desenvolvimento/fase2/RESULTADOS_FASE_2.json",
+          "providers/openai_provider.py",
+          "tests/test_audit_http_rejection.py",
+          "tests/test_audit_resumable_execution.py",
+          "ui/chrome_server.py"
+        ],
+        "commit_count": 1
+      },
+      {
+        "pr": 157,
+        "head": "2313f1dd588c35dfdcd029896cbf354b2cbf4547",
+        "base": "a2b096138f4c68ccb0a431309f17a98f8c01f02d",
+        "base_matches_previous_head": true,
+        "previous_head_is_ancestor": true,
+        "head_is_ancestor_of_160": true,
+        "files_changed_in_phase": [
+          "AUREN_STATE.md",
+          "CICLO_DESENVOLVIMENTO.md",
+          "core/execution_scope.py",
+          "core/harness.py",
+          "core/harness_cycle.py",
+          "core/routines.py",
+          "docs/desenvolvimento/FASE_3.md",
+          "docs/desenvolvimento/fase3/RESULTADOS_FASE_3.json",
+          "tests/test_audit_controlled_routines.py",
+          "tools/dispatcher.py"
+        ],
+        "commit_count": 1
+      },
+      {
+        "pr": 158,
+        "head": "29dd494344d7a3728cdbb72928d1c682d5ec2175",
+        "base": "2313f1dd588c35dfdcd029896cbf354b2cbf4547",
+        "base_matches_previous_head": true,
+        "previous_head_is_ancestor": true,
+        "head_is_ancestor_of_160": true,
+        "files_changed_in_phase": [
+          "AUREN_STATE.md",
+          "CICLO_DESENVOLVIMENTO.md",
+          "README.md",
+          "core/execution_scope.py",
+          "core/harness.py",
+          "core/task_manager.py",
+          "core/task_persistence.py",
+          "docs/architecture/07-interface-desktop-gui.md",
+          "docs/desenvolvimento/FASE_4.md",
+          "docs/desenvolvimento/fase4/RESULTADOS_FASE_4.json",
+          "interface_auren.py",
+          "tests/test_audit_task_interface.py",
+          "ui/backend.py",
+          "ui/chrome.html",
+          "ui/chrome_server.py"
+        ],
+        "commit_count": 1
+      },
+      {
+        "pr": 159,
+        "head": "a4e1f8b16d0d4e372d9081b81223eb9e6a9ed391",
+        "base": "29dd494344d7a3728cdbb72928d1c682d5ec2175",
+        "base_matches_previous_head": true,
+        "previous_head_is_ancestor": true,
+        "head_is_ancestor_of_160": true,
+        "files_changed_in_phase": [
+          "AUREN_STATE.md",
+          "CICLO_DESENVOLVIMENTO.md",
+          "RELATORIO_DESENVOLVIMENTO.md",
+          "docs/desenvolvimento/FASE_5.md",
+          "docs/desenvolvimento/fase5/LIVE_API_2026-10-18.json",
+          "docs/desenvolvimento/fase5/LIVE_API_2026-10-18.md",
+          "docs/desenvolvimento/fase5/RESULTADOS_FASE_5.json",
+          "docs/desenvolvimento/fase5/RESULTADOS_INTERFACE.json",
+          "docs/desenvolvimento/fase5/interface_chrome.png",
+          "remote_tests/phase5_checkpoint_fixture.py",
+          "remote_tests/phase5_ui_smoke.py",
+          "tests/test_audit_phase5_integration.py"
+        ],
+        "commit_count": 2
+      },
+      {
+        "pr": 160,
+        "head": "f1ae0e91556321545ddd62f9e2a170bde7e5c8f8",
+        "base": "a4e1f8b16d0d4e372d9081b81223eb9e6a9ed391",
+        "base_matches_previous_head": true,
+        "previous_head_is_ancestor": true,
+        "head_is_ancestor_of_160": true,
+        "files_changed_in_phase": [
+          "AUREN_STATE.md",
+          "CICLO_DESENVOLVIMENTO.md",
+          "RELATORIO_DESENVOLVIMENTO.md",
+          "core/harness.py",
+          "core/harness_cycle.py",
+          "core/permission_manager.py",
+          "core/task_verification.py",
+          "docs/architecture/01-nucleo.md",
+          "docs/architecture/02-roteamento-seguranca.md",
+          "docs/desenvolvimento/FASE_5.md",
+          "docs/desenvolvimento/fase5/CORRECOES_LIVE.json",
+          "docs/desenvolvimento/fase5/CORRECOES_LIVE.md",
+          "docs/desenvolvimento/fase5/VALIDACAO_FINAL.json",
+          "docs/desenvolvimento/fase5/VALIDACAO_FINAL.md",
+          "remote_tests/phase5_checkpoint_fixture.py",
+          "tests/test_audit_live_corrections.py",
+          "tests/test_audit_resumable_execution.py"
+        ],
+        "commit_count": 2
+      }
+    ],
+    "overlapping_files": [
+      {
+        "earlier_pr": 153,
+        "later_pr": 154,
+        "shared_files": [
+          "AUREN_STATE.md",
+          "core/permission_manager.py",
+          "docs/architecture/02-roteamento-seguranca.md",
+          "docs/architecture/09-testes-ci-controle-remoto.md",
+          "tools/applications.py"
+        ]
+      },
+      {
+        "earlier_pr": 153,
+        "later_pr": 155,
+        "shared_files": [
+          "AUREN_STATE.md",
+          "core/harness.py",
+          "docs/architecture/01-nucleo.md",
+          "docs/architecture/09-testes-ci-controle-remoto.md"
+        ]
+      },
+      {
+        "earlier_pr": 153,
+        "later_pr": 156,
+        "shared_files": [
+          "AUREN_STATE.md",
+          "auren.py",
+          "core/harness.py",
+          "core/harness_cycle.py",
+          "core/harness_intent_guard.py",
+          "core/harness_tools.py",
+          "core/orchestrator.py",
+          "core/permission_manager.py",
+          "docs/architecture/01-nucleo.md",
+          "providers/openai_provider.py"
+        ]
+      },
+      {
+        "earlier_pr": 153,
+        "later_pr": 157,
+        "shared_files": [
+          "AUREN_STATE.md",
+          "core/harness.py",
+          "core/harness_cycle.py",
+          "tools/dispatcher.py"
+        ]
+      },
+      {
+        "earlier_pr": 153,
+        "later_pr": 158,
+        "shared_files": [
+          "AUREN_STATE.md",
+          "core/harness.py",
+          "docs/architecture/07-interface-desktop-gui.md",
+          "interface_auren.py"
+        ]
+      },
+      {
+        "earlier_pr": 153,
+        "later_pr": 159,
+        "shared_files": [
+          "AUREN_STATE.md"
+        ]
+      },
+      {
+        "earlier_pr": 153,
+        "later_pr": 160,
+        "shared_files": [
+          "AUREN_STATE.md",
+          "core/harness.py",
+          "core/harness_cycle.py",
+          "core/permission_manager.py",
+          "docs/architecture/01-nucleo.md",
+          "docs/architecture/02-roteamento-seguranca.md"
+        ]
+      },
+      {
+        "earlier_pr": 154,
+        "later_pr": 155,
+        "shared_files": [
+          "AUREN_STATE.md",
+          "CICLO_DESENVOLVIMENTO.md",
+          "docs/architecture/09-testes-ci-controle-remoto.md",
+          "remote_tests/windows_watchdog.py",
+          "tests/test_audit_watchdog_cleanup.py",
+          "tests/test_remote_live_safety.py"
+        ]
+      },
+      {
+        "earlier_pr": 154,
+        "later_pr": 156,
+        "shared_files": [
+          "AUREN_STATE.md",
+          "CICLO_DESENVOLVIMENTO.md",
+          "core/permission_manager.py"
+        ]
+      },
+      {
+        "earlier_pr": 154,
+        "later_pr": 157,
+        "shared_files": [
+          "AUREN_STATE.md",
+          "CICLO_DESENVOLVIMENTO.md"
+        ]
+      },
+      {
+        "earlier_pr": 154,
+        "later_pr": 158,
+        "shared_files": [
+          "AUREN_STATE.md",
+          "CICLO_DESENVOLVIMENTO.md"
+        ]
+      },
+      {
+        "earlier_pr": 154,
+        "later_pr": 159,
+        "shared_files": [
+          "AUREN_STATE.md",
+          "CICLO_DESENVOLVIMENTO.md"
+        ]
+      },
+      {
+        "earlier_pr": 154,
+        "later_pr": 160,
+        "shared_files": [
+          "AUREN_STATE.md",
+          "CICLO_DESENVOLVIMENTO.md",
+          "core/permission_manager.py",
+          "docs/architecture/02-roteamento-seguranca.md"
+        ]
+      },
+      {
+        "earlier_pr": 155,
+        "later_pr": 156,
+        "shared_files": [
+          "AUREN_STATE.md",
+          "CICLO_DESENVOLVIMENTO.md",
+          "core/harness.py",
+          "core/task_manager.py",
+          "docs/architecture/01-nucleo.md"
+        ]
+      },
+      {
+        "earlier_pr": 155,
+        "later_pr": 157,
+        "shared_files": [
+          "AUREN_STATE.md",
+          "CICLO_DESENVOLVIMENTO.md",
+          "core/harness.py"
+        ]
+      },
+      {
+        "earlier_pr": 155,
+        "later_pr": 158,
+        "shared_files": [
+          "AUREN_STATE.md",
+          "CICLO_DESENVOLVIMENTO.md",
+          "core/harness.py",
+          "core/task_manager.py",
+          "core/task_persistence.py"
+        ]
+      },
+      {
+        "earlier_pr": 155,
+        "later_pr": 159,
+        "shared_files": [
+          "AUREN_STATE.md",
+          "CICLO_DESENVOLVIMENTO.md"
+        ]
+      },
+      {
+        "earlier_pr": 155,
+        "later_pr": 160,
+        "shared_files": [
+          "AUREN_STATE.md",
+          "CICLO_DESENVOLVIMENTO.md",
+          "core/harness.py",
+          "docs/architecture/01-nucleo.md"
+        ]
+      },
+      {
+        "earlier_pr": 156,
+        "later_pr": 157,
+        "shared_files": [
+          "AUREN_STATE.md",
+          "CICLO_DESENVOLVIMENTO.md",
+          "core/harness.py",
+          "core/harness_cycle.py"
+        ]
+      },
+      {
+        "earlier_pr": 156,
+        "later_pr": 158,
+        "shared_files": [
+          "AUREN_STATE.md",
+          "CICLO_DESENVOLVIMENTO.md",
+          "core/harness.py",
+          "core/task_manager.py",
+          "ui/chrome_server.py"
+        ]
+      },
+      {
+        "earlier_pr": 156,
+        "later_pr": 159,
+        "shared_files": [
+          "AUREN_STATE.md",
+          "CICLO_DESENVOLVIMENTO.md"
+        ]
+      },
+      {
+        "earlier_pr": 156,
+        "later_pr": 160,
+        "shared_files": [
+          "AUREN_STATE.md",
+          "CICLO_DESENVOLVIMENTO.md",
+          "core/harness.py",
+          "core/harness_cycle.py",
+          "core/permission_manager.py",
+          "core/task_verification.py",
+          "docs/architecture/01-nucleo.md",
+          "tests/test_audit_resumable_execution.py"
+        ]
+      },
+      {
+        "earlier_pr": 157,
+        "later_pr": 158,
+        "shared_files": [
+          "AUREN_STATE.md",
+          "CICLO_DESENVOLVIMENTO.md",
+          "core/execution_scope.py",
+          "core/harness.py"
+        ]
+      },
+      {
+        "earlier_pr": 157,
+        "later_pr": 159,
+        "shared_files": [
+          "AUREN_STATE.md",
+          "CICLO_DESENVOLVIMENTO.md"
+        ]
+      },
+      {
+        "earlier_pr": 157,
+        "later_pr": 160,
+        "shared_files": [
+          "AUREN_STATE.md",
+          "CICLO_DESENVOLVIMENTO.md",
+          "core/harness.py",
+          "core/harness_cycle.py"
+        ]
+      },
+      {
+        "earlier_pr": 158,
+        "later_pr": 159,
+        "shared_files": [
+          "AUREN_STATE.md",
+          "CICLO_DESENVOLVIMENTO.md"
+        ]
+      },
+      {
+        "earlier_pr": 158,
+        "later_pr": 160,
+        "shared_files": [
+          "AUREN_STATE.md",
+          "CICLO_DESENVOLVIMENTO.md",
+          "core/harness.py"
+        ]
+      },
+      {
+        "earlier_pr": 159,
+        "later_pr": 160,
+        "shared_files": [
+          "AUREN_STATE.md",
+          "CICLO_DESENVOLVIMENTO.md",
+          "RELATORIO_DESENVOLVIMENTO.md",
+          "docs/desenvolvimento/FASE_5.md",
+          "remote_tests/phase5_checkpoint_fixture.py"
+        ]
+      }
+    ],
+    "excluded": [
+      {
+        "pr": 141,
+        "head": "44f56a4dff1538db0123fa5b911a439b2608c5a0",
+        "unique_commits_in_integration": [],
+        "changed_files": [
+          ".gitignore",
+          "AUREN_STATE.md",
+          "README.md",
+          "desktop/electron/main.cjs",
+          "desktop/electron/package.json",
+          "scripts/iniciar/AUREN_DESKTOP.bat",
+          "tests/test_electron_desktop.py",
+          "tests/test_scripts_layout.py",
+          "ui/chrome_server.py"
+        ]
+      },
+      {
+        "pr": 142,
+        "head": "d20cb0d34069141078774c3f4f6d175b19d66604",
+        "unique_commits_in_integration": [],
+        "changed_files": [
+          ".gitignore",
+          "AUREN_STATE.md",
+          "README.md",
+          "desktop/electron/main.cjs",
+          "desktop/electron/preload.cjs",
+          "tests/test_legacy_chat_import.py",
+          "tests/test_ui_conversation_history.py",
+          "ui/backend.py",
+          "ui/chrome.html",
+          "ui/chrome_server.py",
+          "ui/conversation_history.py",
+          "ui/legacy_chat_import.py"
+        ]
+      }
+    ],
+    "pr152_patch": "AUREN_STATE.md                              |  2 +\n core/permission_manager.py                  | 10 ++++\n core/tools_registry.py                      |  4 +-\n tests/test_application_explicit_exe_path.py | 85 +++++++++++++++++++++++++++++\n tools/applications.py                       | 33 +++++++++++\n 5 files changed, 132 insertions(+), 2 deletions(-)",
+    "changed_files_total": [
+      "AUREN_STATE.md",
+      "CICLO_DESENVOLVIMENTO.md",
+      "README.md",
+      "RELATORIO_CORRECOES.md",
+      "RELATORIO_DESENVOLVIMENTO.md",
+      "RELATORIO_TESTES_LIVE.md",
+      "agent/planner.py",
+      "auren.py",
+      "core/browser_verification.py",
+      "core/execution_scope.py",
+      "core/harness.py",
+      "core/harness_cycle.py",
+      "core/harness_guards.py",
+      "core/harness_heuristics.py",
+      "core/harness_intent_guard.py",
+      "core/harness_multitab.py",
+      "core/harness_round_input.py",
+      "core/harness_serialization.py",
+      "core/harness_state.py",
+      "core/harness_strategy.py",
+      "core/harness_tools.py",
+      "core/harness_turn.py",
+      "core/intent_verification.py",
+      "core/orchestrator.py",
+      "core/permission_manager.py",
+      "core/response.py",
+      "core/retention.py",
+      "core/routines.py",
+      "core/session.py",
+      "core/task_manager.py",
+      "core/task_persistence.py",
+      "core/task_trace.py",
+      "core/task_verification.py",
+      "core/tools_registry.py",
+      "core/usage.py",
+      "core/utils.py",
+      "docs/CUSTOS_ESTIMADOS.md",
+      "docs/RETENCAO_DADOS.md",
+      "docs/architecture/01-nucleo.md",
+      "docs/architecture/02-roteamento-seguranca.md",
+      "docs/architecture/03-modelo-sessao-memoria.md",
+      "docs/architecture/04-windows-arquivos-visao.md",
+      "docs/architecture/06-voz-stt-tts.md",
+      "docs/architecture/07-interface-desktop-gui.md",
+      "docs/architecture/09-testes-ci-controle-remoto.md",
+      "docs/auditoria/AUDITORIA_COMPLETA_AUREN.txt",
+      "docs/auditoria/AUREN_LIVE_RELATORIO.txt",
+      "docs/auditoria/RESULTADOS_INTENCAO_COMPOSTA_2026-10-18.json",
+      "docs/auditoria/RESULTADOS_LIVE_2026-10-18.json",
+      "docs/desenvolvimento/FASE_1.md",
+      "docs/desenvolvimento/FASE_2.md",
+      "docs/desenvolvimento/FASE_3.md",
+      "docs/desenvolvimento/FASE_4.md",
+      "docs/desenvolvimento/FASE_5.md",
+      "docs/desenvolvimento/fase0/RESULTADOS_COMPARACAO.json",
+      "docs/desenvolvimento/fase0/RESULTADOS_RECONCILIACAO.json",
+      "docs/desenvolvimento/fase0/RESULTADOS_SUPERVISOR.json",
+      "docs/desenvolvimento/fase0/REVISAO_BASE.md",
+      "docs/desenvolvimento/fase0/REVISAO_FINAL.md",
+      "docs/desenvolvimento/fase0/SUPERVISOR_WINDOWS.md",
+      "docs/desenvolvimento/fase1/BLOQUEIO_CI.md",
+      "docs/desenvolvimento/fase1/CORRECAO_SUPERVISOR.md",
+      "docs/desenvolvimento/fase1/RESULTADOS_FASE_1.json",
+      "docs/desenvolvimento/fase2/RESULTADOS_FASE_2.json",
+      "docs/desenvolvimento/fase3/RESULTADOS_FASE_3.json",
+      "docs/desenvolvimento/fase4/RESULTADOS_FASE_4.json",
+      "docs/desenvolvimento/fase5/CORRECOES_LIVE.json",
+      "docs/desenvolvimento/fase5/CORRECOES_LIVE.md",
+      "docs/desenvolvimento/fase5/LIVE_API_2026-10-18.json",
+      "docs/desenvolvimento/fase5/LIVE_API_2026-10-18.md",
+      "docs/desenvolvimento/fase5/RESULTADOS_FASE_5.json",
+      "docs/desenvolvimento/fase5/RESULTADOS_INTERFACE.json",
+      "docs/desenvolvimento/fase5/VALIDACAO_FINAL.json",
+      "docs/desenvolvimento/fase5/VALIDACAO_FINAL.md",
+      "docs/desenvolvimento/fase5/interface_chrome.png",
+      "interface_auren.py",
+      "medir_metricas_router.py",
+      "memory/store.py",
+      "providers/openai_provider.py",
+      "remote_tests/phase5_checkpoint_fixture.py",
+      "remote_tests/phase5_ui_smoke.py",
+      "remote_tests/windows_watchdog.py",
+      "scripts/instalar/AUTORIZAR_TESTES_CHAT.ps1",
+      "testes_auren_live.py",
+      "tests/test_audit_alternative_guard.py",
+      "tests/test_audit_asr_identity.py",
+      "tests/test_audit_chat_installer.py",
+      "tests/test_audit_compound_intent_review.py",
+      "tests/test_audit_controlled_routines.py",
+      "tests/test_audit_http_rejection.py",
+      "tests/test_audit_live.py",
+      "tests/test_audit_live_corrections.py",
+      "tests/test_audit_memory_origin.py",
+      "tests/test_audit_p0.py",
+      "tests/test_audit_p1a.py",
+      "tests/test_audit_p1b.py",
+      "tests/test_audit_p2a.py",
+      "tests/test_audit_p2b.py",
+      "tests/test_audit_p3.py",
+      "tests/test_audit_persistent_tasks.py",
+      "tests/test_audit_phase5_integration.py",
+      "tests/test_audit_resumable_execution.py",
+      "tests/test_audit_retention.py",
+      "tests/test_audit_review_failures.py",
+      "tests/test_audit_task_interface.py",
+      "tests/test_audit_veto_replan.py",
+      "tests/test_audit_voice_buffer.py",
+      "tests/test_audit_voice_shutdown.py",
+      "tests/test_audit_voice_status.py",
+      "tests/test_audit_watchdog_cleanup.py",
+      "tests/test_chat_policy_setup.py",
+      "tests/test_file_intelligence.py",
+      "tests/test_harness_reasoning_continuity.py",
+      "tests/test_harness_tools.py",
+      "tests/test_intent_multistep_progress.py",
+      "tests/test_intent_verification.py",
+      "tests/test_phase0_executable_confirmation.py",
+      "tests/test_remote_live_safety.py",
+      "tests/test_voice.py",
+      "tests/test_voice_v3.py",
+      "tools/applications.py",
+      "tools/browser_context.py",
+      "tools/dispatcher.py",
+      "tools/file_intelligence.py",
+      "tools/files.py",
+      "tools/memory.py",
+      "tools/windows_uia.py",
+      "tools/windows_window.py",
+      "ui/backend.py",
+      "ui/chrome.html",
+      "ui/chrome_server.py",
+      "voice/input.py",
+      "voice/main.py",
+      "voice/speech_response.py",
+      "voice/stt.py"
+    ]
+  },
+  "consolidation": [
+    {
+      "pr": 153,
+      "head": "7df474bb2f6a315ffede684c712999addddb5873",
+      "exit_code": 0
+    },
+    {
+      "pr": 154,
+      "head": "60033fdbf7ee1636c9ee4bf362a910f01de86f03",
+      "exit_code": 0
+    },
+    {
+      "pr": 155,
+      "head": "3e93696e66a003983c7f9061cf741cfff0c60984",
+      "exit_code": 0
+    },
+    {
+      "pr": 156,
+      "head": "a2b096138f4c68ccb0a431309f17a98f8c01f02d",
+      "exit_code": 0
+    },
+    {
+      "pr": 157,
+      "head": "2313f1dd588c35dfdcd029896cbf354b2cbf4547",
+      "exit_code": 0
+    },
+    {
+      "pr": 158,
+      "head": "29dd494344d7a3728cdbb72928d1c682d5ec2175",
+      "exit_code": 0
+    },
+    {
+      "pr": 159,
+      "head": "a4e1f8b16d0d4e372d9081b81223eb9e6a9ed391",
+      "exit_code": 0
+    },
+    {
+      "pr": 160,
+      "head": "f1ae0e91556321545ddd62f9e2a170bde7e5c8f8",
+      "exit_code": 0
+    }
+  ],
+  "pytest": [
+    {
+      "directory": "baseline-suite",
+      "tests": 1077,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 8,
+      "passed": 1069,
+      "failed_cases": [],
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 0,
+        "pid": 27896,
+        "duration_seconds": 62.17
+      }
+    },
+    {
+      "directory": "integrated-first",
+      "tests": 4,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 2,
+      "failed_cases": [
+        "test_consolidated_application_through_local_http[denial]",
+        "test_consolidated_application_through_local_http[routines]"
+      ],
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 1,
+        "pid": 3192,
+        "duration_seconds": 22.86
+      }
+    },
+    {
+      "directory": "integrated-second",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 4,
+      "failed_cases": [],
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 0,
+        "pid": 12760,
+        "duration_seconds": 12.41
+      }
+    },
+    {
+      "directory": "powershell-warning-red",
+      "tests": 9,
+      "failures": 6,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 3,
+      "failed_cases": [
+        "test_local_guard_requires_owner_and_correct_comment_format[$ev.comment.body = 'AUREN_TESTE_V1 shell ' + ('b' * 40)-Comando de teste invalido.]",
+        "test_local_guard_requires_owner_and_correct_comment_format[$ev.sender.login = 'outro-usuario-ficticio'-Comentario nao autorizado ou nao pertence a uma PR.]",
+        "test_local_guard_requires_owner_and_correct_comment_format[$ctx.actor = 'outro-usuario-ficticio'-Workflow, contexto ou tentativa do chat nao autorizado.]",
+        "test_local_guard_requires_owner_and_correct_comment_format[$approval.offline_hosted_validation = $false-Workflow do chat nao autorizado pelo proprietario local.]",
+        "test_local_guard_requires_owner_and_correct_comment_format[$elevated = $true-Runner elevado ou parada de emergencia ativa.]",
+        "test_local_guard_requires_owner_and_correct_comment_format[$stopped = $true-Runner elevado ou parada de emergencia ativa.]"
+      ],
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 1,
+        "pid": 11916,
+        "duration_seconds": 7.18
+      }
+    },
+    {
+      "directory": "powershell-warning-green",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 17,
+      "failed_cases": [],
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 0,
+        "pid": 21152,
+        "duration_seconds": 7.33
+      }
+    },
+    {
+      "directory": "final-suite",
+      "tests": 1081,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 8,
+      "passed": 1073,
+      "failed_cases": [],
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 0,
+        "pid": 19476,
+        "duration_seconds": 73.15
+      }
+    }
+  ],
+  "source_hashes": {
+    "tests/test_audit_p1b.py": "41464c1f55f8c69c3a74db86ce9a25fb2d719b7a1fe01ded5e3eee75e75a1661",
+    "tests/test_chat_policy_setup.py": "0af4eda90976722365d8c37610d88a1885ed8710289622f151a2ba080ea5dae8",
+    "tests/test_integration_consolidated.py": "d27b0f11fa93c97b15339fe894e367f0550b9a4cc6987bac27448a4ccf110db2",
+    "remote_tests/integration_fixture.py": "efd9ecb7eac5465f3e28e62c62d1cf2dd3bf10067d7f8423ca2a975c44942966"
+  },
+  "interface": {
+    "directory": "ui-consolidated",
+    "watchdog": {
+      "reason": "completed",
+      "exit_code": 0,
+      "pid": 26276,
+      "duration_seconds": 13.54
+    },
+    "result": {
+      "checks": [
+        "saved_goal_shown_as_text_without_html_execution",
+        "same_goal_resumed_without_repeating_saved_step",
+        "routine_draft_not_auto_authorized_and_revoked",
+        "real_confirmation_ui_denied_without_running_handler",
+        "live_waiting_progress_and_cooperative_pause_persisted",
+        "page_javascript_has_no_runtime_errors",
+        "browser_worker_closed_and_database_reopened_with_pause_intact",
+        "real_tk_widgets_show_saved_pause_and_cancel_it"
+      ],
+      "passed": 8,
+      "failed": 0,
+      "chrome_version": "153.0.8010.12",
+      "model": "scripted fake; no API",
+      "personal_effects": [],
+      "model_calls": 4,
+      "external_page_requests_aborted": 0,
+      "page_errors": [],
+      "screenshot": "chrome.png",
+      "tk": "real widgets with root withdrawn; no physical appearance validation"
+    }
+  },
+  "integration_scenarios": [
+    {
+      "scenario": "restart",
+      "checks": [
+        "http_requires_token",
+        "real_factory_and_router",
+        "plan_visible",
+        "pause_checkpoint_saved",
+        "shutdown_releases_store",
+        "history_reloaded",
+        "same_goal_resumed",
+        "no_duplicate_read",
+        "candidate_reviewed_before_success",
+        "budget_retained"
+      ],
+      "simulated_sdk_requests": 4,
+      "real_api_calls": 0,
+      "personal_effects": 0
+    },
+    {
+      "scenario": "denial",
+      "checks": [
+        "factory_copies_stricter_policy",
+        "real_ui_confirmation_denied",
+        "file_content_not_read",
+        "failure_not_success"
+      ],
+      "simulated_sdk_requests": 2,
+      "real_api_calls": 0,
+      "personal_effects": 0
+    },
+    {
+      "scenario": "routines",
+      "checks": [
+        "routine_draft_separate_from_authorization",
+        "authorized_local_reminder_once",
+        "reminder_without_model",
+        "completed_routine_survives_restart_without_replay"
+      ],
+      "simulated_sdk_requests": 0,
+      "real_api_calls": 0,
+      "personal_effects": 0
+    },
+    {
+      "scenario": "corrupt_database",
+      "checks": [
+        "corrupt_store_fails_closed",
+        "no_empty_replacement",
+        "no_model_call"
+      ],
+      "simulated_sdk_requests": 0,
+      "real_api_calls": 0,
+      "personal_effects": 0
+    }
+  ],
+  "production_changed_during_preparation": false,
+  "new_paid_api_calls": 0
+}

@@ -1,5 +1,7 @@
 # Auren
 
+> **Candidata de integração #153–#160:** [relatório e evidências](RELATORIO_INTEGRACAO.md) · [como testar no Windows em pasta separada](TESTE_MANUAL_WINDOWS.md). Sem merge na main; sem Electron/#141 e histórico/#142.
+
 Assistente desktop/voz para Windows, versão técnica **V47**, usando o modelo configurado em `config.py` (snapshot atual: `gpt-5.6-luna`).
 
 > **Estado atual do projeto:** consulte [AUREN_STATE.md](AUREN_STATE.md) antes de iniciar qualquer tarefa. É um resumo operacional curto, com referência ao último snapshot verificado; confira PRs, HEAD e CI atuais no GitHub. O histórico acumulado foi preservado separadamente.
