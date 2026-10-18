@@ -5,9 +5,9 @@
 **Fase 0 concluída para desenvolvimento em branch; Fases 1 a 5 ainda não iniciadas.** A revisão das alterações da base e seus contratos foi concluída após reconciliar #152/#153. O bloqueio F0-SEG-001 passou nos testes. Escopo, evidências e limites em [REVISAO_FINAL.md](docs/desenvolvimento/fase0/REVISAO_FINAL.md). Isso não autoriza merge nem comprova todas as funcionalidades em uso real.
 
 - Branch: `desenvolvimento/fase-0-base-auditoria`, criada do HEAD `7df474bb2f6a315ffede684c712999addddb5873` da #153.
-- Base da PR de revisão: `correcoes-auditoria`, para mostrar somente a revisão, sem repetir os arquivos da #153. Essa base é provisória e não está aprovada para a Fase 1.
+- Base da PR de revisão: `correcoes-auditoria`, para mostrar somente a revisão, sem repetir os arquivos da #153. A Fase 1 deve derivar da branch reconciliada da #154, não diretamente da #153.
 - Evidência e análise: [revisão da Fase 0](docs/desenvolvimento/fase0/REVISAO_BASE.md), [comparação executada](docs/desenvolvimento/fase0/RESULTADOS_COMPARACAO.json) e [testes de segurança](tests/test_phase0_executable_confirmation.py).
-- Suíte completa após a reconciliação: **974 aprovados, zero falhas, oito ignorados**, em **49,79 segundos**. Os testes de segurança permaneceram na coleta normal e agora passam. A revisão integral restante continua como critério de avanço pendente.
+- Suíte completa após a reconciliação: **974 aprovados, zero falhas, oito ignorados**, em **49,79 segundos**. Os testes de segurança permaneceram na coleta normal e agora passam. CI completo no código reconciliado: 982 aprovados no Windows; 942 aprovados e 40 ignorados no Linux.
 - Não houve merge, alteração de main, chamada paga, acesso a dados pessoais ou execução de programas reais. A pasta preexistente `desktop/` não foi examinada nem alterada.
 - A revisão inicialmente interrompida foi retomada e encerrada no escopo documentado; a base de código reconciliada passou no CI completo em Linux e Windows hospedados.
 
@@ -15,8 +15,8 @@
 
 1. Conferir novamente main, HEADs, estado e CI das PRs; os hashes abaixo são referências da revisão, não valores permanentes.
 2. Conferir a reconciliação na PR #154: a identificação de caminhos é compartilhada entre permissão e executor; mantém confirmação, retorno estruturado e uma única implementação de abertura. A #152 não deve ser mesclada por cima dessa implementação sem nova revisão.
-3. Completar a revisão restante da #153 e conferir a evidência da suíte no HEAD reconciliado. A reconciliação e seus testes não substituem essa revisão.
-4. Registrar os resultados e a base reconciliada em PR, sem mesclar automaticamente à main. Só então avaliar a entrada na Fase 1.
+3. Conferir o encerramento da revisão em `REVISAO_FINAL.md` e o CI no HEAD atual da #154 antes de iniciar a Fase 1.
+4. Iniciar a Fase 1 em branch própria derivada da base reconciliada, mantendo os registros e sem mesclar automaticamente à main.
 
 Não foi definido orçamento para API paga neste ciclo. Chamadas pagas e ações sensíveis ficam pendentes de autorização e orçamento explícitos. Autorizações Live de investigações anteriores não são orçamento para estas fases.
 
