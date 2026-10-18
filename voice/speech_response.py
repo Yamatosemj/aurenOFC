@@ -27,6 +27,12 @@ class SpeechResponseFormatter:
         objetivo_text = str(objetivo or "").strip()
         raw = str(texto or "").strip()
         if snapshot is not None:
+            state = getattr(snapshot, "state", None)
+            steps = getattr(snapshot, "steps", ()) or ()
+            if (getattr(state, "value", state) != "completed"
+                    or not steps or getattr(steps[-1], "success", None) is not True):
+                return cls._fallback(raw or str(getattr(snapshot, "result", "") or "")
+                                     or "Não foi possível confirmar a conclusão da tarefa.")
             snap_objetivo, tool, step_result = cls._snapshot_text(snapshot)
             objetivo_text = objetivo_text or snap_objetivo
             if tool and step_result:

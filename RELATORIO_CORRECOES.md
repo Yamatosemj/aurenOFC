@@ -88,7 +88,7 @@ Todos os itens abaixo foram relidos e permanecem presentes; não são declarados
 | AUD-019 | Prazos de retenção e alcance da exclusão exigem decisão do proprietário |
 | AUD-022 | Origem de conteúdo lembrado continua sem transporte estruturado; ataque não demonstrado. A política para esse conteúdo exige decisão |
 | AUD-024 | Encerramento e filas da voz: testes de voz excluídos |
-| AUD-027 | Formatação da resposta falada: testes de voz excluídos |
+| AUD-027 | Corrigido na continuação autorizada; veja a atualização abaixo |
 | AUD-033 | Não foi concedida silenciosamente a aprovação para testes sem consulta online |
 | LIV-006 | Replanejar depois de um veto exige decidir o limite de autonomia; veto preservado |
 
@@ -101,7 +101,7 @@ AUD-036 pertence exclusivamente à PR #137 e ficou fora por instrução expressa
 3. Quais tipos de memória devem carregar origem externa e exigir confirmação em tarefas futuras? Como tratar registros antigos sem essa origem? (AUD-022)
 4. Qual aprovação explícita deve autorizar a modalidade de testes sem consulta online? (AUD-033)
 5. Depois de um veto, o Auren deve apenas explicá-lo ou pode elaborar outra proposta? Se puder, qual o limite? (LIV-006)
-6. Está autorizado incluir testes simulados de voz numa tarefa específica para AUD-008, 017, 024 e 027? Nenhum deles foi corrigido sem sua reprodução exigida.
+6. Resolvido: o proprietário autorizou continuar os itens antes excluídos. Os testes simulados de voz passaram a fazer parte da validação; isso não comprova funcionamento físico.
 
 ## Resultado real das suítes amplas
 
@@ -146,3 +146,13 @@ A main remota consultada foi `70b040d6191237e2f0a291a14b8ea8fb4b78a09d`, com che
 Conferir a identidade do arquivo aberto não impede outro processo de alterar os bytes do mesmo arquivo durante a leitura. Os limites de contexto por caracteres permanecem e podem cortar informações em tarefas longas. As correções de conclusão local reduzem os casos reproduzidos; não demonstram compreensão perfeita de qualquer frase nem conclusão física de toda tarefa. A abertura solicitada de um executável não comprova janela pronta.
 
 A pasta não rastreada `desktop/`, preexistente, foi preservada. Nenhuma política do Windows ou do runner foi alterada, nem dados reais foram limpos.
+
+## Continuação autorizada — AUD-027
+
+O proprietário autorizou continuar os itens antes excluídos. Esta atualização prevalece sobre as exclusões de voz descritas no histórico acima. A continuação permanece no branch separado e usa somente cópias temporárias e dados fictícios.
+
+AUD-027: MANTIDO na releitura e corrigido. A fala só simplifica o resultado de uma ferramenta quando a tarefa terminou e a última etapa tem sucesso confirmado. Falhas, cancelamentos e etapas sem confirmação preservam a resposta final, sem anunciar uma ação bem-sucedida por causa do nome da ferramenta.
+
+Antes da correção: cinco reproduções falharam e um controle passou. Depois: 17 testes focados passaram. A suíte ampla desta etapa passou com 920 aprovados, zero falhas e oito ignorados (46,96 segundos), incluindo testes simulados de voz e confirmação. A preparação de cinco snapshots antigos foi completada com os campos reais de estado e sucesso. Houve duas falhas intermediárias por esses dados ausentes; outra execução incluiu os dois testes ainda vermelhos de AUD-008. A validação de AUD-027 excluiu somente esse arquivo de reprodução da próxima etapa, ainda sem correção. Evidência: `voice-status-validated/result.xml` na pasta temporária já indicada.
+
+Não houve microfone, som, download de modelos, API paga ou interação física. Os demais itens pendentes continuam em andamento.
