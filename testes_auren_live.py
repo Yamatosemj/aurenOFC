@@ -30,6 +30,7 @@ import time
 import types
 from dataclasses import dataclass
 import core.harness as harness_module
+from core.tool_result import ToolResult
 from pathlib import Path
 
 
@@ -675,8 +676,8 @@ def run_smoke_tests() -> None:
         set_layer("L2")
         try:
             guard = auren.encerrar_processo_windows(pid=os.getpid(), nome="")
-            ok = "proprio processo do auren" in guard.lower()
-            record("Protecao contra encerrar o proprio Auren por PID", ok, guard, layer="L2")
+            ok = isinstance(guard, ToolResult) and not guard.ok and guard.error_code == "self_process_blocked"
+            record("Protecao contra encerrar o proprio Auren por PID", ok, guard.message, layer="L2")
         except Exception as exc:
             record("Protecao contra encerrar o proprio Auren por PID", False, repr(exc), layer="L2")
         set_layer("L1")
@@ -855,8 +856,8 @@ def run_smoke_tests() -> None:
 
     try:
         processos = auren.listar_processos_windows()
-        ok = "Processos encontrados:" in processos or "Nenhum processo" not in processos
-        record("Listagem de processos", ok, processos.splitlines()[0] if processos else "")
+        ok = isinstance(processos, ToolResult) and processos.ok
+        record("Listagem de processos", ok, processos.message.splitlines()[0] if processos.message else "")
     except Exception as exc:
         record("Listagem de processos", False, repr(exc))
 
@@ -864,15 +865,15 @@ def run_smoke_tests() -> None:
         set_layer("L2")
         try:
             guard = auren.encerrar_processo_windows(nome="explorer.exe")
-            ok = "protegido" in guard.lower()
-            record("Protecao contra encerrar Explorer", ok, guard, layer="L2")
+            ok = isinstance(guard, ToolResult) and not guard.ok and guard.error_code == "protected_process_blocked"
+            record("Protecao contra encerrar Explorer", ok, guard.message, layer="L2")
         except Exception as exc:
             record("Protecao contra encerrar Explorer", False, repr(exc), layer="L2")
 
         try:
             guard = auren.encerrar_processo_windows(nome="*")
-            ok = "curingas" in guard.lower()
-            record("Protecao contra curingas em taskkill", ok, guard, layer="L2")
+            ok = isinstance(guard, ToolResult) and not guard.ok and guard.error_code == "process_wildcard_rejected"
+            record("Protecao contra curingas em taskkill", ok, guard.message, layer="L2")
         except Exception as exc:
             record("Protecao contra curingas em taskkill", False, repr(exc), layer="L2")
         set_layer("L1")

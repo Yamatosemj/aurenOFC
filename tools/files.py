@@ -279,6 +279,9 @@ def buscar_arquivo(consulta):
                     if termo in nome_normalizado
                 )
 
+                if termos and pontuacao == 0:
+                    continue
+
                 candidatos.append(
                     (
                         pontuacao,

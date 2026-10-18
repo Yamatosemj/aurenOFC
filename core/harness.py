@@ -167,6 +167,7 @@ class AurenHarness:
         trace_store: TaskTraceStore | None = None,
         verificar_intencao: Callable[[str, list[Any], list[dict[str, str]]], Any] | None = None,
         planejar_atalho: Callable[[str], list[Any]] | None = None,
+        registrar_fonte_nao_confiavel: Callable[[str], None] | None = None,
     ) -> None:
         if max_model_rounds < 1:
             raise ValueError("max_model_rounds deve ser maior que zero.")
@@ -184,6 +185,7 @@ class AurenHarness:
         self.obter_metricas_roteamento = obter_metricas_roteamento
         self.verificar_intencao = verificar_intencao
         self.planejar_atalho = planejar_atalho
+        self.registrar_fonte_nao_confiavel = registrar_fonte_nao_confiavel
         self.registrar_conversa = registrar_conversa
         self.salvar_estrategia = salvar_estrategia
         self.agent = AgentOrchestrator()
@@ -486,7 +488,7 @@ class AurenHarness:
         self._confirmacao_esclarecimento = None
 
     def _guardar_esclarecimento(self, objetivo: str, pergunta: str) -> None:
-        if self._parece_tarefa_de_acao(objetivo) and str(pergunta).rstrip().endswith("?"):
+        if str(pergunta).rstrip().endswith("?"):
             self._pergunta_pendente = PerguntaPendente(objetivo, pergunta[-350:])
 
 
@@ -530,6 +532,9 @@ class AurenHarness:
             )
             for erro_contexto in contexto.erros:
                 _write_log("CONTEXT_ERROR", objetivo=objetivo_log, erro=erro_contexto)
+            fontes = contexto.fontes_nao_confiaveis
+            if fontes and self.registrar_fonte_nao_confiavel is not None:
+                self.registrar_fonte_nao_confiavel("contexto_recuperado:" + ",".join(fontes))
             self._contexto_tarefa = contexto.texto
         except Exception as exc:
             _write_log("AGENT_INIT_ERROR", objetivo=objetivo_log, erro=str(exc))
@@ -766,6 +771,18 @@ class AurenHarness:
                 self._trace = None
                 self._trace_started_perf = None
                 _CURRENT_SESSION.reset(token)
+
+    def shutdown(self, *, timeout: float = 1.0) -> str:
+        """Finaliza a fila com prazo e encerra recursos e sessão do canal."""
+        self.cancel_current_task()
+        try:
+            state = self._background_queue.shutdown(cancel_pending=False, timeout=timeout)
+            return state
+        finally:
+            try:
+                self.fechar()
+            finally:
+                self._encerrar_sessao_chat("closed")
 
     def current_task(self):
         """Retorna um snapshot imutavel da tarefa atual, se existir."""

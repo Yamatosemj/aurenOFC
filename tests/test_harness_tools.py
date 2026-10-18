@@ -567,7 +567,7 @@ def test_falha_seguida_de_sucesso_em_outra_ferramenta_permanece_pendente():
     assert quantidade == 2
     assert [item["sucesso"] for item in resultados] == [False, True]
     assert falhou is True
-    assert pendentes == {("clicar_elemento", '{"alvo":"Salvar"}')}
+    assert pendentes == {("clicar_elemento", "1a4248e4c269bbe6e7df35f27a8f1b2449bb47dc2ade74564f69b8f6fac733da")}
 
 
 def test_repetir_a_mesma_operacao_com_sucesso_recupera_falha():
@@ -593,7 +593,7 @@ def test_sucesso_da_mesma_ferramenta_em_outro_alvo_nao_recupera_falha():
         pendentes,
     )
     assert falhou is True
-    assert pendentes == {("clicar_elemento", '{"alvo":"Salvar"}')}
+    assert pendentes == {("clicar_elemento", "1a4248e4c269bbe6e7df35f27a8f1b2449bb47dc2ade74564f69b8f6fac733da")}
 
 
 def test_falhas_pendentes_persistem_entre_rodadas_e_so_retry_exato_recupera():

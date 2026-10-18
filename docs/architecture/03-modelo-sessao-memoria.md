@@ -6,6 +6,8 @@
 
 ## 1. Responsabilidades e pontos de entrada
 
+AUD-022 (correção candidata): `ContextSnapshot.fontes_nao_confiaveis` identifica as seções recuperadas. A fábrica conecta o Harness ao marcador do PermissionManager, rearmado depois da montagem do contexto a cada tarefa. A política conservadora trata todos os registros recuperados, inclusive antigos e skills, como dados sem autoridade de instrução; efeitos externos exigem confirmação. Não há migração do banco nem afirmação de exploração por modelo real.
+
 | Componente | Responsabilidade observada |
 | --- | --- |
 | [auren.py](../../auren.py) | Compõe um store SQLite e um SessionContextManager compartilhados no processo; a fábrica injeta esse contexto no Harness |
@@ -17,7 +19,7 @@
 | [memory/store.py](../../memory/store.py) | SQLite: fatos, conversas e estratégias; valida dados, filtra termos de credenciais e consulta registros |
 | [tools/memory.py](../../tools/memory.py) | Wrappers JSON das três ferramentas de fatos; o Dispatcher adapta o retorno para ToolResult |
 | [core/harness_runtime.py](../../core/harness_runtime.py) | Identidade de chat e contexto de logs; diferente da composição de memória |
-| [core/usage.py](../../core/usage.py) | Contadores globais do processo e custo estimado com coeficientes fixos |
+| [core/usage.py](../../core/usage.py) | Contadores do processo; tarifas configuráveis por modelo ou referência genérica explicitamente identificada; [limites](../CUSTOS_ESTIMADOS.md) |
 
 A cadeia oficial continua passando pelo Harness. Métodos Python públicos de store/provider são APIs internas; não representam novas ferramentas autorizadas ao modelo.
 
@@ -176,13 +178,13 @@ O CI hospedado da PR deve ser conferido pelo SHA em [AUREN_STATE.md](../../AUREN
 
 | Pendência | Evidência e próximo teste necessário |
 | --- | --- |
-| Override bloqueado na fachada e identidade fixa no prompt | Inicialização reproduzida; corrigir em PR de runtime com teste de entrada, não só config |
-| Build sem ID faz busca global | Reprodução local; decidir contrato de ausência de ID e testar todas as seções |
-| Cache direto ignora identidade de continuação | Reprodução com provider falso; revisar chave/elegibilidade antes de ampliar uso |
-| Memória sem proveniência estruturada | Leitura do esquema/fluxo; avaliar cenário de reintrodução de conteúdo externo entre tarefas |
-| Esquecimento parcial e filtro lexical | Semântica implementada; eventual retenção/eliminação completa exige escopo próprio |
-| Gravações recusadas podem ficar sem diagnóstico | Retorno ok=False não inspecionado pelo wrapper; testar observabilidade |
-| Restrições perdidas por cortes/continuação | Contexto inicial não é reenviado integralmente; validar tarefa longa com restrição relevante |
+| Override da fachada e do prompt | Configuração efetiva validada por testes de entrada; aceitação pela API depende do modelo e da conta |
+| Contexto sem identidade de chat | Não recupera conversas ou estratégias; fatos globais mantêm seu contrato próprio |
+| Cache direto em continuação | Desabilitado quando há identidade de resposta anterior ou esforço diferente do padrão |
+| Contexto recuperado e origem | Seções recuperadas rearmam a confirmação de efeitos externos; teste com duas tarefas fictícias, sem ataque contra modelo real |
+| Esquecimento parcial e retenção | A ferramenta informa seu alcance; limpeza manual por classe em [RETENCAO_DADOS.md](../RETENCAO_DADOS.md), sem exclusão automática ou de backups |
+| Gravações recusadas | Recusas explícitas geram diagnóstico seguro; trabalhos de estratégia recusados falham |
+| Restrições e orçamento de contexto | Contexto acompanha continuações, mas permanece sujeito ao teto de caracteres; tarefa longa ainda exige validação real |
 
 Ao mudar memória, preserve distinção entre fatos globais e chats, migração de bancos antigos, confirmação das tools e tratamento de conteúdo não confiável. Ao mudar provider/modelo, revise fachada, prompt, contrato de resposta, tratamento de falhas, cache e estimativa de uso. Ao mudar budgets, teste conteúdo efetivamente enviado, não apenas tamanho do banco ou existência de registros.
 

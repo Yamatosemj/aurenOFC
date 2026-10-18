@@ -9,7 +9,7 @@ from typing import Any
 
 from core.confirmation import ConfirmationChannel, ConfirmationRequest, TextConfirmationChannel
 from core.tool_contracts import capability_for_tool
-from tools.file_intelligence import _classify_read_path, _resolve_path
+from tools.file_intelligence import _classify_read_path, _resolve_path, capture_read_authorization
 
 
 class PermissionLevel(str, Enum):
@@ -129,6 +129,9 @@ class PermissionManager:
         "windows.audio.control",
         "windows.ui.control",
     }
+
+    # Efeitos e orcamento sao conceitos diferentes: clipboard tambem e mutavel.
+    EXTERNAL_EFFECT_CAPABILITIES = COUNTED_CAPABILITIES | {"windows.clipboard.write"}
 
     # Ações cujo sucesso repetido com exatamente os mesmos argumentos pode
     # indicar que a tarefa nao esta avancando. Mantemos o guard restrito
@@ -401,6 +404,19 @@ class PermissionManager:
     ) -> tuple[bool, str]:
         """Retorna (permitido, motivo) antes da execucao real."""
 
+        if nome_ferramenta in {"ler_arquivo", "inspecionar_arquivo"}:
+            # Nunca aceitar uma autorizacao antiga ou fornecida pelo chamador.
+            argumentos.pop("_file_read_authorization", None)
+            try:
+                path = _resolve_path(str(argumentos.get("caminho", "")))
+                policy = _classify_read_path(path)
+                if policy.status == "blocked":
+                    return False, policy.motivo
+                argumentos["_file_read_authorization"] = capture_read_authorization(path)
+                argumentos["caminho"] = str(path)
+            except OSError:
+                return False, "Nao foi possivel identificar o arquivo antes da autorizacao."
+
         capacidade = self._capability(nome_ferramenta)
         conta_para_limite = capacidade in self.COUNTED_CAPABILITIES
 
@@ -432,7 +448,9 @@ class PermissionManager:
                 ),
             )
 
-        if conta_para_limite and self.same_failed_action_count >= self.max_same_failed_actions:
+        if (conta_para_limite
+                and assinatura_atual == self.last_failed_action_signature
+                and self.same_failed_action_count >= self.max_same_failed_actions):
             return (
                 False,
                 (
@@ -508,7 +526,7 @@ class PermissionManager:
 
         if (
             self._fonte_nao_confiavel_pendente is not None
-            and capacidade in self.COUNTED_CAPABILITIES
+            and capacidade in self.EXTERNAL_EFFECT_CAPABILITIES
         ):
             fonte = self._fonte_nao_confiavel_pendente
             return (
@@ -792,6 +810,8 @@ class PermissionManager:
         partes: list[str] = []
 
         for chave, valor in argumentos.items():
+            if chave == "_file_read_authorization":
+                continue
             chave_normalizada = str(chave).lower()
 
             sensivel = any(

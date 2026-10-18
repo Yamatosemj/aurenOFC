@@ -335,7 +335,7 @@ def focar_janela_windows(alvo):
         SW_RESTORE = 9
         user32.ShowWindow(hwnd, SW_RESTORE)
         if not user32.SetForegroundWindow(hwnd):
-            return f"Encontrei '{titulo}', mas o Windows nao permitiu coloca-la em primeiro plano."
+            return ToolResult.failure(f"Encontrei '{titulo}', mas o Windows nao permitiu coloca-la em primeiro plano.", error_code="window_focus_denied")
         return f"Janela ativada: {titulo}"
     except Exception as erro:
         return f"Nao consegui ativar '{titulo}': {erro}"
@@ -561,7 +561,7 @@ def fechar_janela_windows(alvo):
         WM_CLOSE = 0x0010
         resultado = user32.PostMessageW(hwnd, WM_CLOSE, 0, 0)
         if not resultado:
-            return f"Encontrei '{titulo}', mas nao consegui solicitar o fechamento."
+            return ToolResult.failure(f"Encontrei '{titulo}', mas nao consegui solicitar o fechamento.", error_code="window_close_denied")
         return f"Solicitei o fechamento da janela: {titulo}"
     except Exception as erro:
         return f"Nao consegui fechar '{titulo}': {erro}"

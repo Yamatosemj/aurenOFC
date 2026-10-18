@@ -97,6 +97,7 @@ def _inspecionar_arquivo_handler(args, memory_store, context):
         args["procurar_copias"],
         args["limite_copias"],
         caminho_confirmado=args.get("_caminho_confirmado"),
+        authorization=args.get("_file_read_authorization"),
     )
 
 
@@ -106,6 +107,7 @@ def _ler_arquivo_handler(args, memory_store, context):
         args["inicio"],
         args["limite_caracteres"],
         caminho_confirmado=args.get("_caminho_confirmado"),
+        authorization=args.get("_file_read_authorization"),
     )
 
 def _preencher_windows_handler(args, memory_store, context):
@@ -289,8 +291,15 @@ def executar_ferramenta(item, permission_manager, memory_store) -> ToolResult:
     if nome in {"inspecionar_arquivo", "ler_arquivo"}:
         path = file_intelligence._resolve_path(str(argumentos_execucao.get("caminho", "")))
         path_policy = file_intelligence._classify_read_path(path)
+        authorization = argumentos_execucao.get("_file_read_authorization")
+        if authorization is None or str(path) != authorization.caminho:
+            permission_manager.registrar_resultado(False, nome, argumentos)
+            return ToolResult.failure(
+                "O destino mudou depois da autorizacao; leitura cancelada.",
+                error_code="file_target_changed", tool_name=nome,
+            )
         if path_policy.status == "confirm":
-            argumentos_execucao["_caminho_confirmado"] = path_policy.caminho_resolvido
+            argumentos_execucao["_caminho_confirmado"] = authorization.caminho
 
     try:
         resultado = TOOL_HANDLERS[nome](argumentos_execucao, memory_store, contexto)

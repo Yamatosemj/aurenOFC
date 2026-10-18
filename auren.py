@@ -173,6 +173,7 @@ def criar_harness(confirmation_channel=None) -> AurenHarness:
         verificar_intencao=verificar_intencao,
         planejar_atalho=_planejar_atalho,
         context=session_context,
+        registrar_fonte_nao_confiavel=task_permission_manager.registrar_fonte_nao_confiavel,
         # Below DEFAULT_MAX_MODEL_ROUNDS this is a hard ceiling, including
         # adaptive plans. Existing action/failure/repetition guards still apply.
         max_model_rounds=8 if os.getenv("AUREN_TEST_MODE") == "1" else AurenHarness.DEFAULT_MAX_MODEL_ROUNDS,

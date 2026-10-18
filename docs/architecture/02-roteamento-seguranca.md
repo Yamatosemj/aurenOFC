@@ -98,7 +98,7 @@ A ordem de [executar_ferramenta](../../tools/dispatcher.py) é observada diretam
 4. Para clique/arraste de mouse Windows, transformar e verificar coordenadas de visão; rejeição (`vision_coordinate_rejected`) impede ação.
 5. Para `preencher_elemento_windows`, fazer **preflight UI Automation** de alvo e proteção de campo; falha (`uia_preflight_failed`) impede execução. Campos protegidos usam identidade resolvida para o preenchimento.
 6. Passar `argumentos_execucao` e contexto para `PermissionManager.autorizar`. Se negado, devolver `permission_denied` sem chamar handler.
-7. Para inspeção/leitura de arquivos, preservar caminho resolvido confirmado para o handler conforme política de caminho; executar `TOOL_HANDLERS[nome]`.
+7. Para inspeção/leitura de arquivos, transportar caminho e identidade capturados pelo PermissionManager **antes** da confirmação; rejeitar mudança de destino e conferir a identidade de cada arquivo aberto antes de ler conteúdo (P0/AUD-001). Executar `TOOL_HANDLERS[nome]` sem criar uma nova aprovação após a pergunta.
 8. Exceções **operacionais específicas** (`OSError`, `RuntimeError`, `TypeError`, `ValueError`, `KeyError`) convertem-se em ToolResult.failure `exception`. Outras exceções de programação podem **propagar**, em vez de serem silenciosamente interpretadas como sucesso.
 9. Adaptar retorno com `from_legacy`. Em leitura bem-sucedida de `ler_pagina`, `ler_arquivo` ou `obter_contexto_navegador`, marcar `conteudo_nao_confiavel=True` e armar a política de origem, **inclusive se o resultado já veio marcado**. Preservar metadados de transformação de visão.
 10. Registrar êxito/falha no gerenciador de permissões (guard/contadores aplicáveis) e devolver o `ToolResult` ao Harness.
@@ -136,6 +136,8 @@ Não transforme esta lista em nova política. A enumeração exata de alvos, tec
 - As descrições de confirmação mascaram valores de campos e chaves sensíveis conforme métodos locais; confirme o que efetivamente é mascarado antes de acrescentar parâmetros privados.
 
 ## 6. Orçamento, anti-loop e origem não confiável
+
+AUD-013 (correção candidata): a trava de falhas iguais compara a assinatura da ação solicitada com a que falhou. Uma alternativa não é recusada por esse contador sozinho; continuam valendo três falhas consecutivas, orçamento total, política e confirmação de cada ação.
 
 | Guarda / contador | Regra efetiva |
 | --- | --- |

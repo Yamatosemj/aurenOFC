@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 import time
 from pathlib import Path
-from queue import Empty, Queue
+from queue import Empty, Full, Queue
 from threading import Event, Thread
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,6 +26,22 @@ _INPUT_EOF = object()
 _COMANDOS_SAIDA = frozenset({"sair", "encerrar", "fechar o auren"})
 
 
+def _enfileirar_texto(fila: Queue, item: object, stop_event: Event) -> None:
+    while not stop_event.is_set():
+        try:
+            fila.put(item, timeout=0.1)
+            return
+        except Full:
+            continue
+
+
+def _enfileirar_audio(fila: Queue, item: object) -> None:
+    try:
+        fila.put_nowait(item)
+    except Full:
+        print("Auren voz: entrada descartada porque a fila está cheia; aguarde e repita.")
+
+
 def _eh_comando_saida(mensagem: str) -> bool:
     """Reconhece comandos de saída com a mesma normalização da confirmação por voz."""
 
@@ -45,13 +61,13 @@ def _iniciar_leitor_texto(fila: Queue, stop_event: Event) -> Thread:
             try:
                 mensagem = input("Voce (texto): ")
             except EOFError:
-                fila.put(_INPUT_EOF)
+                _enfileirar_texto(fila, _INPUT_EOF, stop_event)
                 return
             except Exception as exc:
-                fila.put(("erro", exc))
+                _enfileirar_texto(fila, ("erro", exc), stop_event)
                 return
 
-            fila.put(("texto", mensagem))
+            _enfileirar_texto(fila, ("texto", mensagem), stop_event)
 
     thread = Thread(target=_worker, name="auren-text-input", daemon=True)
     thread.start()
@@ -71,14 +87,14 @@ def _iniciar_captura_de_voz(
                 audio = recorder.capturar()
             except Exception as exc:
                 print(f"Auren voz: captura indisponivel: {exc}")
-                fila.put(("erro_captura", exc))
+                _enfileirar_audio(fila, ("erro_captura", exc))
                 stop_event.wait(1.0)
                 continue
 
             if stop_event.is_set():
                 return
 
-            fila.put(("audio", audio))
+            _enfileirar_audio(fila, ("audio", audio))
 
     thread = Thread(target=_worker, name="auren-voice-input", daemon=True)
     thread.start()
@@ -106,7 +122,7 @@ def _falar_interrompivel(
     texto: str,
     texto_recebido_em: float | None = None,
 ) -> tuple[bool, bool, float | None]:
-    """Fala em segundo plano para permitir ESC ou F8 interromper a fala."""
+    """Fala em segundo plano para permitir ESC ou PTT interromper a fala."""
 
     cancel_event = Event()
     erro: list[BaseException] = []
@@ -125,11 +141,15 @@ def _falar_interrompivel(
             )
         except BaseException as exc:
             erro.append(exc)
+        finally:
+            recorder.definir_saida_ativa(False)
+            recorder.limpar_pre_roll()
 
     # Enquanto o TTS fala, nao deixamos a janela de pre-roll acumular a propria
     # voz. Isso evita que a proxima fala comece contaminada sem implementar
     # Echo Guard nesta tarefa.
     recorder.definir_saida_ativa(True)
+    thread = None
     try:
         thread = Thread(target=_worker, name="auren-tts", daemon=True)
         thread.start()
@@ -147,10 +167,15 @@ def _falar_interrompivel(
                 break
             time.sleep(0.02)
 
-        thread.join()
+        thread.join(timeout=1.0)
+        if thread.is_alive():
+            print("Auren voz: saída de áudio não respondeu ao cancelamento; encerrando o canal.")
+            sair = True
     finally:
-        recorder.definir_saida_ativa(False)
-        recorder.limpar_pre_roll()
+        cancel_event.set()
+        if thread is None or not thread.is_alive():
+            recorder.definir_saida_ativa(False)
+            recorder.limpar_pre_roll()
 
     if erro:
         exc = erro[0]
@@ -236,8 +261,8 @@ def main() -> int:
     recorder = PushToTalkRecorder(hotkey="right ctrl+right shift")
     stt = LocalPortugueseASR()
     tts = LocalKokoroTTS()
-    fila_texto: Queue = Queue()
-    fila_audio: Queue = Queue()
+    fila_texto: Queue = Queue(maxsize=16)
+    fila_audio: Queue = Queue(maxsize=2)
     stop_event = Event()
     confirmation_channel = VoiceConfirmationChannel(
         tts=tts,
@@ -359,9 +384,15 @@ def main() -> int:
     finally:
         stop_event.set()
         try:
-            auren.fechar_navegador()
-        except Exception:
-            pass
+            recorder.solicitar_parada()
+            state = harness.shutdown(timeout=1.0)
+            if state == "timed_out":
+                print("Auren voz: gravação de memória ainda não terminou ao encerrar.")
+        finally:
+            try:
+                auren.fechar_navegador()
+            except Exception:
+                pass
 
 
 if __name__ == "__main__":

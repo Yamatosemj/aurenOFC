@@ -5,10 +5,18 @@ PermissionManager, confirmacoes ou evidencia do resultado apos a execucao.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 import re
 from typing import Any, Sequence
+
+
+class IntentVerificationFailure(RuntimeError):
+    """Uma consulta tentada que falhou; uso ausente permanece desconhecido."""
+
+    def __init__(self, message: str, metricas_uso: dict | None = None):
+        super().__init__(message)
+        self.metricas_uso = metricas_uso
 
 
 # Leituras nao alteram o ambiente; ferramentas desconhecidas sao verificadas.
@@ -31,8 +39,11 @@ Compare o PEDIDO ORIGINAL do usuario com TODAS as acoes propostas, seus
 argumentos e os resultados anteriores. Decida se cada acao proposta serve ao
 objetivo do usuario e nao altera outro alvo, dado ou estado nao solicitado.
 
-Aprove somente quando a correspondencia for clara. Quando faltar alvo,
-identidade, destino ou escolha importante, solicite UMA pergunta objetiva.
+Aprove somente quando a correspondencia for clara. Solicite UMA pergunta
+objetiva somente se faltar no PEDIDO DO USUARIO uma informacao indispensavel
+para decidir com seguranca o passo proposto (alvo, identidade, destino ou
+escolha importante). Uma etapa ainda nao proposta NAO e informacao faltante
+do usuario. Nao pergunte se deve executar algo que ele ja pediu explicitamente.
 Bloqueie quando houver acao nao pedida, contradicao com o objetivo, ou
 tentativa de aproveitar o pedido para fazer outra coisa. Nao acrescente
 tarefas nem reinterprete o pedido para justificar uma acao incorreta.
@@ -49,6 +60,25 @@ parcial, necessaria e coerente com o objetivo pode ser APROVADA mesmo que
 sozinha nao conclua a tarefa. A conclusao e a verificacao do estado final
 pertencem ao Harness, depois da execucao; voce nao deve exigir que uma
 unica chamada resolva todas as etapas.
+
+Decida nesta ordem: (1) efeito, alvo ou valor contrario ao pedido -> BLOQUEAR;
+(2) informacao do usuario indispensavel para este passo realmente ausente
+ou ambigua -> ESCLARECER; (3) passo coerente e suficientemente especificado
+-> APROVAR, mesmo que outras etapas pedidas ainda nao estejam propostas.
+Nao invente uma escolha entre executar o passo atual e completar o restante.
+Dependencias, condicoes e restricoes explicitas do usuario continuam obrigatorias.
+Se a proposta descumpre uma ordem explicita entre etapas, BLOQUEIE para o
+planejador corrigi-la; nao peca ao usuario que reformule ou aprove outra proposta.
+ESCLARECER e uma pergunta sobre informacao ausente do usuario, nunca um pedido
+para o planejador completar ou substituir suas chamadas de ferramenta.
+
+Exemplo: "mova a janela Relatorio para x=120 y=140 e redimensione essa mesma
+janela para largura=800 altura=500". Uma proposta apenas de mover Relatorio
+para (120,140) deve ser APROVADA; o redimensionamento sera outra rodada.
+Nao pergunte "devo redimensionar depois?", pois o usuario ja determinou isso.
+Mover outra janela ou para coordenadas diferentes deve ser BLOQUEADO.
+Se o pedido nao identifica qual janela e a proposta escolhe uma sem evidencia,
+ESCLARECA o alvo; a regra de progresso parcial nao permite adivinha-lo.
 
 Exemplo: usuario pediu "feche a Steam por completo". Uma consulta atual
 listou steam.exe e outros processos da Steam. A proposta de
@@ -95,6 +125,7 @@ class IntentDecision:
     decisao: str
     motivo: str
     pergunta: str = ""
+    metricas_uso: dict[str, Any] | None = field(default=None, compare=False, repr=False)
 
 
 def precisa_verificar(chamadas: Sequence[Any]) -> bool:

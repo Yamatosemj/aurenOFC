@@ -55,6 +55,8 @@ O ciclo **não** é um stream full-duplex de fala com o modelo: uma fala PTT é 
 
 ## 3. PTT e captura de microfone
 
+Correções candidatas da auditoria (branch de manutenção): o buffer de gravação tem teto em amostras, incluindo pré-roll, e para de receber áudio ao atingir o tempo máximo mesmo com a tecla pressionada. A resposta falada só anuncia sucesso de ferramenta quando a tarefa terminou e a última etapa confirmou sucesso. A validação usa captura e tarefas simuladas; não comprova comportamento físico.
+
 [`PushToTalkRecorder`](../../voice/input.py) usa por padrão **`right ctrl+right shift`** (Ctrl direito + Shift direito, juntos); ESC encerra. O PTT é observado por polling a cada **20 ms** com debounce padrão de **60 ms**. Pressionamento inicia captura e soltar termina; limite de fala **30 s** com espera de liberação da hotkey. Configuração: mono, `float32`, duração mínima de áudio **100 ms**, `pre_roll_seconds=0.18`, `post_roll_seconds=0.12`.
 
 O `InputStream` é aberto **antes** de detectar a hotkey. Enquanto aguarda, um callback guarda somente janela curta de pré-roll em **RAM**; ao pressionar, transfere esse pré-roll para os frames capturados. Ao soltar, retém pós-roll e fecha o stream antes de segmentar. Durante o TTS, `definir_saida_ativa(True)` impede o pré-roll de registrar a voz da própria saída, mas não é cancelamento acústico de eco e **não** bloqueia deliberadamente uma captura que já esteja gravando.
@@ -75,6 +77,8 @@ Esse mecanismo reduz envios de silêncio; **não garante** qualidade de corte de
 
 ## 5. STT local: Parakeet e preparação
 
+AUD-017 (correção candidata): `model_dir` indica a pasta-base; um subdiretório derivado de repositório e revisão mantém cada cache separado. `AUREN_ASR_REVISION` permite selecionar a revisão (padrão `main`). Um manifesto precisa corresponder à identidade solicitada; inconsistências são recusadas sem apagar arquivos. Caches antigos são preservados, mas não reutilizados sem identificação, portanto o primeiro uso dessa versão pode baixar novamente o modelo. Usar `main` ainda não fixa um commit remoto imutável.
+
 [`LocalPortugueseASR`](../../voice/stt.py) usa por padrão o repositório `calneymgp/parakeet-tdt-0.6b-v3-ptBR-TAGARELA-onnx-int8` (pode mudar via `AUREN_ASR_MODEL`) e cache em `data/voice/asr/parakeet-tdt-0.6b-v3-ptBR-TAGARELA-onnx-int8/`. Se faltam arquivos esperados, `huggingface_hub.snapshot_download` busca o snapshot; cria aliases para nomes ONNX compatíveis e carrega `onnx_asr.load_model("nemo-conformer-tdt", path=...)`.
 
 A entrada pode chegar em qualquer taxa suportada pela captura; o ASR normaliza para **16 kHz** por média de blocos em reduções inteiras ou interpolação linear, normaliza nível de fala baixo sem clip intencional e não chama inferência quando o áudio tem menos de **80 ms**. A propriedade `runtime` reporta `onnxruntime-cpu`. O warm-up inicia em thread; não confundir estar carregado com estar validado em fala real.
@@ -82,6 +86,8 @@ A entrada pode chegar em qualquer taxa suportada pela captura; o ASR normaliza p
 **Limites:** primeiro uso pode consumir tempo e rede para download; desempenho CPU, qualidade de reconhecimento em PT-BR, nomes próprios, sotaques e ruído são desconhecidos nesta auditoria. O snapshot remoto é selecionado por repositório, sem verificação explícita de hash/revisão fixa no módulo; isso é uma **característica de reprodutibilidade e dependência externa**, não prova automática de comprometimento.
 
 ## 6. TTS local: Kokoro e interrupção
+
+AUD-024 (correção candidata): o canal limita a fila de áudio a dois itens e a textual a 16; áudio excedente é descartado com aviso, sem substituir itens já aguardando confirmação. Ao sair, sinaliza a captura e chama `AurenHarness.shutdown`, que dá prazo à fila de estratégias e encerra recursos/sessão mesmo se o fechamento falhar. A fala cancelada espera até um segundo pelo TTS; se ele continuar bloqueado, encerra o canal e mantém a indicação de saída ativa até o trabalhador terminar. O prazo não interrompe à força drivers, inferência ou escrita externa já iniciada.
 
 [`LocalKokoroTTS`](../../voice/tts.py) usa modelo e vozes em `data/voice/tts/kokoro/`, baixados de URLs fixadas no código quando faltam os arquivos. Padrões: voz `pm_alex`, idioma `pt-br`, velocidade **1.05**. Variáveis: `AUREN_TTS_VOICE`, `AUREN_TTS_LANG` e `AUREN_TTS_SPEED`.
 

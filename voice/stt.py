@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import hashlib
+import json
 from pathlib import Path
 from threading import Lock
 from typing import Any
@@ -8,7 +10,6 @@ from typing import Any
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 VOICE_DIR = PROJECT_ROOT / "data" / "voice"
 ASR_DIR = VOICE_DIR / "asr" / "parakeet-tdt-0.6b-v3-ptBR-TAGARELA-onnx-int8"
-ASR_DIR.mkdir(parents=True, exist_ok=True)
 
 DEFAULT_REPO = "calneymgp/parakeet-tdt-0.6b-v3-ptBR-TAGARELA-onnx-int8"
 DEFAULT_SAMPLE_RATE = 16_000
@@ -108,13 +109,17 @@ class LocalPortugueseASR:
         self,
         *,
         repo_id: str | None = None,
+        revision: str | None = None,
         model_dir: str | Path | None = None,
         model: Any | None = None,
         language: str = "pt",
         target_sample_rate: int | None = None,
     ) -> None:
         self.repo_id = repo_id or os.getenv("AUREN_ASR_MODEL", DEFAULT_REPO)
-        self.model_dir = Path(model_dir or ASR_DIR)
+        self.revision = revision or os.getenv("AUREN_ASR_REVISION", "main").strip() or "main"
+        self._cache_identity = {"repo_id": self.repo_id, "revision": self.revision}
+        cache_key = hashlib.sha256(json.dumps(self._cache_identity, sort_keys=True).encode()).hexdigest()
+        self.model_dir = Path(model_dir or ASR_DIR) / cache_key
         self.language = language
         self.target_sample_rate = int(
             target_sample_rate
@@ -130,6 +135,15 @@ class LocalPortugueseASR:
     def _download_model(self) -> Path:
         """Garante o cache local completo do modelo INT8 oficial."""
         self.model_dir.mkdir(parents=True, exist_ok=True)
+        manifest = self.model_dir / "auren-model.json"
+        identity_matches = False
+        if manifest.exists():
+            try:
+                identity_matches = json.loads(manifest.read_text(encoding="utf-8")) == self._cache_identity
+            except (ValueError, OSError):
+                pass
+            if not identity_matches:
+                raise RuntimeError("Identidade do cache ASR inválida; os arquivos foram preservados.")
 
         required = (
             "config.json",
@@ -138,7 +152,7 @@ class LocalPortugueseASR:
             "nemo128.onnx",
             "vocab.txt",
         )
-        if not all((self.model_dir / name).exists() for name in required):
+        if not identity_matches or not all((self.model_dir / name).is_file() for name in required):
             try:
                 from huggingface_hub import snapshot_download
             except ImportError as exc:
@@ -153,6 +167,7 @@ class LocalPortugueseASR:
             try:
                 snapshot_download(
                     repo_id=self.repo_id,
+                    revision=self.revision,
                     local_dir=str(self.model_dir),
                 )
             except Exception as exc:
@@ -166,6 +181,9 @@ class LocalPortugueseASR:
                     "Download do ASR terminou, mas faltam arquivos do modelo: "
                     + ", ".join(missing)
                 )
+            pending_manifest = manifest.with_suffix(".tmp")
+            pending_manifest.write_text(json.dumps(self._cache_identity), encoding="utf-8")
+            pending_manifest.replace(manifest)
 
         aliases = {
             "encoder-model.onnx": "encoder-model.int8.onnx",

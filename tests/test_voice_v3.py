@@ -43,11 +43,13 @@ def test_captured_audio_keeps_native_sample_rate():
 
 def test_speech_formatter_for_clock_is_short_and_objective():
     snapshot = SimpleNamespace(
+        state="completed",
         objective="Auren, que horas são?",
         result="Hora local: 17:51:12\nData local: 21/09/2026\nRAM: 11.6 GB de 23.7 GB (48% usada)",
         steps=(
             SimpleNamespace(
                 tool="obter_status_windows",
+                success=True,
                 result="Hora local: 17:51:12\nData local: 21/09/2026\nRAM: 11.6 GB de 23.7 GB (48% usada)",
             ),
         ),
@@ -61,9 +63,10 @@ def test_speech_formatter_for_clock_is_short_and_objective():
 
 def test_speech_formatter_for_volume_does_not_read_raw_tool_dump():
     snapshot = SimpleNamespace(
+        state="completed",
         objective="Auren, coloque o volume em 50 por cento",
         result="Volume definido para 50%.",
-        steps=(SimpleNamespace(tool="definir_volume_windows", result="Volume definido para 50%."),),
+        steps=(SimpleNamespace(tool="definir_volume_windows", success=True, result="Volume definido para 50%."),),
     )
     assert SpeechResponseFormatter.formatar(
         objetivo=snapshot.objective,
@@ -92,11 +95,13 @@ def test_asr_uses_explicit_local_path_and_required_int8_files():
 
 def test_speech_formatter_for_youtube_confirms_completion():
     snapshot = SimpleNamespace(
+        state="completed",
         objective="Auren, abre o YouTube",
         result="Naveguei para: YouTube | URL atual: https://www.youtube.com/ | Modo do navegador: visivel",
         steps=(
             SimpleNamespace(
                 tool="navegar_navegador",
+                success=True,
                 result="Naveguei para: YouTube | URL atual: https://www.youtube.com/ | Modo do navegador: visivel",
             ),
         ),
