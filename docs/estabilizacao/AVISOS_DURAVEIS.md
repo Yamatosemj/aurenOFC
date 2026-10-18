@@ -1,5 +1,10 @@
 # Entrega de avisos — candidata baseada na PR #162
 
+> Continuação sobre a #163: a conclusão indevida de leitura sem ferramenta foi
+> corrigida no Harness em uma candidata separada. Consulte as
+> [evidências atuais](EVIDENCIA_POR_TAREFA.md). As falhas Live abaixo preservam
+> a execução anterior; a identificação de capacidades indisponíveis segue pendente.
+
 ## Escopo e bloqueios observados
 
 Esta etapa mantém RoutineScheduler/TaskManager como única fonte. Não acrescenta

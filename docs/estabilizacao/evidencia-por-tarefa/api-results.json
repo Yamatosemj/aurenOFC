@@ -1,0 +1,52 @@
+{
+  "initial_api_calls": 5,
+  "cases": [
+    {
+      "name": "new_routine_read_with_stale_context",
+      "passed": true,
+      "objective": "Leia \"../profile/Documents/x.txt\" com inicio=0 e limite_caracteres=200.",
+      "old_task_id": "20261018-144810-606581-1ea83e",
+      "new_task_id": "20261018-144810-708460-0fed62",
+      "state": "completed",
+      "answer": "Conteúdo de `../profile/Documents/x.txt`:\n\n`CODIGO_NOVO_K84: 23 itens.`",
+      "steps": [
+        {
+          "tool": "ler_arquivo",
+          "success": true,
+          "result": "{\"ok\":true,\"mensagem\":\"Conteudo lido de x.txt.\",\"conteudo_nao_confiavel\":true,\"dados\":{\"file_content\":{\"formato\":\"txt\",\"encoding\":\"utf-8\",\"inicio\":0,\"limite_caracteres\":200,\"conteudo\":\"CODIGO_NOVO_K84: 23 itens.\",\"vazio\":false,\"truncado\":false,\"proximo_inicio\":null},\"arquivo\":{\"nome\":\"x.txt\",\"caminho\":\"C:\\\\Windows\\\\Temp\\\\auren-integracao-20261018-4c38\\\\current-evidence-live-authorized\\\\profile\\\\Documents\\\\x.txt\",\"tamanho_bytes\":26},\"proxima_leitura\":null}}"
+        }
+      ],
+      "model_calls": 2,
+      "model_limit": 2,
+      "events": [
+        {
+          "routine_id": "1e3151b2463746cfb6f334e037fa64d0",
+          "kind": "completed",
+          "text": "Leia \"../profile/Documents/x.txt\" com inicio=0 e limite_caracteres=200.",
+          "task_id": "20261018-144810-708460-0fed62"
+        }
+      ]
+    },
+    {
+      "name": "retrospective_conversation_without_new_read",
+      "passed": true,
+      "state": "completed",
+      "answer": "O arquivo continha: `CODIGO_NOVO_K84: 23 itens.`",
+      "steps": 0
+    }
+  ],
+  "model": "gpt-5.6-luna",
+  "passed": 2,
+  "failed": 0,
+  "new_api_calls": 3,
+  "total_api_calls": 8,
+  "estimated_usd_total": 0.0058747,
+  "reserved_upper_usd_total": 0.3072,
+  "billing_confirmed": false,
+  "persistent_states_reopened": {
+    "20261018-144817-778756-3ac505": "completed",
+    "20261018-144810-708460-0fed62": "completed",
+    "20261018-144810-606581-1ea83e": "completed"
+  },
+  "personal_effects": 0
+}

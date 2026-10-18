@@ -19,6 +19,7 @@ from core.harness_closure import (_alvo_fechamento, _comprovou_fechamento, _orie
 from core.utils import normalizar_nome
 from core.task_verification import CompletionPending
 from core.execution_scope import scope_allows
+from core.task_evidence import requirement
 
 
 def executar_ciclo(
@@ -33,7 +34,9 @@ def executar_ciclo(
     # Se o usuario claramente pediu uma acao, a primeira rodada
     # precisa produzir uma ferramenta. Isso evita uma rodada vazia
     # em que o modelo responde sem executar nada.
-    exigir_ferramenta = harness._parece_tarefa_de_acao(objetivo) and not historico
+    evidence = requirement(objetivo)
+    exigir_ferramenta = (harness._parece_tarefa_de_acao(objetivo)
+                        or bool(evidence and evidence.targets)) and not historico
     empty_response_retries = 0
     falha_nao_recuperada = False
     # Uma falha so sai deste conjunto apos repetir com sucesso o mesmo passo.

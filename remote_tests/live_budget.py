@@ -10,7 +10,7 @@ class LiveBudget:
     MAX_USD = .50
     MAX_INPUT_BOUND = 60000
 
-    def __init__(self, path):
+    def __init__(self, path, *, resume=False):
         self.path = Path(path)
         self.lock = Lock()
         self.data = {'model': self.MODEL, 'max_calls': self.MAX_CALLS, 'max_usd': self.MAX_USD,
@@ -18,6 +18,17 @@ class LiveBudget:
             'billing_confirmed': False,
             'rates_per_million': {'input': .20, 'cached': .02, 'cache_write': .25, 'output': 1.20},
             'source': 'https://developers.openai.com/api/docs/pricing'}
+        if resume:
+            existing = json.loads(self.path.read_text(encoding='utf-8'))
+            if (any(existing.get(k) != self.data[k] for k in ('model','max_calls','max_usd','rates_per_million'))
+                    or not isinstance(existing.get('calls'), list)
+                    or len(existing['calls']) > self.MAX_CALLS
+                    or any(c.get('status') != 'received' for c in existing['calls'])
+                    or abs(sum(c['upper_usd'] for c in existing['calls'])-existing['reserved_upper_usd']) > 1e-9
+                    or existing['reserved_upper_usd'] > self.MAX_USD):
+                raise RuntimeError('Existing Live authorization cannot be resumed safely')
+            self.data = existing
+            return
         # One authorization ledger per cycle. A second launch cannot reset it.
         with self.path.open('x', encoding='utf-8') as stream:
             json.dump(self.data, stream, indent=2)

@@ -812,6 +812,16 @@ class AurenHarness:
                 or any(step.tool not in READ_ONLY_TOOLS for step in snapshot.steps))
 
     def _verify_completion(self, objetivo, *, candidate_answer=''):
+        from core.task_evidence import missing_evidence
+        if missing_evidence(self.current_task()):
+            pending = self._pergunta_pendente
+            tail = candidate_answer.rsplit('. ', 1)[-1].strip()
+            question = (tail if pending is not None
+                and pending.objetivo == objetivo and candidate_answer.rstrip().endswith('?')
+                and normalizar_nome(tail).startswith(('qual ', 'quais ', 'onde ', 'quando ', 'como ', 'devo ', 'quer ', 'voce quer ', 'pode informar ')) else '')
+            return self._encerrar_falha('task_evidence_missing',
+                'Nao comprovei a execucao deste pedido com ferramentas nesta tarefa. '
+                + (question or 'Resultados de tarefas anteriores nao comprovam uma nova execucao.'))
         if not self._requires_completion_verification():
             return None
         from dataclasses import replace

@@ -181,11 +181,11 @@ def test_notification_does_not_present_unverified_model_text_as_completed(tmp_pa
             expires_at=1000, mode='execute', allowed_calls=[{'name':'ler_arquivo',
                 'arguments':{'caminho':'ficticio.txt','inicio':0,'limite_caracteres':200}}], model_budget=2)
         service.authorize(r['id'], chat_id='owner')
-        assert service.tick(h, chat_id='owner')[0]['kind'] == 'unverified'
-        assert service.pending_notifications(chat_id='owner')[0]['kind'] == 'unverified'
+        assert service.tick(h, chat_id='owner')[0]['kind'] == 'failed'
+        assert service.pending_notifications(chat_id='owner')[0]['kind'] == 'failed'
         assert service.get(r['id'], chat_id='owner')['status'] == 'failed'
-        # The existing Harness state is a separately documented limitation.
-        assert h.current_task().state is TaskState.COMPLETED and not h.current_task().steps
+        # The Harness now rejects the unsupported completion before publication.
+        assert h.current_task().state is TaskState.FAILED and not h.current_task().steps
         assert service.tick(h, chat_id='owner') == []
     finally:
         h.shutdown()
