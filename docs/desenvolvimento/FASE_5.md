@@ -2,7 +2,7 @@
 
 Base: Fase 4, `29dd494`, [CI 39130569555](https://github.com/Yamatosemj/aurenOFC/actions/runs/39130569555) aprovado: Windows 1.063; Linux 1.019/44 ignorados. Branch própria `desenvolvimento/fase-5-validacao-integrada`. Main consultada novamente em `70b040d6191237e2f0a291a14b8ea8fb4b78a09d`. Nenhum merge, push para main ou instalação pessoal foi realizado.
 
-**Estado atual: correções F5-LIVE-001/002 implementadas em branch própria e regressão final local aprovada (1.069/oito ignorados). Live positivo passou antes do ajuste final answer_status; esse contrato final ainda precisa de Live.** [Evidências e limites](fase5/CORRECOES_LIVE.md). O restante abaixo documenta baterias anteriores.
+**Estado atual: correções e validação pendente concluídas na PR #160. Três testes com o contrato final do revisor passaram na API real; regressão local e CI aprovados.** [Evidências finais e limites](fase5/VALIDACAO_FINAL.md). As baterias anteriores abaixo permanecem históricas.
 
 ## Evidência entre processos
 

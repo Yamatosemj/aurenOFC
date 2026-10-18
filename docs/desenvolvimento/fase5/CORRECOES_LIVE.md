@@ -4,7 +4,7 @@
 
 As duas falhas continuam confirmadas na base e foram corrigidas na branch `desenvolvimento/fase-5-correcoes-live`, criada a partir de `a4e1f8b`. Main preservada; nenhuma PR mesclada. O código final passou na suíte completa local: **1.069 aprovados, zero falhas e oito ignorados**, em **62,64 segundos**. Os ignorados exigem links simbólicos indisponíveis neste Windows. O CI do HEAD final deve ser consultado na PR das correções.
 
-O Live real comprovou que a tarefa retomada consegue terminar com os dois códigos e a soma 18, sem repetir a primeira leitura. O teste negativo encontrou uma inconsistência adicional na avaliação da resposta e motivou um ajuste final descrito abaixo. **Esse ajuste final do contrato do revisor foi testado localmente, mas não recebeu nova chamada real à API**, pois o teto conservador acumulado de 24 chamadas foi atingido. Não declarar validação Live integral da versão final.
+A pendência do contrato final descrita nesta bateria foi encerrada posteriormente: três casos com API real passaram. [Validação final](VALIDACAO_FINAL.md). O histórico abaixo preserva o que motivou o ajuste final.
 
 ## F5-LIVE-002 — confirmação respeitada
 
@@ -32,14 +32,14 @@ Para fechar essa lacuna, o contrato estruturado agora exige **answer_status** se
 
 Reprodução local antes do ajuste final: **um falhou/11 passaram**; um resultado com todas as etapas aprovadas e resposta não aprovada era aceito. Depois do ajuste: **33 testes focados passaram**, incluindo campo ausente, resposta pending/failed, soma errada, tentativa de instrução, referências inexistentes, efeito sem leitura posterior, retomada em outro processo e resposta corrigida sem repetir ação. Fixtures existentes receberam o novo campo obrigatório para continuar exercitando seus mesmos cenários; nenhuma asserção foi removida ou afrouxada. A suíte final completa passou.
 
-Limite: o modelo ainda pode errar julgamentos semânticos. O contrato final não foi reenviado à API nesta rodada; seus novos campos e instruções precisam de validação Live posterior antes de aprovar a fase integral. A passagem do cenário positivo ocorreu antes desse último ajuste; não atribuí-la ao contrato final.
+Limite: o modelo ainda pode errar julgamentos semânticos. O contrato final foi reenviado à API na bateria seguinte: resposta correta aprovada, soma errada e evidência ausente recusadas. [Evidências e limites atuais](VALIDACAO_FINAL.md).
 
 ## Custo e evidências
 
-Orçamento do proprietário continua **US$ 2**, sem pedir nova autorização para o mesmo limite. Foram **24 chamadas reais acumuladas**, incluindo as 19 anteriores: **69.845 tokens de entrada/1.629 de saída**. Estimativa conservadora acumulada: **US$ 0,01942**, cobrando toda entrada como gravação de cache; não é conferência da fatura. A reserva anterior a chamadas totalizou US$ 1,944. Não houve devolução da reserva, aumento do teto de 24 chamadas, novas tentativas automáticas ou chamadas depois do limite. O custo efetivo estimado é muito menor que a reserva preventiva; não afirmar que US$ 2 foram gastos. [Preços oficiais consultados](https://developers.openai.com/api/docs/models/gpt-5.6-luna).
+Na bateria aqui descrita, antes da finalização, foram 24 chamadas e reserva preventiva US$ 1,944. O registro foi preservado integralmente; o pedido posterior para terminar autorizou um novo lote de três revisões menores dentro dos mesmos US$ 2. Totais atuais e memória de cálculo em [VALIDACAO_FINAL.md](VALIDACAO_FINAL.md).
 
 Contagens, tentativas vermelhas e verdes, hashes das fontes finais e resultados do supervisor: [CORRECOES_LIVE.json](CORRECOES_LIVE.json). O relatório anterior [LIVE_API_2026-10-18.md](LIVE_API_2026-10-18.md) permanece como evidência histórica das falhas. Fontes de teste, scripts, bancos e logs fictícios ficaram nas pastas indicadas no JSON sob `C:\Windows\Temp\auren-correcoes-c704711e41bd461887318de7ea40b7b6`.
 
 ## O que não foi testado
 
-Nova chamada real com o contrato final `answer_status`; tarefas de horas/dias; hardware/voz; perfis, arquivos ou aplicativos pessoais; escrita real; rotinas com efeito real; fábrica global com bancos pessoais; avaliação universal de cálculos e textos. Nenhum `.env`, banco ou log pessoal foi aberto. Perfil e fontes copiados para diretórios temporários; credencial somente herdada do ambiente; supervisor Windows preservado. Não houve alteração do runner ou de suas políticas.
+tarefas de horas/dias; hardware/voz; perfis, arquivos ou aplicativos pessoais; escrita real; rotinas com efeito real; fábrica global com bancos pessoais; avaliação universal de cálculos e textos. Nenhum `.env`, banco ou log pessoal foi aberto. Perfil e fontes copiados para diretórios temporários; credencial somente herdada do ambiente; supervisor Windows preservado. Não houve alteração do runner ou de suas políticas.
