@@ -6,6 +6,7 @@ Toda acao resolvida volta ao fluxo usual Router -> Dispatcher -> permissao.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 
 from core.utils import normalizar_nome
 from core.harness_heuristics import _parece_tarefa_de_acao
@@ -21,6 +22,27 @@ SIM = frozenset({"sim", "sim pode", "pode", "pode sim", "isso", "isso mesmo", "c
 NAO = frozenset({"nao", "nao pode", "nao precisa", "deixa", "deixa pra la", "cancela", "cancelar"})
 
 
+def pergunta_de_esclarecimento(objetivo: str, pergunta: str) -> bool:
+    """An invitation to start a conversation does not suspend an objective.
+
+    Keep directed questions (including confirmations) intact. This local
+    filter never authorizes an action or replaces PermissionManager.
+    """
+    if not str(pergunta).rstrip().endswith("?"):
+        return False
+    goal = normalizar_nome(objetivo)
+    goal = re.sub(r"\bauren\b", "", goal).strip()
+    if re.fullmatch(r"(?:ola|oi|bom dia|boa tarde|boa noite|obrigad[oa]|tudo bem|vamos conversar)", goal):
+        return False
+    question = normalizar_nome(pergunta)
+    invitation = (
+        r"(?:como|em que) (?:posso|podemos) (?:te |lhe )?ajudar|"
+        r"(?:posso ajudar|precisa de) (?:em )?(?:mais )?(?:alguma coisa|algo)|"
+        r"sobre o que (?:quer|gostaria de) conversar"
+    )
+    return re.search(r"(?:" + invitation + r")$", question) is None
+
+
 def resolver_continuacao(pendente: PerguntaPendente | None, mensagem: str) -> tuple[str, str]:
     """Devolve (objetivo efetivo, estado: normal/cancelar/sem_pendencia).
 
@@ -29,7 +51,7 @@ def resolver_continuacao(pendente: PerguntaPendente | None, mensagem: str) -> tu
     """
     texto = str(mensagem or "").strip()
     normalizado = normalizar_nome(texto)
-    if pendente is None:
+    if pendente is None or not pergunta_de_esclarecimento(pendente.objetivo, pendente.pergunta):
         if normalizado in SIM | NAO:
             return texto, "sem_pendencia"
         return texto, "normal"
@@ -43,6 +65,7 @@ def resolver_continuacao(pendente: PerguntaPendente | None, mensagem: str) -> tu
         or len(texto.split()) > 14
         or "?" in texto
         or _parece_tarefa_de_acao(texto)
+        or re.match(r"^(?:auren\s+)?(?:me\s+)?(?:crie|cria|criar|lembre|lembrar|cancele|cancelar|adie|adiar|agende|agendar|quero|preciso)\b", normalizado)
     ):
         return texto, "normal"
     # Resposta curta a "qual programa?", "qual arquivo?" etc.
