@@ -486,7 +486,7 @@ class AurenHarness:
         self._confirmacao_esclarecimento = None
 
     def _guardar_esclarecimento(self, objetivo: str, pergunta: str) -> None:
-        if self._parece_tarefa_de_acao(objetivo) and str(pergunta).rstrip().endswith("?"):
+        if str(pergunta).rstrip().endswith("?"):
             self._pergunta_pendente = PerguntaPendente(objetivo, pergunta[-350:])
 
 

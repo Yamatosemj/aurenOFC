@@ -1,146 +1,148 @@
 # Correções da auditoria Auren
 
-Data: 17/10/2026. Branch: `correcoes-auditoria`.
+17/10/2026 — branch `correcoes-auditoria`, criada a partir de `a7a6fd3e647de2f62b6a51fe570dfe78c4dbe3e8`.
 
-**P0 passou na suíte ampla após a correção do teste PowerShell.** As fases seguintes serão executadas na ordem autorizada. Este documento distingue resultados anteriores e atuais; não declara as fases ainda pendentes como concluídas.
+As fases foram executadas na ordem pedida. Cada fase só avançou após os testes permitidos passarem. Há um commit por fase. Não houve merge, push, instalação de dependências ou alteração da main. As PRs #141, #142 e #137 ficaram fora.
 
-## O que foi corrigido
+Os achados tratados continuavam presentes na releitura (**MANTIDO**). Não houve item pulado como “JÁ CORRIGIDO” ou “INVALIDADO” por suposição. AUD-023, antes suspeita, teve seu mecanismo confirmado com arquivos fictícios. AUD-022 continua suspeita, sem ataque demonstrado. Os relatórios originais foram copiados sem alteração para `docs/auditoria/`, pois essa pasta não existia no checkout.
 
-### P3 — AUD-016, 018, 020, 021, 029, 031 e 032
-
-Todos estavam **MANTIDOS**. As nove reproduções falharam antes das correções. A identificação de CSV lê somente a amostra de 16.384 caracteres. O cache não reutiliza uma resposta quando há continuação de outra resposta ou esforço diferente do padrão. A revisão de intenção transmite seus contadores de uso ao registro da tarefa, e o agregador também os reconhece. O contador global é apresentado como do processo, não de um chat.
-
-A documentação deixa de apresentar o override, a recuperação de falhas e o Standby do Chrome como se ainda tivessem os comportamentos antigos. A busca por nome não apresenta arquivos com pontuação zero como correspondência. Os dois temporários de UIA são removidos também em erro de início e timeout. O agregador lê o campo de estado de TASK_END sem misturar o evento seguinte.
-
-**Limite de AUD-020:** os coeficientes de custo existentes continuam estimativas genéricas; não foram escolhidos preços novos nem consultado faturamento. Sem retorno de uso do serviço, tokens desconhecidos não podem ser inventados. As chamadas que falham antes de produzir decisão válida continuam sem uso individualizado no registro da tarefa.
-
-Seleção focada: **54 aprovados**. Suíte ampla: **819 aprovados, zero falhas, oito ignorados, dois casos de voz excluídos**, em 45,02 segundos.
-
-### P2b — AUD-034 e AUD-035
-
-Ambos estavam **MANTIDOS**. Três reproduções falharam antes de corrigir. Duas verificações que estavam dentro de comentários agora executam de verdade. O teste de raízes restaura a função original capturada antes da substituição e verifica também a recusa de um arquivo fora das raízes permitidas. O testador manual de processos usa o resultado estruturado e exige os códigos corretos de proteção, em vez de chamar métodos de texto nesse resultado.
-
-Os quatro blocos reais do testador foram executados isoladamente com executores fictícios; a bateria Live não foi iniciada. **AUD-033:** MANTIDO por releitura, sem alteração porque aprovar o modo sem consulta online exige decisão explícita de autorização. Não gravei aprovações novas nem alterei a política instalada.
-
-Seleção focada: **45 aprovados e um ignorado**. Suíte ampla: **810 aprovados, zero falhas, oito ignorados, dois casos de voz excluídos**, em 44,86 segundos.
-
-### P2a — AUD-010, 011, 014, 015 e 023
-
-Sete reproduções falharam antes de corrigir. AUD-010, 011, 014 e 015 estavam **MANTIDOS**; AUD-023, antes suspeita, foi confirmado em uma busca fictícia que tentava calcular a assinatura de um destino protegido.
-
-Recusas de gravação automática agora geram aviso técnico sem repetir o conteúdo privado; uma estratégia recusada não termina como trabalho de memória bem-sucedido. Sem identidade de chat, a montagem de contexto não busca conversas e estratégias de outros chats. Sobrescrever o clipboard após leitura externa exige confirmação, sem mudar o orçamento geral. O contexto existente acompanha as rodadas seguintes, com os mesmos limites de tamanho, e estratégias anteriores mostram se falharam e qual foi seu resultado. A busca de cópias reaplica a política a cada destino efetivo, não pede confirmações dentro da varredura e confere a identidade antes de calcular assinaturas.
-
-**AUD-017 e AUD-024:** MANTIDOS por leitura, sem correção por serem voz. **AUD-019:** MANTIDO, exige política de retenção e exclusão. **AUD-022:** MANTIDO como suspeita: o esquema não transporta origem estruturada entre tarefas; não foi demonstrado ataque. Definir quais memórias devem exigir confirmação por origem é decisão de produto e ficou pendente; não rotulei toda lembrança como ataque nem removi a proteção atual.
-
-Uma expectativa antiga de teste foi atualizada para exigir o contexto na continuação. Suíte ampla: **808 aprovados, zero falhas, oito ignorados e dois casos de voz excluídos**, em 43,79 segundos. A preservação do contexto continua limitada pelo orçamento de caracteres existente; não foi criado um sistema novo de memória ou de extração de restrições.
-
-### P1b — AUD-005, 006, 007, 009, 012, 026, 030 e LIV-004
-
-Todos estavam **MANTIDOS**; oito reproduções falharam antes de corrigir. A verificação esgotada de abas agora encerra com falha; endereços são comparados por servidor e caminho, não por prefixo. Desligar libera o estado visual de ocupado sem aceitar eventos antigos. A última rodada de ferramentas não pede outra resposta que ficaria sem processamento. Uma leitura isolada do navegador não cria uma falsa obrigação de verificação e uma observação sem prova não reinicia seu contador.
-
-O corte de resultados de arquivos preserva JSON válido e calcula a continuação a partir do texto realmente entregue. Para outros resultados estruturados grandes, informa a omissão sem produzir JSON quebrado. A atualização de um controle de tela conserva a ocorrência e confere sua identidade e proteção; se o controle mudar ou desaparecer, a escrita para. O teste executou o trecho real de atualização com controles PowerShell fictícios, sem aplicativo ou dispositivo real.
-
-**AUD-008:** MANTIDO por leitura, pulado por ser voz. **AUD-013:** MANTIDO, pulado por depender da decisão sobre parar toda a tarefa ou permitir alternativas após falhas repetidas. A regra existente foi preservada.
-
-Testes focados: **77 aprovados**. Suíte ampla: **801 aprovados, zero falhas, oito ignorados, dois casos de voz excluídos**, em 45,22 segundos. Não houve teste visual real nem medição de custo/latência de API.
-
-### P1a — AUD-002, AUD-003, AUD-004, AUD-025, AUD-028 e LIV-003
-
-Todos esses achados estavam **MANTIDOS** na releitura. Os novos testes reproduziram onze falhas antes das alterações (um controle já passava).
-
-- Recusas de foco e fechamento de janela, e erro ao abrir atalho, agora são falhas explícitas. Não foi alterada a capacidade do Windows de negar foco ou fechamento.
-- A recuperação de uma falha compara uma assinatura privada dos argumentos originais. Valores diferentes não se confundem por causa do mascaramento; mudar apenas a ordem dos campos JSON não cria outra operação. Os registros continuam mascarados.
-- A conferência de um campo preenchido usa o valor original apenas em memória durante a tarefa. Ela compara o valor inteiro e a ocorrência selecionada, sem aceitar um prefixo como resultado correto.
-- O contexto do navegador passa a respeitar falhas das leituras que o compõem e conserva informações parciais úteis. Componentes antigos ainda passam pelo adaptador legado; não foi migrado todo o navegador para um contrato novo.
-- A recusa de salvar ou esquecer uma lembrança permanece falha ao chegar ao executor comum.
-
-**AUD-027:** MANTIDO por releitura, mas pulado porque exige testes do formatador de voz, excluídos pela regra 10. Nenhuma correção sem reprodução foi aplicada.
-
-Os doze novos testes passaram. A seleção inicial detectou dois testes antigos que esperavam argumentos em claro na identidade das pendências; foram atualizados para conferir a mesma identidade em hash, conservando a exigência de que outra ação não apague a falha. Suíte ampla final: **793 aprovados, zero falhas, oito ignorados e dois casos de voz excluídos**, em 42,70 segundos. Uma execução intermediária incluiu dois testes simulados de voz de arquivos mistos por erro na seleção; nenhum dispositivo foi acessado. O executor de testes foi corrigido e a execução final excluiu esses casos.
+## O que foi corrigido, fase por fase
 
 ### P0 — AUD-001
 
-Situação na releitura: **MANTIDO**. A versão inicial ainda podia pedir autorização para um arquivo e, depois da resposta, ler outro. Reproduzi a falha com arquivos fictícios antes de alterar o programa: seis testes falharam e quatro controles passaram.
+A autorização agora fica ligada ao caminho e à identidade do arquivo identificado antes da pergunta. Se o destino mudar ou o arquivo for substituído, a leitura é recusada. Cada abertura confere o arquivo efetivamente aberto antes de ler bytes, incluindo as aberturas auxiliares da inspeção. O arquivo certo continua funcionando; negativa e pastas sensíveis continuam impedindo a leitura.
 
-Agora a autorização fica ligada ao caminho e à identidade do arquivo identificado antes da pergunta. O programa cancela a leitura se o destino mudar. Também confere o arquivo efetivamente aberto antes de ler qualquer conteúdo, para detectar substituição no mesmo caminho ou troca no instante de abrir. Essa conferência acompanha as aberturas usadas para conteúdo, identificação de formato, cálculo da assinatura e informações de origem.
+Seis reproduções falharam antes da correção; quatro controles já passavam. Os dez casos passam após corrigir.
 
-A leitura de pastas sensíveis continua bloqueada. A negativa do usuário continua impedindo a leitura. Nada responde às confirmações reais pelo usuário. Os testes usam respostas programadas somente em objetos fictícios de teste.
+A suíte inicialmente parou em um teste PowerShell: o Windows bloqueava o carregamento de um `.ps1`. A mesma falha foi confirmada no código anterior. Após o pedido para corrigir, ajustei a preparação do teste para incluir a função original no comando de teste já executado. A função de proteção e a política do Windows não foram alteradas. Acrescentei recusas por usuário incorreto, falta de aprovação, execução elevada e parada de emergência. Os nove testes dessa área passaram e a suíte deixou de apresentar a falha.
 
-Há dez novos testes em `tests/test_audit_p0.py`: troca de destino durante a pergunta, substituição no mesmo endereço, troca ao abrir, leitura do arquivo correto e negativa; cada situação cobre leitura e inspeção. Os documentos sobre permissões e arquivos foram atualizados. Os dois relatórios fornecidos foram copiados sem alteração para `docs/auditoria/`, pois essa pasta não existia no checkout.
+### P1a — AUD-002, 003, 004, 025, 028 e LIV-003
 
-## Bloqueio inicial e correção do teste
+Recusas de foco e fechamento de janela e erro ao abrir atalho agora são falhas explícitas. A recusa de salvar ou esquecer uma lembrança também continua sendo falha ao chegar ao executor comum.
 
-O teste `tests/test_chat_policy_setup.py::test_local_guard_requires_owner_and_correct_comment_format` tenta carregar um arquivo PowerShell. O Windows recusa esse carregamento porque a execução de scripts está desabilitada. O teste termina antes de verificar a regra que pretendia testar.
+Uma falha pendente é identificada pelos argumentos originais, de forma privada e separada do texto mascarado. Outro valor não apaga a falha, e mudar apenas a ordem dos campos não cria uma operação diferente. A conferência de preenchimento usa o valor original apenas em memória, compara o valor inteiro e respeita a ocorrência selecionada. Os argumentos dos registros continuam mascarados.
 
-Reproduzi a mesma falha em uma cópia com os três arquivos de código originais, recuperados do Git, sem a correção de P0. Portanto, essa falha não foi introduzida pela correção. Mesmo assim, a regra 5 exige a suíte passando antes da próxima fase. A regra 7 impede reduzir proteções para obter esse resultado. Não alterei política do Windows, proteção do runner, teste bloqueado ou autorização. Não marquei a falha como aprovada nem retirei esse teste da suíte.
+O contexto do navegador respeita falhas das leituras que o compõem e preserva informações parciais úteis. As funções antigas ainda usam o adaptador de compatibilidade; não foi migrado todo o navegador.
 
-Foram feitas duas execuções amplas. A segunda confirma o estado final do código. Não avancei para outra fase.
+Onze reproduções falharam antes da correção e um controle já passava. Os doze casos novos passam na suíte final. Dois testes antigos foram atualizados para verificar a identidade privada, mantendo a exigência de não apagar uma falha por causa de outra ação.
 
-Após o pedido de corrigir o bloqueio, reproduzi novamente a falha antes de editar. O teste agora inclui a função versionada no comando de teste que já executava, em vez de carregar um arquivo `.ps1`. Não altera a política de execução do Windows nem a proteção do Auren. A função de produção não foi editada. Ampliei os casos negativos: comando inválido, autor e ator incorretos, falta de aprovação, execução elevada e parada de emergência; cada recusa precisa apresentar o motivo esperado. Os nove testes da área passaram. Em seguida, a suíte ampla passou: **781 aprovados, zero falhas, oito ignorados e dois casos de voz excluídos**, em 43,02 segundos. O bloqueio está resolvido e P0 está validada dentro do escopo automatizado permitido.
+### P1b — AUD-005, 006, 007, 009, 012, 026, 030 e LIV-004
 
-## Resultado real dos testes
+Uma verificação de abas esgotada agora termina com falha. A comparação de destinos usa servidor e caminho: um endereço parecido não é aceito como o solicitado. Desligar libera o estado visual de ocupado, mantendo a rejeição de eventos antigos.
 
-| Execução | Aprovados | Falhas | Ignorados | Excluídos na seleção |
+A última rodada de ferramentas não solicita outra resposta que ficaria sem processamento. Uma consulta isolada do navegador não cria uma obrigação artificial de verificação, e uma observação sem prova não reinicia o contador dessa verificação.
+
+Resultados grandes de arquivos continuam sendo JSON válido e trazem a continuação calculada a partir do texto realmente entregue. Outros resultados estruturados grandes informam a omissão, sem produzir JSON quebrado.
+
+Na atualização de um controle de tela, o programa conserva a ocorrência e confere identidade e proteção. Se o controle desaparecer ou mudar, a escrita para. O teste usou o trecho real de atualização com controles PowerShell fictícios, sem aplicativo ou dispositivo real.
+
+As oito reproduções falharam antes das correções. A seleção focada terminou com 77 aprovados.
+
+### P2a — AUD-010, 011, 014, 015 e 023
+
+Uma gravação automática recusada gera diagnóstico sem repetir o conteúdo privado. Um trabalho de estratégia recusado não termina como gravação bem-sucedida. Sem identidade de chat, a montagem do contexto não recupera conversas ou estratégias de outros chats.
+
+Sobrescrever o clipboard após ler conteúdo externo exige confirmação. O orçamento geral não foi afrouxado. O contexto existente acompanha as rodadas seguintes, dentro dos mesmos limites de tamanho; estratégias anteriores mostram se falharam e qual foi seu resultado.
+
+A busca de cópias reaplica a política ao destino de cada candidato e confere sua identidade antes de calcular a assinatura. Destinos protegidos ou que exigiriam confirmação são omitidos, sem aprovação automática dentro da varredura. A omissão é sinalizada como limitação.
+
+As sete reproduções falharam antes das correções. Uma expectativa antiga de teste foi atualizada para exigir o contexto na continuação.
+
+### P2b — AUD-034 e 035
+
+Duas verificações que estavam dentro de comentários agora executam de verdade. O teste de raízes recupera a função original, em vez da função fictícia que ele próprio tinha instalado, e verifica também a recusa de um arquivo fora das raízes permitidas.
+
+Os quatro trechos de processos do testador manual entendem o resultado estruturado e exigem os códigos corretos de proteção. Não dependem mais de métodos de texto nesse resultado. Os trechos reais foram testados isoladamente com executores fictícios; a bateria Live não foi iniciada.
+
+As três reproduções falharam antes das correções. A seleção focada terminou com 45 aprovados e um ignorado.
+
+### P3 — AUD-016, 018, 020, 021, 029, 031 e 032
+
+A identificação de CSV lê somente uma amostra de 16.384 caracteres. O cache não reutiliza respostas quando há continuação de outra resposta ou esforço diferente do padrão.
+
+A revisão de intenção transmite seus contadores ao registro da tarefa; o agregador também os reconhece. O contador global é apresentado como do processo, não como de um chat. **AUD-020 foi tratado parcialmente:** os coeficientes de custo existentes continuam estimativas genéricas. Não escolhi preços novos nem consultei faturamento. Chamadas que falham antes de produzir decisão válida continuam sem uso individualizado no registro da tarefa; não é possível inventar tokens que o serviço não informou.
+
+A documentação deixa de apresentar comportamentos antigos de recuperação, override e Standby do Chrome como se ainda fossem os atuais. A busca por nome não apresenta arquivos sem correspondência como resultado. Os dois temporários de UIA são removidos também em falha de início e timeout. O agregador lê o estado de TASK_END pelo nome do campo, sem misturar o evento seguinte.
+
+As nove reproduções falharam antes das correções. A seleção focada terminou com 54 aprovados.
+
+### Fase Live — LIV-001, 002, 005 e 007
+
+Um caminho explícito de `.exe` é validado e usado antes da busca aproximada por nome. Um caminho ausente não abre outro aplicativo. A resposta informa que a abertura foi solicitada e fornece o processo iniciado; não afirma que a janela está pronta. Caminhos explícitos que não identificam um `.exe` válido falham, sem troca silenciosa por outro programa.
+
+Uma observação intermediária não encerra automaticamente pedidos de ação iniciados por local, restrição ou verbo desconhecido. Sequências de operações de janela não terminam localmente só porque a primeira mutação funcionou. O ciclo normal continua responsável por prosseguir ou informar a falha; não foi criado um novo planejador.
+
+Uma pergunta pendente deixa de depender da primeira palavra do pedido. Respostas curtas retomam o pedido e suas restrições no mesmo contexto. Isso não concede autorização local para executar ferramentas.
+
+As oito reproduções falharam antes das correções; a seleção focada terminou com 68 aprovados. A primeira execução ampla revelou uma simulação antiga que fornecia apenas a chamada de ferramenta e dependia do encerramento automático. A simulação passou a fornecer também a resposta final, mantendo as verificações de aprovação e execução. LIV-003 e LIV-004 já haviam sido tratados nas fases anteriores. **LIV-006 foi pulado por decisão de produto; o veto continua impedindo a ação.**
+
+## O que foi pulado e por quê
+
+Todos os itens abaixo foram relidos e permanecem presentes; não são declarados corrigidos.
+
+| Item | Motivo |
+| --- | --- |
+| AUD-008 | Limite da gravação de voz: testes de voz foram excluídos pela regra 10 |
+| AUD-013 | A regra após falhas repetidas exige decidir entre parada global e tentativa de alternativa |
+| AUD-017 | Identidade do cache de reconhecimento de voz: testes de voz excluídos |
+| AUD-019 | Prazos de retenção e alcance da exclusão exigem decisão do proprietário |
+| AUD-022 | Origem de conteúdo lembrado continua sem transporte estruturado; ataque não demonstrado. A política para esse conteúdo exige decisão |
+| AUD-024 | Encerramento e filas da voz: testes de voz excluídos |
+| AUD-027 | Formatação da resposta falada: testes de voz excluídos |
+| AUD-033 | Não foi concedida silenciosamente a aprovação para testes sem consulta online |
+| LIV-006 | Replanejar depois de um veto exige decidir o limite de autonomia; veto preservado |
+
+AUD-036 pertence exclusivamente à PR #137 e ficou fora por instrução expressa. AUD-020 tem a parte de contagem corrigida e as limitações de custo e falhas anteriores à decisão descritas acima.
+
+## Perguntas para decisão
+
+1. Após duas falhas iguais, deve parar toda a tarefa ou permitir uma alternativa diferente, mantendo os outros limites? (AUD-013)
+2. Por quanto tempo guardar conversas, lembranças, registros e capturas? Ao pedir para esquecer, quais classes devem ser apagadas? (AUD-019)
+3. Quais tipos de memória devem carregar origem externa e exigir confirmação em tarefas futuras? Como tratar registros antigos sem essa origem? (AUD-022)
+4. Qual aprovação explícita deve autorizar a modalidade de testes sem consulta online? (AUD-033)
+5. Depois de um veto, o Auren deve apenas explicá-lo ou pode elaborar outra proposta? Se puder, qual o limite? (LIV-006)
+6. Está autorizado incluir testes simulados de voz numa tarefa específica para AUD-008, 017, 024 e 027? Nenhum deles foi corrigido sem sua reprodução exigida.
+
+## Resultado real das suítes amplas
+
+Cada linha é uma execução; os totais se sobrepõem e não devem ser somados como testes diferentes.
+
+| Fase validada | Aprovados | Falhas | Ignorados | Casos de voz excluídos na seleção |
 | --- | ---: | ---: | ---: | ---: |
-| Reprodução válida de AUD-001, antes da correção | 4 | 6 | 0 | 0 |
-| P0 e testes de arquivos, após a correção | 49 | 0 | 1 | 0 |
-| Seleção final de P0, arquivos, permissões, contratos e origem externa | 81 | 0 | 1 | 0 |
-| Suíte ampla, primeira execução | 775 | 1 | 8 | 2 |
-| Teste bloqueado, usando o código original | 0 | 1 | 0 | 0 |
-| Suíte ampla, segunda execução | 775 | 1 | 8 | 2 |
-| Testes do PowerShell após a correção de preparação | 9 | 0 | 0 | 0 |
-| Suíte ampla após resolver o bloqueio | 781 | 0 | 8 | 2 |
+| P0, após corrigir a preparação PowerShell | 781 | 0 | 8 | 2 |
+| P1a | 793 | 0 | 8 | 2 |
+| P1b | 801 | 0 | 8 | 2 |
+| P2a | 808 | 0 | 8 | 2 |
+| P2b | 810 | 0 | 8 | 2 |
+| P3 | 819 | 0 | 8 | 2 |
+| Live, execução final | 827 | 0 | 8 | 2 |
 
-As execuções se sobrepõem: os totais não devem ser somados como testes diferentes. Os oito casos ignorados dependem da criação de links simbólicos, que o Windows não permitiu. Os dois casos excluídos na seleção ampla são de voz em arquivos mistos. Arquivos inteiros de testes de voz também foram deixados fora, conforme a regra 10; não estão incluídos nessas contagens.
+Os oito ignorados dependem de criar links simbólicos, não permitido neste Windows. Não foram transformados em aprovação. Os arquivos `test_voice.py`, `test_voice_v3.py`, `test_voice_installer_cache.py` e `test_confirmation.py` ficaram fora da coleta; o último importa componentes de voz. A seleção `not voice` excluiu dois casos adicionais em arquivos mistos.
 
-As execuções amplas levaram 41,47 e 39,28 segundos. A seleção final levou 1,55 segundo. Os arquivos inteiros excluídos foram `test_voice.py`, `test_voice_v3.py`, `test_voice_installer_cache.py` e `test_confirmation.py` (este importa componentes de voz na coleta). Os demais arquivos de teste foram coletados, com a seleção `not voice` para os casos de voz em arquivos mistos.
+Uma execução intermediária de P1a incluiu esses dois casos simulados de voz por erro de seleção; nenhum dispositivo foi acessado. O executor foi corrigido e todas as execuções amplas finais por fase os excluíram.
 
-Comandos e resultados detalhados ficaram em uma pasta criada para este trabalho: `C:\Windows\Temp\auren-correcoes-c704711e41bd461887318de7ea40b7b6`. Há saídas de texto e resultados XML em `p0-full-1`, `p0-full-2`, `p0-baseline` e `p0-final`. O executor que prepara cópias isoladas está em `C:\Windows\Temp\run_auren_audit_tests.py`. Esses arquivos de teste foram preservados; não são logs reais do Auren.
+As reproduções anteriores às correções falharam conforme descrito em cada fase. Também houve falhas intermediárias de preparação e expectativas antigas, corrigidas antes de avançar. Na fase Live, a primeira execução ampla terminou com 826 aprovados e uma falha da simulação descrita acima; o resultado final está na tabela.
 
-Na preparação inicial, a pasta temporária padrão ficava dentro de AppData e foi corretamente bloqueada. Também ajustei a comparação de texto do pedido para o formato de caminhos do Windows. Esses resultados de preparação não foram usados para confirmar o defeito. A reprodução válida, com arquivos em pasta temporária própria fora de AppData, foi executada antes da correção e é a primeira linha da tabela.
+A execução final terminou em 44,19 segundos. Isso é duração do teste automatizado, não medição de velocidade do Auren em tarefas reais. Os arquivos novos de regressão ficam em `tests/test_audit_*.py`.
 
-Ambiente: Windows, Python 3.13.15. A suíte ampla e a seleção final rodaram em cópias temporárias contendo apenas fontes versionadas e o novo teste. O perfil do usuário, OneDrive e temporários desses processos apontavam para pastas fictícias. Não foram copiados bancos, logs, `.env`, credenciais ou a pasta `desktop/` preexistente. Nenhuma chamada ao modelo foi necessária.
+## Ambiente e evidências
 
-## O que ficou pendente, fase por fase
+Windows, Python 3.13.15. Os testes rodaram em cópias temporárias contendo fontes versionadas e os novos testes, com perfil, OneDrive e temporários fictícios. Não foram copiados `.env`, credenciais, bancos, logs ou `desktop/` reais. Os bancos de teste contêm somente dados fictícios. Nenhuma confirmação real foi aprovada automaticamente.
 
-Os itens abaixo **não foram revalidados nem corrigidos nesta execução**, pois a barreira de P0 impediu sua fase. Não receberam rótulo de “já corrigido” ou “invalidado” por suposição.
+As saídas de texto e XML de cada execução foram preservadas em `C:\Windows\Temp\auren-correcoes-c704711e41bd461887318de7ea40b7b6`, em pastas identificadas pela fase e por `red`, `green` ou `full`. O executor isolado está em `C:\Windows\Temp\run_auren_audit_tests.py`. São evidências desta manutenção, não logs reais do Auren. A suíte final usa a pasta `live-full-final`.
 
-| Fase | Itens pendentes | Motivo |
-| --- | --- | --- |
-| P1a | AUD-002, 003, 004, 025, 027, 028; LIV-003 | P0 sem aprovação da suíte ampla |
-| P1b | AUD-005, 006, 007, 008, 009, 012, 013, 026, 030; LIV-004 | Dependência de P1a |
-| P2a | AUD-010, 011, 014, 015, 017, 019, 022, 023, 024 | Dependência das fases anteriores |
-| P2b | AUD-033, 034, 035 | Dependência das fases anteriores |
-| P3 | AUD-016, 018, 020, 021, 029, 031, 032 | Dependência das fases anteriores |
-| Live | LIV-001, 002, 005, 006, 007 | Dependência das fases anteriores; nenhum ensaio real iniciado |
-
-AUD-036 pertence exclusivamente à PR #137 e ficou fora do trabalho, conforme pedido. As PRs #141, #142 e #137 não foram incorporadas.
-
-## Decisões para o proprietário
-
-Estas perguntas vêm das recomendações dos relatórios; não foram decididas nem implementadas:
-
-1. **AUD-013:** depois de duas falhas iguais, o Auren deve parar toda a tarefa ou permitir uma alternativa diferente, mantendo os outros limites?
-2. **AUD-019:** por quanto tempo guardar conversas, lembranças, registros e capturas? O que deve ser apagado quando o usuário pedir para esquecer?
-3. **LIV-006:** depois de uma proposta vetada, o Auren deve apenas explicar o veto ou pode elaborar outra proposta dentro de um limite explícito? Qual deve ser esse limite?
-4. **AUD-033:** qual aprovação explícita deve autorizar a modalidade de testes sem consulta online? Não adicionei aprovação silenciosa ao instalador.
-5. **AUD-008, 017, 024 e 027:** como tratar as correções que dependem de testes simulados de voz, já que esta tarefa exclui testes de voz? Nenhum desses testes foi executado aqui.
-
-A falha de preparação do teste PowerShell foi resolvida sem alterar a configuração do Windows.
+A main remota consultada foi `70b040d6191237e2f0a291a14b8ea8fb4b78a09d`, com checks anteriores aprovados. Não houve push, disparo de workflow nem validação CI deste branch. Os testes locais não são apresentados como CI remoto.
 
 ## O que não foi testado
 
-- Uso real do Auren, API paga, navegador real, foco de janelas, UI Automation, clipboard ou capturas de tela.
-- Voz, microfone, modelos de áudio, reprodução de som e outros dispositivos.
-- Links simbólicos reais nos oito casos ignorados; junctions e substituição hostil de arquivos em todas as configurações de Windows.
-- Conteúdo ou estado dos bancos, logs, perfis e `.env` reais.
-- Funcionamento das correções das fases seguintes, pois elas não foram iniciadas.
-- CI deste branch: houve apenas consulta aos resultados já existentes da main; não foi feito push nem disparo de workflow.
+- Auren com modelo real, API paga, navegador real, foco de janelas, escrita em controles reais, clipboard real ou screenshots.
+- Voz, microfone, reprodução de som e dispositivos reais; os itens de voz pendentes também não receberam correção.
+- Links simbólicos nos oito casos ignorados, junctions e trocas hostis em todos os sistemas de arquivos do Windows.
+- Conteúdo e estado de dados pessoais, bancos, logs, perfis e `.env` reais.
+- Uso autônomo após veto, política nova de retenção, migração de origem das memórias ou aprovação de runner.
+- PRs #141, #142 e #137; Electron e lembretes não foram incorporados.
+- Preços atuais, fatura, saldo ou resistência universal a instruções maliciosas.
 
-A comparação da identidade antes de ler protege o alvo aberto; não promete impedir que outro processo altere os bytes do mesmo arquivo durante a leitura. Não é uma auditoria universal de segurança do sistema de arquivos.
+Conferir a identidade do arquivo aberto não impede outro processo de alterar os bytes do mesmo arquivo durante a leitura. Os limites de contexto por caracteres permanecem e podem cortar informações em tarefas longas. As correções de conclusão local reduzem os casos reproduzidos; não demonstram compreensão perfeita de qualquer frase nem conclusão física de toda tarefa. A abertura solicitada de um executável não comprova janela pronta.
 
-## Estado de entrega
-
-Base local: `a7a6fd3e647de2f62b6a51fe570dfe78c4dbe3e8`, na branch anterior `teste-pr-149-atualizada`. Main remota consultada: `70b040d6191237e2f0a291a14b8ea8fb4b78a09d`, com três checks aprovados na consulta. Esses checks são anteriores e não aprovam este branch.
-
-Entrega em um único commit de P0, incluindo a correção, o teste, a documentação e este relatório com a falha ampla explícita. Nenhum commit de fase posterior. Nenhum merge, push, instalação ou alteração de dados pessoais. A pasta não rastreada `desktop/`, que já existia, foi preservada.
+A pasta não rastreada `desktop/`, preexistente, foi preservada. Nenhuma política do Windows ou do runner foi alterada, nem dados reais foram limpos.

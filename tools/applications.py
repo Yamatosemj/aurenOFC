@@ -265,6 +265,22 @@ def _nome_programa_ambiguo(programa):
     return any(frase in texto for frase in frases_ambiguous)
 
 def abrir_programa(programa):
+    raw = str(programa or "").strip().strip('"')
+    explicit = Path(raw).expanduser()
+    if explicit.is_absolute() or explicit.drive or "/" in raw or "\\" in raw:
+        # Um caminho explicito nunca participa da descoberta aproximada por nome.
+        try:
+            target = explicit.resolve(strict=True)
+            if not target.is_file() or target.suffix.lower() != ".exe":
+                return ToolResult.failure("O caminho deve identificar um executavel .exe existente.", error_code="explicit_executable_invalid")
+            process = subprocess.Popen([str(target)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return ToolResult.success(
+                f"Solicitei a abertura do executavel: {target}. A janela pronta ainda nao foi verificada.",
+                data={"caminho": str(target), "pid": process.pid, "abertura_solicitada": True},
+                tool_name="abrir_programa")
+        except (OSError, ValueError, RuntimeError) as exc:
+            return ToolResult.failure(f"Nao consegui abrir o executavel solicitado: {exc}", error_code="explicit_executable_failed", tool_name="abrir_programa")
+
     if _nome_programa_ambiguo(programa):
         return (
             "ACAO NAO EXECUTADA: nome do programa nao foi identificado "
