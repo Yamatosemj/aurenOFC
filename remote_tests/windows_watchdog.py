@@ -42,6 +42,13 @@ class ExtendedLimits(ctypes.Structure):
                 ("PeakJobMemoryUsed", ctypes.c_size_t)]
 
 
+class BasicAccounting(ctypes.Structure):
+    _fields_ = [(name, ctypes.c_longlong) for name in
+                ("TotalUserTime", "TotalKernelTime", "ThisPeriodTotalUserTime", "ThisPeriodTotalKernelTime")]
+    _fields_ += [(name, wintypes.DWORD) for name in
+                 ("TotalPageFaultCount", "TotalProcesses", "ActiveProcesses", "TotalTerminatedProcesses")]
+
+
 class WindowsJob:
     def __init__(self):
         if sys.platform != "win32":
@@ -52,6 +59,7 @@ class WindowsJob:
             "SetInformationJobObject": ([wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD], wintypes.BOOL),
             "AssignProcessToJobObject": ([wintypes.HANDLE, wintypes.HANDLE], wintypes.BOOL),
             "TerminateJobObject": ([wintypes.HANDLE, wintypes.UINT], wintypes.BOOL),
+            "QueryInformationJobObject": ([wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD, ctypes.c_void_p], wintypes.BOOL),
             "ResumeThread": ([wintypes.HANDLE], wintypes.DWORD),
             "CloseHandle": ([wintypes.HANDLE], wintypes.BOOL),
         }
@@ -79,6 +87,18 @@ class WindowsJob:
     def terminate(self):
         if not self.api.TerminateJobObject(self.handle, 124):
             raise ctypes.WinError(ctypes.get_last_error())
+        # Termination is asynchronous; waiting only for the parent is insufficient.
+        deadline = time.monotonic() + 5.0
+        while True:
+            accounting = BasicAccounting()
+            if not self.api.QueryInformationJobObject(
+                    self.handle, 1, ctypes.byref(accounting), ctypes.sizeof(accounting), None):
+                raise ctypes.WinError(ctypes.get_last_error())
+            if accounting.ActiveProcesses == 0:
+                return
+            if time.monotonic() >= deadline:
+                raise TimeoutError("Job still has active processes after termination")
+            time.sleep(0.01)
 
 
 def supervise(command, *, cwd, log_path, wall_seconds=1200, idle_seconds=120,
@@ -146,8 +166,6 @@ def supervise(command, *, cwd, log_path, wall_seconds=1200, idle_seconds=120,
                 elif now - last_progress >= idle_seconds:
                     reason = "idle_timeout"
                 if reason:
-                    job.terminate()
-                    _winapi.WaitForSingleObject(process, 5000)
                     result.update(reason=reason, exit_code=124)
                     break
                 state = _winapi.WaitForSingleObject(process, 100)
@@ -160,11 +178,17 @@ def supervise(command, *, cwd, log_path, wall_seconds=1200, idle_seconds=120,
     except KeyboardInterrupt:
         result.update(reason="cancelled", exit_code=130)
     finally:
-        job.close()
+        try:
+            job.terminate()
+        except Exception as exc:
+            result.update(reason="cleanup_failed", exit_code=125, cleanup_error=type(exc).__name__)
+        finally:
+            job.close()
         if thread is not None:
             _winapi.CloseHandle(thread)
         if process is not None:
-            _winapi.WaitForSingleObject(process, 5000)
+            if _winapi.WaitForSingleObject(process, 5000) != _winapi.WAIT_OBJECT_0:
+                result.update(reason="cleanup_failed", exit_code=125, cleanup_error="ProcessWaitTimeout")
             _winapi.CloseHandle(process)
         result["duration_seconds"] = round(time.monotonic() - started, 2)
         if log_path.exists() and log_path.stat().st_size > max_log_bytes:

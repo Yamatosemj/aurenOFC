@@ -172,3 +172,18 @@ def test_normal_sdk_configuration_is_preserved(monkeypatch):
     monkeypatch.setitem(sys.modules, "openai", SimpleNamespace(OpenAI=lambda **options: captured.append(options) or object()))
     OpenAIProvider().get_client()
     assert captured == [{}]
+
+
+@windows
+def test_cleanup_confirmation_error_cannot_be_reported_as_success(tmp_path, monkeypatch):
+    from remote_tests.windows_watchdog import WindowsJob
+    terminate = WindowsJob.terminate
+    def uncertain_cleanup(job):
+        terminate(job)  # Encerramento real da fixture antes da falha simulada.
+        raise TimeoutError('falha ficticia ao confirmar encerramento')
+    monkeypatch.setattr(WindowsJob, 'terminate', uncertain_cleanup)
+    result = run_fixture(tmp_path, "print('fixture sem efeitos')")
+    assert result['reason'] == 'cleanup_failed'
+    assert result['exit_code'] == 125
+    assert result['cleanup_error'] == 'TimeoutError'
+    assert not is_alive(result['pid'])

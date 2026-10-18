@@ -6,7 +6,7 @@ from pathlib import Path
 import subprocess
 import shutil
 
-from core.utils import normalizar_nome
+from core.utils import caminho_explicito_programa, normalizar_nome
 from core.tool_result import ToolResult
 
 
@@ -265,12 +265,11 @@ def _nome_programa_ambiguo(programa):
     return any(frase in texto for frase in frases_ambiguous)
 
 def abrir_programa(programa):
-    raw = str(programa or "").strip().strip('"')
-    explicit = Path(raw).expanduser()
-    if explicit.is_absolute() or explicit.drive or "/" in raw or "\\" in raw:
+    raw = caminho_explicito_programa(programa)
+    if raw is not None:
         # Um caminho explicito nunca participa da descoberta aproximada por nome.
         try:
-            target = explicit.resolve(strict=True)
+            target = Path(raw).expanduser().resolve(strict=True)
             if not target.is_file() or target.suffix.lower() != ".exe":
                 return ToolResult.failure("O caminho deve identificar um executavel .exe existente.", error_code="explicit_executable_invalid")
             process = subprocess.Popen([str(target)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

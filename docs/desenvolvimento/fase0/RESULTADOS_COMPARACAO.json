@@ -1,0 +1,41 @@
+{
+  "data": "2026-10-18",
+  "python": "3.13.15",
+  "metodo": "Mesmo teste sobre tres arquivos Git exatos. Dispatcher e PermissionManager reais; handler simulado. Dados ficticios e perfis temporarios, sem credenciais, rede ou programas reais.",
+  "resultado": "BLOQUEADO: a protecao de caminhos absolutos da PR152 esta ausente da PR153.",
+  "execucoes": [
+    {
+      "base": "main",
+      "sha": "70b040d6191237e2f0a291a14b8ea8fb4b78a09d",
+      "exit_code": 1,
+      "testes": 4,
+      "falhas": 3,
+      "erros": 0,
+      "ignorados": 0,
+      "pasta_local": "C:\\Windows\\Temp\\auren-phase0-review-csj8b_ya\\main",
+      "passaram": 1
+    },
+    {
+      "base": "pr152",
+      "sha": "1720a5e18e48e1325feafc7a06b3718a45031bf4",
+      "exit_code": 0,
+      "testes": 4,
+      "falhas": 0,
+      "erros": 0,
+      "ignorados": 0,
+      "pasta_local": "C:\\Windows\\Temp\\auren-phase0-review-csj8b_ya\\pr152",
+      "passaram": 4
+    },
+    {
+      "base": "pr153",
+      "sha": "7df474bb2f6a315ffede684c712999addddb5873",
+      "exit_code": 1,
+      "testes": 4,
+      "falhas": 3,
+      "erros": 0,
+      "ignorados": 0,
+      "pasta_local": "C:\\Windows\\Temp\\auren-phase0-review-csj8b_ya\\pr153",
+      "passaram": 1
+    }
+  ]
+}
