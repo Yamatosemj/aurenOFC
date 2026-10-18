@@ -1,0 +1,115 @@
+{
+  "base": "a2b0961",
+  "environment": "Windows/Python 3.13.15; SQLite, loopback e fixtures reais; modelo/efeitos pessoais ficticios; sem credenciais",
+  "runs": [
+    {
+      "label": "phase3-approved-focused",
+      "artifacts": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase3-approved-focused",
+      "tests": 40,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 40,
+      "seconds": 3.723,
+      "failed_cases": []
+    },
+    {
+      "label": "phase3-chat-red",
+      "artifacts": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase3-chat-red",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 0,
+      "seconds": 1.008,
+      "failed_cases": [
+        "test_routine_cannot_enter_another_chat_or_manager"
+      ]
+    },
+    {
+      "label": "phase3-final-focused",
+      "artifacts": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase3-final-focused",
+      "tests": 40,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 39,
+      "seconds": 3.863,
+      "failed_cases": [
+        "test_claim_write_failure_prevents_model_or_effect"
+      ]
+    },
+    {
+      "label": "phase3-final-full",
+      "artifacts": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase3-final-full",
+      "tests": 1055,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 8,
+      "passed": 1047,
+      "seconds": 54.953,
+      "failed_cases": []
+    },
+    {
+      "label": "phase3-first-green",
+      "artifacts": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase3-first-green",
+      "tests": 27,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 27,
+      "seconds": 2.758,
+      "failed_cases": []
+    },
+    {
+      "label": "phase3-initial-red",
+      "artifacts": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase3-initial-red",
+      "tests": 8,
+      "failures": 8,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 0,
+      "seconds": 1.154,
+      "failed_cases": [
+        "test_suggestions_require_approval_and_survive_restart_without_duplicate",
+        "test_revocation_and_chat_scope_are_enforced",
+        "test_crash_after_claim_is_not_retried_automatically",
+        "test_routine_grant_never_bypasses_dispatch_or_late_revocation[outside_scope]",
+        "test_routine_grant_never_bypasses_dispatch_or_late_revocation[denied]",
+        "test_routine_grant_never_bypasses_dispatch_or_late_revocation[revoked]",
+        "test_routine_grant_never_bypasses_dispatch_or_late_revocation[expired]",
+        "test_invalid_or_unbounded_grant_is_rejected"
+      ]
+    }
+  ],
+  "final_source_sha256": {
+    "core/execution_scope.py": "01db333766d9dee8eab533ee058e4f4bcfff3a9990847a74a1d9223e8199ace1",
+    "core/harness.py": "cd25b9083574df883c04daa9fa9a7a9e9e3bd1469fbf0e281cd9eedf44a0277c",
+    "core/harness_cycle.py": "7dc9c846ef6237aecc9685acf3807e233b0f50b06f22aed28498e4e3c583745f",
+    "core/routines.py": "253c743451015f99a02db51504b06cffcf400de84a15899ca8c5e6d0b998c1d7",
+    "tests/test_audit_alternative_guard.py": "c4c99638f83716bf6267eabb22bff74f41795536a9d4fbc725e07dc8348850d4",
+    "tests/test_audit_asr_identity.py": "af9ce848381b8982aea9d023e930c2b2d127a4d1ed705c3160b2caf0932fdcb4",
+    "tests/test_audit_chat_installer.py": "2b676a259143cf10cc1863da84bd5b9b4d1eb874889fd66988fb50cc7a61b533",
+    "tests/test_audit_compound_intent_review.py": "bdd054724030caa1fbc9ae951f98308761c9d51aee2ff59d7790064ba0b4b729",
+    "tests/test_audit_controlled_routines.py": "345232b3860f83e5675524aea2e41c0397dd9fd75edd3f1e37599289cc7c09d0",
+    "tests/test_audit_http_rejection.py": "8e1e5994f423deb421affff930a4ef9d3ce31d0712bac86df7b0ee5a2c49dd4a",
+    "tests/test_audit_live.py": "d4cf4fd84f854e7d0f221d0ccc30a91beadcc696d6754b449bc1f7862e6ae7f2",
+    "tests/test_audit_memory_origin.py": "afc7b4bd33ff698cf67fab22f9e87825caf7589423b5b4fa15fbf6c78667bc34",
+    "tests/test_audit_p0.py": "e0938721f574187e5959006f6f6761f2a2ee53ac803104ff15fc1d7b1e447a22",
+    "tests/test_audit_p1a.py": "02b9385a491854cf22a9b6ad29efe19365d1025c9fbea3a2d120c39848e54d4c",
+    "tests/test_audit_p1b.py": "ebc318617c9216c85a9974c6be6dbddf04b109f49d4fe79725e6469292651eb3",
+    "tests/test_audit_p2a.py": "a6fd91ec1c24ee012af523f48276f04010f65998749f1cc6162f4ddd7084f9d3",
+    "tests/test_audit_p2b.py": "3ffc6dab2e154fdb7ab25313cbdb9b16c389260ca6264e349f228bc3b08aa7d8",
+    "tests/test_audit_p3.py": "2660cef3609184c0da1f6bb32881e5dfb4de2064fadadb0256cf654a60aa926f",
+    "tests/test_audit_persistent_tasks.py": "5bed8e06726fe1efd4492be8082b4d67cc798be8bd9e4d0f4777f523a5200145",
+    "tests/test_audit_resumable_execution.py": "739433c2c247fdf05c0781d3bce6aa960a1d0593e0f8d4c3c48c3e1f769bfa14",
+    "tests/test_audit_retention.py": "a6b1826ee14b570b592be19b8fb579e1ad154936a5a698e8250aafc1aca7cc5e",
+    "tests/test_audit_review_failures.py": "38d20167f7cb4ce4a471a3ef9f70c1dca0882e4c944bb2c9828dcddb85864398",
+    "tests/test_audit_veto_replan.py": "af3e5b4bef96786cb9547eab4939469c99e88883bd935ceede2ef03b8316e857",
+    "tests/test_audit_voice_buffer.py": "ea19434cb35982a72c7d769ef9f0403fb4685b5fdd1c6a1be0dda8b281140e55",
+    "tests/test_audit_voice_shutdown.py": "c5ab1e87f72d7788373b3a1fc98094aaaef353394f20bda1cd6977a61e00e20b",
+    "tests/test_audit_voice_status.py": "eed25e2ef8278f2d23320a9cc70c51354a51247b1bb00ce9d7c6c9f2581707cc",
+    "tests/test_audit_watchdog_cleanup.py": "ac653a9082d290d8d6d231de548c1ce16104598bdc8b8be44bd693b2b8fe124b",
+    "tools/dispatcher.py": "704545549013a105901894f0ce183c0897862f594be42ba34a193e89a9479246"
+  }
+}

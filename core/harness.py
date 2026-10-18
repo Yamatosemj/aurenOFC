@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from core.task_manager import TaskManager, TaskState
+from core.execution_scope import current_scope
 from core.utils import normalizar_nome
 from core import usage
 from core.task_trace import TaskTrace, TaskTraceStore
@@ -576,7 +577,9 @@ class AurenHarness:
         self._task_id = task_snapshot.task_id
         self.task_manager.start(self._task_id)
         if getattr(self.task_manager, 'persistent', False):
-            self.task_manager.configure_model_budget(self._limite_de_rodadas(objetivo_efetivo) * 3, self._task_id)
+            budget = self._limite_de_rodadas(objetivo_efetivo) * 3
+            cap = getattr(self, '_model_budget_cap', None)
+            self.task_manager.configure_model_budget(min(budget, cap) if cap is not None else budget, self._task_id)
         try:
             self._trace = self.trace_store.start_task(
                 task_id=self._task_id,
@@ -769,6 +772,8 @@ class AurenHarness:
             self._resume_history = []
 
     def _checkpoint_between_rounds(self, *, safe):
+        if current_scope.get() is not None:
+            return None  # A scoped run cannot later resume without its scope.
         if not getattr(self.task_manager, 'persistent', False) or self.permission_manager is None or not safe:
             return None
         if any(step.success is not True for step in self.current_task().steps):
@@ -840,9 +845,17 @@ class AurenHarness:
         return False, _RespostaWrapper(mensagem)
 
     @_single_execution
-    def processar_mensagem(self, mensagem: str) -> tuple[bool, Any]:
+    def processar_mensagem(self, mensagem: str, *, execution_scope=None, model_budget=None) -> tuple[bool, Any]:
         """Executa uma tarefa com isolamento de falha e ciclo de vida rastreado."""
         self._garantir_sessao_chat()
+        if execution_scope is not None and not callable(execution_scope):
+            raise ValueError('Escopo de execucao invalido.')
+        if model_budget is not None and (type(model_budget) is not int or model_budget < 1):
+            raise ValueError('Orcamento de execucao invalido.')
+        outer_scope = current_scope.get()
+        combined = (lambda item: outer_scope(item) is True and execution_scope(item) is True) if outer_scope is not None and execution_scope is not None else execution_scope or outer_scope
+        scope_token = current_scope.set(combined)
+        self._model_budget_cap = model_budget
         token = _CURRENT_SESSION.set(self._session)
         try:
             return self._processar_mensagem_impl(mensagem)
@@ -896,6 +909,8 @@ class AurenHarness:
                 self._trace = None
                 self._trace_started_perf = None
                 _CURRENT_SESSION.reset(token)
+                current_scope.reset(scope_token)
+                self._model_budget_cap = None
 
     def shutdown(self, *, timeout: float = 1.0) -> str:
         """Finaliza a fila com prazo e encerra recursos e sessão do canal."""

@@ -18,6 +18,7 @@ from core.intent_verification import READ_ONLY_TOOLS
 from core.harness_closure import (_alvo_fechamento, _comprovou_fechamento, _orientacao_verificacao, _encerramento_sem_progresso, _repeticao_encerramento_sem_verificar, _reconsulta_processos_pendente, _confirmacao_fechamento_ja_respondida)
 from core.utils import normalizar_nome
 from core.task_verification import CompletionPending
+from core.execution_scope import scope_allows
 
 
 def executar_ciclo(
@@ -74,6 +75,9 @@ def executar_ciclo(
         write_log("TASK_ADAPTIVE_DEPTH", task_id=harness._task_id, limite_base=harness.max_model_rounds, limite_adaptativo=limite_rodadas)
     for rodada in range(1, limite_rodadas + 1):
         chamadas = harness.obter_chamadas(resposta)
+        if any(not scope_allows(item) for item in chamadas):
+            return harness._encerrar_falha('execution_scope_denied',
+                'A proposta esta fora da rotina autorizada, revogada ou expirada. Nenhuma acao desta rodada foi executada.', rodada)
 
         if harness.task_manager.should_cancel(harness._task_id):
             return harness._encerrar_cancelado("cancelado durante a tarefa", rodada)

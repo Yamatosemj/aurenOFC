@@ -2,22 +2,20 @@
 
 ## Estado para retomada — 18/10/2026
 
-**Fases 0 e 1 validadas; Fase 2 implementada, aguardando suíte completa e CI final. Fases 3 a 5 não iniciadas.** Nenhuma PR foi mesclada. A Fase 1, incluindo a correção adicional do supervisor, passou no CI `39103014489`, SHA `3e93696e66a003983c7f9061cf741cfff0c60984`: Windows 1.022 aprovados; Linux 978 aprovados/44 ignorados.
+**Fases 0 a 2 validadas; Fase 3 implementada, aguardando CI final. Fases 4 e 5 não iniciadas.** Base: PR #156, `a2b0961`, CI `39128640968` aprovado (1.044 Windows; 1.000 Linux/44 ignorados). Nenhum merge.
 
-- Branch atual: `desenvolvimento/fase-2-planejamento-recuperacao`, derivada desse SHA da PR #155. A PR da Fase 2 usa a branch da Fase 1 como base.
-- Relatório: [FASE_2.md](docs/desenvolvimento/FASE_2.md). Evidências preservam as falhas iniciais, a regressão da fixture parcial e a falha HTTP local com suas correções.
-- O mesmo ciclo executa o objetivo retomado. Checkpoint seguro preserva orçamento e restrições; passos incertos, falhas anteriores, guards em recuperação e fechamentos não são retomados cegamente. Não há restauração de autorização, coordenada, PID ou imagem.
-- A verificação de conclusão exige evidências de todas as etapas; uma pendência pode gerar uma recuperação limitada. O julgamento semântico real ainda não foi validado com API.
-- Sem API paga, Live sensível, dados pessoais, alteração de main ou runner pessoal. `desktop/` permanece intocada.
+- Branch: `desenvolvimento/fase-3-proatividade-controlada`, empilhada na Fase 2.
+- Relatório: [FASE_3.md](docs/desenvolvimento/FASE_3.md); evidências em `docs/desenvolvimento/fase3/RESULTADOS_FASE_3.json`.
+- Suíte local: 1.047 aprovados, zero falhas, oito ignorados. Rotinas usam o mesmo TaskManager/SQLite; aprovação de agenda não substitui PermissionManager.
+- A agenda só dispara por tick explícito nesta fase. Sugestão não chama modelo ou ferramenta. Rotina executável exige escopo exato e orçamento, e fica interrompida diante de resultado incerto. Não é retomada sem escopo.
+- Sem API paga, dados pessoais, Live sensível, alteração de main ou runner. Pasta `desktop/` intocada.
 
 ## Como retomar
 
-1. Conferir main, branches, PRs e CI no SHA atual; não presumir que resultados de versões anteriores valham para o HEAD.
-2. Ler FASE_2.md e RESULTADOS_FASE_2.json. Só avançar com suíte completa e CI Windows/Linux aprovados no código final.
-3. Para a Fase 3, auditar a fila auxiliar e os agendamentos existentes. Implementar apenas rotinas explicitamente cadastradas e limites/revogação, com permissão negada por padrão e o mesmo Dispatcher. Sugestões não executam efeitos. Não criar aprovação automática ou tratar texto de arquivo/site como autorização.
-4. Fase 4 liga o acompanhamento à interface existente; Fase 5 integra e verifica limites. Não ativar execução de rotinas ao iniciar o aplicativo sem autorização cadastrada.
-
-Não foi definido orçamento para API paga neste ciclo. Testes pagos e ações sensíveis continuam pendentes de autorização e orçamento explícitos. Autorizações de investigações anteriores não constituem orçamento para estas fases.
+1. Conferir main, HEADs, PRs e CI no SHA final da Fase 3. Só avançar com suíte completa e ambos os jobs aprovados.
+2. Auditar worker/Chrome/Tk existentes antes da Fase 4. Integrar progresso/pausa/cancelamento/retomada e confirmação pelo mesmo worker/Harness, sem outro executor.
+3. Mostrar as condições de uma rotina antes de autorizar; cadastro é rascunho e não pode ser aprovado por texto do modelo. Conferir geração/sessão antes de comandos e confirmações. Não ativar rascunhos ao abrir a interface. Rodar agenda somente para chat ativo e autorizado.
+4. Na Fase 5, testar integração, falhas e reinício com dados fictícios. API paga e ações sensíveis continuam sem orçamento aprovado; não executar nem declarar aprovados esses cenários.
 
 ## Critérios de avanço propostos
 
