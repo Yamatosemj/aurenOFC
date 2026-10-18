@@ -111,7 +111,7 @@ def test_incomplete_or_invented_evidence_cannot_approve_goal(tmp_path, kind):
         manager.finish_step(success=True, result='Pedido recebido')
         manager.begin_step('obter_audio_windows')
         manager.finish_step(success=True, result='Volume ficticio:35')
-        result = {'summary': 'fixture', 'steps': [
+        result = {'summary': 'fixture', 'answer_status': 'verified', 'steps': [
             {'index': 1, 'status': 'verified', 'evidence': [1, 2]},
             {'index': 2, 'status': 'verified', 'evidence': [2]}]}
         if kind == 'missing_stage':
@@ -231,7 +231,7 @@ def test_resume_finishes_remaining_read_and_checks_actual_fixture_state(tmp_path
         reviews.append(snapshot)
         assert actual['volume'] == 35
         assert snapshot.steps[-1].result == 'Volume ficticio: 35'
-        return {'summary': 'Estado ficticio conferido', 'steps': [
+        return {'summary': 'Estado ficticio conferido', 'answer_status': 'verified', 'steps': [
             {'index': 1, 'status': 'verified', 'evidence': [1, 2]},
             {'index': 2, 'status': 'verified', 'evidence': [2]}]}
     manager = TaskManager(db_path=db)
@@ -332,7 +332,8 @@ def test_missing_final_stage_gets_one_bounded_recovery(tmp_path, monkeypatch):
     def verify(snapshot):
         checks.append(snapshot)
         complete = len(snapshot.steps) == 2
-        return {'summary': 'falta consultar status' if not complete else 'leituras conferidas', 'steps': [
+        return {'summary': 'falta consultar status' if not complete else 'leituras conferidas',
+                'answer_status': 'verified' if complete else 'pending', 'steps': [
             {'index': 1, 'status': 'verified', 'evidence': [1]},
             {'index': 2, 'status': 'verified' if complete else 'pending', 'evidence': [2] if complete else []}]}
     h = harness(manager, pm, [response(volume), response(text='feito'),

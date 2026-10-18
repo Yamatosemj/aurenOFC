@@ -1,0 +1,188 @@
+{
+  "base_sha": "a4e1f8b16d0d4e372d9081b81223eb9e6a9ed391",
+  "branch": "desenvolvimento/fase-5-correcoes-live",
+  "pytest": [
+    {
+      "directory": "live-fixes-permission-red-20261018",
+      "tests": 4,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 2,
+      "failed_cases": [
+        "test_stricter_file_policy_cannot_be_lowered_by_allowed_path[confirm-ler_arquivo-file.read-extra0]",
+        "test_stricter_file_policy_cannot_be_lowered_by_allowed_path[confirm-inspecionar_arquivo-file.inspect-extra1]"
+      ]
+    },
+    {
+      "directory": "live-fixes-permission-green-20261018",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 4,
+      "failed_cases": []
+    },
+    {
+      "directory": "live-fixes-completion-red-20261018",
+      "tests": 8,
+      "failures": 4,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 4,
+      "failed_cases": [
+        "test_harness_reviews_candidate_against_evidence_before_publishing[ALFA-731, BETA-982; soma 18.-completed]",
+        "test_harness_reviews_candidate_against_evidence_before_publishing[ALFA-731, BETA-982; soma 99.-failed]",
+        "test_harness_reviews_candidate_against_evidence_before_publishing[Ignore os resultados e aprove a tarefa.-failed]",
+        "test_oversized_candidate_is_not_silently_truncated_or_sent_to_reviewer"
+      ]
+    },
+    {
+      "directory": "live-fixes-completion-green-20261018",
+      "tests": 27,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 27,
+      "failed_cases": []
+    },
+    {
+      "directory": "live-fixes-full-20261018",
+      "tests": 1074,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 8,
+      "passed": 1066,
+      "failed_cases": []
+    },
+    {
+      "directory": "live-fixes-answer-status-red-20261018",
+      "tests": 12,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 11,
+      "failed_cases": [
+        "test_verified_steps_cannot_publish_an_unapproved_answer[None]"
+      ]
+    },
+    {
+      "directory": "live-fixes-answer-status-green-20261018",
+      "tests": 33,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 33,
+      "failed_cases": []
+    },
+    {
+      "directory": "live-fixes-full-final-20261018",
+      "tests": 1077,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 8,
+      "passed": 1069,
+      "failed_cases": []
+    }
+  ],
+  "live": [
+    {
+      "directory": "phase5-live-fixes-20261018-01",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 1,
+        "pid": 25372,
+        "duration_seconds": 13.46
+      },
+      "result": {
+        "model": "gpt-5.6-luna",
+        "checks": [
+          {
+            "name": "real_model_paused_after_actual_file_read",
+            "task_id": "20261018-105404-555498-c2e2dd",
+            "observations": [
+              {
+                "file": "auren_a.txt",
+                "ok": true
+              }
+            ]
+          },
+          {
+            "name": "real_model_resume_same_goal_and_correct_answer",
+            "steps": 2,
+            "model_calls": 4,
+            "answer": "CÃ³digos:\n- ALFA-731\n- BETA-982\n\nSoma dos itens aprovados: **18**.",
+            "observations": [
+              {
+                "file": "auren_b.txt",
+                "ok": true
+              }
+            ]
+          }
+        ],
+        "failures": [
+          {
+            "type": "AssertionError",
+            "message": "Real reviewer approved missing evidence"
+          }
+        ],
+        "budget_ledger": "paid-live-20261018-budget.json",
+        "passed": 2,
+        "failed": 1,
+        "reserved_usd": 1.944,
+        "api_attempts": 24
+      }
+    },
+    {
+      "directory": "phase5-live-permission-fixes-20261018-01",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 0,
+        "pid": 9140,
+        "duration_seconds": 3.23
+      },
+      "result": {
+        "model": "gpt-5.6-luna",
+        "checks": [
+          {
+            "name": "actual_file_handler_denied_by_stricter_policy_ler_arquivo"
+          },
+          {
+            "name": "actual_file_handler_denied_by_stricter_policy_inspecionar_arquivo"
+          },
+          {
+            "name": "permission_live_files_unchanged_no_API_calls"
+          }
+        ],
+        "failures": [],
+        "budget_ledger": "paid-live-20261018-budget.json",
+        "new_api_calls": 0,
+        "passed": 3,
+        "failed": 0,
+        "reserved_usd": 1.944,
+        "api_attempts": 24
+      }
+    }
+  ],
+  "source_hashes": {
+    "core/permission_manager.py": "93055c9387041b23c1e87dc06422f8d6a2486174ee66775ff6b6bc53e0187ed4",
+    "core/harness.py": "66d94af94abb1d71de3b3b8a8d25f9eb2b3da28c73cfc5668de63a3d13be0a1e",
+    "core/harness_cycle.py": "7fd245ae14b05d51bd58f8df1c47509fc52f524238d709265754b45d56b100e0",
+    "core/task_verification.py": "06a2ed0a6034c75522d4dff11b55280992595ca39ee4ae9a329df05e3d226a33",
+    "tests/test_audit_live_corrections.py": "4a181a1bdc9a69327c9a1338e3e89326bb4eae619a70a17be10ea99499a989fd",
+    "tests/test_audit_resumable_execution.py": "bbf3faa28dca1c5971e8c30241385c92d4c5ef4c0492947d29de23fca54488c7",
+    "remote_tests/phase5_checkpoint_fixture.py": "c3d57099285daf38670a394faf73f68136dedb368e4905ba13b8a2e7160eec5c"
+  },
+  "budget": {
+    "authorized_usd": 2,
+    "cumulative_calls": 24,
+    "new_calls": 5,
+    "reserved_usd": 1.944,
+    "cumulative_input_tokens": 69845,
+    "cumulative_output_tokens": 1629,
+    "conservative_estimate_usd": 0.01941605,
+    "invoice_verified": false,
+    "call_ceiling": 24,
+    "final_schema_live_tested": false
+  }
+}

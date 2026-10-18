@@ -2,7 +2,7 @@
 
 ## Estado para retomada — 18/10/2026
 
-**Fases 0–4 em PRs; Fase 5 reprovada no Live real. Orçamento de US$ 2 autorizado; duas falhas documentadas, inclusive política CONFIRM ignorada. Sequência interrompida para correção segura, sem merge.** [Live real de 18/10](docs/desenvolvimento/fase5/LIVE_API_2026-10-18.md).
+**Fases 0–4 em PRs; correções F5-LIVE-001/002 implementadas em branch própria. Suíte final local aprovada; contrato final do revisor ainda requer Live.** [correções e evidências Live](docs/desenvolvimento/fase5/CORRECOES_LIVE.md). Sem merge.
 
 - Branch: `desenvolvimento/fase-5-validacao-integrada`, empilhada na Fase 4.
 - Relatório simples: [RELATORIO_DESENVOLVIMENTO.md](RELATORIO_DESENVOLVIMENTO.md). Detalhes: [FASE_5.md](docs/desenvolvimento/FASE_5.md).
@@ -13,11 +13,11 @@
 
 ## Como retomar
 
-1. Conferir GitHub, branch e o relatório Live atual. Orçamento já autorizado: US$ 2; não solicitar novamente.
-2. Corrigir F5-LIVE-002 (política mais restritiva), com reprodução que falhe antes e passe depois; manter confirmações e testes existentes.
-3. Corrigir F5-LIVE-001 sem retirar proteção de dados externos ou dispensar evidência.
-4. Executar regressões e novo Live autorizado. Preservar o registro global de gastos; 19 chamadas/reserva preventiva US$ 1,539 já consumida no controle conservador, sem zerar a contagem.
-5. Manter main intacta e PRs em rascunho; ciclo ainda não aprovado.
+1. Conferir a branch `desenvolvimento/fase-5-correcoes-live`, sua PR e CI do HEAD final; não integrar à main automaticamente.
+2. As correções e regressões locais estão concluídas. Conferir o relatório CORRECOES_LIVE.md antes de atribuir aprovação Live à versão final.
+3. Preservar o registro global de gastos e tentativas: orçamento autorizado US$ 2, custo estimado US$ 0,01942, reserva preventiva US$ 1,944 e teto conservador de 24 chamadas atingido. Não zerar contagem ou aumentar teto automaticamente.
+4. Antes de aprovar a Fase 5 integral, validar com API o novo campo answer_status (resposta correta/incorreta e evidência ausente), sem dispensar referências ou observação posterior aos efeitos.
+5. Manter PRs em rascunho, main intacta e limites de Live não cobertos explícitos.
 
 ## Critérios de avanço propostos
 

@@ -43,7 +43,7 @@ def main():
             arguments=args, call_id=f'call-{len(task.steps)+1}')], output_text='', usage=None)
     def verify(snapshot):
         assert observation_file.read_text().splitlines() == [str(i) for i in range(1, 17)]
-        return {'summary':'16 observacoes ficticias verificadas', 'steps':[
+        return {'summary':'16 observacoes ficticias verificadas', 'answer_status':'verified', 'steps':[
             {'index': i, 'status':'verified', 'evidence':[i]} for i in range(1,17)]}
     dispatcher.TOOL_HANDLERS['obter_status_windows'] = effect
     dispatcher.TOOL_HANDLERS['definir_volume_windows'] = effect

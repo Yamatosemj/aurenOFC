@@ -811,10 +811,12 @@ class AurenHarness:
                 or snapshot.plan.complexity in {'multi_step', 'complex'}
                 or any(step.tool not in READ_ONLY_TOOLS for step in snapshot.steps))
 
-    def _verify_completion(self, objetivo):
+    def _verify_completion(self, objetivo, *, candidate_answer=''):
         if not self._requires_completion_verification():
             return None
-        snapshot = self.current_task()
+        from dataclasses import replace
+        # Review the candidate without persisting or publishing it as success.
+        snapshot = replace(self.current_task(), result=candidate_answer)
         from core.task_verification import validate_completion, CompletionPending
         try:
             if self.verificar_conclusao is None:
