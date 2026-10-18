@@ -14,7 +14,7 @@ from core.task_trace import TaskTrace, TaskTraceStore
 from core.tool_result import ToolResult
 from agent.orchestrator import AgentOrchestrator
 from core.session import SessionContextManager
-from core.harness_followup import PerguntaPendente, resolver_continuacao, SIM
+from core.harness_followup import PerguntaPendente, resolver_continuacao, pergunta_de_esclarecimento, SIM
 from skills.loader import SkillLibrary
 from core.vision import (
     clear_active_vision_geometry,
@@ -513,7 +513,7 @@ class AurenHarness:
         self._confirmacao_esclarecimento = None
 
     def _guardar_esclarecimento(self, objetivo: str, pergunta: str) -> None:
-        if str(pergunta).rstrip().endswith("?"):
+        if pergunta_de_esclarecimento(objetivo, pergunta):
             self._pergunta_pendente = PerguntaPendente(objetivo, pergunta[-350:])
 
 
