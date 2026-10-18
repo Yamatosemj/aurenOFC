@@ -6,6 +6,16 @@ Data: 17/10/2026. Branch: `correcoes-auditoria`.
 
 ## O que foi corrigido
 
+### P2a — AUD-010, 011, 014, 015 e 023
+
+Sete reproduções falharam antes de corrigir. AUD-010, 011, 014 e 015 estavam **MANTIDOS**; AUD-023, antes suspeita, foi confirmado em uma busca fictícia que tentava calcular a assinatura de um destino protegido.
+
+Recusas de gravação automática agora geram aviso técnico sem repetir o conteúdo privado; uma estratégia recusada não termina como trabalho de memória bem-sucedido. Sem identidade de chat, a montagem de contexto não busca conversas e estratégias de outros chats. Sobrescrever o clipboard após leitura externa exige confirmação, sem mudar o orçamento geral. O contexto existente acompanha as rodadas seguintes, com os mesmos limites de tamanho, e estratégias anteriores mostram se falharam e qual foi seu resultado. A busca de cópias reaplica a política a cada destino efetivo, não pede confirmações dentro da varredura e confere a identidade antes de calcular assinaturas.
+
+**AUD-017 e AUD-024:** MANTIDOS por leitura, sem correção por serem voz. **AUD-019:** MANTIDO, exige política de retenção e exclusão. **AUD-022:** MANTIDO como suspeita: o esquema não transporta origem estruturada entre tarefas; não foi demonstrado ataque. Definir quais memórias devem exigir confirmação por origem é decisão de produto e ficou pendente; não rotulei toda lembrança como ataque nem removi a proteção atual.
+
+Uma expectativa antiga de teste foi atualizada para exigir o contexto na continuação. Suíte ampla: **808 aprovados, zero falhas, oito ignorados e dois casos de voz excluídos**, em 43,79 segundos. A preservação do contexto continua limitada pelo orçamento de caracteres existente; não foi criado um sistema novo de memória ou de extração de restrições.
+
 ### P1b — AUD-005, 006, 007, 009, 012, 026, 030 e LIV-004
 
 Todos estavam **MANTIDOS**; oito reproduções falharam antes de corrigir. A verificação esgotada de abas agora encerra com falha; endereços são comparados por servidor e caminho, não por prefixo. Desligar libera o estado visual de ocupado sem aceitar eventos antigos. A última rodada de ferramentas não pede outra resposta que ficaria sem processamento. Uma leitura isolada do navegador não cria uma falsa obrigação de verificação e uma observação sem prova não reinicia seu contador.

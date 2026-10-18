@@ -347,6 +347,7 @@ def _history(path: Path, digest: str | None, limit: int) -> FileHistoryEvidence:
     found: list[str] = []
     scanned = 0
     limited = False
+    policy_limited = False
     seen_paths: set[str] = set()
     for root in roots:
         if limited:
@@ -361,12 +362,18 @@ def _history(path: Path, digest: str | None, limit: int) -> FileHistoryEvidence:
                         break
                     candidate = Path(current) / filename
                     try:
-                        key = str(candidate.resolve()).lower()
+                        resolved_candidate = candidate.resolve()
+                        key = str(resolved_candidate).lower()
                     except OSError:
-                        key = str(candidate).lower()
+                        policy_limited = True
+                        continue
                     if key in seen_paths or key == canonical_self:
                         continue
                     seen_paths.add(key)
+                    if _classify_read_path(resolved_candidate).status != "allowed":
+                        policy_limited = True
+                        scanned += 1
+                        continue
                     try:
                         candidate_stat = candidate.stat()
                     except OSError:
@@ -375,7 +382,7 @@ def _history(path: Path, digest: str | None, limit: int) -> FileHistoryEvidence:
                     if candidate_stat.st_size != source_size:
                         continue
                     try:
-                        if _sha256(candidate) == digest:
+                        if _sha256(resolved_candidate, capture_read_authorization(resolved_candidate)) == digest:
                             found.append(str(candidate.resolve()))
                             if len(found) >= limit:
                                 return FileHistoryEvidence(
@@ -393,7 +400,7 @@ def _history(path: Path, digest: str | None, limit: int) -> FileHistoryEvidence:
             continue
 
     return FileHistoryEvidence(
-        status="desconhecido" if limited else "confirmado",
+        status="desconhecido" if limited or policy_limited else "confirmado",
         escopo_varredura=scope,
         copias_confirmadas=tuple(found),
         relacao=(
@@ -402,7 +409,7 @@ def _history(path: Path, digest: str | None, limit: int) -> FileHistoryEvidence:
             else "nenhuma copia confirmada no escopo consultado"
         ),
         trajetoria_completa="desconhecida",
-        varredura_limitada=limited,
+        varredura_limitada=limited or policy_limited,
     )
 
 

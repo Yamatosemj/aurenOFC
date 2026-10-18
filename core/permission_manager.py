@@ -130,6 +130,9 @@ class PermissionManager:
         "windows.ui.control",
     }
 
+    # Efeitos e orcamento sao conceitos diferentes: clipboard tambem e mutavel.
+    EXTERNAL_EFFECT_CAPABILITIES = COUNTED_CAPABILITIES | {"windows.clipboard.write"}
+
     # Ações cujo sucesso repetido com exatamente os mesmos argumentos pode
     # indicar que a tarefa nao esta avancando. Mantemos o guard restrito
     # para evitar bloquear repetições legitimas de cliques/preenchimentos.
@@ -521,7 +524,7 @@ class PermissionManager:
 
         if (
             self._fonte_nao_confiavel_pendente is not None
-            and capacidade in self.COUNTED_CAPABILITIES
+            and capacidade in self.EXTERNAL_EFFECT_CAPABILITIES
         ):
             fonte = self._fonte_nao_confiavel_pendente
             return (

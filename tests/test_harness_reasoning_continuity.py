@@ -50,7 +50,7 @@ def test_reasoning_and_calls_from_only_previous_response_are_kept_in_order():
     ]
 
     items, states = _build(response, results, history=history)
-    assert states == [("objetivo", history[:1], False)]
+    assert states == [("objetivo", history[:1], True)]
     assert items[0]["role"] == "user"
     # Objetos e conteudo originais sao preservados para o SDK;
     # mensagens finais nao entram no input de continuacao.

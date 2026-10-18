@@ -17,7 +17,9 @@ def _registrar_turno(
         return
 
     try:
-        context.record_turn(chat_id, papel, str(texto))
+        result = context.record_turn(chat_id, papel, str(texto))
+        if isinstance(result, dict) and result.get("ok") is False:
+            write_log("MEMORY_ERROR", task_id=task_id, erro=f"historico_{papel}: gravacao recusada pela memoria.")
     except Exception as exc:
         write_log(
             "MEMORY_ERROR",
