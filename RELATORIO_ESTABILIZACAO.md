@@ -1,5 +1,10 @@
 # Estabilização funcional
 
+> Continuação: a entrega persistente de avisos foi implementada depois deste
+> diagnóstico, em branch própria baseada na #162. Consulte os
+> [resultados atuais, falhas Live e limites](docs/estabilizacao/AVISOS_DURAVEIS.md).
+> O relato abaixo preserva a interrupção e as evidências da etapa anterior.
+
 Base: candidata da PR #161, `af84aec70b1ada2998283388cd73b55bd817c504`.
 Branch isolada: `estabilizacao/continuidade-lembretes-20261018`.
 Main e Electron (#141/#142) permanecem fora das alterações.

@@ -32,6 +32,12 @@ pagos que falharam não serão repetidos para obter resultado positivo.
 - Reprodução inicial: 5 testes falharam antes da implementação da persistência.
 - Testes focados finais: 60 passaram. Incluem as regressões de continuidade
   da #162, permissões, controle de orçamento e composição real via HTTP.
+- Suíte completa local Windows/Python 3.13: **1.106 passaram, 8 ignorados,
+  nenhuma falha**, em 74,95 segundos. Os oito ignorados são os casos existentes
+  de symlink sem o privilégio necessário. Avisos de exceções em threads foram
+  tratados como erros. Código executável do commit
+  `455aa908866b22d7eeaedc4da74affad2848c14d`; depois dele, só documentação/evidências
+  foram atualizadas. CI hospedado deve ser conferido no HEAD final da PR.
 - SQLite real: aviso sobrevive à reabertura; falhas de gravação revertem o
   consumo da ocorrência; confirmação com falha mantém o aviso pendente;
   adiamento invalida confirmação atrasada de uma versão anterior.

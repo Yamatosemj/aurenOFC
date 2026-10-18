@@ -1,0 +1,197 @@
+{
+  "tested_code_commit": "455aa908866b22d7eeaedc4da74affad2848c14d",
+  "runs": [
+    {
+      "run": "notifications-red",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 1,
+        "pid": 26424,
+        "duration_seconds": 1.23
+      },
+      "pytest": {
+        "tests": 5,
+        "failures": 5,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 0
+      },
+      "junit_sha256": "351a7849502406edb160cde6eabaf8555e3a2b1e9eb55040950e314bcbdc1d65"
+    },
+    {
+      "run": "notifications-store-green",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 0,
+        "pid": 21896,
+        "duration_seconds": 2.67
+      },
+      "pytest": {
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 16
+      },
+      "junit_sha256": "71d073381b4e66f6d2447318b10643ca51439ac041577d9ffbca765e4e2af01f"
+    },
+    {
+      "run": "notifications-components",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 0,
+        "pid": 16908,
+        "duration_seconds": 20.32
+      },
+      "pytest": {
+        "tests": 39,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 39
+      },
+      "junit_sha256": "0c2fb2e33d0616c0dd880ee04e0cfdf34fa0908ed25458104bc9c5acd332a3b5"
+    },
+    {
+      "run": "notifications-ui-first",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 1,
+        "pid": 5436,
+        "duration_seconds": 12.81
+      }
+    },
+    {
+      "run": "notifications-offline-final-focused",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 1,
+        "pid": 20768,
+        "duration_seconds": 21.61
+      },
+      "pytest": {
+        "tests": 58,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 57
+      },
+      "junit_sha256": "61509a9efe9655da3149a2bd7ec42bcf6164efe377866f379cac20e5379e381b"
+    },
+    {
+      "run": "notifications-focused-corrected",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 0,
+        "pid": 14676,
+        "duration_seconds": 21.47
+      },
+      "pytest": {
+        "tests": 59,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 59
+      },
+      "junit_sha256": "d80b46b15ee436e6dbd6ea0a47ccd49bc1acc48bfd0afb12a30f402c5468e42a"
+    },
+    {
+      "run": "notifications-live-replay-red",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 1,
+        "pid": 28364,
+        "duration_seconds": 1.19
+      },
+      "pytest": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 0
+      },
+      "junit_sha256": "734ef22a3338eaa12aa309ce85e59eebfe72f7543f32ff4396df2ba4f6f68165"
+    },
+    {
+      "run": "notifications-live-replay-green",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 0,
+        "pid": 1516,
+        "duration_seconds": 3.43
+      },
+      "pytest": {
+        "tests": 25,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 25
+      },
+      "junit_sha256": "cb7d56a05b9bb1b53b8d9086cd896e51a9a95ee518564aa3a5aef2a8266790db"
+    },
+    {
+      "run": "notifications-focused-final",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 0,
+        "pid": 16108,
+        "duration_seconds": 21.87
+      },
+      "pytest": {
+        "tests": 60,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 60
+      },
+      "junit_sha256": "23231bce562fc4745e5ce8684dcfa6d14cf5d89a1c4e2f6503f9915d6fe22007"
+    },
+    {
+      "run": "notifications-ui-final-controlled",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 0,
+        "pid": 6156,
+        "duration_seconds": 8.09
+      },
+      "component_result": {
+        "passed": 9,
+        "failed": 0,
+        "checks": [
+          "visible_card_from_persisted_notice_without_html_execution",
+          "failed_ack_and_reload_do_not_lose_notice",
+          "browser_confirms_only_after_visible_render",
+          "standby_snooze_hides_card_without_reenabling_routine",
+          "snooze_survives_worker_server_restart_and_is_delivered_at_new_time",
+          "model_only_answer_is_shown_as_unverified_instead_of_success",
+          "ack_endpoint_rejects_missing_session_token",
+          "wrong_chat_and_off_session_cannot_acknowledge",
+          "no_javascript_errors_no_model_calls_no_tool_effects"
+        ],
+        "api_calls": 0,
+        "tool_effects": 0,
+        "external_requests_blocked": 0,
+        "page_errors": [],
+        "browser": "real isolated Chromium headless",
+        "clock": "controlled; snooze advances from 100 to 700"
+      }
+    },
+    {
+      "run": "notifications-full-final",
+      "watchdog": {
+        "reason": "completed",
+        "exit_code": 0,
+        "pid": 21212,
+        "duration_seconds": 75.66
+      },
+      "pytest": {
+        "tests": 1114,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 8,
+        "passed": 1106
+      },
+      "junit_sha256": "8d7ec8fbea31938404b317960e32b0dba47164e05aecd83d43e713ee87ac1ba4"
+    }
+  ]
+}
