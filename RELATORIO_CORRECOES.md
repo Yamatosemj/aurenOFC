@@ -6,7 +6,9 @@ As fases iniciais foram executadas na ordem pedida, com um commit por fase. Depo
 
 Os achados tratados continuavam presentes na releitura (**MANTIDO**). Não houve item pulado como “JÁ CORRIGIDO” ou “INVALIDADO” por suposição. AUD-023 teve seu mecanismo confirmado com arquivos fictícios; em AUD-022 foi reproduzida a perda da confirmação entre tarefas, sem ataque demonstrado contra um modelo real. Os relatórios originais foram copiados sem alteração para `docs/auditoria/`, pois essa pasta não existia no checkout.
 
-**Estado atual:** as correções locais previstas e os itens antes pendentes foram tratados. Última suíte completa: **954 aprovados, zero falhas e oito ignorados**. As atualizações da continuação ao final deste arquivo prevalecem sobre exclusões e limitações da primeira passagem. Revisão na [PR #153, em rascunho](https://github.com/Yamatosemj/aurenOFC/pull/153). Não houve teste físico, API paga ou limpeza de dados reais. Não houve instalação nem aprovação do runner real.
+**Etapa de correções e testes automatizados:** as correções locais previstas e os itens antes pendentes foram tratados. Última suíte completa: **954 aprovados, zero falhas e oito ignorados**. As atualizações da continuação ao final deste arquivo prevalecem sobre exclusões e limitações da primeira passagem. Revisão na [PR #153, em rascunho](https://github.com/Yamatosemj/aurenOFC/pull/153). Essa etapa não incluiu teste físico, API paga, limpeza de dados reais ou instalação/aprovação do runner real.
+
+**Validação Live posterior, em 18/10:** foram usados API, Windows, Chromium, microfone e saída de áudio reais, com dados fictícios. Das 17 verificações distintas, 16 passaram e uma tarefa composta pediu esclarecimento desnecessário e não concluiu. Essa pendência permanece aberta. Veja [RELATORIO_TESTES_LIVE.md](RELATORIO_TESTES_LIVE.md); as afirmações de ausência de Live neste documento descrevem a etapa anterior.
 
 ## O que foi corrigido, fase por fase
 
