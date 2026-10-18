@@ -7,6 +7,8 @@ from __future__ import annotations
 from queue import Empty
 import tkinter as tk
 from tkinter import font as tkfont
+from tkinter import ttk
+from time import monotonic
 
 from ui.backend import AurenUiWorker, ConfirmationChoice, UiEvent
 
@@ -35,6 +37,8 @@ class AurenDesktop:
         self.busy = False
         self.closing = False
         self.dialog: tk.Toplevel | None = None
+        self._task_data = {}
+        self._task_refresh = 0.0
 
         self._build()
         self._update_mode()
@@ -78,6 +82,25 @@ class AurenDesktop:
 
         line = tk.Frame(self.root, bg=BORDER, height=1)
         line.pack(fill="x")
+        tracking = tk.Frame(self.root, bg=PANEL, padx=16, pady=8)
+        tracking.pack(fill='x')
+        controls = tk.Frame(tracking, bg=PANEL)
+        controls.pack(fill='x')
+        tk.Button(controls, text='Carregar tarefas', command=self._load_tasks).pack(side='left')
+        self.task_chat = tk.StringVar()
+        self.task_chats = ttk.Combobox(controls, textvariable=self.task_chat, state='readonly', width=24)
+        self.task_chats.pack(side='left', padx=8)
+        self.task_chats.bind('<<ComboboxSelected>>', lambda _: self.worker.task_action('select',
+            chat_id=self.task_chat.get(), generation=self._task_data.get('generation', -1)))
+        for action, label in [('pause', 'Pausar'), ('cancel', 'Cancelar'), ('resume', 'Retomar')]:
+            tk.Button(controls, text=label, command=lambda a=action: self._task_control(a)).pack(side='left', padx=3)
+        self.task_rows = ttk.Treeview(tracking, columns=('goal', 'state', 'progress'), show='headings', height=3)
+        for key, label, width in [('goal', 'Objetivo salvo', 340), ('state', 'Estado', 110), ('progress', 'Passos / IA', 150)]:
+            self.task_rows.heading(key, text=label)
+            self.task_rows.column(key, width=width)
+        self.task_rows.pack(fill='x', pady=6)
+        tk.Label(tracking, text='Pausa aguarda um ponto seguro. Rotinas: cadastro e autorizacao na interface Chrome.',
+                 fg=MUTED, bg=PANEL, anchor='w').pack(fill='x')
         conversation = tk.Frame(self.root, bg=BACKGROUND, padx=24, pady=18)
         conversation.pack(fill="both", expand=True)
         scroll = tk.Scrollbar(conversation, bg=PANEL, troughcolor=BACKGROUND, relief="flat")
@@ -123,6 +146,36 @@ class AurenDesktop:
 
         self._append("Auren", "Interface pronta. Ative o Auren para enviar uma mensagem.", "notice")
 
+    def _load_tasks(self):
+        self.set_mode('active')
+        self.worker.task_action('load', generation=self.worker.generation)
+
+    def _task_control(self, action):
+        selected = self.task_rows.selection()
+        if not selected:
+            return
+        if self.worker.task_action(action, task_id=selected[0], chat_id=self._task_data.get('chat_id', ''),
+                                   generation=self._task_data.get('generation', -1)):
+            self._append('Sistema', 'Pedido enviado. Pausa e cancelamento sao cooperativos.', 'notice')
+
+    def _refresh_tasks(self):
+        dashboard = getattr(self.worker, 'task_dashboard', None)
+        if not callable(dashboard):
+            return
+        data = dashboard()
+        selected = self.task_rows.selection()
+        self._task_data = data
+        self.task_chats['values'] = data.get('chats', [])
+        self.task_chat.set(data.get('chat_id', ''))
+        self.task_rows.delete(*self.task_rows.get_children())
+        states = {'created': 'Criada', 'running': 'Executando', 'waiting': 'Aguardando', 'paused': 'Pausada',
+                  'interrupted': 'Interrompida', 'completed': 'Concluida', 'failed': 'Falhou', 'cancelled': 'Cancelada'}
+        for task in data.get('tasks', []):
+            self.task_rows.insert('', 'end', iid=task['task_id'], values=(task['objective'],
+                states.get(task['state'], task['state']), f"{task['steps_done']} passos / {task['model_calls']} chamadas"))
+        if selected and self.task_rows.exists(selected[0]):
+            self.task_rows.selection_set(selected[0])
+
     def _append(self, name: str, content: str, tag: str = "body") -> None:
         self.chat.configure(state="normal")
         self.chat.insert("end", name + "\n", tag)
@@ -160,6 +213,7 @@ class AurenDesktop:
             return
         if mode == "off" and self.mode != "off":
             self.worker.go_off()
+            self.busy = False
             self._dismiss_confirmation()
         elif mode == "active":
             self.worker.activate()
@@ -276,6 +330,9 @@ class AurenDesktop:
         if self.closing and not self.worker.alive:
             self.root.destroy()
             return
+        if not self.closing and monotonic() - self._task_refresh >= 0.8:
+            self._task_refresh = monotonic()
+            self._refresh_tasks()
         self.root.after(80, self._poll)
 
     def close(self) -> None:

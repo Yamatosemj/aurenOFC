@@ -1,0 +1,68 @@
+{
+  "data": "2026-10-18",
+  "sha_base": "da85b5ea9c6f1377b751c8f8be53ffd6faf99d37",
+  "codigo_local_antes_do_commit": true,
+  "falha_ci": {
+    "run": 39099859051,
+    "windows_passed": 981,
+    "windows_failed": 1,
+    "teste": "tests/test_remote_live_safety.py::test_idle_timeout_kills_child_and_grandchild"
+  },
+  "metodo": "Perfis temporarios e dados ficticios, sem credenciais. Unidades simulam atraso/erro; testes Windows existentes executam somente processos Python ficticios.",
+  "execucoes": [
+    {
+      "execucao": "phase0-watchdog-red",
+      "pasta_local": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase0-watchdog-red",
+      "tests": 3,
+      "failures": 3,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 0,
+      "sha256_supervisor": "c4d0a0a1f8345c1c5cd5ed1cad8a0c56c316e73c23ac9cc77395b56d7794f01d"
+    },
+    {
+      "execucao": "phase0-watchdog-focused",
+      "pasta_local": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase0-watchdog-focused",
+      "tests": 15,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 13,
+      "sha256_supervisor": "209dc036b40535f71810c1470bb60a8d108e881211fdcb166c253181b5dcc5ec"
+    },
+    {
+      "execucao": "phase0-watchdog-focused2",
+      "pasta_local": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase0-watchdog-focused2",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 15,
+      "sha256_supervisor": "a7a8c50a200934e70f18575d9428dd3de7c231c8b5eaf38f8ce0a55249a6182c"
+    },
+    {
+      "execucao": "phase0-watchdog-full",
+      "pasta_local": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase0-watchdog-full",
+      "tests": 986,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 8,
+      "passed": 978,
+      "sha256_supervisor": "7b19dbcd9a81d495660ca2bc7403111ee591fd82a612ec65662df3252b377858"
+    },
+    {
+      "execucao": "phase0-watchdog-final",
+      "pasta_local": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase0-watchdog-final",
+      "tests": 986,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 8,
+      "passed": 978,
+      "sha256_supervisor": "fb32c728dd7ffb68adb15da7b18a9a77c0ca1f39cbdc84702908275c714ade5e"
+    }
+  ],
+  "full_seconds": 50.59,
+  "api_paga": false,
+  "live_auren": false,
+  "limite": "A versao do arquivo no controlador confiavel instalado nao foi atualizada."
+}

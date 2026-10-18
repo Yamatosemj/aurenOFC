@@ -9,7 +9,8 @@ from typing import Any
 
 from core.confirmation import ConfirmationChannel, ConfirmationRequest, TextConfirmationChannel
 from core.tool_contracts import capability_for_tool
-from tools.file_intelligence import _classify_read_path, _resolve_path
+from core.utils import caminho_explicito_programa
+from tools.file_intelligence import _classify_read_path, _resolve_path, capture_read_authorization
 
 
 class PermissionLevel(str, Enum):
@@ -129,6 +130,9 @@ class PermissionManager:
         "windows.audio.control",
         "windows.ui.control",
     }
+
+    # Efeitos e orcamento sao conceitos diferentes: clipboard tambem e mutavel.
+    EXTERNAL_EFFECT_CAPABILITIES = COUNTED_CAPABILITIES | {"windows.clipboard.write"}
 
     # Ações cujo sucesso repetido com exatamente os mesmos argumentos pode
     # indicar que a tarefa nao esta avancando. Mantemos o guard restrito
@@ -320,6 +324,38 @@ class PermissionManager:
         """Indica se a capacidade da tool consome o orcamento de acoes."""
         return self._capability(nome_ferramenta) in self.COUNTED_CAPABILITIES
 
+    _CHECKPOINT_COUNTERS = ('actions_attempted', 'actions_executed', 'actions_failed',
+        'consecutive_failures', 'same_failed_action_count', 'same_successful_action_count')
+    _CHECKPOINT_LIMITS = ('max_actions', 'max_consecutive_failures',
+        'max_same_failed_actions', 'max_no_progress_repeats')
+    _CHECKPOINT_SIGNATURES = ('last_failed_action_signature', 'last_successful_action_signature')
+
+    def checkpoint_limits(self):
+        """Only restrictions and private hashes; never approvals or policies."""
+        return {name: getattr(self, name) for name in
+                self._CHECKPOINT_COUNTERS + self._CHECKPOINT_LIMITS + self._CHECKPOINT_SIGNATURES}
+
+    def restore_limits(self, state):
+        expected = self._CHECKPOINT_COUNTERS + self._CHECKPOINT_LIMITS + self._CHECKPOINT_SIGNATURES
+        if not isinstance(state, dict) or set(state) != set(expected):
+            raise RuntimeError('Checkpoint de limites invalido.')
+        for name in self._CHECKPOINT_COUNTERS + self._CHECKPOINT_LIMITS:
+            if type(state[name]) is not int or state[name] < (1 if name in self._CHECKPOINT_LIMITS else 0):
+                raise RuntimeError('Contador de permissoes invalido.')
+        for name in self._CHECKPOINT_SIGNATURES:
+            if state[name] is not None and (not isinstance(state[name], str)
+                    or not re.fullmatch(r'[0-9a-f]{64}', state[name])):
+                raise RuntimeError('Assinatura de permissoes invalida.')
+        for name in self._CHECKPOINT_COUNTERS:
+            setattr(self, name, max(getattr(self, name), state[name]))
+        for name in self._CHECKPOINT_LIMITS:
+            setattr(self, name, min(getattr(self, name), state[name]))
+        for name in self._CHECKPOINT_SIGNATURES:
+            setattr(self, name, state[name])
+        self.last_authorized_action_signature = None
+        self.last_authorized_action_tool = None
+        self.registrar_fonte_nao_confiavel('checkpoint_recuperado')
+
     def registrar_resultado(self, sucesso: bool, nome_ferramenta: str | None = None, argumentos: dict[str, Any] | None = None) -> None:
         """Registra o resultado da execucao e atualiza as travas anti-loop."""
         if nome_ferramenta is not None and self._capability(nome_ferramenta) not in self.COUNTED_CAPABILITIES:
@@ -401,6 +437,19 @@ class PermissionManager:
     ) -> tuple[bool, str]:
         """Retorna (permitido, motivo) antes da execucao real."""
 
+        if nome_ferramenta in {"ler_arquivo", "inspecionar_arquivo"}:
+            # Nunca aceitar uma autorizacao antiga ou fornecida pelo chamador.
+            argumentos.pop("_file_read_authorization", None)
+            try:
+                path = _resolve_path(str(argumentos.get("caminho", "")))
+                policy = _classify_read_path(path)
+                if policy.status == "blocked":
+                    return False, policy.motivo
+                argumentos["_file_read_authorization"] = capture_read_authorization(path)
+                argumentos["caminho"] = str(path)
+            except OSError:
+                return False, "Nao foi possivel identificar o arquivo antes da autorizacao."
+
         capacidade = self._capability(nome_ferramenta)
         conta_para_limite = capacidade in self.COUNTED_CAPABILITIES
 
@@ -432,7 +481,9 @@ class PermissionManager:
                 ),
             )
 
-        if conta_para_limite and self.same_failed_action_count >= self.max_same_failed_actions:
+        if (conta_para_limite
+                and assinatura_atual == self.last_failed_action_signature
+                and self.same_failed_action_count >= self.max_same_failed_actions):
             return (
                 False,
                 (
@@ -508,7 +559,7 @@ class PermissionManager:
 
         if (
             self._fonte_nao_confiavel_pendente is not None
-            and capacidade in self.COUNTED_CAPABILITIES
+            and capacidade in self.EXTERNAL_EFFECT_CAPABILITIES
         ):
             fonte = self._fonte_nao_confiavel_pendente
             return (
@@ -527,6 +578,8 @@ class PermissionManager:
                 return PermissionLevel.BLOCKED, path_policy.motivo
             if path_policy.status == "confirm":
                 return PermissionLevel.CONFIRM, path_policy.motivo
+            if nivel_base == PermissionLevel.CONFIRM:
+                return nivel_base, "A politica da capacidade exige confirmacao mesmo dentro de uma raiz permitida."
             return PermissionLevel.AUTO, path_policy.motivo
 
         if capacidade == "windows.window.control":
@@ -705,6 +758,11 @@ class PermissionManager:
         self,
         argumentos: dict[str, Any],
     ) -> tuple[PermissionLevel, str]:
+        if caminho_explicito_programa(argumentos.get("programa", "")) is not None:
+            return (
+                PermissionLevel.CONFIRM,
+                "Executar um programa por caminho explicito exige confirmacao explicita.",
+            )
         programa = self._normalizar_texto(
             argumentos.get("programa", "")
         )
@@ -792,6 +850,8 @@ class PermissionManager:
         partes: list[str] = []
 
         for chave, valor in argumentos.items():
+            if chave == "_file_read_authorization":
+                continue
             chave_normalizada = str(chave).lower()
 
             sensivel = any(

@@ -248,4 +248,5 @@ class PersistentMemoryStore:
             con.commit()
         if cur.rowcount == 0:
             return {"ok": False, "erro": f"Nao encontrei a memoria '{chave}'."}
-        return {"ok": True, "chave": chave}
+        return {"ok": True, "chave": chave, "escopo": "fato_salvo",
+                "aviso": "Somente o fato salvo foi removido. Conversas, estrategias, registros e copias externas nao foram apagados."}

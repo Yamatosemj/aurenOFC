@@ -135,11 +135,14 @@ def _controle_com_valor(pagina: str, alvo: str, esperado: str, indice: int) -> b
     if "[REDACTED]" in " ".join(candidatas):
         return None
 
-    matches = [
-        linha for linha in candidatas
-        if f"valor={esperado_texto}" in linha
-    ]
-    return len(matches) >= max(1, int(indice or 1))
+    occurrence = max(1, int(indice or 1))
+    if occurrence > len(candidatas):
+        return False
+    # O leitor coloca valor no ultimo campo; comparar o valor completo, nao prefixos.
+    linha = candidatas[occurrence - 1]
+    if " | valor=" not in linha:
+        return None
+    return linha.rsplit(" | valor=", 1)[1] == esperado_texto
 
 
 

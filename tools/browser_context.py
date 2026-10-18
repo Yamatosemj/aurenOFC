@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from core.tool_result import ToolResult
+from core.tool_result import ToolResult, from_legacy
 
 
 def obter_contexto_navegador(foco: str = "") -> ToolResult:
@@ -12,8 +12,10 @@ def obter_contexto_navegador(foco: str = "") -> ToolResult:
     from tools import browser
 
     foco = str(foco or "").strip()
-    abas = browser.listar_abas()
-    pagina = browser.ler_pagina(foco)
+    resultado_abas = from_legacy(browser.listar_abas())
+    resultado_pagina = from_legacy(browser.ler_pagina(foco))
+    abas = resultado_abas.message
+    pagina = resultado_pagina.message
 
     scroll = {}
     try:
@@ -36,7 +38,10 @@ def obter_contexto_navegador(foco: str = "") -> ToolResult:
         f"{abas}\n\n"
         f"{pagina}"
     )
-    return ToolResult.success(
+    failed = not resultado_abas.ok or not resultado_pagina.ok
+    factory = ToolResult.failure if failed else ToolResult.success
+    options = {"error_code": "browser_context_incomplete"} if failed else {}
+    return factory(
         mensagem,
         data={
             "foco": foco,
@@ -46,4 +51,5 @@ def obter_contexto_navegador(foco: str = "") -> ToolResult:
         },
         tool_name="obter_contexto_navegador",
         conteudo_nao_confiavel=True,
+        **options,
     )

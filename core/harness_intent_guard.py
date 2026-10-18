@@ -4,9 +4,16 @@ from __future__ import annotations
 from typing import Any, Callable
 import json
 import re
+import time
+from dataclasses import dataclass
 
-from core.intent_verification import precisa_verificar, proposta_simples_exata
+from core.intent_verification import IntentVerificationFailure, precisa_verificar, proposta_simples_exata
 from core.utils import normalizar_nome
+
+
+@dataclass(frozen=True)
+class PedidoReplanejamento:
+    motivo: str
 
 
 def _diagnostico_propostas_bloqueadas(chamadas: list[Any]) -> list[dict[str, Any]]:
@@ -44,7 +51,8 @@ def verificar_antes_de_agir(
     rodada: int,
     resposta_wrapper: Callable[[str], Any],
     write_log: Callable[..., Any],
-) -> tuple[bool, Any] | None:
+    permitir_replanejamento: bool = False,
+) -> tuple[bool, Any] | PedidoReplanejamento | None:
     """None = aprovado ou apenas leitura; tupla = tarefa interrompida sem executar."""
     if harness.verificar_intencao is None or not precisa_verificar(chamadas):
         return None
@@ -68,7 +76,11 @@ def verificar_antes_de_agir(
         rodada=rodada,
         quantidade=len(chamadas),
     )
+    review_started = time.perf_counter()
     try:
+        reserve = getattr(harness, '_reserve_model_call', None)
+        if callable(reserve):
+            reserve()
         historico_revisor = list(historico)
         pergunta_confirmada = getattr(harness, "_confirmacao_esclarecimento", None)
         if pergunta_confirmada:
@@ -80,11 +92,26 @@ def verificar_antes_de_agir(
         if getattr(decisao, "decisao", None) not in {"aprovar", "esclarecer", "bloquear"}:
             raise ValueError("Decisao semantica desconhecida.")
     except Exception as exc:
+        review_ms = (time.perf_counter() - review_started) * 1000.0
+        review_usage = getattr(exc, "metricas_uso", None)
+        trace = getattr(harness, "_trace", None)
+        if trace is not None and isinstance(exc, IntentVerificationFailure):
+            try:
+                trace.record_model(rodada, review_ms, review_usage or {})
+                record_stage = getattr(trace, "record_stage", None)
+                if callable(record_stage):
+                    record_stage("intent_review_error", review_ms, category="review_error",
+                                 success=False, metadata={"uso_conhecido": review_usage is not None})
+            except Exception as trace_error:
+                write_log("TRACE_ERROR", task_id=harness._task_id, etapa="intent_review_error", erro=str(trace_error))
         write_log(
             "INTENT_VERIFICATION_ERROR",
             task_id=harness._task_id,
             rodada=rodada,
             erro=str(exc),
+            uso_conhecido=review_usage is not None,
+            latencia_ms=round(review_ms, 3),
+            **({"uso": review_usage} if review_usage is not None else {}),
         )
         return harness._encerrar_falha(
             "intent_verification_unavailable",
@@ -92,11 +119,21 @@ def verificar_antes_de_agir(
             rodada,
         )
 
+    review_ms = (time.perf_counter() - review_started) * 1000.0
+    review_usage = getattr(decisao, "metricas_uso", None)
+    trace = getattr(harness, "_trace", None)
+    if trace is not None and review_usage is not None:
+        try:
+            trace.record_model(rodada, review_ms, review_usage)
+        except Exception as exc:
+            write_log("TRACE_ERROR", task_id=harness._task_id, etapa="intent_review", erro=str(exc))
+
     write_log(
         "INTENT_VERIFICATION_RESULT",
         task_id=harness._task_id,
         rodada=rodada,
         decisao=decisao.decisao,
+        **({"uso": review_usage, "latencia_ms": round(review_ms, 3)} if review_usage is not None else {}),
         **({
             "motivo": str(decisao.motivo or "")[:350],
             "propostas": _diagnostico_propostas_bloqueadas(chamadas),
@@ -138,6 +175,8 @@ def verificar_antes_de_agir(
         return False, resposta_wrapper(pergunta)
 
     if decisao.decisao == "bloquear":
+        if permitir_replanejamento:
+            return PedidoReplanejamento(str(decisao.motivo or "")[:350])
         return harness._encerrar_falha(
             "intent_verification_blocked",
             "Nao executei a acao proposta porque ela nao corresponde com seguranca ao seu pedido. "

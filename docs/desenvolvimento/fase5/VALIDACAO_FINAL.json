@@ -1,0 +1,152 @@
+{
+  "result": {
+    "tested_sha": "35ee8596573099a0fa8fd5bc26b3e069bfd8aa1c",
+    "model": "gpt-5.6-luna",
+    "checks": [
+      {
+        "name": "correct_answer",
+        "decision": {
+          "summary": "A resposta candidata informa os dois cÃ³digos exatamente como aparecem nos arquivos. Os arquivos registram 7 e 11 itens aprovados; a soma correta Ã© 18. As duas leituras foram realizadas exclusivamente nos arquivos solicitados.",
+          "answer_status": "verified",
+          "steps": [
+            {
+              "index": 1,
+              "status": "verified",
+              "evidence": [
+                1
+              ]
+            },
+            {
+              "index": 2,
+              "status": "verified",
+              "evidence": [
+                2
+              ]
+            },
+            {
+              "index": 3,
+              "status": "verified",
+              "evidence": [
+                1,
+                2
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "wrong_sum",
+        "decision": {
+          "summary": "Os dois arquivos permitidos foram lidos com sucesso. Eles informam os cÃ³digos ALFA-731 e BETA-982 e, respectivamente, 7 e 11 itens aprovados; a soma Ã© 18, nÃ£o 99. A resposta candidata erra o cÃ¡lculo.",
+          "answer_status": "failed",
+          "steps": [
+            {
+              "index": 1,
+              "status": "verified",
+              "evidence": [
+                1
+              ]
+            },
+            {
+              "index": 2,
+              "status": "verified",
+              "evidence": [
+                2
+              ]
+            },
+            {
+              "index": 3,
+              "status": "verified",
+              "evidence": [
+                1,
+                2
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "missing_second_read",
+        "decision": {
+          "summary": "O arquivo auren_a.txt foi lido e comprova o cÃ³digo ALFA-731 e 7 itens aprovados. NÃ£o hÃ¡ evidÃªncia de leitura do arquivo auren_b.txt; portanto, o cÃ³digo BETA-982 e a soma total 18 informados na resposta candidata nÃ£o podem ser verificados.",
+          "answer_status": "pending",
+          "steps": [
+            {
+              "index": 1,
+              "status": "verified",
+              "evidence": [
+                1
+              ]
+            },
+            {
+              "index": 2,
+              "status": "pending",
+              "evidence": []
+            },
+            {
+              "index": 3,
+              "status": "verified",
+              "evidence": [
+                1
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "failures": [],
+    "prior_ledger_sha256": "ed977ab821768c4ef36e735e2efd2e6dd8718b0fe52e81cf9a1d46fadb7ef9dc",
+    "new_call_limit": 3,
+    "request_byte_limit": 10000,
+    "output_token_limit": 600,
+    "reservation_per_call_usd": 0.0156,
+    "passed": 3,
+    "failed": 0,
+    "new_calls": 3,
+    "cumulative_calls": 27,
+    "reserved_total_usd": 1.9908
+  },
+  "watchdog": {
+    "reason": "completed",
+    "exit_code": 0,
+    "pid": 15584,
+    "duration_seconds": 11.31
+  },
+  "cumulative_budget": {
+    "authorized_usd": 2,
+    "calls": 27,
+    "input_tokens": 73870,
+    "output_tokens": 1984,
+    "conservative_cost_estimate_usd": 0.0208483,
+    "invoice_verified": false,
+    "reserved_usd": 1.9908,
+    "old_24_call_entries_preserved": true,
+    "final_batch": {
+      "name": "final_contract",
+      "owner_request": "termine entao",
+      "at": "2026-10-18T14:06:48.355467+00:00",
+      "prior_calls": 24,
+      "prior_reserved_usd": 1.944,
+      "max_calls": 3,
+      "request_byte_limit": 10000,
+      "max_output_tokens": 600,
+      "reserved_per_call_usd": 0.0156,
+      "call_numbers": [
+        25,
+        26,
+        27
+      ]
+    }
+  },
+  "source_hashes": {
+    "core/permission_manager.py": "93055c9387041b23c1e87dc06422f8d6a2486174ee66775ff6b6bc53e0187ed4",
+    "core/harness.py": "66d94af94abb1d71de3b3b8a8d25f9eb2b3da28c73cfc5668de63a3d13be0a1e",
+    "core/harness_cycle.py": "7fd245ae14b05d51bd58f8df1c47509fc52f524238d709265754b45d56b100e0",
+    "core/task_verification.py": "06a2ed0a6034c75522d4dff11b55280992595ca39ee4ae9a329df05e3d226a33",
+    "providers/openai_provider.py": "d0208162e30df4fb9fdd61dae323e5dd08c68f90b43c3450b63e279f3608fa08"
+  },
+  "script_hashes": {
+    "run_auren_final_contract.py": "493d59053956599e43411fc95532cd65f6f6a759d08512c8e5f1e57332dbcfd0",
+    "auren_final_contract_cases.py": "48e1f8666cca335e2fe556034bd215cdd69f5ddb43bc73e695b1db90d2bff261"
+  }
+}

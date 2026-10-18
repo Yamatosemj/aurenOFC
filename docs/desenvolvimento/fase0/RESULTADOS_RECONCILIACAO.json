@@ -1,0 +1,45 @@
+{
+  "data": "2026-10-18",
+  "python": "3.13.15",
+  "sha_base": "9dc60d4087991f009b8e35e057e0915bda3fc6a2",
+  "metodo": "Alteracoes locais antes do commit, copias isoladas, sem credenciais ou dados reais. Dispatcher e PermissionManager reais. Confirmacao positiva e Popen somente simulados.",
+  "resultado": "F0-SEG-001 resolvido nos testes; revisao integral restante da PR153 pendente.",
+  "sha256_arquivos_produto": {
+    "core/utils.py": "e609fae83e278139450ec27d9b7d8c861d0121acb9a0c947370da19ce999265a",
+    "core/permission_manager.py": "792d450051c84d2df796db5b66f93a38a3494283bba61f973b054e0ffa9a21b7",
+    "core/tools_registry.py": "6a636cf153e2a2e1910d067fd9fac54a7c613eac24cacb3b1860d29c250d2363",
+    "tools/applications.py": "f6e87a334c5bbe2826fa3e196d14628e5d8ad59f7d0e93b7624145a5ffcda779"
+  },
+  "execucoes": [
+    {
+      "execucao": "phase0-reconcile-red",
+      "pasta_local": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase0-reconcile-red",
+      "tests": 15,
+      "failures": 10,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 5
+    },
+    {
+      "execucao": "phase0-reconcile-focused",
+      "pasta_local": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase0-reconcile-focused",
+      "tests": 89,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 89
+    },
+    {
+      "execucao": "phase0-reconcile-full",
+      "pasta_local": "C:\\Windows\\Temp\\auren-correcoes-c704711e41bd461887318de7ea40b7b6\\phase0-reconcile-full",
+      "tests": 982,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 8,
+      "passed": 974
+    }
+  ],
+  "full_seconds": 49.79,
+  "live_executado": false,
+  "api_paga": false
+}

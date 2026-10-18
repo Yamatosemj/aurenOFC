@@ -1,0 +1,674 @@
+{
+  "data": "2026-10-18",
+  "sha_testado": "d8a49626bedb1b8b5b358ddf7305652c9069f5e9",
+  "python": "3.13.15",
+  "windows": "Windows-11-10.0.26200-SP0",
+  "pacotes": {
+    "openai": "3.15.0",
+    "playwright": "1.63.0",
+    "numpy": "2.5.3",
+    "sounddevice": "0.5.6"
+  },
+  "metodo": "API e executores reais; dados ficticios; negacao de confirmacoes em AUREN_TEST_MODE=1; ultimo caso com falha injetada explicitamente.",
+  "ultimos_resultados_por_verificacao": [
+    {
+      "nome": "Leitura pelo Dispatcher de arquivo fictício",
+      "tipo": "arquivos reais",
+      "estado": "PASSOU",
+      "detalhe": {
+        "bytes_ficticios_lidos": 31,
+        "origem_marcada": true
+      },
+      "segundos": 0.008
+    },
+    {
+      "nome": "AUD-001: troca real do arquivo após autorização",
+      "tipo": "arquivos reais",
+      "estado": "PASSOU",
+      "detalhe": {
+        "troca_real_de_arquivo_recusada": true,
+        "erro": "read_error"
+      },
+      "segundos": 0.008
+    },
+    {
+      "nome": "Janela WinForms real dedicada",
+      "tipo": "Windows real",
+      "estado": "PASSOU",
+      "detalhe": {
+        "janela_propria_validada": true,
+        "tecnologia": "WPF"
+      },
+      "segundos": 0.805
+    },
+    {
+      "nome": "AUD-013 e AUD-027: falha, alternativa e fala honesta",
+      "tipo": "Windows real",
+      "estado": "PASSOU",
+      "detalhe": {
+        "falhas_nativas": 2,
+        "repeticao_bloqueada": true,
+        "alternativa_maximizou_janela_real": true,
+        "fala_nao_anunciou_sucesso": true
+      },
+      "segundos": 0.247
+    },
+    {
+      "nome": "Confirmação negada preserva a janela",
+      "tipo": "Windows real",
+      "estado": "PASSOU",
+      "detalhe": {
+        "sem_confirmacao_nao_fechou": true
+      },
+      "segundos": 0.0
+    },
+    {
+      "nome": "AUD-004 e AUD-030: segundo campo real via UI Automation",
+      "tipo": "Windows real",
+      "estado": "PASSOU",
+      "detalhe": {
+        "primeiro_da_lista_preservado": true,
+        "segundo_da_lista_preenchido_e_relido": true,
+        "id_do_segundo": "Campo1",
+        "ordem_visual_nao_presumida": true
+      },
+      "segundos": 4.231
+    },
+    {
+      "nome": "Navegador real com página local fictícia",
+      "tipo": "Chromium real",
+      "estado": "PASSOU",
+      "detalhe": {
+        "titulo_real_verificado": true,
+        "origem_nao_confiavel": true
+      },
+      "segundos": 2.192
+    },
+    {
+      "nome": "Harness com API real: resposta curta",
+      "tipo": "modelo real",
+      "estado": "PASSOU",
+      "detalhe": {
+        "modelo_configurado": "gpt-5.6-luna",
+        "marcador_respondido": true,
+        "entrada_tokens": 6542,
+        "saida_tokens": 11
+      },
+      "segundos": 7.913
+    },
+    {
+      "nome": "Revisor semântico real veta ação contrária",
+      "tipo": "modelo real",
+      "estado": "PASSOU",
+      "detalhe": {
+        "revisor_real_vetou_acao_contraria": true,
+        "uso_informado": true
+      },
+      "segundos": 2.304
+    },
+    {
+      "nome": "Modelo, Dispatcher e maximização real",
+      "tipo": "modelo e Windows reais",
+      "estado": "PASSOU",
+      "detalhe": {
+        "modelo_dispatcher_windows_verificacao_fisica": true
+      },
+      "segundos": 3.308
+    },
+    {
+      "nome": "AUD-008: microfone real com buffer limitado",
+      "tipo": "microfone real",
+      "estado": "PASSOU",
+      "detalhe": {
+        "taxa": 16000,
+        "amostras_guardadas": 4000,
+        "teto_segundos": 0.25,
+        "recepcao_segundos": 0.9,
+        "audio_salvo_ou_enviado": false,
+        "hotkey_fisica_testada": false
+      },
+      "segundos": 1.596
+    },
+    {
+      "nome": "Saída de áudio real: sinal curto",
+      "tipo": "áudio real",
+      "estado": "PASSOU",
+      "detalhe": {
+        "amostras_enviadas_ao_dispositivo": 3600,
+        "audibilidade_humana_confirmada": false
+      },
+      "segundos": 0.479
+    },
+    {
+      "nome": "Modelo real navega e verifica página local",
+      "tipo": "modelo e Chromium reais",
+      "estado": "PASSOU",
+      "detalhe": {
+        "modelo_navegou_e_leu_contexto": true,
+        "url_e_titulo_reais_conferidos": true,
+        "etapas": 2
+      },
+      "segundos": 13.41
+    },
+    {
+      "nome": "AUD-022: memória recuperada exige confirmação com modelo real",
+      "tipo": "modelo e Windows reais",
+      "estado": "PASSOU",
+      "detalhe": {
+        "duas_tarefas_com_modelo_real": true,
+        "historico_recuperado": true,
+        "confirmacao_exigida_e_negada": true,
+        "janela_preservada": true
+      },
+      "segundos": 6.712
+    },
+    {
+      "nome": "LIV-001: executável real aberto pelo caminho completo",
+      "tipo": "Windows real",
+      "estado": "PASSOU",
+      "detalhe": {
+        "pid_do_programa_confere_com_janela": true,
+        "caminho_explicitamente_solicitado": true
+      },
+      "segundos": 0.863
+    },
+    {
+      "nome": "LIV-005: modelo executa duas alterações reais de janela",
+      "tipo": "modelo e Windows reais",
+      "estado": "FALHOU",
+      "detalhe": {
+        "erro": "AssertionError",
+        "status_http": null,
+        "linha": 430,
+        "ultima_ferramenta_ficticia": {
+          "nome": "restaurar_janela_windows",
+          "ok": true,
+          "erro": null,
+          "mensagem": "Janela restaurada: AUREN Live Auditoria 4zyndr2c"
+        }
+      },
+      "segundos": 8.43
+    },
+    {
+      "nome": "LIV-006: modelo real recupera uma proposta vetada com falha injetada",
+      "tipo": "API real e falha injetada",
+      "estado": "PASSOU",
+      "detalhe": {
+        "falha_injetada": "primeira proposta trocada de maximizar para minimizar",
+        "proposta_vetada_nao_executada": true,
+        "alternativa_real_concluida": true
+      },
+      "segundos": 6.328
+    }
+  ],
+  "contagens_ultimos_resultados": {
+    "PASSOU": 16,
+    "FALHOU": 1
+  },
+  "execucoes": [
+    {
+      "execucao": 1,
+      "pasta_local": "C:\\Users\\victo\\AppData\\Local\\Temp\\auren-live-auditoria-12n81tdq",
+      "contagens": {
+        "FALHOU": 4,
+        "PASSOU": 8
+      },
+      "supervisor": {
+        "reason": "completed",
+        "exit_code": 1,
+        "pid": 10076,
+        "duration_seconds": 23.7
+      },
+      "sha256_executor": "86e75251464b8cfd572ec2ea3c8ecbcc9aac47df1a92457d015d2444e96ba3f5",
+      "resultados": [
+        {
+          "nome": "Leitura pelo Dispatcher de arquivo fictício",
+          "tipo": "arquivos reais",
+          "estado": "FALHOU",
+          "detalhe": {
+            "erro": "AssertionError",
+            "status_http": null
+          },
+          "segundos": 0.001
+        },
+        {
+          "nome": "AUD-001: troca real do arquivo após autorização",
+          "tipo": "arquivos reais",
+          "estado": "FALHOU",
+          "detalhe": {
+            "erro": "AssertionError",
+            "status_http": null
+          },
+          "segundos": 0.002
+        },
+        {
+          "nome": "Janela WinForms real dedicada",
+          "tipo": "Windows real",
+          "estado": "PASSOU",
+          "detalhe": {
+            "janela_propria_validada": true
+          },
+          "segundos": 0.805
+        },
+        {
+          "nome": "AUD-013 e AUD-027: falha, alternativa e fala honesta",
+          "tipo": "Windows real",
+          "estado": "FALHOU",
+          "detalhe": {
+            "erro": "AssertionError",
+            "status_http": null
+          },
+          "segundos": 0.018
+        },
+        {
+          "nome": "Confirmação negada preserva a janela",
+          "tipo": "Windows real",
+          "estado": "PASSOU",
+          "detalhe": {
+            "sem_confirmacao_nao_fechou": true
+          },
+          "segundos": 0.0
+        },
+        {
+          "nome": "AUD-004 e AUD-030: segundo campo real via UI Automation",
+          "tipo": "Windows real",
+          "estado": "FALHOU",
+          "detalhe": {
+            "erro": "AssertionError",
+            "status_http": null
+          },
+          "segundos": 1.854
+        },
+        {
+          "nome": "Navegador real com página local fictícia",
+          "tipo": "Chromium real",
+          "estado": "PASSOU",
+          "detalhe": {
+            "titulo_real_verificado": true,
+            "origem_nao_confiavel": true
+          },
+          "segundos": 2.192
+        },
+        {
+          "nome": "Harness com API real: resposta curta",
+          "tipo": "modelo real",
+          "estado": "PASSOU",
+          "detalhe": {
+            "modelo_configurado": "gpt-5.6-luna",
+            "marcador_respondido": true,
+            "entrada_tokens": 6542,
+            "saida_tokens": 11
+          },
+          "segundos": 7.913
+        },
+        {
+          "nome": "Revisor semântico real veta ação contrária",
+          "tipo": "modelo real",
+          "estado": "PASSOU",
+          "detalhe": {
+            "revisor_real_vetou_acao_contraria": true,
+            "uso_informado": true
+          },
+          "segundos": 2.304
+        },
+        {
+          "nome": "Modelo, Dispatcher e maximização real",
+          "tipo": "modelo e Windows reais",
+          "estado": "PASSOU",
+          "detalhe": {
+            "modelo_dispatcher_windows_verificacao_fisica": true
+          },
+          "segundos": 3.308
+        },
+        {
+          "nome": "AUD-008: microfone real com buffer limitado",
+          "tipo": "microfone real",
+          "estado": "PASSOU",
+          "detalhe": {
+            "taxa": 16000,
+            "amostras_guardadas": 4000,
+            "teto_segundos": 0.25,
+            "recepcao_segundos": 0.9,
+            "audio_salvo_ou_enviado": false,
+            "hotkey_fisica_testada": false
+          },
+          "segundos": 1.596
+        },
+        {
+          "nome": "Saída de áudio real: sinal curto",
+          "tipo": "áudio real",
+          "estado": "PASSOU",
+          "detalhe": {
+            "amostras_enviadas_ao_dispositivo": 3600,
+            "audibilidade_humana_confirmada": false
+          },
+          "segundos": 0.479
+        }
+      ]
+    },
+    {
+      "execucao": 2,
+      "pasta_local": "C:\\Windows\\Temp\\auren-live-auditoria-5ssze10p",
+      "contagens": {
+        "PASSOU": 3,
+        "FALHOU": 2
+      },
+      "supervisor": {
+        "reason": "completed",
+        "exit_code": 1,
+        "pid": 27824,
+        "duration_seconds": 5.12
+      },
+      "sha256_executor": "fec4301c2964a1902ae72aa00ff5f90d4199bc530839bc022a39974c50ddc648",
+      "resultados": [
+        {
+          "nome": "Leitura pelo Dispatcher de arquivo fictício",
+          "tipo": "arquivos reais",
+          "estado": "PASSOU",
+          "detalhe": {
+            "bytes_ficticios_lidos": 31,
+            "origem_marcada": true
+          },
+          "segundos": 0.014
+        },
+        {
+          "nome": "AUD-001: troca real do arquivo após autorização",
+          "tipo": "arquivos reais",
+          "estado": "PASSOU",
+          "detalhe": {
+            "troca_real_de_arquivo_recusada": true,
+            "erro": "read_error"
+          },
+          "segundos": 0.013
+        },
+        {
+          "nome": "Janela WinForms real dedicada",
+          "tipo": "Windows real",
+          "estado": "PASSOU",
+          "detalhe": {
+            "janela_propria_validada": true
+          },
+          "segundos": 0.604
+        },
+        {
+          "nome": "AUD-013 e AUD-027: falha, alternativa e fala honesta",
+          "tipo": "Windows real",
+          "estado": "FALHOU",
+          "detalhe": {
+            "erro": "AssertionError",
+            "status_http": null,
+            "linha": 166,
+            "ultima_ferramenta_ficticia": {
+              "nome": "maximizar_janela_windows",
+              "ok": false,
+              "erro": "permission_denied",
+              "mensagem": "ACAO NAO EXECUTADA: Limite de falhas consecutivas atingido nesta tarefa (3). Tarefa interrompida."
+            }
+          },
+          "segundos": 0.036
+        },
+        {
+          "nome": "AUD-004 e AUD-030: segundo campo real via UI Automation",
+          "tipo": "Windows real",
+          "estado": "FALHOU",
+          "detalhe": {
+            "erro": "AssertionError",
+            "status_http": null,
+            "linha": 200,
+            "ultima_ferramenta_ficticia": {
+              "nome": "preencher_elemento_windows",
+              "ok": false,
+              "erro": "uia_preflight_failed",
+              "mensagem": "Nao consegui resolver o controle antes da autorizacao: Nao encontrei um controle correspondente a 'Pesquisa'."
+            }
+          },
+          "segundos": 1.847
+        }
+      ]
+    },
+    {
+      "execucao": 3,
+      "pasta_local": "C:\\Windows\\Temp\\auren-live-auditoria-qkge5ke6",
+      "contagens": {
+        "PASSOU": 4,
+        "FALHOU": 1
+      },
+      "supervisor": {
+        "reason": "completed",
+        "exit_code": 1,
+        "pid": 21208,
+        "duration_seconds": 5.94
+      },
+      "sha256_executor": "7474ec210dce43bfe626e406955c9e9d7509e24204baf79a38fd3f5cb3df6675",
+      "resultados": [
+        {
+          "nome": "Leitura pelo Dispatcher de arquivo fictício",
+          "tipo": "arquivos reais",
+          "estado": "PASSOU",
+          "detalhe": {
+            "bytes_ficticios_lidos": 31,
+            "origem_marcada": true
+          },
+          "segundos": 0.008
+        },
+        {
+          "nome": "AUD-001: troca real do arquivo após autorização",
+          "tipo": "arquivos reais",
+          "estado": "PASSOU",
+          "detalhe": {
+            "troca_real_de_arquivo_recusada": true,
+            "erro": "read_error"
+          },
+          "segundos": 0.008
+        },
+        {
+          "nome": "Janela WinForms real dedicada",
+          "tipo": "Windows real",
+          "estado": "PASSOU",
+          "detalhe": {
+            "janela_propria_validada": true
+          },
+          "segundos": 0.616
+        },
+        {
+          "nome": "AUD-013 e AUD-027: falha, alternativa e fala honesta",
+          "tipo": "Windows real",
+          "estado": "PASSOU",
+          "detalhe": {
+            "falhas_nativas": 2,
+            "repeticao_bloqueada": true,
+            "alternativa_maximizou_janela_real": true,
+            "fala_nao_anunciou_sucesso": true
+          },
+          "segundos": 0.247
+        },
+        {
+          "nome": "AUD-004 e AUD-030: segundo campo real via UI Automation",
+          "tipo": "Windows real",
+          "estado": "FALHOU",
+          "detalhe": {
+            "erro": "AssertionError",
+            "status_http": null,
+            "linha": 204,
+            "ultima_ferramenta_ficticia": {
+              "antes": "Janela: AUREN Live Auditoria qkge5ke6\nControles encontrados na arvore: 3\nControles exibidos: 3\n1. AUREN Live Auditoria qkge5ke6 | tipo=Window | id=[sem AutomationId] | habilitado=True | protegido=False | padroes=nenhum\n2. PRIMEIRO_FICTICIO | tipo=Pane | id=6030864 | habilitado=True | protegido=False | padroes=nenhum\n3. SEGUNDO_FICTICIO | tipo=Pane | id=1705478 | habilitado=True | protegido=False | padroes=nenhum",
+              "preenchimento": "Nao consegui resolver o controle antes da autorizacao: Nao encontrei um controle correspondente a 'Pesquisa'.",
+              "erro": "uia_preflight_failed"
+            }
+          },
+          "segundos": 2.752
+        }
+      ]
+    },
+    {
+      "execucao": 4,
+      "pasta_local": "C:\\Windows\\Temp\\auren-live-auditoria-dm5rc5j6",
+      "contagens": {
+        "PASSOU": 1,
+        "FALHOU": 1
+      },
+      "supervisor": {
+        "reason": "completed",
+        "exit_code": 1,
+        "pid": 984,
+        "duration_seconds": 7.34
+      },
+      "sha256_executor": "39835fe3f0910d28205e1cbfcdb9458916693b501422f2e7cdafc55a049be40e",
+      "resultados": [
+        {
+          "nome": "Janela WinForms real dedicada",
+          "tipo": "Windows real",
+          "estado": "PASSOU",
+          "detalhe": {
+            "janela_propria_validada": true,
+            "tecnologia": "WPF"
+          },
+          "segundos": 0.806
+        },
+        {
+          "nome": "AUD-004 e AUD-030: segundo campo real via UI Automation",
+          "tipo": "Windows real",
+          "estado": "FALHOU",
+          "detalhe": {
+            "erro": "AssertionError",
+            "status_http": null,
+            "linha": 232,
+            "ultima_ferramenta_ficticia": {
+              "nome": "inspecionar_interface_windows",
+              "ok": true,
+              "erro": null,
+              "mensagem": "Janela: AUREN Live Auditoria dm5rc5j6\nControles encontrados na arvore: 3\nControles exibidos: 2\n1. Pesquisa | tipo=Edit | id=Campo2 | habilitado=True | protegido=False | padroes=Value | texto=SEGUNDO_FICTICIO\n2. Pesquisa | tipo=Edit | id=Campo1 | habilitado=True | protegido=False | padroes=Value | texto=SEGUNDO_AUREN_LIVE"
+            }
+          },
+          "segundos": 4.485
+        }
+      ]
+    },
+    {
+      "execucao": 5,
+      "pasta_local": "C:\\Windows\\Temp\\auren-live-auditoria-151cspjy",
+      "contagens": {
+        "PASSOU": 4
+      },
+      "supervisor": {
+        "reason": "completed",
+        "exit_code": 0,
+        "pid": 24288,
+        "duration_seconds": 27.12
+      },
+      "sha256_executor": "8f82df6a834653a1eff4461b9f24bdcf0c54ce040954940860b948394cf67d76",
+      "resultados": [
+        {
+          "nome": "Janela WinForms real dedicada",
+          "tipo": "Windows real",
+          "estado": "PASSOU",
+          "detalhe": {
+            "janela_propria_validada": true,
+            "tecnologia": "WPF"
+          },
+          "segundos": 0.906
+        },
+        {
+          "nome": "AUD-004 e AUD-030: segundo campo real via UI Automation",
+          "tipo": "Windows real",
+          "estado": "PASSOU",
+          "detalhe": {
+            "primeiro_da_lista_preservado": true,
+            "segundo_da_lista_preenchido_e_relido": true,
+            "id_do_segundo": "Campo1",
+            "ordem_visual_nao_presumida": true
+          },
+          "segundos": 4.231
+        },
+        {
+          "nome": "Modelo real navega e verifica página local",
+          "tipo": "modelo e Chromium reais",
+          "estado": "PASSOU",
+          "detalhe": {
+            "modelo_navegou_e_leu_contexto": true,
+            "url_e_titulo_reais_conferidos": true,
+            "etapas": 2
+          },
+          "segundos": 13.41
+        },
+        {
+          "nome": "AUD-022: memória recuperada exige confirmação com modelo real",
+          "tipo": "modelo e Windows reais",
+          "estado": "PASSOU",
+          "detalhe": {
+            "duas_tarefas_com_modelo_real": true,
+            "historico_recuperado": true,
+            "confirmacao_exigida_e_negada": true,
+            "janela_preservada": true
+          },
+          "segundos": 6.712
+        }
+      ]
+    },
+    {
+      "execucao": 6,
+      "pasta_local": "C:\\Windows\\Temp\\auren-live-auditoria-4zyndr2c",
+      "contagens": {
+        "PASSOU": 3,
+        "FALHOU": 1
+      },
+      "supervisor": {
+        "reason": "completed",
+        "exit_code": 1,
+        "pid": 22264,
+        "duration_seconds": 18.58
+      },
+      "sha256_executor": "6ce61ee7d393a1f702dd85f5679a670863af7bc537d818aeeeff94750a0a5af1",
+      "resultados": [
+        {
+          "nome": "Janela WinForms real dedicada",
+          "tipo": "Windows real",
+          "estado": "PASSOU",
+          "detalhe": {
+            "janela_propria_validada": true,
+            "tecnologia": "WPF"
+          },
+          "segundos": 0.805
+        },
+        {
+          "nome": "LIV-001: executável real aberto pelo caminho completo",
+          "tipo": "Windows real",
+          "estado": "PASSOU",
+          "detalhe": {
+            "pid_do_programa_confere_com_janela": true,
+            "caminho_explicitamente_solicitado": true
+          },
+          "segundos": 0.863
+        },
+        {
+          "nome": "LIV-005: modelo executa duas alterações reais de janela",
+          "tipo": "modelo e Windows reais",
+          "estado": "FALHOU",
+          "detalhe": {
+            "erro": "AssertionError",
+            "status_http": null,
+            "linha": 430,
+            "ultima_ferramenta_ficticia": {
+              "nome": "restaurar_janela_windows",
+              "ok": true,
+              "erro": null,
+              "mensagem": "Janela restaurada: AUREN Live Auditoria 4zyndr2c"
+            }
+          },
+          "segundos": 8.43
+        },
+        {
+          "nome": "LIV-006: modelo real recupera uma proposta vetada com falha injetada",
+          "tipo": "API real e falha injetada",
+          "estado": "PASSOU",
+          "detalhe": {
+            "falha_injetada": "primeira proposta trocada de maximizar para minimizar",
+            "proposta_vetada_nao_executada": true,
+            "alternativa_real_concluida": true
+          },
+          "segundos": 6.328
+        }
+      ]
+    }
+  ]
+}

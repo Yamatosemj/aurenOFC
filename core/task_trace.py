@@ -10,7 +10,7 @@ from pathlib import Path
 from statistics import median
 from typing import Any
 
-from core.usage import calcular_custo_estimado
+from core.usage import base_do_custo, calcular_custo_estimado
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -231,9 +231,11 @@ class TaskTrace:
         self.output_tokens += values["output_tokens"]
         self.cached_tokens += values["cached_tokens"]
         self.cache_write_tokens += values["cache_write_tokens"]
-        self.cost_usd += calcular_custo_estimado(values)
+        self.cost_usd += calcular_custo_estimado(metrics)
         self.task_type = "agentic"
-        self._span("model", f"round_{int(rodada)}", duration_ms, metadata=values)
+        self._span("model", f"round_{int(rodada)}", duration_ms,
+                   metadata={**values, "base_custo": base_do_custo(metrics.get("model")),
+                             "model": metrics.get("model")})
 
     def record_tool(self, tool_name: str, duration_ms: float, *, success: bool) -> None:
         duration = max(0.0, float(duration_ms))

@@ -27,7 +27,9 @@ def _response(*calls, text=""):
 
 def _harness(*, verifier, calls, execution=None):
     invoked = []
-    responses = [_response(*calls)]
+    # Pedidos indiretos podem exigir uma resposta final do modelo: aprovar
+    # o proximo passo nao comprova, por si so, a conclusao de todo o pedido.
+    responses = [_response(*calls), _response(text="volume definido")]
     harness = AurenHarness(
         criar_resposta=lambda *_args: responses.pop(0),
         executar_ferramenta=lambda item: invoked.append(item.name) or "volume definido",

@@ -6,7 +6,8 @@ from pathlib import Path
 import subprocess
 import shutil
 
-from core.utils import normalizar_nome
+from core.utils import caminho_explicito_programa, normalizar_nome
+from core.tool_result import ToolResult
 
 
 def buscar_aplicativos_do_windows():
@@ -264,6 +265,21 @@ def _nome_programa_ambiguo(programa):
     return any(frase in texto for frase in frases_ambiguous)
 
 def abrir_programa(programa):
+    raw = caminho_explicito_programa(programa)
+    if raw is not None:
+        # Um caminho explicito nunca participa da descoberta aproximada por nome.
+        try:
+            target = Path(raw).expanduser().resolve(strict=True)
+            if not target.is_file() or target.suffix.lower() != ".exe":
+                return ToolResult.failure("O caminho deve identificar um executavel .exe existente.", error_code="explicit_executable_invalid")
+            process = subprocess.Popen([str(target)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return ToolResult.success(
+                f"Solicitei a abertura do executavel: {target}. A janela pronta ainda nao foi verificada.",
+                data={"caminho": str(target), "pid": process.pid, "abertura_solicitada": True},
+                tool_name="abrir_programa")
+        except (OSError, ValueError, RuntimeError) as exc:
+            return ToolResult.failure(f"Nao consegui abrir o executavel solicitado: {exc}", error_code="explicit_executable_failed", tool_name="abrir_programa")
+
     if _nome_programa_ambiguo(programa):
         return (
             "ACAO NAO EXECUTADA: nome do programa nao foi identificado "
@@ -311,10 +327,10 @@ def abrir_programa(programa):
             return f"{atalho.stem} foi aberto."
 
         except Exception as erro:
-            return (
+            return ToolResult.failure(
                 f"Encontrei o atalho de "
                 f"{programa}, mas nao consegui "
-                f"abri-lo: {erro}"
+                f"abri-lo: {erro}", error_code="shortcut_open_failed"
             )
 
     executavel = procurar_executavel(programa)

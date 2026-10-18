@@ -24,16 +24,23 @@ def _salvar_estrategia_em_background(
         for h in historico
     ]
 
-    def _runner(cancel_event):
-        if cancel_event.is_set():
-            return {"ok": False, "cancelado": True}
-        return context.record_strategy(
+    def _record():
+        result = context.record_strategy(
             objetivo,
             passos,
             resultado,
             sucesso,
             chat_id=chat_id,
         )
+        if isinstance(result, dict) and result.get("ok") is False:
+            write_log("MEMORY_ERROR", task_id=task_id, erro="Gravacao de estrategia recusada pela memoria.")
+            raise RuntimeError("Gravacao de estrategia recusada pela memoria.")
+        return result
+
+    def _runner(cancel_event):
+        if cancel_event.is_set():
+            return {"ok": False, "cancelado": True}
+        return _record()
 
     try:
         background_task_id = background_queue.submit(
@@ -50,13 +57,7 @@ def _salvar_estrategia_em_background(
     except Exception as exc:
         # A fila é otimização; em falha de infraestrutura fazemos fallback síncrono.
         try:
-            context.record_strategy(
-                objetivo,
-                passos,
-                resultado,
-                sucesso,
-                chat_id=chat_id,
-            )
+            _record()
         except Exception as fallback_exc:
             write_log(
                 "MEMORY_ERROR",

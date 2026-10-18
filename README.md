@@ -1,5 +1,7 @@
 # Auren
 
+> **Candidata de integração #153–#160:** [relatório e evidências](RELATORIO_INTEGRACAO.md) · [como testar no Windows em pasta separada](TESTE_MANUAL_WINDOWS.md). Sem merge na main; sem Electron/#141 e histórico/#142.
+
 Assistente desktop/voz para Windows, versão técnica **V47**, usando o modelo configurado em `config.py` (snapshot atual: `gpt-5.6-luna`).
 
 > **Estado atual do projeto:** consulte [AUREN_STATE.md](AUREN_STATE.md) antes de iniciar qualquer tarefa. É um resumo operacional curto, com referência ao último snapshot verificado; confira PRs, HEAD e CI atuais no GitHub. O histórico acumulado foi preservado separadamente.
@@ -215,3 +217,11 @@ Os componentes derivados/adaptados do Ari-VoiceCommand estão cobertos por `LICE
 ## Histórico
 
 A documentação de versões anteriores foi retirada do pacote principal para manter a raiz limpa. Ela deve ser mantida separadamente, fora do runtime.
+
+## Tarefas e rotinas — desenvolvimento candidato
+
+Na branch de desenvolvimento da Fase 4, abra **Tarefas e rotinas → Carregar histórico** no Chrome. Selecione uma conversa para consultar objetivos salvos, passos e estado. Pausar aguarda um ponto seguro; Cancelar não desfaz efeitos; Retomar só fica disponível quando há checkpoint seguro. Nenhum objetivo é retomado automaticamente ao abrir a página. Tk oferece a mesma consulta e os controles de tarefas.
+
+No Chrome, **Nova rotina** cadastra um lembrete local ou consulta de volume/status com horário, vencimento, intervalo e quantidade. Revise o rascunho e clique separadamente em **Autorizar agendamento**. Revogar impede novos passos. Consultas podem consumir créditos, com até uma chamada de IA por ocorrência; lembretes não usam IA. A agenda funciona somente com sessão habilitada e conversa selecionada, sem outra tarefa pendente; não é serviço com aplicativo fechado. Confirmações normais das ferramentas continuam independentes.
+
+O worker padrão guarda objetivos e rotinas em `data/tasks/auren_tasks.sqlite3`, em texto, sem criptografia ou exclusão automática por prazo. É separado da memória de conversas; não apague nem substitua um banco existente para contornar erro. Não foi importado banco pessoal. Essas mudanças ainda estão em PRs, sem integração automática à main. Evidências e limites em [FASE_4.md](docs/desenvolvimento/FASE_4.md).

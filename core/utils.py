@@ -1,8 +1,19 @@
 from __future__ import annotations
 
 import re
+import ntpath
 import unicodedata
 from difflib import SequenceMatcher
+
+
+def caminho_explicito_programa(programa):
+    """Reconhece caminhos sem consultar disco; compartilhado com a permissao."""
+    alvo = str(programa or "").strip()
+    if len(alvo) >= 2 and alvo[0] == alvo[-1] and alvo[0] in ("'", '"'):
+        alvo = alvo[1:-1].strip()
+    if ntpath.isabs(alvo) or ntpath.splitdrive(alvo)[0] or "/" in alvo or "\\" in alvo:
+        return alvo
+    return None
 
 
 def normalizar_nome(texto):

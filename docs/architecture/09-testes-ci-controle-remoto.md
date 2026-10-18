@@ -1,5 +1,9 @@
 # Arquitetura 09 — Testes, CI, runner Windows e controle remoto
 
+Fase 1, ajuste após recorrência: enumera o Job, verifica a associação, retém e espera handles dos descendentes, além da consulta de contagem. Falhas preservam o encerramento do Job e são reportadas como erro. Escopo e limites em [CORRECAO_SUPERVISOR.md](../desenvolvimento/fase1/CORRECAO_SUPERVISOR.md).
+
+Fase 0, F0-SEG-002: a versão candidata do supervisor espera a contagem de processos ativos do Job chegar a zero, com prazo limitado, e mantém a espera pelo principal. Falha ao comprovar a limpeza produz `cleanup_failed`/125. A correção não atualiza o controlador fixado ou o runner pessoal instalado. Reprodução, tentativas e limites em [SUPERVISOR_WINDOWS.md](../desenvolvimento/fase0/SUPERVISOR_WINDOWS.md).
+
 > **Etapa 9 — auditoria estática** da `main` em `1bb85bc04efe850cd0705652c54e5cddcee9a8bd` (2026-10-10), cotejada com os workflows, testes, documentação histórica e runs concretos do GitHub. **Não foi iniciado nenhum teste no Windows pessoal nesta PR.** No primeiro HEAD documental `c384889b6a3a1efaf7e0df415950362adf073e5b`, os checks hospedados da [suíte completa Linux](https://github.com/Yamatosemj/aurenOFC/actions/runs/38098663088) (**556 passed/24 skipped**) e dos [testes focados Linux/Windows](https://github.com/Yamatosemj/aurenOFC/actions/runs/38098662980) (Linux **166 passed/15 skipped**, Windows **181 passed**, modo seguro **110 passed** por sistema) foram aprovados. **Conferir novamente o CI do último SHA após esta atualização.** Executar pytest no runner hospedado, testar o próprio Windows via self-hosted e acionar API/desktop Live são operações diferentes.
 >
 > Guias de operação: [Testes GitHub](../TESTES_GITHUB.md) e [Controle remoto GitHub](../CONTROLE_REMOTO_GITHUB.md). Regras de execução: [AGENTS.md](../../AGENTS.md). Para cancelamento/Harness, consulte [01](01-nucleo.md); para permissões das tools, [02](02-roteamento-seguranca.md).
@@ -39,6 +43,8 @@ As *labels* `auren-isolated` apenas selecionam o runner; **não fornecem sandbox
 A política efetiva `before-job.ps1`, os arquivos de aprovação e o estado `STOP-LIVE` estão **no Windows, fora do repositório**. O conteúdo exato e o status atual desses arquivos **não são verificáveis apenas lendo GitHub**. Nunca desativar, atualizar ou substituir o hook para destravar job sem revisão/aprovação explícita do proprietário. Também não alterar secrets, permissões ou requisitos de ambiente para fazer checks verdes.
 
 ## 3. Teste pelo chat: fluxo efetivamente validado em 2026-10-10
+
+AUD-033 (correção candidata): novas instalações com `scripts/instalar/AUTORIZAR_TESTES_CHAT.ps1` exigem `-AutorizarValidacaoOffline` após revisão pelo proprietário. A aprovação gravada inclui `offline_hosted_validation=true`; instalações antigas inconsistentes são recusadas. A correção do arquivo versionado não instala nem autoriza o runner real.
 
 1. Em uma **PR aberta, não draft, interna e com base `main`**, o proprietário publica exatamente `AUREN_TESTE_V1 pytest <SHA de 40 caracteres minúsculos>` como comentário. Não é comando em shell; texto livre, nomes de branch, camadas Live e strings extras são rejeitados.
 2. O job hospedado `validar` carrega um [validador fixado](../../remote_tests/chat_request.py) no commit `b695fad7cc668d9a47e4dfc72f11a74b152d9cac`. Checa repo privado, autor/proprietário, tentativa original, comentário, PR aberta, origem interna e `head.sha` exato. O pedido não escolhe shell, scripts nem outro método.

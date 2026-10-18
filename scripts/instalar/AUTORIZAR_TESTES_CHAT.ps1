@@ -1,5 +1,7 @@
 # Executar APENAS uma vez no Windows, depois de atualizar a main do Auren.
 # Acrescenta a politica restrita de testes via chat; preserva o controle manual.
+param([switch]$AutorizarValidacaoOffline)
+
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..\..')).Path
 $source = Join-Path $root 'remote_tests\chat-control-functions.ps1'
@@ -26,11 +28,17 @@ if ($installed.Contains('Test-ChatControlRequest')) {
         throw 'Instalacao anterior incompleta; nao sobrescrever automaticamente.'
     }
     $current = Get-Content -LiteralPath $chatApproval -Raw | ConvertFrom-Json
-    if ($current.enabled -ne $true -or $current.workflow_blob -cne $approvedBlob) {
+    if ($current.enabled -ne $true -or $current.workflow_blob -cne $approvedBlob -or
+        $current.offline_hosted_validation -ne $true -or
+        -not ([IO.File]::ReadAllText($chatFunctions)).Contains('offline_hosted_validation')) {
         throw 'Aprovacao existente diverge da revisada; nao sobrescrever.'
     }
     Write-Output 'Testes por chat: configuracao ja instalada.'
     exit 0
+}
+
+if (-not $AutorizarValidacaoOffline) {
+    throw 'A politica atual depende da validacao hospedada. Revise e execute com -AutorizarValidacaoOffline para autorizar explicitamente; nenhuma alteracao feita.'
 }
 
 $oldBlock = @'
@@ -99,7 +107,7 @@ if (Test-Path -LiteralPath $backup -PathType Leaf) {
 Copy-Item -LiteralPath $hook -Destination $backup -ErrorAction Stop
 try {
     [IO.File]::WriteAllText($chatFunctions, $chatSource, [Text.UTF8Encoding]::new($false))
-    $approvalText = "{`"enabled`":true,`"workflow_blob`":`"$approvedBlob`"}"
+    $approvalText = "{`"enabled`":true,`"workflow_blob`":`"$approvedBlob`",`"offline_hosted_validation`":true}"
     [IO.File]::WriteAllText($chatApproval, $approvalText, [Text.UTF8Encoding]::new($false))
     [IO.File]::WriteAllText($hook, $revised.Replace("`n", "`r`n"), [Text.UTF8Encoding]::new($false))
 } catch {

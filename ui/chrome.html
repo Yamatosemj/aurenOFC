@@ -85,6 +85,30 @@ canvas{cursor:pointer}
 <header>
   <span class="tool" id="bEstados" role="status" aria-live="polite">Desligado</span>
 </header>
+<details id="taskPanel">
+ <summary>Tarefas e rotinas</summary>
+ <button id="loadTasks" type="button">Carregar histórico</button>
+ <label>Conversa <select id="taskChat" aria-label="Conversa das tarefas"></select></label>
+ <p id="taskHint" aria-live="polite">Carregue para consultar objetivos salvos. Nenhuma tarefa será retomada automaticamente.</p>
+ <div id="taskList"></div>
+ <details><summary>Nova rotina</summary>
+  <form id="routineForm">
+   <label>Tipo <select id="routineKind"><option value="reminder">Lembrete local</option><option value="read_volume">Consultar volume</option><option value="read_status">Consultar status do sistema</option></select></label>
+   <label>Lembrete <input id="routineGoal" maxlength="4000" placeholder="O que acompanhar?"></label>
+   <label>Primeiro horário <input id="routineDue" type="datetime-local" required></label>
+   <label>Vencimento <input id="routineExpiry" type="datetime-local" required></label>
+   <label>Intervalo em minutos (0 = uma vez) <input id="routineInterval" type="number" min="0" value="0" required></label>
+   <label>Quantidade máxima <input id="routineRuns" type="number" min="1" max="1000" value="1" required></label>
+   <p>Consultas podem usar créditos: até uma chamada de IA por ocorrência. Lembretes não usam IA. Funciona enquanto esta conversa está aberta no Auren.</p>
+   <button type="submit">Salvar rascunho</button>
+  </form>
+ </details>
+ <div id="routineList"></div>
+</details>
+<style nonce="__AUREN_SCRIPT_NONCE__">
+#taskPanel{position:fixed;right:16px;top:60px;z-index:8;width:min(340px,calc(100vw - 32px));max-height:78vh;overflow:auto;color:#dbe6f7;background:rgba(17,23,36,.94);border:1px solid #34415b;border-radius:14px;padding:12px;font:13px system-ui}
+#taskPanel summary{cursor:pointer;font-weight:600;padding:5px}#taskPanel label{display:block;margin:10px 0}#taskPanel select,#taskPanel input{width:100%;background:#182235;color:#edf3ff;border:1px solid #45536d;border-radius:5px;padding:6px;box-sizing:border-box}#taskPanel button{cursor:pointer;padding:6px 9px;margin:5px 4px 5px 0;border:1px solid #536785;border-radius:6px;background:#243550;color:#f3f6ff}#taskPanel button:disabled{opacity:.45;cursor:default}#taskPanel article{border-top:1px solid #34415b;margin-top:10px;padding-top:10px}#taskPanel p{line-height:1.45;color:#aebed6}#routineForm{display:block;width:100%;padding:0}#taskList strong,#routineList strong{display:block;overflow-wrap:anywhere}
+</style>
 <span id="estado" class="sr" role="status"></span>
 <div id="stage">
   <canvas id="c" tabindex="0" role="button" aria-label="Auren. Clique para escrever uma mensagem"></canvas>
@@ -296,6 +320,7 @@ try{
 /* Ponte HTTP local. Não há ações simuladas nem endpoint genérico de tools. */
 const AUREN_TOKEN="__AUREN_LOCAL_TOKEN__";
 let modoAtual="off",ocupado=false,ultimoEvento=0,consultando=false,pedidoPendente=null;
+let taskGeneration=0,taskData={chat_id:"",tasks:[],routines:[]},lastTasks="";
 async function postApi(path,body){
  const res=await fetch(path,{method:"POST",headers:{"Content-Type":"application/json","X-Auren-Token":AUREN_TOKEN},body:JSON.stringify(body),cache:"no-store"});
  const data=await res.json();
@@ -344,6 +369,7 @@ async function eventos(){
   const r=await fetch("/api/events?after="+ultimoEvento,{headers:{"X-Auren-Token":AUREN_TOKEN},cache:"no-store"});
   if(!r.ok)throw new Error("Serviço local indisponível");
   const d=await r.json();
+  taskGeneration=d.generation||0;renderTasks(d.tasks||{});
   const previous=modoAtual;modoAtual=d.mode;ocupado=d.busy;
   for(const e of d.events){evento(e);ultimoEvento=Math.max(ultimoEvento,e.seq)}
   if(d.gap)cap.textContent="Alguns eventos antigos não estão disponíveis. Confira o estado atual.";
@@ -354,6 +380,29 @@ async function eventos(){
  finally{consultando=false}
 }
 const connection=document.createElement("div");connection.id="connection";$("stage").append(connection);
+const taskStates={created:"Criada",running:"Executando",waiting:"Aguardando modelo",paused:"Pausada",interrupted:"Interrompida",completed:"Concluída",failed:"Falhou",cancelled:"Cancelada",draft:"Rascunho",enabled:"Autorizada",revoked:"Revogada",exhausted:"Quantidade esgotada",expired:"Vencida"};
+async function taskCommand(action,task_id="",chat_id=taskData.chat_id||"",generation=taskGeneration){
+ try{await postApi("/api/task-action",{action,task_id,chat_id,generation});$("taskHint").textContent=action==="pause"?"Pausa solicitada. Aguarde um ponto seguro entre etapas.":"Pedido enviado. Confira o estado atualizado."}
+ catch(err){$("taskHint").textContent=err.message}
+}
+async function routineCommand(action,routine_id="",spec=null,generation=taskGeneration){
+ try{await postApi("/api/routine-action",{action,routine_id,spec,generation});$("taskHint").textContent="Pedido de rotina enviado."}
+ catch(err){$("taskHint").textContent=err.message}
+}
+function taskButton(parent,label,run,enabled=true){const b=document.createElement("button");b.type="button";b.textContent=label;b.disabled=!enabled;b.onclick=run;parent.append(b)}
+function renderTasks(data){
+ taskData=data;const key=JSON.stringify(data);if(key===lastTasks)return;lastTasks=key;
+ const sel=$("taskChat");sel.replaceChildren();for(const id of data.chats||[]){const o=document.createElement("option");o.value=id;o.textContent=id;o.selected=id===data.chat_id;sel.append(o)}
+ $("taskList").replaceChildren();for(const t of data.tasks||[]){const a=document.createElement("article"),title=document.createElement("strong"),p=document.createElement("p");title.textContent=t.objective;p.textContent=(taskStates[t.state]||t.state)+" · "+t.steps_done+" etapas executadas · "+t.planned_steps+" previstas · IA "+t.model_calls+"/"+t.model_limit+(t.cancel_requested?" · cancelamento solicitado":"");a.append(title,p);
+ taskButton(a,"Pausar",()=>taskCommand("pause",t.task_id,data.chat_id,data.generation),["running","waiting"].includes(t.state));taskButton(a,"Cancelar",()=>taskCommand("cancel",t.task_id,data.chat_id,data.generation),!["completed","failed","cancelled"].includes(t.state));taskButton(a,"Retomar",()=>taskCommand("resume",t.task_id,data.chat_id,data.generation),!!t.can_resume);
+ if(t.state==="interrupted"&&!t.can_resume){const n=document.createElement("p");n.textContent="Retomada bloqueada: é necessário verificar o efeito ou o estado pendente.";a.append(n)}
+ const history=document.createElement("details"),sum=document.createElement("summary");sum.textContent="Histórico recente";history.append(sum);for(const s of t.steps||[]){const line=document.createElement("p");line.textContent=s.tool+" · "+(s.success===null?"sem resultado":s.success?"sucesso":"falha")+" · "+s.result;history.append(line)}a.append(history);$("taskList").append(a)}
+ $("routineList").replaceChildren();for(const r of data.routines||[]){const a=document.createElement("article"),title=document.createElement("strong"),p=document.createElement("p");title.textContent=r.objective;p.textContent=(taskStates[r.status]||r.status)+" · "+(r.mode==="suggest"?"Somente lembrar":"Somente consulta autorizada")+" · restantes: "+r.runs_left+" · próximo: "+new Date(r.next_due*1000).toLocaleString()+" · vence: "+new Date(r.expires_at*1000).toLocaleString()+" · intervalo: "+r.interval_seconds/60+" min · IA por ocorrência: "+r.model_budget;a.append(title,p);taskButton(a,"Autorizar agendamento",()=>routineCommand("authorize",r.id,null,data.generation),r.status==="draft");taskButton(a,"Revogar",()=>routineCommand("revoke",r.id,null,data.generation),["draft","enabled","running"].includes(r.status));$("routineList").append(a)}
+ sel.onchange=()=>taskCommand("select","",sel.value,data.generation);
+}
+$("loadTasks").onclick=()=>taskCommand("load");$("taskChat").onchange=()=>taskCommand("select","",$("taskChat").value);
+$("routineKind").onchange=()=>{$("routineGoal").disabled=$("routineKind").value!=="reminder"};
+$("routineForm").onsubmit=e=>{e.preventDefault();routineCommand("register","",{kind:$("routineKind").value,objective:$("routineGoal").value,due_at:Math.floor(new Date($("routineDue").value).getTime()/1000),expires_at:Math.floor(new Date($("routineExpiry").value).getTime()/1000),interval_seconds:Number($("routineInterval").value)*60,max_runs:Number($("routineRuns").value)})};
 pintaModo();eventos();setInterval(eventos,450);
 </script>
 

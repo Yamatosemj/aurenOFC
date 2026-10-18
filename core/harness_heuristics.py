@@ -144,6 +144,14 @@ def _pode_encerrar_localmente(
         ):
             return True
 
+    texto_objetivo = normalizar_nome(objetivo)
+    operacoes_janela = re.findall(r"\b(?:maximiz\w*|minimiz\w*|restaur\w*|mova|mover|movendo|redimension\w*)\b", texto_objetivo)
+    if (len(operacoes_janela) > 1
+        or re.search(r";|\b(?:depois|em seguida|posteriormente|apos|entao)\b", texto_objetivo)):
+        # O atalho local nao possui evidencia de todas as etapas de um plano.
+        # Devolver o controle ao ciclo preserva verificacoes e limites existentes.
+        return False
+
     ultima_acao = _ultima_acao_solicitada(objetivo)
     if ultima_acao and resultados_rodada:
         ultimo = resultados_rodada[-1]
@@ -179,9 +187,12 @@ def _pode_encerrar_localmente(
     }
     if ferramenta == "listar_abas" and _parece_tarefa_multietapa_browser(objetivo):
         return False
-    if somente_leitura and _parece_tarefa_de_acao(objetivo):
-        return False
-    return True
+    if somente_leitura:
+        # Uma observacao so encerra uma consulta reconhecivel. Pedidos iniciados
+        # por local, restricao ou verbo desconhecido seguem ao ciclo normal.
+        consulta = re.match(r"^(?:auren\s+)?(?:qual|quais|quanto|quantos|status|volume|liste|listar|mostre|mostra|consulte|consultar|obtenha|obter|verifique|confira)\b", texto_objetivo)
+        return bool(consulta) and not _parece_tarefa_de_acao(objetivo)
+    return _parece_tarefa_de_acao(objetivo)
 
 
 def _parece_tarefa_de_acao(objetivo: str) -> bool:
@@ -203,6 +214,8 @@ def _parece_tarefa_de_acao(objetivo: str) -> bool:
 
     primeira_palavra = palavras[0]
     verbos_de_acao = {
+        "maximize", "maximizar", "maximiza", "minimize", "minimizar",
+        "restaure", "restaurar", "mova", "mover", "redimensione", "redimensionar",
         "abre", "abrir", "abra",
         "toca", "toque", "tocar",
         "reproduz", "reproduza", "reproduzir",

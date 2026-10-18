@@ -172,3 +172,49 @@ def test_normal_sdk_configuration_is_preserved(monkeypatch):
     monkeypatch.setitem(sys.modules, "openai", SimpleNamespace(OpenAI=lambda **options: captured.append(options) or object()))
     OpenAIProvider().get_client()
     assert captured == [{}]
+
+
+@windows
+def test_cleanup_confirmation_error_cannot_be_reported_as_success(tmp_path, monkeypatch):
+    from remote_tests.windows_watchdog import WindowsJob
+    terminate = WindowsJob.terminate
+    def uncertain_cleanup(job):
+        terminate(job)  # Encerramento real da fixture antes da falha simulada.
+        raise TimeoutError('falha ficticia ao confirmar encerramento')
+    monkeypatch.setattr(WindowsJob, 'terminate', uncertain_cleanup)
+    result = run_fixture(tmp_path, "print('fixture sem efeitos')")
+    assert result['reason'] == 'cleanup_failed'
+    assert result['exit_code'] == 125
+    assert result['cleanup_error'] == 'TimeoutError'
+    assert not is_alive(result['pid'])
+
+
+@windows
+@pytest.mark.parametrize('iteration', range(3))
+def test_descendant_objects_are_signaled_before_return(tmp_path, monkeypatch, iteration):
+    """Retain exact identities, independent of subsequent PID reuse on busy CI."""
+    import _winapi
+    from remote_tests.windows_watchdog import WindowsJob
+    handles = []
+    terminate = WindowsJob.terminate
+    def retain_identities(job):
+        for pid in json.loads((tmp_path / 'children.json').read_text()):
+            handles.append(_winapi.OpenProcess(0x1000 | 0x100000, False, pid))
+        terminate(job)
+    monkeypatch.setattr(WindowsJob, 'terminate', retain_identities)
+    try:
+        result = run_fixture(tmp_path, """
+import json, subprocess, sys, time
+from pathlib import Path
+children = [subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)']) for _ in range(8)]
+Path('children.json').write_text(json.dumps([child.pid for child in children]))
+print('ready', flush=True)
+time.sleep(30)
+""", idle_seconds=0.8, wall_seconds=5)
+        assert result['reason'] == 'idle_timeout'
+        assert result['exit_code'] == 124
+        assert len(handles) == 8
+        assert all(_winapi.WaitForSingleObject(handle, 0) == _winapi.WAIT_OBJECT_0 for handle in handles)
+    finally:
+        for handle in handles:
+            _winapi.CloseHandle(handle)

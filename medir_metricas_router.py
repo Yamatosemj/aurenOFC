@@ -17,20 +17,16 @@ from pathlib import Path
 from statistics import mean
 from typing import Any
 
+from core.usage import base_do_custo, calcular_custo_estimado
+
 TS = r"\[\d{4}-\d{2}-\d{2}T[^\]\n]+\]"
 TASK_RE = re.compile(rf"(?ms)^{TS} TASK_START\n.*?(?=^{TS} TASK_START\n|^{TS} CHAT_END\n|\Z)")
-RESPONSE_RE = re.compile(rf"(?ms)^{TS} MODEL_ROUND_RESPONSE\n(.*?)(?=^{TS} [A-Z_]+\n|\Z)")
+RESPONSE_RE = re.compile(rf"(?ms)^{TS} (?:MODEL_ROUND_RESPONSE|INTENT_VERIFICATION_RESULT|INTENT_VERIFICATION_ERROR)\n(.*?)(?=^{TS} [A-Z_]+\n|\Z)")
 FAST_RE = re.compile(rf"(?ms)^{TS} TASK_FAST_PATH\n.*?(?=^{TS} [A-Z_]+\n|\Z)")
 LOCAL_RE = re.compile(rf"(?m)^{TS} TASK_LOCAL_COMPLETION\b")
-TASK_END_RE = re.compile(rf"(?m)^(?P<ts>{TS}) TASK_END\n(?P<body>.*?)(?=^{TS} [A-Z_]+\n|\Z)")
+TASK_END_RE = re.compile(rf"(?ms)^(?P<ts>{TS}) TASK_END\n(?P<body>.*?)(?=^{TS} [A-Z_]+\n|\Z)")
 FLOAT_RE = re.compile(r"^  latencia_ms: ([0-9]+(?:\.[0-9]+)?)$", re.M)
 JSON_FIELD_RE = re.compile(r"^  (uso|router): (.+)$", re.M)
-
-PRICE_INPUT = 0.20 / 1_000_000
-PRICE_CACHE = 0.02 / 1_000_000
-PRICE_CACHE_WRITE = 0.25 / 1_000_000
-PRICE_OUTPUT = 1.20 / 1_000_000
-
 
 def find_log(argv: list[str]) -> Path:
     if len(argv) > 1:
@@ -60,6 +56,8 @@ def parse_responses(text: str) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for match in RESPONSE_RE.finditer(text):
         block = match.group(1)
+        if "INTENT_VERIFICATION_" in match.group(0) and not re.search(r"^  uso:", block, re.M):
+            continue
         usage = _parse_json_field(block, "uso")
         router = _parse_json_field(block, "router")
         round_match = re.search(r"^  rodada: (\d+)$", block, re.M)
@@ -74,6 +72,7 @@ def parse_responses(text: str) -> list[dict[str, Any]]:
                 "output_tokens": int(usage.get("output_tokens", 0) or 0),
                 "cached_tokens": int(usage.get("cached_tokens", 0) or 0),
                 "cache_write_tokens": int(usage.get("cache_write_tokens", 0) or 0),
+                "model": usage.get("model"),
                 "router": router,
             }
         )
@@ -91,25 +90,22 @@ def parse_tasks(text: str) -> list[dict[str, Any]]:
         local = bool(LOCAL_RE.search(block))
         task_end_match = next(TASK_END_RE.finditer(block), None)
         task_end = task_end_match.group("body") if task_end_match else ""
+        status = re.search(r"^  (?:status|estado):\s*([^\n]+)", task_end, re.M)
         tokens = {
             key: sum(row[key] for row in responses)
             for key in ("input_tokens", "output_tokens", "cached_tokens", "cache_write_tokens")
         }
-        cost = (
-            max(0, tokens["input_tokens"] - tokens["cached_tokens"] - tokens["cache_write_tokens"]) * PRICE_INPUT
-            + tokens["cached_tokens"] * PRICE_CACHE
-            + tokens["cache_write_tokens"] * PRICE_CACHE_WRITE
-            + tokens["output_tokens"] * PRICE_OUTPUT
-        )
+        cost = sum(calcular_custo_estimado(row) for row in responses)
         tasks.append(
             {
                 "task_id": task_id,
                 "fast_path": fast,
                 "local_completion": local,
-                "status": task_end.strip().splitlines()[-1].strip() if task_end.strip() else "",
+                "status": status.group(1).strip() if status else "",
                 "model_rounds": len(responses),
                 "tokens": tokens,
                 "custo_estimado_usd": cost,
+                "base_custo": sorted({base_do_custo(row.get("model")) for row in responses}),
                 "latencia_ms_total": sum(r["latencia_ms"] or 0.0 for r in responses),
             }
         )
@@ -152,6 +148,7 @@ def aggregate(text: str) -> dict[str, Any]:
         "tokens_input_medio_por_tarefa_com_modelo": (totals["input_tokens"] / len(model_tasks)) if model_tasks else 0.0,
         "tokens_output_medio_por_tarefa_com_modelo": (totals["output_tokens"] / len(model_tasks)) if model_tasks else 0.0,
         "custo_estimado_total_usd": total_cost,
+        "base_custo": sorted({basis for task in tasks for basis in task["base_custo"]}),
         "custo_estimado_medio_por_tarefa_usd": (total_cost / len(tasks)) if tasks else 0.0,
         "tarefas": tasks,
     }

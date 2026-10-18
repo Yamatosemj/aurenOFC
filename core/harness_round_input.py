@@ -30,7 +30,7 @@ def _montar_input_da_rodada(
     estado = montar_estado(
         objetivo,
         historico_anterior,
-        incluir_contexto=False,
+        incluir_contexto=True,
     )
 
     input_items: list[Any] = [

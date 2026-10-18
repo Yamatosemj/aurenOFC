@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import re
+from urllib.parse import urlsplit
+from core.browser_verification import _normalize_url
 
 from core.capabilities import KNOWN_SERVICES
 from core.utils import normalizar_nome
@@ -82,20 +84,19 @@ def _multitab_concluida(objetivo: str, historico: list[dict[str, str]]) -> bool:
         if not match:
             return False
 
-        titulo = match.group(1).strip()
         url_atual = match.group(2).rstrip(".,);]")
-        esperado_norm = normalizar_nome(esperado).rstrip("/")
-        url_norm = normalizar_nome(url_atual).rstrip("/")
-        titulo_norm = normalizar_nome(titulo)
-
-        if esperado_norm.startswith("http://") or esperado_norm.startswith("https://"):
-            if not url_norm.startswith(esperado_norm):
+        try:
+            actual = urlsplit(_normalize_url(url_atual))
+            target = urlsplit(_normalize_url(esperado))
+            if (actual.scheme, actual.netloc) != (target.scheme, target.netloc):
                 return False
-        else:
-            # KNOWN_SERVICES fornece URLs canônicas; o título também conta
-            # como evidência auxiliar para páginas que redirecionam.
-            if esperado_norm not in url_norm and esperado_norm not in titulo_norm:
+            path = target.path.rstrip("/")
+            if path and not (actual.path == path or actual.path.startswith(path + "/")):
                 return False
+            if target.query and actual.query != target.query:
+                return False
+        except ValueError:
+            return False
 
     return True
 

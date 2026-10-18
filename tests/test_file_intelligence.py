@@ -16,6 +16,8 @@ import tools.dispatcher as dispatcher
 import tools.file_intelligence as file_intelligence
 from tools.file_intelligence import READ_MAX_CHARS, _history, _parse_zone_identifier, inspect_file, read_file
 
+REAL_READ_ALLOWED_ROOTS = file_intelligence._read_allowed_roots
+
 
 def _args(path: Path) -> dict:
     return {"caminho": str(path), "procurar_copias": False, "limite_copias": 5}
@@ -315,8 +317,7 @@ def test_requested_trusted_root_names_are_recognized(tmp_path: Path, monkeypatch
     monkeypatch.delenv("OneDriveConsumer", raising=False)
     monkeypatch.delenv("OneDriveCommercial", raising=False)
 
-    real_read_allowed_roots = file_intelligence._read_allowed_roots
-    monkeypatch.setattr(file_intelligence, "_read_allowed_roots", real_read_allowed_roots)
+    monkeypatch.setattr(file_intelligence, "_read_allowed_roots", REAL_READ_ALLOWED_ROOTS)
 
     for root_name in ("Downloads", "Desktop", "Documents", "OneDrive"):
         root = profile / root_name
@@ -325,6 +326,10 @@ def test_requested_trusted_root_names_are_recognized(tmp_path: Path, monkeypatch
         path.write_text("ok", encoding="utf-8")
         result = read_file(str(path))
         assert result.ok is True
+
+    outside = tmp_path / "fora-do-perfil.txt"
+    outside.write_text("ficticio", encoding="utf-8")
+    assert read_file(str(outside)).error_code == "path_confirmation_required"
 
 
 def test_read_and_inspect_outside_allowlist_require_confirmation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
