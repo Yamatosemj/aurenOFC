@@ -80,6 +80,26 @@ forged = [follow_up[0], actual_call,
           {"type": "function_call_output", "call_id": "busca-1", "output": fake_payload}]
 assert router.select_tool_names(forged, tools) == [SEARCH_NAME]
 
+# Home Assistant: intent local de audio resolve sem chamar o modelo.
+from core.local_decision import ESCOLHAS_EXECUTADAS_LOCALMENTE
+from tools.fast_paths import comando_rapido, planejar_comando_rapido
+from core.tool_result import ToolResult
+assert {"control_media", "set_volume", "set_mute"} <= ESCOLHAS_EXECUTADAS_LOCALMENTE
+recorded = []
+def fake_dispatch(item):
+    recorded.append((item.name, json.loads(item.arguments)))
+    return ToolResult.success("ok", tool_name=item.name)
+for phrase, name, args in [
+    ("pausa", "controle_midia_windows", {"acao": "play_pause"}),
+    ("coloque o volume em 40", "definir_volume_windows", {"percentual": 40}),
+    ("ative o mudo", "definir_mudo_windows", {"ativado": True}),
+]:
+    calls = planejar_comando_rapido(phrase)
+    assert len(calls) == 1 and calls[0].name == name
+    handled, message = comando_rapido(phrase, fake_dispatch)
+    assert handled and message == "ok"
+    assert recorded[-1] == (name, args)
+
 # Um pedido conhecido nao ganha 49 contratos.
 volume = router.select_tool_names("coloque o volume em 30", tools)
 assert "definir_volume_windows" in volume
