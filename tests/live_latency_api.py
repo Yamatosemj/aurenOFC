@@ -55,7 +55,10 @@ class LiveBudget:
     def create(self, **params):
         if params.get('model') != 'gpt-5.6-luna' or params.get('previous_response_id'):
             raise RuntimeError('Live budget requires the configured model and self-contained input')
-        if params.get('reasoning') != {'effort':'none'}:
+        permitted_reasoning = [{'effort':'none'}]
+        if self.phase.startswith('completion'):
+            permitted_reasoning.append({'effort':'low'})
+        if params.get('reasoning') not in permitted_reasoning:
             raise RuntimeError('Unexpected reasoning mode')
         if any(tool.get('type') != 'function' for tool in params.get('tools', [])):
             raise RuntimeError('Hosted billable tools are outside this budget')
