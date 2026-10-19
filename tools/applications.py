@@ -6,12 +6,17 @@ from pathlib import Path
 import subprocess
 import shutil
 import time
+import re
 from threading import Lock
+from core.latency import measure
 
 _catalog_lock = Lock()
 _catalog_cache = None
 _catalog_expires = 0.0
 CATALOG_TTL_SECONDS = 60.0
+
+class ApplicationAmbiguousError(ValueError):
+    pass
 
 from core.utils import caminho_explicito_programa, normalizar_nome
 from core.tool_result import ToolResult
@@ -91,6 +96,7 @@ def encontrar_aplicativo(nome):
 
     melhor = None
     melhor_pontuacao = 0
+    empatado = False
 
     for aplicativo in aplicativos:
         nome_app = normalizar_nome(
@@ -115,7 +121,12 @@ def encontrar_aplicativo(nome):
         if pontuacao > melhor_pontuacao:
             melhor_pontuacao = pontuacao
             melhor = aplicativo
+            empatado = False
+        elif pontuacao and pontuacao == melhor_pontuacao:
+            empatado = True
 
+    if empatado:
+        raise ApplicationAmbiguousError('application_catalog_ambiguous')
     return melhor
 
 def procurar_atalho(nome):
@@ -191,24 +202,57 @@ def _powershell_literal(valor):
     """Escapa uma string para um literal entre aspas simples do PowerShell."""
     return "'" + str(valor).replace("'", "''") + "'"
 
+def _executavel_exato_path(programa):
+    """Basename.exe in explicit local PATH dirs; no implicit cwd or PATHEXT.
+
+    Identity resolution never grants permission. PATH order remains authoritative.
+    """
+    nome = str(programa).strip()
+    if not re.fullmatch(r'[\w .+-]+', nome) or nome in {'.', '..'}:
+        return None
+    if not nome.lower().endswith('.exe'):
+        if Path(nome).suffix:
+            return None
+        nome += '.exe'
+    cwd = Path.cwd().resolve()
+    with measure('application_path'):
+        for value in os.get_exec_path():
+            if not value or value.startswith(('\\\\', '//')):
+                continue
+            folder = Path(value.strip('"'))
+            if not folder.is_absolute():
+                continue
+            try:
+                folder = folder.resolve()
+                if folder == cwd or str(folder).startswith(('\\\\', '//')):
+                    continue
+                target = folder / nome
+                if target.is_file() and target.suffix.lower() == '.exe':
+                    resolved = target.resolve(strict=True)
+                    if not str(resolved).startswith(('\\\\', '//')):
+                        return str(resolved)
+            except OSError:
+                continue
+    return None
+
+
 def procurar_executavel(programa):
     # PATH is bounded and cheap; do not recurse through installed programs first.
-    caminho = shutil.which(programa)
-    if not caminho and not programa.lower().endswith(".exe"):
-        caminho = shutil.which(programa + ".exe")
+    caminho = _executavel_exato_path(programa)
     if caminho:
         return caminho
-    pedido = normalizar_nome(programa)
+    explicit_exe = str(programa).lower().endswith('.exe')
+    pedido = normalizar_nome(str(programa)[:-4] if explicit_exe else programa)
 
     if not pedido:
         return None
 
-    candidatos = list(dict.fromkeys([
+    candidatos = [str(programa)[:-4]] if explicit_exe else list(dict.fromkeys([
         pedido.replace(" ", ""),
         pedido.replace(" ", "_")
     ]))
 
-    for palavra in pedido.split():
+    for palavra in ([] if explicit_exe else pedido.split()):
         if palavra not in candidatos:
             candidatos.append(palavra)
 
@@ -228,7 +272,10 @@ def procurar_executavel(programa):
     ]
 
     # One enumeration for all names/roots, one overall subprocess timeout.
-    roots = list(dict.fromkeys(str(p) for p in pastas if p.exists()))
+    existing = [p.resolve() for p in pastas if p.is_absolute() and p.exists()
+                and not str(p).startswith(('\\\\', '//'))]
+    roots = [str(p) for p in dict.fromkeys(existing)
+             if not any(parent != p and parent in p.parents for parent in existing)]
     if not roots:
         return None
     paths = ",".join(_powershell_literal(p) for p in roots)
@@ -239,10 +286,13 @@ def procurar_executavel(programa):
         f"$aurenNames=@({names}); Get-ChildItem -LiteralPath {paths} "
         "-Recurse -File -Filter '*.exe' -ErrorAction SilentlyContinue | "
         "Where-Object { $aurenNames -contains $_.Name } | "
-        "Select-Object -First 1 -ExpandProperty FullName"],
+        "Select-Object -First 2 -ExpandProperty FullName"],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
         timeout=20, check=False)
-    caminho = resultado.stdout.strip()
+    matches = list(dict.fromkeys(resultado.stdout.strip().splitlines()))
+    if resultado.returncode == 0 and len(matches) > 1:
+        raise ApplicationAmbiguousError('application_executable_ambiguous')
+    caminho = matches[0] if matches else ''
     if resultado.returncode == 0 and caminho and os.path.isfile(caminho):
         return caminho
 
@@ -300,22 +350,33 @@ def abrir_programa(programa):
     # Discovery is read-only. A failed/uncertain launch never starts a second
     # launch path: the first effect might already have happened.
     try:
+        if str(programa).lower().endswith('.exe'):
+            executavel = _executavel_exato_path(programa)
+            if executavel:
+                process = subprocess.Popen([executavel], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                return _abertura_solicitada(Path(executavel).stem, 'path', process.pid)
         try:
-            aplicativo = encontrar_aplicativo(programa)
+            with measure('application_catalog'):
+                aplicativo = encontrar_aplicativo(programa)
         except (subprocess.TimeoutExpired, OSError):
             aplicativo = None  # safe discovery fallback, no launch attempted
         if aplicativo and aplicativo.get("AppID"):
             subprocess.Popen(["explorer.exe", f"shell:AppsFolder\\{aplicativo['AppID']}"],
                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             return _abertura_solicitada(aplicativo.get("Name", programa), "catalog")
-        atalho = procurar_atalho(programa)
+        with measure('application_shortcuts'):
+            atalho = procurar_atalho(programa)
         if atalho:
             os.startfile(str(atalho))
             return _abertura_solicitada(atalho.stem, "shortcut")
-        executavel = procurar_executavel(programa)
+        with measure('application_executables'):
+            executavel = procurar_executavel(programa)
         if executavel:
             process = subprocess.Popen([executavel], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             return _abertura_solicitada(Path(executavel).stem, "executable", process.pid)
+    except ApplicationAmbiguousError:
+        return ToolResult.failure('Mais de um programa corresponde ao pedido. Informe o nome exato ou caminho completo.',
+            error_code='application_ambiguous', tool_name='abrir_programa')
     except subprocess.TimeoutExpired:
         return ToolResult.failure("A busca do programa excedeu o tempo esperado. Informe o caminho completo para tentar novamente.",
             error_code="application_search_timeout", tool_name="abrir_programa")

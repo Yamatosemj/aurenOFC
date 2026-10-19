@@ -31,10 +31,12 @@ def test_empty_catalog_is_retried_after_installation(monkeypatch):
     assert apps.buscar_aplicativos_do_windows()[0]['Name'] == 'Novo'
 
 
-def test_path_hit_never_starts_recursive_powershell(monkeypatch):
-    monkeypatch.setattr(apps.shutil, 'which', lambda _: r'C:\Fixture\Test.exe')
+def test_path_hit_never_starts_recursive_powershell(tmp_path, monkeypatch):
+    target = tmp_path/'Teste.exe'
+    target.write_bytes(b'fixture, never executed')
+    monkeypatch.setenv('PATH', str(tmp_path))
     monkeypatch.setattr(apps.subprocess, 'run', lambda *a, **k: pytest.fail('Unnecessary recursive scan'))
-    assert apps.procurar_executavel('Teste') == r'C:\Fixture\Test.exe'
+    assert apps.procurar_executavel('Teste') == str(target.resolve())
 
 
 def test_recursive_scan_runs_once_for_all_names_and_roots(tmp_path, monkeypatch):
