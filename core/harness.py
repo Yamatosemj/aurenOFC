@@ -716,17 +716,29 @@ class AurenHarness:
         if not session_allows():
             self.task_manager.cancel(task_id=self._task_id, reason='Sessao da interface invalidada.')
             return None
+        model_started, model_called = time.perf_counter(), False
         try:
             self._reserve_model_call()
             from core.execution_progress import emit
             emit("model")
+            model_called = True
             resposta, latency, metrics = self._chamar_modelo_medido(*argumentos)
             if getattr(resposta, 'status', None) in {'incomplete', 'failed', 'cancelled', 'in_progress', 'queued'}:
+                if self._trace is not None:
+                    self._trace.record_model(0, latency, self._uso_resposta(resposta))
                 self.MSG_ERRO_PROVIDER = 'O modelo retornou uma resposta incompleta. Interrompi sem executar as ações dessa resposta.'
                 self.task_manager.fail('model_response_incomplete', task_id=self._task_id)
                 return None
             return resposta, latency, metrics
         except Exception as exc:
+            if model_called and self._trace is not None:
+                try:
+                    self._trace.record_model(0, (time.perf_counter()-model_started)*1000, {})
+                    self._trace.record_stage('model_error', (time.perf_counter()-model_started)*1000,
+                        category='model_error', success=False,
+                        metadata={'error_type': type(exc).__name__, 'usage_known': False})
+                except Exception:
+                    pass
             snapshot = self.task_manager.current_snapshot()
             if snapshot is not None and snapshot.state not in {
                 TaskState.COMPLETED,
@@ -740,6 +752,14 @@ class AurenHarness:
     def _reserve_model_call(self):
         if getattr(self.task_manager, 'persistent', False):
             self.task_manager.reserve_model_call(self._task_id)
+
+    def _record_latency(self, stage, duration_ms, success, error_type):
+        # Static stage + exception class only; no exception messages or targets.
+        _write_log('EXECUTION_STAGE', task_id=self._task_id, stage=stage,
+            latencia_ms=round(duration_ms, 3), success=success, error_type=error_type)
+        if self._trace is not None:
+            self._trace.record_stage(stage, duration_ms, category='execution_stage',
+                success=success, metadata={'error_type': error_type})
 
     def pause_current_task(self):
         snapshot = self.current_task()
@@ -844,6 +864,8 @@ class AurenHarness:
         from core.task_verification import validate_completion, CompletionPending
         review_started = time.perf_counter()
         review_called = False
+        review_usage = None
+        outcome, error_type, error_code = 'failed', '', ''
         try:
             if self.verificar_conclusao is None:
                 raise RuntimeError('Verificador de conclusao indisponivel.')
@@ -852,17 +874,36 @@ class AurenHarness:
             emit("verification")
             review_called = True
             result = self.verificar_conclusao(snapshot)
-            validate_completion(result, snapshot)
+            review_usage = getattr(result, 'metricas_uso', None)
+            from core.latency import measure
+            with measure('completion_validation'):
+                validate_completion(result, snapshot)
+            outcome = 'verified'
         except CompletionPending as pending:
+            outcome = 'pending'
             return pending
-        except Exception:
+        except Exception as exc:
+            review_usage = review_usage or getattr(exc, 'metricas_uso', None)
+            error_type = type(exc).__name__
+            error_code = getattr(exc, 'code', 'completion_validation_error')
             return self._encerrar_falha('completion_verification_failed',
                 'Nao consegui comprovar todas as etapas do objetivo. A tarefa nao foi concluida.')
         finally:
+            review_ms = (time.perf_counter()-review_started)*1000
+            # No reviewer text, arguments, exception message or response body.
+            _write_log('COMPLETION_VERIFICATION_RESULT', task_id=self._task_id,
+                latencia_ms=round(review_ms, 3), outcome=outcome,
+                error_type=error_type, error_code=error_code,
+                model_call=review_called, usage_known=review_usage is not None,
+                **({'uso': review_usage} if review_usage is not None else {}))
             if self._trace is not None:
                 try:
-                    self._trace.record_stage("completion_review", (time.perf_counter()-review_started)*1000,
-                        category="completion_review", metadata={"model_call": review_called, "usage": "unknown"})
+                    if review_called:
+                        self._trace.record_model(0, review_ms, review_usage or {})
+                    self._trace.record_stage("completion_review", review_ms,
+                        category="completion_review", success=outcome == 'verified',
+                        metadata={"model_call": review_called, "usage_known": review_usage is not None,
+                                  "outcome": outcome, "error_type": error_type, "error_code": error_code})
                 except Exception:
                     pass
         return None
@@ -913,7 +954,9 @@ class AurenHarness:
         self._model_budget_cap = model_budget
         token = _CURRENT_SESSION.set(self._session)
         try:
-            return self._processar_mensagem_impl(mensagem)
+            from core.latency import observe
+            with observe(self._record_latency):
+                return self._processar_mensagem_impl(mensagem)
         except Exception as erro:
             try:
                 snapshot = self.task_manager.current_snapshot()
@@ -953,6 +996,10 @@ class AurenHarness:
                         error=error,
                         total_ms=total_ms,
                     )
+                    _write_log('TASK_LATENCY_SUMMARY', task_id=self._task_id,
+                        total_ms=round(total_ms or 0, 3),
+                        model_calls=trace.model_rounds, tool_calls=trace.tool_calls,
+                        model_ms=round(trace.model_ms, 3), tool_ms=round(trace.tool_ms, 3))
             except Exception as trace_error:
                 _write_log(
                     "TRACE_ERROR",

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 
 from core.utils import normalizar_nome
+from core.latency import measure
 from core.tool_contracts import validate_tool_arguments
 from core.vision import transform_visual_tool_arguments
 from tools import applications, browser, browser_context, file_intelligence, files
@@ -232,7 +233,8 @@ def executar_ferramenta(item, permission_manager, memory_store) -> ToolResult:
             tool_name=nome,
         )
 
-    contrato_ok, contrato_erro = validate_tool_arguments(nome, argumentos)
+    with measure("contract_validation"):
+        contrato_ok, contrato_erro = validate_tool_arguments(nome, argumentos)
     if not contrato_ok:
         permission_manager.registrar_resultado(False, nome, argumentos)
         return ToolResult.failure(
@@ -283,7 +285,8 @@ def executar_ferramenta(item, permission_manager, memory_store) -> ToolResult:
             "_uia_resolvido_tipo": contexto["uia_resolved_type"],
         })
 
-    permitido, motivo = permission_manager.autorizar(nome, argumentos_execucao)
+    with measure("permission_validation"):
+        permitido, motivo = permission_manager.autorizar(nome, argumentos_execucao)
     if not permitido:
         permission_manager.registrar_resultado(False, nome, argumentos)
         return ToolResult.failure(
@@ -312,7 +315,8 @@ def executar_ferramenta(item, permission_manager, memory_store) -> ToolResult:
     try:
         from core.execution_progress import emit
         emit("tool")
-        resultado = TOOL_HANDLERS[nome](argumentos_execucao, memory_store, contexto)
+        with measure("tool_executor"):
+            resultado = TOOL_HANDLERS[nome](argumentos_execucao, memory_store, contexto)
     except (OSError, RuntimeError, TypeError, ValueError, KeyError) as erro:
         permission_manager.registrar_resultado(False, nome, argumentos)
         return ToolResult.failure(

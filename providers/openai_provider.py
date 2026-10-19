@@ -91,12 +91,24 @@ class OpenAIProvider:
         return replace(decisao, metricas_uso=usage.extrair_metricas_uso(resposta))
 
     def verify_completion(self, snapshot):
-        from core.task_verification import INSTRUCTIONS as completion_instructions, FORMAT, completion_input
-        resposta = self.get_client().responses.create(model=MODEL,
-            instructions=completion_instructions, input=completion_input(snapshot), tools=[],
-            reasoning={'effort': 'none'}, text={'format': FORMAT}, max_output_tokens=1200, store=False)
+        from core.task_verification import (INSTRUCTIONS as completion_instructions, FORMAT,
+            completion_input, CompletionResult, CompletionVerificationFailure)
+        entrada = completion_input(snapshot)
+        try:
+            resposta = self.get_client().responses.create(model=MODEL,
+                instructions=completion_instructions, input=entrada, tools=[],
+                reasoning={'effort': 'none'}, text={'format': FORMAT}, max_output_tokens=1200, store=False)
+        except Exception as exc:
+            raise CompletionVerificationFailure('completion_provider_error') from exc
         usage.registrar_uso(resposta)
+        metrics = usage.extrair_metricas_uso(resposta) or None
         if getattr(resposta, 'status', None) in {'incomplete', 'failed', 'cancelled', 'in_progress', 'queued'}:
-            raise RuntimeError('Revisor de conclusao retornou resposta incompleta.')
+            raise CompletionVerificationFailure('completion_response_incomplete', metrics)
         import json
-        return json.loads(str(getattr(resposta, 'output_text', '') or ''))
+        try:
+            result = json.loads(str(getattr(resposta, 'output_text', '') or ''))
+            if not isinstance(result, dict):
+                raise ValueError('Expected mapping')
+        except ValueError as exc:
+            raise CompletionVerificationFailure('completion_response_invalid', metrics) from exc
+        return CompletionResult(result, metrics)

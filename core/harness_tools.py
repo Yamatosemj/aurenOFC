@@ -84,6 +84,7 @@ def _executar_chamadas_rodada(
             tool_name=nome,
         )
         ferramenta_sucesso = resultado_estruturado.ok
+        tool_ms = (time.perf_counter() - tool_started_perf) * 1000.0
 
         if ferramenta_sucesso and nome in browser_state_mutating_tools:
             browser_verification_pending = True
@@ -122,7 +123,7 @@ def _executar_chamadas_rodada(
             try:
                 trace.record_tool(
                     nome,
-                    (time.perf_counter() - tool_started_perf) * 1000.0,
+                    tool_ms,
                     success=ferramenta_sucesso,
                 )
             except Exception as exc:
@@ -154,6 +155,8 @@ def _executar_chamadas_rodada(
             ferramenta=nome,
             resultado=resultado,
             sucesso=ferramenta_sucesso,
+            latencia_ms=round(tool_ms, 3),
+            error_code=resultado_estruturado.error_code,
         )
 
         resultado_compacto = _texto_seguro(
