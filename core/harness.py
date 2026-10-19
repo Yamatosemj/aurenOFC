@@ -893,6 +893,8 @@ class AurenHarness:
             outcome = 'verified'
         except CompletionPending as pending:
             outcome = 'pending'
+            error_type = type(pending).__name__
+            error_code = getattr(pending, 'code', 'completion_pending')
             return pending
         except Exception as exc:
             review_usage = review_usage or getattr(exc, 'metricas_uso', None)

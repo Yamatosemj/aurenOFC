@@ -53,7 +53,9 @@ FORMAT = {'type': 'json_schema', 'name': 'auren_goal_completion', 'strict': True
 
 
 class CompletionPending(RuntimeError):
-    pass
+    def __init__(self, message, *, code='completion_pending', stage_index=None):
+        super().__init__(message)
+        self.code, self.stage_index = code, stage_index
 
 
 class CompletionResult(dict):
@@ -115,7 +117,17 @@ def validate_completion(result, snapshot):
                    and not verified_window_state(snapshot.steps[n-1])]
         if effects and not any(n > max(effects) and snapshot.steps[n-1].tool in READ_ONLY_TOOLS
                                for n in stage['evidence']):
-            raise CompletionValidationFailure('completion_effect_unverified', 'Efeito sem leitura posterior de verificacao.')
+            # Missing proof is pending, not successful or a malformed schema.
+            # Let the existing single bounded recovery obtain/reference a
+            # real observation. Never insert evidence or accept an effect here.
+            later = [i for i, step in enumerate(snapshot.steps, 1)
+                     if i > max(effects) and step.success is True and step.tool in READ_ONLY_TOOLS]
+            raise CompletionPending(
+                'Efeito sem leitura posterior de verificacao na lista evidence da etapa '
+                + str(stage['index']) + '. Efeitos citados: ' + str(effects)
+                + '. Leituras posteriores existentes: ' + str(later)
+                + '. So cite uma leitura se ela comprovar o alvo e o resultado desta etapa. Nao repita efeitos ja executados.',
+                code='completion_effect_unverified', stage_index=stage['index'])
     if seen != expected:
         raise CompletionValidationFailure('completion_stage_missing', 'O objetivo ainda possui etapas sem verificacao.')
     if pending or result['answer_status'] != 'verified':
