@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from types import SimpleNamespace
 
-from core.local_decision import SITES_CONHECIDOS
+from core.local_decision import SITES_CONHECIDOS, ESCOLHAS_EXECUTADAS_LOCALMENTE
 from core.router import get_router
 
 # Marcadores que o Harness usa para classificar a resposta de um atalho como falha
@@ -64,6 +64,18 @@ def planejar_comando_rapido(mensagem, router=None):
     if escolha in {"open_url", "open_known_site"}:
         url = args["url"] if escolha == "open_url" else SITES_CONHECIDOS[args["site"]]
         return [chamada("navegar_navegador", {"url": url, "modo": "visivel"})]
+
+    # Padroes de controle reversivel de audio; continuam sujeitos ao
+    # contrato, ao PermissionManager e a verificacao de intencao do Harness.
+    if escolha in ESCOLHAS_EXECUTADAS_LOCALMENTE:
+        operacoes = {
+            "control_media": ("controle_midia_windows", {"acao": args.get("acao")}),
+            "set_volume": ("definir_volume_windows", {"percentual": args.get("percentual")}),
+            "set_mute": ("definir_mudo_windows", {"ativado": args.get("ativado")}),
+        }
+        if escolha in operacoes:
+            nome, parametros = operacoes[escolha]
+            return [chamada(nome, parametros)]
 
     # Outros padroes nao sao executados localmente; seguem para o modelo.
     return []
