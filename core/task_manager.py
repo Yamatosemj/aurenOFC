@@ -21,11 +21,18 @@ def _persistent_change(method):
                 raise RuntimeError('Manager de tarefas encerrado.')
             if self._storage is None:
                 return method(self, *args, **kwargs)
-            before, selected = deepcopy(self._tasks), self._current_task_id
+            if self._transaction_before is not None:
+                return method(self, *args, **kwargs)
+            # Clone records lazily in _require, before mutation. Historical
+            # tasks are unchanged; serializing/copying all of them per model
+            # transition made each ordinary turn grow with the chat history.
+            before, selected = dict(self._tasks), self._current_task_id
+            self._transaction_before = before
             try:
                 result = method(self, *args, **kwargs)
-                records = self._records()
-                previous = {key:asdict(value) for key,value in before.items()}
+                changed = {key: value for key, value in self._tasks.items() if before.get(key) is not value}
+                records = {key: asdict(value) for key, value in changed.items()}
+                previous = {key:asdict(before[key]) for key in changed if key in before}
                 for key, value in records.items():
                     if value != previous.get(key):
                         self._decode_record(value)
@@ -34,6 +41,8 @@ def _persistent_change(method):
             except BaseException:
                 self._tasks, self._current_task_id = before, selected
                 raise
+            finally:
+                self._transaction_before = None
     return apply
 
 
@@ -154,6 +163,7 @@ class TaskManager:
         self._lock = RLock()
         self._closed = False
         self._storage = None
+        self._transaction_before = None
         if db_path is not None:
             from core.task_persistence import TaskStorage
             self._storage = TaskStorage(db_path)
@@ -315,6 +325,9 @@ class TaskManager:
                 self._tasks[selected] = record
         if not selected or selected not in self._tasks:
             raise RuntimeError("Nenhuma tarefa selecionada.")
+        before = self._transaction_before
+        if before is not None and selected in before and self._tasks[selected] is before[selected]:
+            self._tasks[selected] = deepcopy(before[selected])
         return self._tasks[selected]
 
     def _transition(self, record: _TaskRecord, state: TaskState) -> None:
