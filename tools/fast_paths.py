@@ -88,8 +88,8 @@ def comando_rapido(mensagem, executar_ferramenta, router=None):
       - quem decide se existe atalho (e qual) e o Router (`Router.decidir_local`);
       - quem executa e o Dispatcher, via `executar_ferramenta(item) -> ToolResult`.
     Aqui ficam apenas as politicas do atalho (faixa de abas, repeticao, formato da
-    resposta). Escolhas sem executor local (control_media, set_volume, set_mute,
-    unknown_or_complex) retornam (False, "") e o pedido segue para o modelo.
+    resposta). Escolhas de audio seguem para o modelo por padrao; com
+    opt-in, tornam-se caminhos locais pelo mesmo Dispatcher.
     """
     texto = mensagem.strip()
     decision = (router or get_router()).decidir_local(texto)
@@ -121,5 +121,15 @@ def comando_rapido(mensagem, executar_ferramenta, router=None):
     if escolha in {"open_url", "open_known_site"}:
         url = argumentos["url"] if escolha == "open_url" else SITES_CONHECIDOS[argumentos["site"]]
         return True, _texto(_chamar(executar_ferramenta, "navegar_navegador", {"url": url, "modo": "visivel"}))
+
+    if escolha in ESCOLHAS_EXECUTADAS_LOCALMENTE:
+        operacoes = {
+            "control_media": ("controle_midia_windows", {"acao": argumentos.get("acao")}),
+            "set_volume": ("definir_volume_windows", {"percentual": argumentos.get("percentual")}),
+            "set_mute": ("definir_mudo_windows", {"ativado": argumentos.get("ativado")}),
+        }
+        if escolha in operacoes:
+            nome, parametros = operacoes[escolha]
+            return True, _texto(_chamar(executar_ferramenta, nome, parametros))
 
     return False, ""
