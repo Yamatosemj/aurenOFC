@@ -42,6 +42,7 @@ class PermissionManager:
     CAPABILITY_POLICY = {
         "memory.write": PermissionLevel.CONFIRM,
         "memory.read": PermissionLevel.AUTO,
+        "tool.discovery": PermissionLevel.AUTO,
         "application.open": PermissionLevel.AUTO,
         "file.search": PermissionLevel.AUTO,
         "file.inspect": PermissionLevel.AUTO,
@@ -73,6 +74,7 @@ class PermissionManager:
     # O teste de politica exige que esta tabela acompanhe CAPABILITY_POLICY.
     AUTO_CAPABILITY_JUSTIFICATIONS = {
         "memory.read": "Somente consulta memoria; nao altera estado.",
+        "tool.discovery": "Retorna apenas nomes e descricoes de schemas locais; nao executa qualquer ferramenta.",
         "application.open": "Abrir um programa e reversivel e nao publica nem envia dados por si so; programas administrativos sao elevados para CONFIRM.",
         "file.search": "Pesquisa nomes/metadados locais sem modificar arquivos.",
         "file.inspect": "Inspecao e somente leitura; caminhos sensiveis ou fora da allowlist sao elevados para CONFIRM/BLOCKED.",
