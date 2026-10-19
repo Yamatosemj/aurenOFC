@@ -11,6 +11,7 @@ from pathlib import Path
 from threading import Event, Lock, Thread
 from typing import Any, Callable
 from core.execution_scope import current_session_guard
+from core.execution_progress import observer
 
 
 @dataclass
@@ -239,8 +240,11 @@ class AurenUiWorker:
                 if not valid:
                     continue
 
-                self.events.put(UiEvent("busy", "Processando...", generation=generation))
+                self.events.put(UiEvent("busy", "Pedido recebido. Preparando…", generation=generation))
                 session_token = current_session_guard.set(lambda: self._generation_is_active(generation))
+                progress_token = observer.set(lambda label: self.events.put(
+                    UiEvent("progress", label, generation=generation))
+                    if self._generation_is_active(generation) else None)
                 try:
                     with self._lock:
                         harness = self._harness
@@ -296,6 +300,7 @@ class AurenUiWorker:
                     if still_current:
                         self.events.put(UiEvent("error", f"Erro ao processar: {exc}", generation=generation))
                 finally:
+                    observer.reset(progress_token)
                     current_session_guard.reset(session_token)
                     self.events.put(UiEvent("idle", generation=generation))
         finally:

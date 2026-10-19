@@ -168,8 +168,7 @@ const $=id=>document.getElementById(id);
 const cap=$("legenda"),eco=$("eco"),cardsEl=$("cards");
 let seq=0,idle=null;
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
-function say(text,s){return new Promise(res=>{cap.textContent="";if(reduz){cap.textContent=text;return res()}
- const w=text.split(" ");let i=0;(function n(){if(s!==seq)return res();cap.textContent=w.slice(0,++i).join(" ");i<w.length?setTimeout(n,70):res()})()})}
+function say(text,s){if(s===seq)cap.textContent=text;return Promise.resolve()}
 function repouso(){clearTimeout(idle)}
 
 function addCard(c){
@@ -351,7 +350,8 @@ $("authNo").onclick=()=>responderConfirmacao(false);
 $("authYes").onclick=()=>responderConfirmacao(true);
 function evento(e){
  if(e.kind==="you"){eco.textContent="Você: "+e.text;cap.textContent="";define("pensando")}
- else if(e.kind==="busy"){ocupado=true;if(modoAtual==="active")define("pensando")}
+ else if(e.kind==="busy"){ocupado=true;if(modoAtual==="active"){define("pensando");cap.textContent=e.text||"Pedido recebido. Preparando…"}}
+ else if(e.kind==="progress"&&modoAtual==="active"&&!pedidoPendente){cap.textContent=e.text;define("pensando")}
  else if(e.kind==="idle"){ocupado=false}
  else if(e.kind==="reply"&&modoAtual!=="off"){void agir("normal",e.text)}
  else if(e.kind==="error"&&modoAtual!=="off"){void agir("confusa",e.text)}
