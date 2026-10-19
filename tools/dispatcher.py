@@ -11,6 +11,7 @@ from tools import windows
 from tools.memory import salvar_memoria_persistente, consultar_memoria_persistente, esquecer_memoria_persistente
 
 from core.tool_result import LEGACY_FAILURE_MARKERS, ToolResult, from_legacy
+from core.tool_discovery import SEARCH_NAME, enabled as discovery_enabled, search_catalog
 
 # Compatibilidade com testes/codigo legado. A nova fonte de verdade e
 # core.tool_result; novas ferramentas devem retornar ToolResult diretamente.
@@ -190,6 +191,14 @@ TOOL_HANDLERS = {
     "recarregar_pagina": _sem_memoria(browser.recarregar_pagina),
     "rolar_pagina": _sem_memoria(browser.rolar_pagina, "direcao"),
 }
+
+
+if discovery_enabled():
+    def _buscar_ferramentas_handler(args, _memory, _context):
+        from core.tools_registry import tools as registered
+        return search_catalog(args["consulta"], args["limite"], registered)
+
+    TOOL_HANDLERS[SEARCH_NAME] = _buscar_ferramentas_handler
 
 
 def validar_registry_handlers() -> tuple[bool, str]:
