@@ -20,6 +20,7 @@ from typing import Any
 
 from core.capability_resolver import CapabilityResolution, CapabilityResolver
 from core.local_decision import DecisionResult, LocalDecisionEngine
+from core.tool_discovery import SEARCH_NAME, discovered_from_round, enabled as discovery_enabled
 
 
 # Ferramentas de ancoragem que ajudam em tarefas curtas sem obrigar o modelo a
@@ -398,6 +399,9 @@ class Router:
                 if (isinstance(result, dict) and result.get('ok') is False
                         and not result.get('conteudo_nao_confiavel')
                         and result.get('codigo_erro') == 'contract_error'):
+                    if discovery_enabled():
+                        self.last_domains, self.last_tool_names = ["capability_recovery"], [SEARCH_NAME]
+                        return [SEARCH_NAME]
                     self.last_domains, self.last_tool_names = ['capability_recovery'], all_names
                     return all_names
 
@@ -412,6 +416,16 @@ class Router:
             self.last_domains = ["conversation"]
             self.last_tool_names = []
             return []
+
+        # A busca anterior veio do proprio Dispatcher e pertence a um call_id
+        # da resposta imediatamente anterior. Nunca usamos texto da pagina/usuario
+        # para habilitar schemas. Mantemos tambem a busca para recuperacao.
+        descobertas = discovered_from_round(mensagem, available_tools) if discovery_enabled() else []
+        if descobertas:
+            selected = set(descobertas) | {SEARCH_NAME}
+            ordered = [name for name in all_names if name in selected]
+            self.last_domains, self.last_tool_names = ["discovery_result"], ordered
+            return ordered
 
         # Abertura simples de aplicativo nomeado: nao deixar instrucao interna
         # sobre "janelas" esconder abrir_programa nem forcar uma leitura inutil.
@@ -450,8 +464,13 @@ class Router:
                 if "process" not in domains:
                     domains.append("process")
 
-        # Sem sinal suficientemente claro: preserva 100% da compatibilidade.
+        # Sem dominio reconhecido, nao enviamos os 49 schemas quando a
+        # descoberta esta habilitada: o modelo pode conversar ou pesquisar
+        # uma capacidade com apenas um contrato compacto.
         if not domains:
+            if discovery_enabled():
+                self.last_domains, self.last_tool_names = ["discovery"], [SEARCH_NAME]
+                return [SEARCH_NAME]
             self.last_domains = []
             self.last_tool_names = all_names
             return all_names
@@ -489,8 +508,8 @@ class Router:
         # ferramentas de ancoragem. O sistema (hora/RAM/uptime), por exemplo,
         # corretamente pode ficar com apenas 3 ferramentas.
         if len(ordered) < 2:
-            ordered = all_names
-            domains = []
+            ordered = [SEARCH_NAME] if discovery_enabled() else all_names
+            domains = ["discovery"] if discovery_enabled() else []
 
         self.last_domains = domains
         self.last_tool_names = ordered
