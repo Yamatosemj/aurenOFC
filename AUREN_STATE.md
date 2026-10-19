@@ -2,11 +2,13 @@
 
 > **Leia este arquivo primeiro em toda nova conversa ou tarefa de manutenção.** Este documento descreve o **estado corrente verificado**, não um diário de PRs. Confirme as afirmações dinâmicas com a `main`, as PRs abertas e os checks atuais no GitHub antes de agir.
 >
-> **Manutenção:** 2026-10-18 · [branch `correcoes-auditoria`](https://github.com/Yamatosemj/aurenOFC/tree/correcoes-auditoria), baseada em `a7a6fd3`. `main` remota consultada em `70b040d6191237e2f0a291a14b8ea8fb4b78a09d`, com arquivos idênticos à base auditada. As correções estão isoladas do branch main. O histórico anterior permanece arquivado. Consulte o [relatório de correções](RELATORIO_CORRECOES.md) e a [validação Live](RELATORIO_TESTES_LIVE.md).
+> **Manutenção:** candidata `estabilizacao/usabilidade-offline-20261018`, sobre a PR #164 e suas bases #161–#163. `main` remota consultada em `70b040d6191237e2f0a291a14b8ea8fb4b78a09d`; sem merge ou Electron. Consulte o [diagnóstico, comparações e teste isolado](docs/estabilizacao/USABILIDADE_OFFLINE.md). SHA final e resultados da candidata devem ser conferidos na PR; os registros anteriores permanecem históricos.
 >
 > **Fontes:** [README](README.md) · [Regras para agentes](AGENTS.md) · [Inventário e estado por subsistema](docs/INVENTARIO.md) · [Histórico integral anterior à consolidação](docs/history/AUREN_STATE_SNAPSHOT_2026-10-10.md).
 
 ## 1. Situação e trabalho em foco
+
+- **Ciclo de usabilidade offline:** menos cópia/serialização de tarefas antigas, fechamento determinístico de SQLite, schemas menores em conversas inequívocas, descoberta de executáveis com um subprocesso recursivo e cache curto de StartApps, falhas definitivas sem repetição, respostas incompletas recusadas e progresso real no Chrome. Texto pronto aparece inteiro, sem atraso por palavra. A comparação não mostrou ganho uniforme de latência total offline; benefício da redução de schemas na API permanece não medido. Base: 1.141 aprovados/8 ignorados. Chromium isolado/DOM com dados fictícios validado; modelo e ações Windows simulados. Resultado final por SHA e CI na PR. **Zero novas chamadas Live; autorização anterior 8/8 esgotada.** Candidata para avaliação posterior, sem declaração de uso diário. [Evidências, riscos e limitações](docs/estabilizacao/USABILIDADE_OFFLINE.md).
 
 - **Evidência por tarefa, candidata sobre #163:** o Harness recusa conclusão de leituras/ações reconhecidas sem passos adequados da própria tarefa; contexto anterior não é prova. Conversa e checkpoints próprios preservados. Local: 1.141 aprovados/8 ignorados; Live com conteúdo antigo no contexto e resumo posterior: 2 cenários aprovados, 3 chamadas novas, total 8/8 e US$ 0,00587470 estimados dentro de US$ 0,50. Sem saldo de chamadas nesta autorização. Identificação de capacidades indisponíveis segue pendente. [Causas, evidências e limites](docs/estabilizacao/EVIDENCIA_POR_TAREFA.md).
 

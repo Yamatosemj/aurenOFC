@@ -1,0 +1,92 @@
+{
+  "kind": "offline_fake_provider_real_sqlite_no_api",
+  "samples": 100,
+  "cases": {
+    "saudacao": {
+      "total_ms": {
+        "n": 100,
+        "median": 80.035,
+        "p95": 108.647
+      },
+      "context_ms": {
+        "n": 100,
+        "median": 3.715,
+        "p95": 7.765
+      },
+      "model_calls": 100,
+      "tools_per_call": {
+        "n": 100,
+        "median": 0.0,
+        "p95": 0.0
+      },
+      "payload_chars": {
+        "n": 100,
+        "median": 1568.0,
+        "p95": 1568.0
+      },
+      "last_status": "completed"
+    },
+    "conversa": {
+      "total_ms": {
+        "n": 100,
+        "median": 88.501,
+        "p95": 111.679
+      },
+      "context_ms": {
+        "n": 100,
+        "median": 4.298,
+        "p95": 7.099
+      },
+      "model_calls": 100,
+      "tools_per_call": {
+        "n": 100,
+        "median": 49.0,
+        "p95": 49.0
+      },
+      "payload_chars": {
+        "n": 100,
+        "median": 26055.0,
+        "p95": 26055.0
+      },
+      "last_status": "completed"
+    },
+    "pergunta": {
+      "total_ms": {
+        "n": 100,
+        "median": 63.547,
+        "p95": 83.192
+      },
+      "context_ms": {
+        "n": 100,
+        "median": 3.679,
+        "p95": 5.354
+      },
+      "model_calls": 100,
+      "tools_per_call": {
+        "n": 100,
+        "median": 0.0,
+        "p95": 0.0
+      },
+      "payload_chars": {
+        "n": 100,
+        "median": 1776.0,
+        "p95": 1776.0
+      },
+      "last_status": "completed"
+    }
+  },
+  "ambiguous_tools": 49,
+  "simulated_executable_scan": {
+    "delay_ms_per_subprocess": 2,
+    "total_ms": {
+      "n": 100,
+      "median": 2.446,
+      "p95": 2.837
+    },
+    "subprocesses": {
+      "n": 100,
+      "median": 1.0,
+      "p95": 1.0
+    }
+  }
+}
