@@ -519,6 +519,8 @@ class AurenHarness:
 
     def _processar_mensagem_impl(self, mensagem: str) -> tuple[bool, Any]:
         """Retorna (tratado_rapido, resposta)."""
+        from core.execution_progress import emit
+        emit("context")
         self._garantir_sessao_chat()
         self._pause_requested = False
         self._trace_started_perf = time.perf_counter()
@@ -548,8 +550,11 @@ class AurenHarness:
         )
         # A pendencia pertence somente a proxima mensagem, nunca a outros chats.
         self._pergunta_pendente = None
+        planning_ms = 0.0
         try:
+            planning_started = time.perf_counter()
             plan = self.agent.begin(objetivo_efetivo)
+            planning_ms = (time.perf_counter() - planning_started) * 1000
             chat_id = self._session.chat_id if self._session else ""
             contexto = self.context.build(
                 chat_id,
@@ -592,7 +597,8 @@ class AurenHarness:
                 "contexto",
                 context_ms,
                 category="context",
-                metadata={"objective_chars": len(objetivo_log)},
+                metadata={"objective_chars": len(objetivo_log), "context_chars": len(self._contexto_tarefa),
+                          "planning_ms": planning_ms},
             )
         except Exception as exc:
             self._trace = None
@@ -705,13 +711,21 @@ class AurenHarness:
         Se o provider falhar, a tarefa e marcada como failed e retorna None; o
         ciclo apenas devolve a mensagem de erro ao usuario.
         """
+        self.MSG_ERRO_PROVIDER = type(self).MSG_ERRO_PROVIDER
         argumentos = (entrada, None, "none") + ((tool_choice,) if tool_choice is not None else ())
         if not session_allows():
             self.task_manager.cancel(task_id=self._task_id, reason='Sessao da interface invalidada.')
             return None
         try:
             self._reserve_model_call()
-            return self._chamar_modelo_medido(*argumentos)
+            from core.execution_progress import emit
+            emit("model")
+            resposta, latency, metrics = self._chamar_modelo_medido(*argumentos)
+            if getattr(resposta, 'status', None) in {'incomplete', 'failed', 'cancelled', 'in_progress', 'queued'}:
+                self.MSG_ERRO_PROVIDER = 'O modelo retornou uma resposta incompleta. Interrompi sem executar as ações dessa resposta.'
+                self.task_manager.fail('model_response_incomplete', task_id=self._task_id)
+                return None
+            return resposta, latency, metrics
         except Exception as exc:
             snapshot = self.task_manager.current_snapshot()
             if snapshot is not None and snapshot.state not in {
@@ -828,10 +842,15 @@ class AurenHarness:
         # Review the candidate without persisting or publishing it as success.
         snapshot = replace(self.current_task(), result=candidate_answer)
         from core.task_verification import validate_completion, CompletionPending
+        review_started = time.perf_counter()
+        review_called = False
         try:
             if self.verificar_conclusao is None:
                 raise RuntimeError('Verificador de conclusao indisponivel.')
             self._reserve_model_call()
+            from core.execution_progress import emit
+            emit("verification")
+            review_called = True
             result = self.verificar_conclusao(snapshot)
             validate_completion(result, snapshot)
         except CompletionPending as pending:
@@ -839,6 +858,13 @@ class AurenHarness:
         except Exception:
             return self._encerrar_falha('completion_verification_failed',
                 'Nao consegui comprovar todas as etapas do objetivo. A tarefa nao foi concluida.')
+        finally:
+            if self._trace is not None:
+                try:
+                    self._trace.record_stage("completion_review", (time.perf_counter()-review_started)*1000,
+                        category="completion_review", metadata={"model_call": review_called, "usage": "unknown"})
+                except Exception:
+                    pass
         return None
 
     def _log_resposta_modelo(

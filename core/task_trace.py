@@ -9,6 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from statistics import median
 from typing import Any
+from contextlib import contextmanager
 
 from core.usage import base_do_custo, calcular_custo_estimado
 
@@ -45,12 +46,17 @@ class TaskTraceStore:
     def __init__(self, db_path: str | Path = DEFAULT_TRACE_DB_PATH) -> None:
         self.db_path = Path(db_path)
 
-    def _connect(self) -> sqlite3.Connection:
+    @contextmanager
+    def _connect(self):
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         connection = sqlite3.connect(self.db_path, timeout=10.0)
         connection.row_factory = sqlite3.Row
-        self._ensure_schema(connection)
-        return connection
+        try:
+            self._ensure_schema(connection)
+            with connection:
+                yield connection
+        finally:
+            connection.close()
 
     @staticmethod
     def _ensure_schema(connection: sqlite3.Connection) -> None:

@@ -310,6 +310,8 @@ def executar_ferramenta(item, permission_manager, memory_store) -> ToolResult:
             argumentos_execucao["_caminho_confirmado"] = authorization.caminho
 
     try:
+        from core.execution_progress import emit
+        emit("tool")
         resultado = TOOL_HANDLERS[nome](argumentos_execucao, memory_store, contexto)
     except (OSError, RuntimeError, TypeError, ValueError, KeyError) as erro:
         permission_manager.registrar_resultado(False, nome, argumentos)

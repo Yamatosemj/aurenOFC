@@ -5,18 +5,25 @@ import os
 from pathlib import Path
 import subprocess
 import shutil
+import time
+from threading import Lock
+
+_catalog_lock = Lock()
+_catalog_cache = None
+_catalog_expires = 0.0
+CATALOG_TTL_SECONDS = 60.0
 
 from core.utils import caminho_explicito_programa, normalizar_nome
 from core.tool_result import ToolResult
 
 
-def buscar_aplicativos_do_windows():
+def _buscar_aplicativos_do_windows():
     comando = [
         "powershell",
         "-NoProfile",
         "-Command",
         (
-            "Get-StartApps | "
+            "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-StartApps | "
             "Select-Object Name,AppID | "
             "ConvertTo-Json -Compress"
         )
@@ -48,6 +55,21 @@ def buscar_aplicativos_do_windows():
 
     except json.JSONDecodeError:
         return []
+
+
+def buscar_aplicativos_do_windows():
+    """Short process-local catalog cache; failed lookups never poison it."""
+    global _catalog_cache, _catalog_expires
+    with _catalog_lock:
+        now = time.monotonic()
+        if _catalog_cache is not None and now < _catalog_expires:
+            return [dict(app) for app in _catalog_cache]
+        apps = _buscar_aplicativos_do_windows()
+        apps = [app for app in apps if isinstance(app, dict)]
+        if apps:
+            _catalog_cache = tuple(dict(app) for app in apps)
+            _catalog_expires = time.monotonic() + CATALOG_TTL_SECONDS
+        return apps
 
 def encontrar_aplicativo(nome):
     pedido = normalizar_nome(nome)
@@ -170,15 +192,21 @@ def _powershell_literal(valor):
     return "'" + str(valor).replace("'", "''") + "'"
 
 def procurar_executavel(programa):
+    # PATH is bounded and cheap; do not recurse through installed programs first.
+    caminho = shutil.which(programa)
+    if not caminho and not programa.lower().endswith(".exe"):
+        caminho = shutil.which(programa + ".exe")
+    if caminho:
+        return caminho
     pedido = normalizar_nome(programa)
 
     if not pedido:
         return None
 
-    candidatos = [
+    candidatos = list(dict.fromkeys([
         pedido.replace(" ", ""),
         pedido.replace(" ", "_")
-    ]
+    ]))
 
     for palavra in pedido.split():
         if palavra not in candidatos:
@@ -199,40 +227,24 @@ def procurar_executavel(programa):
         )
     ]
 
-    for pasta in pastas:
-        if not pasta.exists():
-            continue
-
-        for candidato in candidatos:
-            comando = [
-                "powershell",
-                "-NoProfile",
-                "-Command",
-                (
-                    f"Get-ChildItem "
-                    f"-LiteralPath {_powershell_literal(pasta)} "
-                    f"-Recurse -File "
-                    f"-Filter {_powershell_literal(str(candidato) + '.exe')} "
-                    f"-ErrorAction SilentlyContinue | "
-                    f"Select-Object -First 1 "
-                    f"-ExpandProperty FullName"
-                )
-            ]
-
-            resultado = subprocess.run(
-                comando,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                timeout=20,
-                check=False,
-            )
-
-            caminho = resultado.stdout.strip()
-
-            if caminho and os.path.exists(caminho):
-                return caminho
+    # One enumeration for all names/roots, one overall subprocess timeout.
+    roots = list(dict.fromkeys(str(p) for p in pastas if p.exists()))
+    if not roots:
+        return None
+    paths = ",".join(_powershell_literal(p) for p in roots)
+    names = ",".join(_powershell_literal(c + '.exe') for c in candidatos)
+    resultado = subprocess.run([
+        "powershell", "-NoProfile", "-Command",
+        "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; "
+        f"$aurenNames=@({names}); Get-ChildItem -LiteralPath {paths} "
+        "-Recurse -File -Filter '*.exe' -ErrorAction SilentlyContinue | "
+        "Where-Object { $aurenNames -contains $_.Name } | "
+        "Select-Object -First 1 -ExpandProperty FullName"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        timeout=20, check=False)
+    caminho = resultado.stdout.strip()
+    if resultado.returncode == 0 and caminho and os.path.isfile(caminho):
+        return caminho
 
     return None
 
@@ -281,105 +293,44 @@ def abrir_programa(programa):
             return ToolResult.failure(f"Nao consegui abrir o executavel solicitado: {exc}", error_code="explicit_executable_failed", tool_name="abrir_programa")
 
     if _nome_programa_ambiguo(programa):
-        return (
-            "ACAO NAO EXECUTADA: nome do programa nao foi identificado "
-            "com clareza. Use o nome do programa ou uma referencia resolvida "
-            "pelo contexto recente."
-        )
+        return ToolResult.failure(
+            "Nome do programa nao identificado com clareza. Informe o nome ou caminho.",
+            error_code="application_ambiguous", tool_name="abrir_programa")
 
-    aplicativo = encontrar_aplicativo(programa)
-
-    if aplicativo:
-        nome = aplicativo.get(
-            "Name",
-            programa
-        )
-
-        app_id = aplicativo.get(
-            "AppID",
-            ""
-        )
-
-        if app_id:
-            try:
-                subprocess.Popen(
-                    [
-                        "explorer.exe",
-                        f"shell:AppsFolder\\{app_id}"
-                    ],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL
-                )
-
-                return f"{nome} foi aberto."
-
-            except Exception as erro:
-                return (
-                    f"Nao consegui abrir "
-                    f"{nome}: {erro}"
-                )
-
-    atalho = procurar_atalho(programa)
-
-    if atalho:
+    # Discovery is read-only. A failed/uncertain launch never starts a second
+    # launch path: the first effect might already have happened.
+    try:
         try:
+            aplicativo = encontrar_aplicativo(programa)
+        except (subprocess.TimeoutExpired, OSError):
+            aplicativo = None  # safe discovery fallback, no launch attempted
+        if aplicativo and aplicativo.get("AppID"):
+            subprocess.Popen(["explorer.exe", f"shell:AppsFolder\\{aplicativo['AppID']}"],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return _abertura_solicitada(aplicativo.get("Name", programa), "catalog")
+        atalho = procurar_atalho(programa)
+        if atalho:
             os.startfile(str(atalho))
-            return f"{atalho.stem} foi aberto."
+            return _abertura_solicitada(atalho.stem, "shortcut")
+        executavel = procurar_executavel(programa)
+        if executavel:
+            process = subprocess.Popen([executavel], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return _abertura_solicitada(Path(executavel).stem, "executable", process.pid)
+    except subprocess.TimeoutExpired:
+        return ToolResult.failure("A busca do programa excedeu o tempo esperado. Informe o caminho completo para tentar novamente.",
+            error_code="application_search_timeout", tool_name="abrir_programa")
+    except PermissionError:
+        return ToolResult.failure("O Windows negou acesso ao programa. Nao tentei abri-lo por outro caminho.",
+            error_code="application_access_denied", tool_name="abrir_programa")
+    except OSError:
+        return ToolResult.failure("Nao consegui solicitar a abertura do programa. O resultado nao foi confirmado; nao repeti a operacao.",
+            error_code="application_launch_failed", tool_name="abrir_programa")
+    return ToolResult.failure(f"Nao encontrei o programa '{programa}' no Windows.",
+        error_code="application_not_found", tool_name="abrir_programa")
 
-        except Exception as erro:
-            return ToolResult.failure(
-                f"Encontrei o atalho de "
-                f"{programa}, mas nao consegui "
-                f"abri-lo: {erro}", error_code="shortcut_open_failed"
-            )
 
-    executavel = procurar_executavel(programa)
-
-    if executavel:
-        try:
-            subprocess.Popen(
-                [executavel],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
-
-            return (
-                f"{Path(executavel).stem} foi aberto."
-            )
-
-        except Exception as erro:
-            return (
-                f"Nao consegui abrir "
-                f"{programa}: {erro}"
-            )
-
-    caminho = shutil.which(programa)
-
-    if (
-        not caminho
-        and not programa.lower().endswith(".exe")
-    ):
-        caminho = shutil.which(
-            programa + ".exe"
-        )
-
-    if caminho:
-        try:
-            subprocess.Popen(
-                [caminho],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
-
-            return f"{programa} foi aberto."
-
-        except Exception as erro:
-            return (
-                f"Nao consegui abrir "
-                f"{programa}: {erro}"
-            )
-
-    return (
-        f"Nao encontrei o programa "
-        f"'{programa}' no Windows."
-    )
+def _abertura_solicitada(nome, source, pid=None):
+    return ToolResult.success(
+        f"Solicitei a abertura de {nome}. A janela pronta ainda nao foi verificada.",
+        data={"abertura_solicitada": True, "janela_verificada": False, "source": source, "pid": pid},
+        tool_name="abrir_programa")

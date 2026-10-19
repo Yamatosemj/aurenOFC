@@ -5,6 +5,7 @@ import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from contextlib import contextmanager
 
 
 class PersistentMemoryStore:
@@ -23,10 +24,15 @@ class PersistentMemoryStore:
         self._lock = threading.RLock()
         self._inicializar()
 
-    def _conexao(self) -> sqlite3.Connection:
+    @contextmanager
+    def _conexao(self):
         con = sqlite3.connect(self.path)
         con.row_factory = sqlite3.Row
-        return con
+        try:
+            with con:
+                yield con
+        finally:
+            con.close()
 
     def _inicializar(self) -> None:
         with self._lock, self._conexao() as con:

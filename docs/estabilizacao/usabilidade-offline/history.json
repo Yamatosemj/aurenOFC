@@ -1,0 +1,98 @@
+{
+  "source": "historical_mixed_versions_unknown_test_provenance",
+  "tasks": 117,
+  "warning": "model spans include application overhead; not isolated API latency",
+  "stages": {
+    "context": {
+      "n": 117,
+      "median_ms": 5.298,
+      "p95_ms": 14.617
+    },
+    "fast_path": {
+      "n": 116,
+      "median_ms": 0.058,
+      "p95_ms": 0.299
+    },
+    "model": {
+      "n": 297,
+      "median_ms": 1496.103,
+      "p95_ms": 6579.493
+    },
+    "tool": {
+      "n": 188,
+      "median_ms": 1.979,
+      "p95_ms": 8998.366
+    }
+  },
+  "by_type": {
+    "agentic": {
+      "total_ms": {
+        "n": 111,
+        "median_ms": 3334.815,
+        "p95_ms": 33883.285
+      },
+      "context_ms": {
+        "n": 111,
+        "median_ms": 5.114,
+        "p95_ms": 14.938
+      },
+      "model_ms": {
+        "n": 111,
+        "median_ms": 2275.599,
+        "p95_ms": 12940.237
+      },
+      "tool_ms": {
+        "n": 111,
+        "median_ms": 0.23,
+        "p95_ms": 19015.957
+      },
+      "model_calls": 297
+    },
+    "fast_path": {
+      "total_ms": {
+        "n": 5,
+        "median_ms": 40.949,
+        "p95_ms": null
+      },
+      "context_ms": {
+        "n": 5,
+        "median_ms": 6.688,
+        "p95_ms": null
+      },
+      "model_ms": {
+        "n": 5,
+        "median_ms": 0.0,
+        "p95_ms": null
+      },
+      "tool_ms": {
+        "n": 5,
+        "median_ms": 0.0,
+        "p95_ms": null
+      },
+      "model_calls": 0
+    },
+    "unknown": {
+      "total_ms": {
+        "n": 1,
+        "median_ms": 53.374,
+        "p95_ms": null
+      },
+      "context_ms": {
+        "n": 1,
+        "median_ms": 8.94,
+        "p95_ms": null
+      },
+      "model_ms": {
+        "n": 1,
+        "median_ms": 0.0,
+        "p95_ms": null
+      },
+      "tool_ms": {
+        "n": 1,
+        "median_ms": 0.0,
+        "p95_ms": null
+      },
+      "model_calls": 0
+    }
+  }
+}

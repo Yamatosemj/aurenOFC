@@ -1,0 +1,41 @@
+{
+  "kind": "offline_real_task_manager_real_sqlite",
+  "history_sizes": {
+    "1": {
+      "pair_wall_ms": {
+        "n": 30,
+        "median": 9.018,
+        "p95": 10.811
+      },
+      "pair_cpu_ms": {
+        "n": 30,
+        "median": 0.0,
+        "p95": 15.625
+      }
+    },
+    "30": {
+      "pair_wall_ms": {
+        "n": 30,
+        "median": 8.882,
+        "p95": 10.585
+      },
+      "pair_cpu_ms": {
+        "n": 30,
+        "median": 0.0,
+        "p95": 15.625
+      }
+    },
+    "100": {
+      "pair_wall_ms": {
+        "n": 30,
+        "median": 8.875,
+        "p95": 11.15
+      },
+      "pair_cpu_ms": {
+        "n": 30,
+        "median": 0.0,
+        "p95": 15.625
+      }
+    }
+  }
+}

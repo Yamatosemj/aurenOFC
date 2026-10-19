@@ -77,6 +77,8 @@ def verificar_antes_de_agir(
         quantidade=len(chamadas),
     )
     review_started = time.perf_counter()
+    from core.execution_progress import emit
+    emit("intent")
     try:
         reserve = getattr(harness, '_reserve_model_call', None)
         if callable(reserve):
@@ -122,6 +124,12 @@ def verificar_antes_de_agir(
     review_ms = (time.perf_counter() - review_started) * 1000.0
     review_usage = getattr(decisao, "metricas_uso", None)
     trace = getattr(harness, "_trace", None)
+    if trace is not None:
+        try:
+            trace.record_stage("intent_review", review_ms, category="intent_review",
+                               metadata={"model_call": True, "usage_known": review_usage is not None})
+        except Exception:
+            pass
     if trace is not None and review_usage is not None:
         try:
             trace.record_model(rodada, review_ms, review_usage)
