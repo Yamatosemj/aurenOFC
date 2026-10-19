@@ -25,6 +25,11 @@ os alvos executados; reler um alvo permitido nao viola exclusividade. Nao invent
 uma acao extra para comprovar uma restricao que o historico ja permite verificar.
 Use verified somente com evidencia concreta dos passos executados, citando seus numeros.
 Sucesso de comando mutante significa pedido enviado, nao estado final verificado.
+Excecao concreta: ferramentas locais de estado de janela podem incluir
+dados.window_state com verification=win32_after_show_window, verified=true,
+alvo e HWND, requested e observed iguais. Isso e leitura Win32 posterior ao
+efeito no mesmo alvo, nao apenas afirmacao textual. Pode comprovar esse efeito
+sem outra ferramenta de leitura; nao comprova outras etapas ou condicoes.
 Para efeitos, exija leitura posterior que confirme alvo, valor e resultado desejados.
 Falta de evidencia, restricao ou etapa nao atendida deve ser pending ou failed.
 Nao invente evidencia nem omita etapas. Um plano heuristico pode estar incompleto:
@@ -101,7 +106,9 @@ def validate_completion(result, snapshot):
             if (type(number) is not int or not 1 <= number <= len(snapshot.steps)
                     or snapshot.steps[number - 1].success is not True):
                 raise CompletionValidationFailure('completion_evidence_invalid', 'Referencia de evidencia inexistente ou falha.')
-        effects = [n for n in stage['evidence'] if snapshot.steps[n-1].tool not in READ_ONLY_TOOLS]
+        from core.tool_evidence import verified_window_state
+        effects = [n for n in stage['evidence'] if snapshot.steps[n-1].tool not in READ_ONLY_TOOLS
+                   and not verified_window_state(snapshot.steps[n-1])]
         if effects and not any(n > max(effects) and snapshot.steps[n-1].tool in READ_ONLY_TOOLS
                                for n in stage['evidence']):
             raise CompletionValidationFailure('completion_effect_unverified', 'Efeito sem leitura posterior de verificacao.')

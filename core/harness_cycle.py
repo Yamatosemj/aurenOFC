@@ -521,6 +521,8 @@ def executar_ciclo(
             return harness._encerrar_cancelado("cancelado durante execucao", rodada)
 
         for item, result in zip(chamadas, resultados_rodada):
+            if result.get('executado') is False:
+                continue
             key = (str(getattr(item, 'name', '')), _identidade_da_chamada(item))
             if result.get('sucesso'):
                 failed_attempts.pop(key, None)
@@ -569,7 +571,8 @@ def executar_ciclo(
         # Conclusao local so e permitida sem falha nao recuperada; com
         # falha, o ciclo segue para a proxima rodada do modelo (nunca
         # reexecuta as chamadas da rodada atual).
-        if not falha_nao_recuperada and not harness._requires_completion_verification() and harness._pode_encerrar_localmente(
+        if not falha_nao_recuperada and (not harness._requires_completion_verification()
+                or harness._has_single_verified_window_result()) and harness._pode_encerrar_localmente(
             objetivo,
             resultados_rodada,
             vision_reobserve_pending=harness._vision_reobserve_pending,
@@ -577,30 +580,29 @@ def executar_ciclo(
         ):
             if harness.task_manager.should_cancel(harness._task_id):
                 return harness._encerrar_cancelado("cancelado antes da conclusao local", rodada)
-            checked = harness._verify_completion(objetivo)
-            if checked is not None:
-                return checked
             ferramenta_final = resultados_rodada[-1]["ferramenta"]
             mensagem_final = harness._mensagem_conclusao_local(
                 objetivo,
                 ferramenta_final,
                 resultados_rodada[-1].get("resultado"),
             )
-            resposta = _concluir_tarefa_localmente(
-                objetivo,
-                historico,
-                mensagem_final,
-                rodada=rodada,
-                ferramenta_final=ferramenta_final,
-                task_id=harness._task_id,
-                apos_tarefa=harness.apos_tarefa,
-                salvar_estrategia=harness._salvar_estrategia_em_background,
-                task_manager=harness.task_manager,
-                registrar_turno=harness._registrar_turno,
-                write_log=write_log,
-                criar_resposta=resposta_wrapper,
-            )
-            return False, resposta
+            checked = harness._verify_completion(objetivo, candidate_answer=mensagem_final)
+            if isinstance(checked, CompletionPending):
+                # A real unresolved condition returns to reasoning; no extra
+                # effects, permission shortcut or forced success.
+                write_log('TASK_LOCAL_VERIFICATION_PENDING', task_id=harness._task_id, rodada=rodada)
+            elif checked is not None:
+                return checked
+            else:
+                resposta = _concluir_tarefa_localmente(
+                    objetivo, historico, mensagem_final, rodada=rodada,
+                    ferramenta_final=ferramenta_final, task_id=harness._task_id,
+                    apos_tarefa=harness.apos_tarefa,
+                    salvar_estrategia=harness._salvar_estrategia_em_background,
+                    task_manager=harness.task_manager,
+                    registrar_turno=harness._registrar_turno,
+                    write_log=write_log, criar_resposta=resposta_wrapper)
+                return False, resposta
 
         if rodada >= limite_rodadas:
             break

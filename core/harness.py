@@ -845,6 +845,13 @@ class AurenHarness:
                 or snapshot.plan.complexity in {'multi_step', 'complex'}
                 or any(step.tool not in READ_ONLY_TOOLS for step in snapshot.steps))
 
+    def _has_single_verified_window_result(self):
+        from core.tool_evidence import verified_window_state
+        snapshot = self.current_task()
+        return (snapshot is not None and snapshot.plan is not None
+            and len(snapshot.plan.steps) == 1 and len(snapshot.steps) == 1
+            and verified_window_state(snapshot.steps[0]))
+
     def _verify_completion(self, objetivo, *, candidate_answer=''):
         from core.task_evidence import missing_evidence
         if missing_evidence(self.current_task()):

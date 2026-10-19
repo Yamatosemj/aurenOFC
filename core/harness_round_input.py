@@ -23,7 +23,7 @@ def _montar_input_da_rodada(
     # Não repetimos o mesmo resultado no texto do estado.
     historico_anterior = historico
     if resultados:
-        quantidade_atual = len(resultados)
+        quantidade_atual = sum(item.get('executado') is not False for item in resultados)
         if quantidade_atual <= len(historico_anterior):
             historico_anterior = historico_anterior[:-quantidade_atual]
 

@@ -564,8 +564,10 @@ def test_falha_seguida_de_sucesso_em_outra_ferramenta_permanece_pendente():
          ToolResult.success("CPU 10%.", tool_name="obter_status_windows")],
         pendentes,
     )
-    assert quantidade == 2
-    assert [item["sucesso"] for item in resultados] == [False, True]
+    assert quantidade == 1
+    assert [item["sucesso"] for item in resultados] == [False, False]
+    assert resultados[1]['executado'] is False
+    assert resultados[1]['codigo_erro'] == 'sequence_aborted'
     assert falhou is True
     assert pendentes == {("clicar_elemento", "1a4248e4c269bbe6e7df35f27a8f1b2449bb47dc2ade74564f69b8f6fac733da")}
 
@@ -579,8 +581,12 @@ def test_repetir_a_mesma_operacao_com_sucesso_recupera_falha():
          ToolResult.success("Clique realizado.", tool_name="clicar_elemento")],
         pendentes,
     )
-    assert falhou is False
-    assert pendentes == set()
+    assert falhou is True  # A failure now requires a fresh decision, never a blind batch retry.
+    _, _, falhou, _, _ = _rodada_com_falhas(
+        [_item('clicar_elemento', 'c3', '{"alvo":"Salvar"}')],
+        [ToolResult.success('Clique realizado.', tool_name='clicar_elemento')],
+        pendentes, falha_anterior=True)
+    assert falhou is False and pendentes == set()
 
 
 def test_sucesso_da_mesma_ferramenta_em_outro_alvo_nao_recupera_falha():

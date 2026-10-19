@@ -46,10 +46,13 @@ def test_aud003_different_private_value_does_not_recover_failure():
 
 
 def test_aud003_json_order_does_not_change_recovery_identity():
+    pending = set()
+    _rodada_com_falhas(
+        [_item('preencher_elemento', 'a', '{"alvo":"Pesquisa","texto":"ALFA","indice":1}')],
+        [ToolResult.failure('falha')], pending)
     result = _rodada_com_falhas(
-        [_item("preencher_elemento", "a", '{"alvo":"Pesquisa","texto":"ALFA","indice":1}'),
-         _item("preencher_elemento", "b", '{"indice":1, "texto":"ALFA", "alvo":"Pesquisa"}')],
-        [ToolResult.failure("falha"), ToolResult.success("ok")], set())
+        [_item("preencher_elemento", "b", '{"indice":1, "texto":"ALFA", "alvo":"Pesquisa"}')],
+        [ToolResult.success("ok")], pending, falha_anterior=True)
     assert result[2] is False
 
 
