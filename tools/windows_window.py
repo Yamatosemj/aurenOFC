@@ -3,6 +3,7 @@ from __future__ import annotations
 import ctypes
 from ctypes import wintypes
 import os
+import time
 from pathlib import Path
 
 from core.tool_result import ToolResult
@@ -20,6 +21,9 @@ def _configurar_user32_api(user32):
 
     user32.IsWindowVisible.argtypes = [wintypes.HWND]
     user32.IsWindowVisible.restype = wintypes.BOOL
+
+    user32.IsWindow.argtypes = [wintypes.HWND]
+    user32.IsWindow.restype = wintypes.BOOL
 
     user32.GetWindowTextLengthW.argtypes = [wintypes.HWND]
     user32.GetWindowTextLengthW.restype = ctypes.c_int
@@ -341,40 +345,50 @@ def focar_janela_windows(alvo):
         return f"Nao consegui ativar '{titulo}': {erro}"
 
 def minimizar_janela_windows(alvo):
-    if os.name != "nt":
-        return "Controle de janelas do Windows so esta disponivel no Windows."
-
-    encontrado = _encontrar_janela_windows(alvo)
-    if not encontrado:
-        return f"Nao encontrei uma janela correspondente a '{alvo}'."
-
-    hwnd, titulo = encontrado
-    user32 = _user32()
-
-    try:
-        SW_MINIMIZE = 6
-        user32.ShowWindow(hwnd, SW_MINIMIZE)
-        return f"Janela minimizada: {titulo}"
-    except Exception as erro:
-        return f"Nao consegui minimizar '{titulo}': {erro}"
+    return _alterar_estado_janela(alvo, 6, 'minimizada', 'minimizar_janela_windows')
 
 def maximizar_janela_windows(alvo):
+    return _alterar_estado_janela(alvo, 3, 'maximizada', 'maximizar_janela_windows')
+
+
+def _alterar_estado_janela(alvo, comando, esperado, ferramenta):
+    """Read the same resolved HWND after ShowWindow; no text-based success."""
     if os.name != "nt":
-        return "Controle de janelas do Windows so esta disponivel no Windows."
+        return ToolResult.failure('Controle de janelas requer Windows.',
+            error_code='platform_not_supported', tool_name=ferramenta)
 
     encontrado = _encontrar_janela_windows(alvo)
     if not encontrado:
-        return f"Nao encontrei uma janela correspondente a '{alvo}'."
+        return ToolResult.failure(f"Nao encontrei uma janela correspondente a '{alvo}'.",
+            error_code='window_not_found', tool_name=ferramenta)
 
     hwnd, titulo = encontrado
     user32 = _user32()
 
     try:
-        SW_MAXIMIZE = 3
-        user32.ShowWindow(hwnd, SW_MAXIMIZE)
-        return f"Janela maximizada: {titulo}"
-    except Exception as erro:
-        return f"Nao consegui maximizar '{titulo}': {erro}"
+        user32.ShowWindow(hwnd, comando)
+        deadline = time.monotonic() + 0.3
+        while True:
+            if not user32.IsWindow(hwnd):
+                return ToolResult.failure('A janela deixou de existir durante a verificacao.',
+                    error_code='window_disappeared', tool_name=ferramenta)
+            # Unlike the legacy display helper, API errors cannot become normal.
+            observado = ('minimizada' if user32.IsIconic(hwnd) else
+                         'maximizada' if user32.IsZoomed(hwnd) else 'normal')
+            if observado == esperado:
+                label = 'restaurada' if esperado == 'normal' else esperado
+                return ToolResult.success(f'Janela {label}: {titulo}', tool_name=ferramenta,
+                    data={'window_state': {'hwnd': int(hwnd), 'target': str(alvo),
+                        'requested': esperado, 'observed': observado, 'verified': True,
+                        'verification': 'win32_after_show_window'}})
+            if time.monotonic() >= deadline:
+                return ToolResult.failure('A janela nao atingiu o estado solicitado na verificacao.',
+                    error_code='window_state_unverified', tool_name=ferramenta,
+                    data={'requested_state': esperado, 'observed_state': observado})
+            time.sleep(0.01)
+    except Exception:
+        return ToolResult.failure('Nao consegui comprovar o estado final da janela.',
+            error_code='window_state_verification_error', tool_name=ferramenta)
 
 def _configurar_set_window_pos(user32):
     """Configura assinatura Win64 para SetWindowPos e GetWindowRect."""
@@ -528,23 +542,8 @@ def redimensionar_janela_windows(alvo, largura, altura):
 
 def restaurar_janela_windows(alvo):
     """Restaura uma janela minimizada ou maximizada ao estado normal."""
-    if os.name != "nt":
-        return "Controle de janelas do Windows so esta disponivel no Windows."
-
-    encontrado = _encontrar_janela_windows(alvo)
-    if not encontrado:
-        return f"Nao encontrei uma janela correspondente a '{alvo}'."
-
-    hwnd, titulo = encontrado
-    user32 = _user32()
-    try:
-        if not user32.ShowWindow(hwnd, 9):
-            # ShowWindow pode retornar False quando o estado anterior era normal;
-            # isso nao significa necessariamente falha.
-            pass
-        return f"Janela restaurada: {titulo}"
-    except Exception as erro:
-        return f"Nao consegui restaurar '{titulo}': {erro}"
+    # SW_SHOWNORMAL also removes the previous maximized placement after minimize.
+    return _alterar_estado_janela(alvo, 1, 'normal', 'restaurar_janela_windows')
 
 def fechar_janela_windows(alvo):
     if os.name != "nt":
