@@ -33,7 +33,8 @@ def exact_window_proposal(objective, proposals):
         r' (?:(?:o|a) )?(?:janela (?:do |da |de )?)?([a-z0-9][a-z0-9 ]{0,100})', text)
     if not match or re.search(r'\b(?:e|depois|mas|sem|nao|tambem|ou|antes|entao)\b', match[1]):
         return False
-    return match[1] == normalizar_nome(args['alvo'])
+    return (match[1] == normalizar_nome(args['alvo'])
+            and str(objective).strip().casefold().endswith(args['alvo'].strip().casefold()))
 
 
 def verified_window_state(step):

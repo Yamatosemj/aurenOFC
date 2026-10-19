@@ -725,7 +725,10 @@ class AurenHarness:
             resposta, latency, metrics = self._chamar_modelo_medido(*argumentos)
             if getattr(resposta, 'status', None) in {'incomplete', 'failed', 'cancelled', 'in_progress', 'queued'}:
                 if self._trace is not None:
-                    self._trace.record_model(0, latency, self._uso_resposta(resposta))
+                    try:
+                        self._trace.record_model(0, latency, self._uso_resposta(resposta))
+                    except Exception:
+                        pass
                 self.MSG_ERRO_PROVIDER = 'O modelo retornou uma resposta incompleta. Interrompi sem executar as ações dessa resposta.'
                 self.task_manager.fail('model_response_incomplete', task_id=self._task_id)
                 return None
@@ -812,7 +815,9 @@ class AurenHarness:
                                 'resultado': step.result} for step in snapshot.steps]
         self._resuming = True
         try:
-            return self._executar_ciclo(snapshot.objective)
+            from core.latency import observe
+            with observe(self._record_latency):
+                return self._executar_ciclo(snapshot.objective)
         except Exception:
             current = self.current_task()
             if current.state in {TaskState.RUNNING, TaskState.WAITING}:

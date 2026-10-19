@@ -55,3 +55,10 @@ def test_tied_catalog_is_not_an_arbitrary_launch(monkeypatch):
         {'Name':'Fixture One','AppID':'one'}, {'Name':'Fixture Two','AppID':'two'}])
     monkeypatch.setattr(apps.subprocess, 'Popen', lambda *_a, **_k: pytest.fail('Ambiguous launch'))
     assert apps.abrir_programa('Fixture').error_code == 'application_ambiguous'
+
+
+def test_duplicate_exact_catalog_names_need_disambiguation(monkeypatch):
+    monkeypatch.setattr(apps, 'buscar_aplicativos_do_windows', lambda: [
+        {'Name':'Fixture','AppID':'one'}, {'Name':'Fixture','AppID':'two'}])
+    monkeypatch.setattr(apps.subprocess, 'Popen', lambda *_a, **_k: pytest.fail('Ambiguous exact launch'))
+    assert apps.abrir_programa('Fixture').error_code == 'application_ambiguous'

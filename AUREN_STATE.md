@@ -2,13 +2,13 @@
 
 > **Leia este arquivo primeiro em toda nova conversa ou tarefa de manutenção.** Este documento descreve o **estado corrente verificado**, não um diário de PRs. Confirme as afirmações dinâmicas com a `main`, as PRs abertas e os checks atuais no GitHub antes de agir.
 >
-> **Manutenção:** validação `validacao/candidata-165-offline`, sobre a PR #165 (`05f3ea5`), preservando #161–#165. `main` remota consultada em `70b040d6191237e2f0a291a14b8ea8fb4b78a09d`; sem merge ou Electron. Consulte a [validação e o roteiro Windows](docs/estabilizacao/VALIDACAO_165.md) e o [diagnóstico anterior](docs/estabilizacao/USABILIDADE_OFFLINE.md). SHA final e resultados completos devem ser conferidos na PR de entrega.
+> **Manutencao:** otimizacao de latencia A-E, branch `otimizacao/latencia-e-contexto-20261019`, sobre #166 (`025351c`), preservando as candidatas anteriores. Main remota `70b040d`, sem merge ou substituicao da instalacao pessoal. [Relatorio de entrega](docs/estabilizacao/LATENCIA_ENTREGA_20261019.md); SHA final e CI na PR.
 >
 > **Fontes:** [README](README.md) · [Regras para agentes](AGENTS.md) · [Inventário e estado por subsistema](docs/INVENTARIO.md) · [Histórico integral anterior à consolidação](docs/history/AUREN_STATE_SNAPSHOT_2026-10-10.md).
 
 ## 1. Situação e trabalho em foco
 
-- **Latencia, candidata de 19/10 (sem merge):** instrumentacao e descoberta exata de executaveis na base #166; PATH antes de catalogo para nomes .exe, sem cwd implicito/PATHEXT; tempos de contrato/permissao/execucao, uso da revisao final e codigos seguros de falha antes ocultada. Autorizacao preservada; testes e limites em [LATENCIA_20261019](docs/estabilizacao/LATENCIA_20261019.md). Maximizar/minimizar/restaurar agora comprovam estado final; Live em janela isolada passou apos corrigir restauracao para estado normal. Sequencias propostas pelo modelo executam em ordem e param na falha; evidencia Win32 pode alimentar a revisao final sem rodada principal de redacao. API adicional: US$ 0.
+- **Latencia, candidata de 19/10 (sem merge):** A-E na base #166: instrumentacao, descoberta exata, evidencia Win32, sequencias interrompiveis e contexto menor no Router existente. Cinco PRs encadeadas; instalacao pessoal preservada. Testes, ganhos medidos e limites em [entrega](docs/estabilizacao/LATENCIA_ENTREGA_20261019.md). API adicional US$ 0 de US$ 0,50 autorizados; latencia ponta a ponta com modelo real pendente.
 
 - **Validação da #165:** 121 testes representativos offline aprovados; pacote anterior íntegro, mas herdava configuração pytest ancestral por omitir `pytest.ini`. Inclusão da configuração própria corrigida com regressão antes/depois. Runtime e proteções da #165 preservados. Workflow manual Windows/Linux tentado, porém rede da sessão bloqueou o acionamento; zero runs confirmados para o HEAD da #165. Ambiente local tem openai 3.15.0, divergente do pin 3.26.0; não houve instalação global ou chamada real. Suíte final e pacote atualizado por SHA na PR. **CI e provider real pendentes; nenhuma autorização Live renovada.** [Comparações, bloqueios e comandos exatos](docs/estabilizacao/VALIDACAO_165.md).
 

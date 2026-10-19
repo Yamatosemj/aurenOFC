@@ -40,6 +40,7 @@ def test_failed_batch_stops_effects_but_keeps_protocol_outputs():
     ('maximize Fixture e depois restaure','Fixture',False),
     ('maximize Fixture','Other Fixture',False),
     ('nao maximize Fixture','Fixture',False),
+    ('maximize Fixture.1','Fixture 1',False),
 ])
 def test_exact_proposals_never_infer_targets(goal,target,expected):
     name = 'minimizar_janela_windows' if 'minimize' in goal else 'maximizar_janela_windows'
