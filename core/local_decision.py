@@ -20,6 +20,12 @@ SITES_CONHECIDOS: dict[str, str] = {
 # para o modelo, como antes: promover uma delas a atalho seria mudar comportamento.
 ESCOLHAS_EXECUTADAS_LOCALMENTE = frozenset({"get_system_status", "open_tabs", "open_url", "open_known_site"})
 
+# Home Assistant-style local-first: so promover contratos reversiveis de audio
+# sob opt-in. As mesmas politicas do Dispatcher continuam obrigatorias.
+from core.tool_discovery import enabled as local_first_enabled
+if local_first_enabled():
+    ESCOLHAS_EXECUTADAS_LOCALMENTE |= frozenset({"control_media", "set_volume", "set_mute"})
+
 
 @dataclass(frozen=True)
 class DecisionResult:
