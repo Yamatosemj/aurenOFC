@@ -51,7 +51,9 @@ class OpenAIProvider:
             "instructions": instrucoes,
             "tools": self._normalizar_tools(tools),
             "input": entrada,
-            "parallel_tool_calls": False,
+            # A batch is proposed together, reviewed once, then executed in
+            # order by the Harness/Dispatcher. No executor runs in parallel.
+            "parallel_tool_calls": True,
             "reasoning": {"effort": reasoning_effort},
             "prompt_cache_key": CACHE_KEY,
             "prompt_cache_options": {"ttl": "30m"},

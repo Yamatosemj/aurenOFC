@@ -46,7 +46,18 @@ def _executar_chamadas_rodada(
     )
     browser_state_mutating_tools = browser_state_mutating_tools or set()
 
+    interrupted = False
     for item in chamadas:
+        if interrupted:
+            # Every model call ID gets an output, but skipped calls are never
+            # recorded as executed TaskSteps or sent to the Dispatcher.
+            skipped = ToolResult.failure('Chamada nao executada: uma etapa anterior falhou. Reavalie a sequencia.',
+                error_code='sequence_aborted', tool_name=str(getattr(item, 'name', '')))
+            resultados_rodada.append({'call_id': str(getattr(item, 'call_id', '')),
+                'ferramenta': str(getattr(item, 'name', '')), 'argumentos': _argumentos_da_chamada(item),
+                'resultado': skipped.for_model(), 'sucesso': False, 'executado': False,
+                'codigo_erro': 'sequence_aborted', 'image_path': '', 'dados': {}})
+            continue
         if task_manager.should_cancel(task_id):
             cancelado = True
             break
@@ -84,6 +95,7 @@ def _executar_chamadas_rodada(
             tool_name=nome,
         )
         ferramenta_sucesso = resultado_estruturado.ok
+        interrupted = not ferramenta_sucesso
         tool_ms = (time.perf_counter() - tool_started_perf) * 1000.0
 
         if ferramenta_sucesso and nome in browser_state_mutating_tools:

@@ -307,6 +307,10 @@ def proposta_simples_exata(
             return False
         propostas.append((nome, args))
 
+    from core.tool_evidence import exact_window_proposal
+    if exact_window_proposal(objetivo, propostas):
+        return True
+
     decisao = get_router().decidir_local(objetivo)
     escolha = decisao.choice
     args = decisao.arguments

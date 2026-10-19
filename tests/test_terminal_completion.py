@@ -223,6 +223,6 @@ def test_falha_ao_abrir_nao_e_recuperada_por_consultar_status():
     # sucesso como "recovery" mesmo sem reparar a operacao que falhou.
     assert snap.state is TaskState.FAILED
     assert snap.error == "step_failed_unrecovered"
-    assert len(snap.steps) == 2
+    assert len(snap.steps) == 1  # Status in the failed batch was never executed.
+    assert idx['i'] == 1
     assert snap.steps[0].success is False
-    assert snap.steps[1].success is True

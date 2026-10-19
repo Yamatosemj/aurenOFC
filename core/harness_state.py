@@ -31,7 +31,7 @@ def _montar_estado(
     if plano is not None:
         linhas.extend(['PLANO LOCAL (estimativa, nunca autorizacao):',
             json.dumps([{'etapa': s.index, 'instrucao': s.instruction} for s in plano.steps], ensure_ascii=False),
-            'Confira o pedido integral, suas condicoes e dependencias. Execute somente o proximo passo necessario.',
+            'Confira o pedido integral e suas dependencias. Proponha o proximo passo ou uma sequencia curta cujos argumentos ja sejam conhecidos.',
             'Antes de concluir, obtenha evidencia das etapas; sucesso de comando nao comprova o estado final.'])
 
     if esclarecimento_confirmado:
@@ -53,7 +53,8 @@ def _montar_estado(
         "Nao repita efeitos ja confirmados nesta mesma tarefa. Uma leitura feita em OUTRA tarefa nao satisfaz um novo pedido de leitura.",
         "EXCECAO VISUAL: em tarefas que exigem verificacao, capturar_tela_windows pode e deve ser chamada novamente depois de uma acao que alterou a tela.",
         "Nunca reutilize coordenadas de uma captura antiga depois de uma acao que possa mover janelas, itens ou o cursor.",
-        "Use o ultimo estado conhecido e faca apenas o proximo passo necessario.",
+        "Pode propor uma sequencia curta de chamadas com alvos e argumentos ja conhecidos; o Harness executa em ordem, com permissoes por chamada, e para se uma falhar.",
+        "Se uma chamada depender de descobrir alvo, ler resultado, atualizar coordenadas ou resolver ambiguidade, pare nessa leitura e decida o restante na proxima rodada. Nao adivinhe resultados futuros.",
     ])
 
     if vision_reobserve_pending:

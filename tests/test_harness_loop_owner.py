@@ -248,8 +248,8 @@ def test_sucesso_na_mesma_rodada_em_outra_ferramenta_nao_mascara_erro():
         ),
     )
     _, _resposta, task = bench.run("clique no botao")
-    assert bench.tools == ["clicar_elemento", "obter_status_windows"]
-    assert [step.success for step in task.steps] == [False, True]
+    assert bench.tools == ["clicar_elemento"]  # Remaining batch calls were not executed.
+    assert [step.success for step in task.steps] == [False]
     assert task.state is TaskState.FAILED
     assert task.error == "step_failed_unrecovered"
 
