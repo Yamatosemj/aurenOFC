@@ -57,7 +57,7 @@ class LiveBudget:
         # and $1.20/M output. Reserve $0.50/$3, input byte upper bound +8192
         # framing tokens, ignoring all cache discounts. Never refund reserves.
         reserve = ((len(payload)+8192)*0.50 + params['max_output_tokens']*3)/1_000_000
-        if self.data['reserved_usd'] + reserve > self.LIMIT or len(self.data['calls']) >= 24:
+        if self.data['reserved_usd'] + reserve > self.LIMIT or len(self.data['calls']) >= 32:
             raise RuntimeError('Live credit reserve exhausted; no request sent')
         self.data['reserved_usd'] += reserve
         entry = {'case':self.case, 'phase':self.phase, 'source_commit':self.source_commit, 'request_bytes':len(payload),
@@ -171,16 +171,24 @@ def main():
         return False
 
     def confirm(request):
-        # Explicit session authorization is restricted to opening the observed
-        # first public recipe video. No generic positive confirmation channel.
-        permitted=(args.case=='youtube' and request.tool_name=='clicar_elemento'
-                   and state['first_id'] is not None and state['first_title'] is not None)
+        # Session authorization covers exactly the requested recipe search and
+        # first public video. Revalidate the current call against the narrow
+        # scope, including literal search text and focused search input for Enter.
+        current=state.get('confirmation_item')
+        permitted=(args.case=='youtube' and current is not None
+            and request.tool_name==current.name
+            and current.name in {'clicar_elemento','preencher_elemento','pressionar_tecla','navegar_navegador'}
+            and allowed(current))
         state['confirmations'].append({'tool':request.tool_name,'allowed':permitted})
         return permitted
 
     pm=PermissionManager(confirmation_channel=SimpleNamespace(confirmar=confirm))
     def execute(item):
-        result=executar_ferramenta(item,pm,None)
+        state['confirmation_item']=item
+        try:
+            result=executar_ferramenta(item,pm,None)
+        finally:
+            state.pop('confirmation_item',None)
         state['executed'].append({'tool':item.name,'ok':result.ok,'error_code':result.error_code})
         if args.case=='youtube' and item.name in {'ler_pagina','obter_contexto_navegador'} and result.ok:
             observe_first_video()
