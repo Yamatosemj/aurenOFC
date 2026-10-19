@@ -51,5 +51,7 @@ def test_search_fixture_with_real_browser_dom_and_dispatcher(tmp_path, monkeypat
             assert observed.ok and 'Video Fixture 17' in observed.message
             assert browser.pagina.url == video
             assert confirmations  # Reading untrusted DOM did not bypass permission.
+            assert verificar_resultado_navegador('clicar_elemento',
+                json.dumps({'alvo':'Video Fixture 17','indice':1}),observed.data,click.data) is True
         finally:
             context.close()

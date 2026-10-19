@@ -31,6 +31,10 @@ alvo e HWND, requested e observed iguais. Isso e leitura Win32 posterior ao
 efeito no mesmo alvo, nao apenas afirmacao textual. Pode comprovar esse efeito
 sem outra ferramenta de leitura; nao comprova outras etapas ou condicoes.
 Para efeitos, exija leitura posterior que confirme alvo, valor e resultado desejados.
+Quando uma etapa citar uma ferramenta mutante, inclua na MESMA lista evidence
+o numero da leitura posterior que a comprova. Uma leitura citada apenas em outra
+etapa nao satisfaz esse contrato de referencias. Nao marque verified com a
+mutacao isolada. Os numeros sao os de execution.number, nao os indices do plano.
 Falta de evidencia, restricao ou etapa nao atendida deve ser pending ou failed.
 Nao invente evidencia nem omita etapas. Um plano heuristico pode estar incompleto:
 confira tambem o objetivo integral e suas condicoes. Nunca declare verified se
@@ -49,7 +53,9 @@ FORMAT = {'type': 'json_schema', 'name': 'auren_goal_completion', 'strict': True
 
 
 class CompletionPending(RuntimeError):
-    pass
+    def __init__(self, message, *, code='completion_pending', stage_index=None):
+        super().__init__(message)
+        self.code, self.stage_index = code, stage_index
 
 
 class CompletionResult(dict):
@@ -111,7 +117,17 @@ def validate_completion(result, snapshot):
                    and not verified_window_state(snapshot.steps[n-1])]
         if effects and not any(n > max(effects) and snapshot.steps[n-1].tool in READ_ONLY_TOOLS
                                for n in stage['evidence']):
-            raise CompletionValidationFailure('completion_effect_unverified', 'Efeito sem leitura posterior de verificacao.')
+            # Missing proof is pending, not successful or a malformed schema.
+            # Let the existing single bounded recovery obtain/reference a
+            # real observation. Never insert evidence or accept an effect here.
+            later = [i for i, step in enumerate(snapshot.steps, 1)
+                     if i > max(effects) and step.success is True and step.tool in READ_ONLY_TOOLS]
+            raise CompletionPending(
+                'Efeito sem leitura posterior de verificacao na lista evidence da etapa '
+                + str(stage['index']) + '. Efeitos citados: ' + str(effects)
+                + '. Leituras posteriores existentes: ' + str(later)
+                + '. So cite uma leitura se ela comprovar o alvo e o resultado desta etapa. Nao repita efeitos ja executados.',
+                code='completion_effect_unverified', stage_index=stage['index'])
     if seen != expected:
         raise CompletionValidationFailure('completion_stage_missing', 'O objetivo ainda possui etapas sem verificacao.')
     if pending or result['answer_status'] != 'verified':

@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import json
 import re
+from urllib.parse import urljoin
 
 from core.utils import normalizar_nome
+from core.tool_result import ToolResult
 
 
 def encontrar_elemento(alvo, indice=1, preferir_campo=False):
@@ -184,13 +186,18 @@ def clicar_elemento(alvo, indice=1):
         url_atual = p.url
         navegacao = "sim" if novas_abas or url_atual != url_anterior else "nao"
 
-        return (
+        message = (
             f"Cliquei em '{alvo}'.\n"
             f"Elemento: tag={tag_elemento} | href={href_elemento}\n"
             f"URL anterior: {url_anterior}\n"
             f"URL atual: {url_atual}\n"
             f"Navegacao: {navegacao}"
         )
+        return ToolResult.success(message, tool_name='clicar_elemento', data={'clique': {
+            'alvo': str(alvo), 'indice': indice, 'tag': tag_elemento,
+            'href': urljoin(url_anterior, href_elemento) if href_elemento else '',
+            'url_antes': url_anterior, 'url_depois': url_atual,
+            'navegacao': navegacao == 'sim', 'nova_aba': bool(novas_abas)}})
 
     except Exception as erro:
         return (

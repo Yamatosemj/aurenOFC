@@ -33,7 +33,10 @@ def test_click_element_uses_new_tab_after_click(monkeypatch):
 
     resultado = browser_elements.clicar_elemento("Abrir", 1)
 
-    assert "URL anterior: https://example.com" in resultado
-    assert "URL atual: https://example.com/nova" in resultado
-    assert "Navegacao: sim" in resultado
+    assert "URL anterior: https://example.com" in resultado.message
+    assert "URL atual: https://example.com/nova" in resultado.message
+    assert "Navegacao: sim" in resultado.message
+    assert resultado.ok
+    assert resultado.data["clique"]["nova_aba"] is True
+    assert resultado.data["clique"]["url_depois"] == nova.url
     assert getattr(browser, "pagina") is nova

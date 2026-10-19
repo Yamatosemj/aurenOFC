@@ -1,0 +1,562 @@
+[
+  {
+    "case": "greeting-69bdc780",
+    "scenario": "greeting",
+    "source_commit": "1fc181146875f93a4d902c130f4d23493731d0c4",
+    "model": "gpt-5.6-luna",
+    "sdk": "3.15.0",
+    "duration_ms": 2875.38,
+    "task_state": "completed",
+    "task_error": "",
+    "success": true,
+    "api_calls": 1,
+    "independent": {},
+    "executed": [],
+    "confirmations": [],
+    "reserved_total_usd": 0.0149925,
+    "estimated_total_usd": 0.0008304,
+    "principal_model_rounds": 1,
+    "tools_total_ms": 0
+  },
+  {
+    "case": "maximize-ebe72118",
+    "scenario": "maximize",
+    "source_commit": "1fc181146875f93a4d902c130f4d23493731d0c4",
+    "model": "gpt-5.6-luna",
+    "sdk": "3.15.0",
+    "duration_ms": 4592.486,
+    "task_state": "completed",
+    "task_error": "",
+    "success": true,
+    "api_calls": 2,
+    "independent": {
+      "maximized": true
+    },
+    "executed": [
+      {
+        "tool": "maximizar_janela_windows",
+        "ok": true,
+        "error_code": null
+      }
+    ],
+    "confirmations": [],
+    "reserved_total_usd": 0.0418875,
+    "estimated_total_usd": 0.0021034499999999998,
+    "principal_model_rounds": 1,
+    "tools_total_ms": 21.467
+  },
+  {
+    "case": "youtube-4c5fbc61",
+    "scenario": "youtube",
+    "source_commit": "16c031caf92ea19e5ffe3cecc3f21d8c3d6e0538",
+    "model": "gpt-5.6-luna",
+    "sdk": "3.15.0",
+    "duration_ms": 34386.415,
+    "task_state": "failed",
+    "task_error": "limite local de rodadas do harness atingido",
+    "success": false,
+    "api_calls": 12,
+    "independent": {
+      "watch_page": true,
+      "video_matches_first": true,
+      "title_matches_first": true
+    },
+    "executed": [
+      {
+        "tool": "navegar_navegador",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "ler_pagina",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "preencher_elemento",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "pressionar_tecla",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "obter_contexto_navegador",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "ler_pagina",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "clicar_elemento",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "obter_contexto_navegador",
+        "ok": true,
+        "error_code": null
+      }
+    ],
+    "confirmations": [
+      {
+        "tool": "preencher_elemento",
+        "allowed": true
+      },
+      {
+        "tool": "pressionar_tecla",
+        "allowed": true
+      },
+      {
+        "tool": "clicar_elemento",
+        "allowed": true
+      }
+    ],
+    "reserved_total_usd": 0.47378050000000016,
+    "estimated_total_usd": 0.0287414,
+    "principal_model_rounds": 8,
+    "tools_total_ms": 4390.025
+  },
+  {
+    "case": "youtube-7542eddc",
+    "scenario": "youtube",
+    "source_commit": "6320ee45999ecccdc8369810e324b9b4f36f0f49",
+    "model": "gpt-5.6-luna",
+    "sdk": "3.15.0",
+    "duration_ms": 13069.247,
+    "task_state": "failed",
+    "task_error": "permission_denied",
+    "success": false,
+    "api_calls": 5,
+    "independent": {
+      "watch_page": false,
+      "video_matches_first": false,
+      "title_matches_first": false
+    },
+    "executed": [
+      {
+        "tool": "navegar_navegador",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "ler_pagina",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "preencher_elemento",
+        "ok": false,
+        "error_code": "permission_denied"
+      }
+    ],
+    "confirmations": [
+      {
+        "tool": "preencher_elemento",
+        "allowed": false
+      }
+    ],
+    "reserved_total_usd": 0.28598450000000003,
+    "estimated_total_usd": 0.01729765,
+    "principal_model_rounds": 3,
+    "tools_total_ms": 2950.475
+  },
+  {
+    "case": "youtube-76188aa7",
+    "scenario": "youtube",
+    "source_commit": "d48793ac391a9724073fab36d8d459f34e9f561d",
+    "model": "gpt-5.6-luna",
+    "sdk": "3.15.0",
+    "duration_ms": 13550.888,
+    "task_state": "completed",
+    "task_error": "",
+    "success": false,
+    "api_calls": 5,
+    "independent": {
+      "watch_page": false,
+      "video_matches_first": false,
+      "title_matches_first": false
+    },
+    "executed": [
+      {
+        "tool": "navegar_navegador",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "ler_pagina",
+        "ok": true,
+        "error_code": null
+      }
+    ],
+    "confirmations": [],
+    "reserved_total_usd": 0.7790785000000001,
+    "exposure_upper_usd": 0.09656350000000011,
+    "estimated_total_usd": 0.04744415000000001,
+    "principal_model_rounds": 3,
+    "tools_total_ms": 3211.407
+  },
+  {
+    "case": "youtube-91abcf8d",
+    "scenario": "youtube",
+    "source_commit": "a449bb1f86fd3d5d317f4b99727783a679b7304d",
+    "model": "gpt-5.6-luna",
+    "sdk": "3.15.0",
+    "duration_ms": 37389.222,
+    "task_state": "failed",
+    "task_error": "completion_recovery_exhausted",
+    "success": false,
+    "api_calls": 12,
+    "independent": {
+      "watch_page": true,
+      "video_matches_first": true,
+      "title_matches_first": true
+    },
+    "executed": [
+      {
+        "tool": "navegar_navegador",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "obter_contexto_navegador",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "ler_pagina",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "navegar_navegador",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "obter_contexto_navegador",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "obter_contexto_navegador",
+        "ok": true,
+        "error_code": null
+      }
+    ],
+    "confirmations": [
+      {
+        "tool": "navegar_navegador",
+        "allowed": true
+      }
+    ],
+    "reserved_total_usd": 1.196869,
+    "exposure_upper_usd": 0.149694,
+    "estimated_total_usd": 0.07353060000000002,
+    "principal_model_rounds": 8,
+    "tools_total_ms": 5127.445
+  },
+  {
+    "case": "youtube-a2410389",
+    "scenario": "youtube",
+    "source_commit": "7741f08e3b65fe6e28221afd18eaa275ffa879e9",
+    "model": "gpt-5.6-luna",
+    "sdk": "3.15.0",
+    "duration_ms": 34951.871,
+    "task_state": "failed",
+    "task_error": "browser_verification_missing",
+    "success": false,
+    "api_calls": 16,
+    "independent": {
+      "watch_page": true,
+      "video_matches_first": true,
+      "title_matches_first": true
+    },
+    "executed": [
+      {
+        "tool": "navegar_navegador",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "ler_pagina",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "preencher_elemento",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "pressionar_tecla",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "ler_pagina",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "clicar_elemento",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "obter_contexto_navegador",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "obter_contexto_navegador",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "obter_contexto_navegador",
+        "ok": true,
+        "error_code": null
+      }
+    ],
+    "confirmations": [
+      {
+        "tool": "preencher_elemento",
+        "allowed": true
+      },
+      {
+        "tool": "pressionar_tecla",
+        "allowed": true
+      },
+      {
+        "tool": "clicar_elemento",
+        "allowed": true
+      }
+    ],
+    "reserved_total_usd": 1.5137705000000001,
+    "exposure_upper_usd": 0.19152300000000022,
+    "estimated_total_usd": 0.09391080000000002,
+    "principal_model_rounds": 10,
+    "tools_total_ms": 3905.443
+  },
+  {
+    "case": "youtube-c90160aa",
+    "scenario": "youtube",
+    "source_commit": "a09a09bd62f35d134bd6230a8483c884d301e0a0",
+    "model": "gpt-5.6-luna",
+    "sdk": "3.15.0",
+    "duration_ms": 32841.816,
+    "task_state": "failed",
+    "task_error": "completion_verification_failed",
+    "success": false,
+    "api_calls": 14,
+    "independent": {
+      "watch_page": true,
+      "video_matches_first": true,
+      "title_matches_first": true
+    },
+    "executed": [
+      {
+        "tool": "navegar_navegador",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "ler_pagina",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "preencher_elemento",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "pressionar_tecla",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "obter_contexto_navegador",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "ler_pagina",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "navegar_navegador",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "obter_contexto_navegador",
+        "ok": true,
+        "error_code": null
+      }
+    ],
+    "confirmations": [
+      {
+        "tool": "preencher_elemento",
+        "allowed": true
+      },
+      {
+        "tool": "pressionar_tecla",
+        "allowed": true
+      },
+      {
+        "tool": "navegar_navegador",
+        "allowed": true
+      }
+    ],
+    "reserved_total_usd": 0.6936490000000001,
+    "exposure_upper_usd": 0.0858215000000001,
+    "estimated_total_usd": 0.04222675000000001,
+    "principal_model_rounds": 9,
+    "tools_total_ms": 4982.175
+  },
+  {
+    "case": "youtube-cb7636ba",
+    "scenario": "youtube",
+    "source_commit": "a41e16b6c020902e1a3f069961a5ecf022107756",
+    "model": "gpt-5.6-luna",
+    "sdk": "3.15.0",
+    "duration_ms": 33429.935,
+    "task_state": "failed",
+    "task_error": "completion_verification_failed",
+    "success": false,
+    "api_calls": 14,
+    "independent": {
+      "watch_page": true,
+      "video_matches_first": true,
+      "title_matches_first": true
+    },
+    "executed": [
+      {
+        "tool": "navegar_navegador",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "ler_pagina",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "preencher_elemento",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "pressionar_tecla",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "obter_contexto_navegador",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "ler_pagina",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "clicar_elemento",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "obter_contexto_navegador",
+        "ok": true,
+        "error_code": null
+      }
+    ],
+    "confirmations": [
+      {
+        "tool": "preencher_elemento",
+        "allowed": true
+      },
+      {
+        "tool": "pressionar_tecla",
+        "allowed": true
+      },
+      {
+        "tool": "clicar_elemento",
+        "allowed": true
+      }
+    ],
+    "reserved_total_usd": 1.0007854999999999,
+    "exposure_upper_usd": 0.1245825,
+    "estimated_total_usd": 0.06122685000000001,
+    "principal_model_rounds": 9,
+    "tools_total_ms": 4171.363
+  },
+  {
+    "case": "youtube-f94be4f9",
+    "scenario": "youtube",
+    "source_commit": "1fc181146875f93a4d902c130f4d23493731d0c4",
+    "model": "gpt-5.6-luna",
+    "sdk": "3.15.0",
+    "duration_ms": 25143.431,
+    "task_state": "failed",
+    "task_error": "limite local de rodadas do harness atingido",
+    "success": false,
+    "api_calls": 10,
+    "independent": {
+      "watch_page": true,
+      "video_matches_first": true,
+      "title_matches_first": true
+    },
+    "executed": [
+      {
+        "tool": "navegar_navegador",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "ler_pagina",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "clicar_elemento",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "obter_contexto_navegador",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "obter_contexto_navegador",
+        "ok": true,
+        "error_code": null
+      },
+      {
+        "tool": "obter_contexto_navegador",
+        "ok": true,
+        "error_code": null
+      }
+    ],
+    "confirmations": [
+      {
+        "tool": "clicar_elemento",
+        "allowed": true
+      }
+    ],
+    "reserved_total_usd": 0.21332450000000003,
+    "estimated_total_usd": 0.013031299999999997,
+    "principal_model_rounds": 6,
+    "tools_total_ms": 4396.993
+  }
+]
