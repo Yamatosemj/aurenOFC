@@ -71,7 +71,7 @@ class LiveBudget:
         # and $1.20/M output. Reserve $0.50/$3, input byte upper bound +8192
         # framing tokens, ignoring all cache discounts. Keep every reserve entry.
         reserve = ((len(payload)+8192)*0.50 + params['max_output_tokens']*3)/1_000_000
-        if self.exposure() + reserve > self.LIMIT or len(self.data['calls']) >= 48:
+        if self.exposure() + reserve > self.LIMIT or len(self.data['calls']) >= 64:
             raise RuntimeError('Live credit reserve exhausted; no request sent')
         self.data['reserved_usd'] += reserve
         entry = {'case':self.case, 'phase':self.phase, 'source_commit':self.source_commit, 'request_bytes':len(payload),

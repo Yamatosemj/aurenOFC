@@ -31,6 +31,10 @@ alvo e HWND, requested e observed iguais. Isso e leitura Win32 posterior ao
 efeito no mesmo alvo, nao apenas afirmacao textual. Pode comprovar esse efeito
 sem outra ferramenta de leitura; nao comprova outras etapas ou condicoes.
 Para efeitos, exija leitura posterior que confirme alvo, valor e resultado desejados.
+Quando uma etapa citar uma ferramenta mutante, inclua na MESMA lista evidence
+o numero da leitura posterior que a comprova. Uma leitura citada apenas em outra
+etapa nao satisfaz esse contrato de referencias. Nao marque verified com a
+mutacao isolada. Os numeros sao os de execution.number, nao os indices do plano.
 Falta de evidencia, restricao ou etapa nao atendida deve ser pending ou failed.
 Nao invente evidencia nem omita etapas. Um plano heuristico pode estar incompleto:
 confira tambem o objetivo integral e suas condicoes. Nunca declare verified se
