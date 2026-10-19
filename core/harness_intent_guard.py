@@ -97,7 +97,7 @@ def verificar_antes_de_agir(
         review_ms = (time.perf_counter() - review_started) * 1000.0
         review_usage = getattr(exc, "metricas_uso", None)
         trace = getattr(harness, "_trace", None)
-        if trace is not None and isinstance(exc, IntentVerificationFailure):
+        if trace is not None:
             try:
                 trace.record_model(rodada, review_ms, review_usage or {})
                 record_stage = getattr(trace, "record_stage", None)
@@ -130,9 +130,9 @@ def verificar_antes_de_agir(
                                metadata={"model_call": True, "usage_known": review_usage is not None})
         except Exception:
             pass
-    if trace is not None and review_usage is not None:
+    if trace is not None:
         try:
-            trace.record_model(rodada, review_ms, review_usage)
+            trace.record_model(rodada, review_ms, review_usage or {})
         except Exception as exc:
             write_log("TRACE_ERROR", task_id=harness._task_id, etapa="intent_review", erro=str(exc))
 
@@ -141,7 +141,8 @@ def verificar_antes_de_agir(
         task_id=harness._task_id,
         rodada=rodada,
         decisao=decisao.decisao,
-        **({"uso": review_usage, "latencia_ms": round(review_ms, 3)} if review_usage is not None else {}),
+        latencia_ms=round(review_ms, 3), usage_known=review_usage is not None,
+        **({"uso": review_usage} if review_usage is not None else {}),
         **({
             "motivo": str(decisao.motivo or "")[:350],
             "propostas": _diagnostico_propostas_bloqueadas(chamadas),

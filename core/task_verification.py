@@ -47,6 +47,27 @@ class CompletionPending(RuntimeError):
     pass
 
 
+class CompletionResult(dict):
+    """Compatible mapping; usage is metadata, never part of the review schema."""
+    def __init__(self, result, metricas_uso=None):
+        super().__init__(result)
+        self.metricas_uso = metricas_uso
+
+
+class CompletionVerificationFailure(RuntimeError):
+    def __init__(self, code, metricas_uso=None):
+        super().__init__(code)
+        self.code = code
+        self.metricas_uso = metricas_uso
+
+
+class CompletionValidationFailure(RuntimeError):
+    """Stable safe code alongside the legacy human-readable diagnostic."""
+    def __init__(self, code, message):
+        super().__init__(message)
+        self.code = code
+
+
 def completion_input(snapshot):
     if len(snapshot.objective) > 12000 or len(snapshot.steps) > 100 or len(snapshot.result) > 12000:
         raise RuntimeError('Evidencia excede limite da verificacao; nao truncar objetivo silenciosamente.')
@@ -61,7 +82,7 @@ def validate_completion(result, snapshot):
     if (not isinstance(result, dict) or set(result) != {'summary', 'answer_status', 'steps'}
             or not isinstance(result['summary'], str) or not isinstance(result['steps'], list)
             or result['answer_status'] not in ('verified', 'pending', 'failed')):
-        raise RuntimeError('Verificacao invalida.')
+        raise CompletionValidationFailure('completion_schema_invalid', 'Verificacao invalida.')
     expected = {step.index for step in snapshot.plan.steps}
     seen, pending = set(), []
     for stage in result['steps']:
@@ -69,23 +90,23 @@ def validate_completion(result, snapshot):
                 or type(stage['index']) is not int or stage['index'] not in expected
                 or stage['index'] in seen or stage['status'] not in {'verified', 'pending', 'failed'}
                 or not isinstance(stage['evidence'], list)):
-            raise RuntimeError('Etapa pendente ou sem evidencia.')
+            raise CompletionValidationFailure('completion_stage_invalid', 'Etapa pendente ou sem evidencia.')
         seen.add(stage['index'])
         if stage['status'] != 'verified':
             pending.append(stage['index'])
             continue
         if not stage['evidence']:
-            raise RuntimeError('Etapa sem evidencia.')
+            raise CompletionValidationFailure('completion_evidence_missing', 'Etapa sem evidencia.')
         for number in stage['evidence']:
             if (type(number) is not int or not 1 <= number <= len(snapshot.steps)
                     or snapshot.steps[number - 1].success is not True):
-                raise RuntimeError('Referencia de evidencia inexistente ou falha.')
+                raise CompletionValidationFailure('completion_evidence_invalid', 'Referencia de evidencia inexistente ou falha.')
         effects = [n for n in stage['evidence'] if snapshot.steps[n-1].tool not in READ_ONLY_TOOLS]
         if effects and not any(n > max(effects) and snapshot.steps[n-1].tool in READ_ONLY_TOOLS
                                for n in stage['evidence']):
-            raise RuntimeError('Efeito sem leitura posterior de verificacao.')
+            raise CompletionValidationFailure('completion_effect_unverified', 'Efeito sem leitura posterior de verificacao.')
     if seen != expected:
-        raise RuntimeError('O objetivo ainda possui etapas sem verificacao.')
+        raise CompletionValidationFailure('completion_stage_missing', 'O objetivo ainda possui etapas sem verificacao.')
     if pending or result['answer_status'] != 'verified':
         raise CompletionPending('Etapas ainda sem comprovacao: ' + ', '.join(map(str, pending))
                                 + '. Estado da resposta candidata: ' + result['answer_status']
