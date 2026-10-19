@@ -1,0 +1,38 @@
+{
+  "python": "3.13.15",
+  "dependencies": {
+    "openai": {
+      "required": "3.26.0",
+      "installed": "3.15.0",
+      "matches": false
+    },
+    "playwright": {
+      "required": "1.63.0",
+      "installed": "1.63.0",
+      "matches": true
+    },
+    "jsonschema": {
+      "required": "4.26.0",
+      "installed": "4.26.0",
+      "matches": true
+    },
+    "Pillow": {
+      "required": "12.3.0",
+      "installed": "12.3.0",
+      "matches": true
+    },
+    "pytest": {
+      "installed": "9.1.1"
+    },
+    "numpy": {
+      "installed": "2.5.3"
+    }
+  },
+  "previous_package": {
+    "source": "05f3ea55769123207f17d8365c385b08cff72a39",
+    "files": 257,
+    "integrity_ok": true,
+    "sha256": "3571745d414fb77cf35064ab8fb539ce876fa58358b4c00d14f52461e01c826f",
+    "has_pytest_ini": false
+  }
+}
