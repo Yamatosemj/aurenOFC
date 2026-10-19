@@ -8,7 +8,7 @@
 
 ## 1. Situação e trabalho em foco
 
-- **Latencia, candidata de 19/10 (sem merge):** instrumentacao e descoberta exata de executaveis na base #166; PATH antes de catalogo para nomes .exe, sem cwd implicito/PATHEXT; tempos de contrato/permissao/execucao, uso da revisao final e codigos seguros de falha antes ocultada. Autorizacao preservada; testes e limites em [LATENCIA_20261019](docs/estabilizacao/LATENCIA_20261019.md). API adicional: US$ 0.
+- **Latencia, candidata de 19/10 (sem merge):** instrumentacao e descoberta exata de executaveis na base #166; PATH antes de catalogo para nomes .exe, sem cwd implicito/PATHEXT; tempos de contrato/permissao/execucao, uso da revisao final e codigos seguros de falha antes ocultada. Autorizacao preservada; testes e limites em [LATENCIA_20261019](docs/estabilizacao/LATENCIA_20261019.md). Maximizar/minimizar/restaurar agora comprovam estado final; Live em janela isolada passou apos corrigir restauracao para estado normal. API adicional: US$ 0.
 
 - **Validação da #165:** 121 testes representativos offline aprovados; pacote anterior íntegro, mas herdava configuração pytest ancestral por omitir `pytest.ini`. Inclusão da configuração própria corrigida com regressão antes/depois. Runtime e proteções da #165 preservados. Workflow manual Windows/Linux tentado, porém rede da sessão bloqueou o acionamento; zero runs confirmados para o HEAD da #165. Ambiente local tem openai 3.15.0, divergente do pin 3.26.0; não houve instalação global ou chamada real. Suíte final e pacote atualizado por SHA na PR. **CI e provider real pendentes; nenhuma autorização Live renovada.** [Comparações, bloqueios e comandos exatos](docs/estabilizacao/VALIDACAO_165.md).
 

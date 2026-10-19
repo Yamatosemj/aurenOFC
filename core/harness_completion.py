@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Callable, Literal
+import json
 
 
 @dataclass(frozen=True)
@@ -213,6 +214,12 @@ def _mensagem_conclusao_local(
     if ferramenta == "listar_abas" and multietapa_browser and resultado:
         return "Concluído: as abas solicitadas foram abertas e verificadas com sucesso."
     if ferramenta in terminal_result_tools and resultado:
+        try:
+            payload = json.loads(resultado)
+            if isinstance(payload, dict) and payload.get('ok') is True and isinstance(payload.get('mensagem'), str):
+                return payload['mensagem']
+        except (TypeError, ValueError):
+            pass
         return str(resultado)
 
     mensagens = {
