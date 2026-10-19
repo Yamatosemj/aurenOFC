@@ -99,9 +99,7 @@ class OpenAIProvider:
         try:
             resposta = self.get_client().responses.create(model=MODEL,
                 instructions=completion_instructions, input=entrada, tools=[],
-                # Live controls showed unstable evidence references with no reasoning.
-                # Keep the bounded final audit deliberate; main/intent are unchanged.
-                reasoning={'effort': 'low'}, text={'format': FORMAT}, max_output_tokens=1200, store=False)
+                reasoning={'effort': 'none'}, text={'format': FORMAT}, max_output_tokens=1200, store=False)
         except Exception as exc:
             raise CompletionVerificationFailure('completion_provider_error') from exc
         usage.registrar_uso(resposta)

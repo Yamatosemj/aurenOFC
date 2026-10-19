@@ -1,0 +1,110 @@
+{
+  "mode": "real_api_review_low_controls",
+  "results": [
+    {
+      "case": "correct",
+      "expected_accept": true,
+      "accepted": true,
+      "answer_status": "verified",
+      "validation_code": "",
+      "steps": [
+        {
+          "index": 1,
+          "status": "verified",
+          "evidence": [
+            1,
+            2
+          ]
+        },
+        {
+          "index": 2,
+          "status": "verified",
+          "evidence": [
+            3,
+            4,
+            5
+          ]
+        },
+        {
+          "index": 3,
+          "status": "verified",
+          "evidence": [
+            3,
+            5,
+            6
+          ]
+        }
+      ]
+    },
+    {
+      "case": "wrong_url",
+      "expected_accept": false,
+      "accepted": false,
+      "answer_status": "failed",
+      "validation_code": "completion_pending",
+      "steps": [
+        {
+          "index": 1,
+          "status": "verified",
+          "evidence": [
+            1,
+            2
+          ]
+        },
+        {
+          "index": 2,
+          "status": "verified",
+          "evidence": [
+            3,
+            4,
+            5
+          ]
+        },
+        {
+          "index": 3,
+          "status": "verified",
+          "evidence": [
+            3,
+            5,
+            6
+          ]
+        }
+      ]
+    },
+    {
+      "case": "missing_post_read",
+      "expected_accept": false,
+      "accepted": false,
+      "answer_status": "pending",
+      "validation_code": "completion_pending",
+      "steps": [
+        {
+          "index": 1,
+          "status": "verified",
+          "evidence": [
+            1,
+            2
+          ]
+        },
+        {
+          "index": 2,
+          "status": "pending",
+          "evidence": [
+            3,
+            4
+          ]
+        },
+        {
+          "index": 3,
+          "status": "pending",
+          "evidence": [
+            3,
+            4
+          ]
+        }
+      ]
+    }
+  ],
+  "estimated_total_usd": 0.07699500000000002,
+  "exposure_upper_usd": 0.157194
+}

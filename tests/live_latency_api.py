@@ -149,11 +149,12 @@ def main():
         root=tk.Tk();root.title(title);root.geometry('500x250');root.update()
     if args.case=='youtube':
         browser.BROWSER_PROFILE_DIR=folder/'browser-profile'
-    state={'first_id':None,'first_title':None,'confirmations':[],'executed':[]}
+    state={'first_id':None,'first_title':None,'search_matches_exact':False,'confirmations':[],'executed':[]}
 
     def observe_first_video():
         if browser.pagina is None or '/results' not in browser.pagina.url:
             return
+        state['search_matches_exact'] = parse_qs(urlparse(browser.pagina.url).query).get('search_query') == ['receitas de lasanha']
         cards=browser.pagina.locator('ytd-video-renderer a#video-title[href*="watch?v="]')
         if cards.count():
             state['first_title']=(cards.first.get_attribute('title') or cards.first.inner_text()).strip()
@@ -247,7 +248,7 @@ def main():
             independent['maximized']=bool(api.IsZoomed(api.FindWindowW(None,title)))
         if args.case=='youtube' and browser.pagina is not None:
             parsed=urlparse(browser.pagina.url)
-            independent={'watch_page':parsed.path=='/watch','video_matches_first':
+            independent={'search_matches_exact':state['search_matches_exact'],'watch_page':parsed.path=='/watch','video_matches_first':
                 state['first_id'] is not None and parse_qs(parsed.query).get('v')==[state['first_id']],
                 'title_matches_first':state['first_title'] is not None and state['first_title'] in browser.pagina.title()}
         observed=all(independent.values()) if independent else args.case=='greeting'

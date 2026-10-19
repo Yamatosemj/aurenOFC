@@ -1,0 +1,1723 @@
+{
+  "limit_usd": 0.5,
+  "reserved_usd": 1.5137705000000001,
+  "estimated_usd": 0.09391080000000002,
+  "calls": [
+    {
+      "case": "greeting",
+      "phase": "principal",
+      "request_bytes": 14593,
+      "output_cap": 1200,
+      "reserve_usd": 0.0149925,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 3240,
+        "output_tokens": 17,
+        "cached_tokens": 0,
+        "cache_write_tokens": 3237,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0008304,
+      "latency_ms": 2782.485
+    },
+    {
+      "case": "maximize",
+      "phase": "principal",
+      "request_bytes": 18940,
+      "output_cap": 1200,
+      "reserve_usd": 0.017166,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 3806,
+        "output_tokens": 32,
+        "cached_tokens": 0,
+        "cache_write_tokens": 3684,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0009899,
+      "latency_ms": 2498.799
+    },
+    {
+      "case": "maximize",
+      "phase": "completion",
+      "request_bytes": 4066,
+      "output_cap": 1200,
+      "reserve_usd": 0.009729,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 811,
+        "output_tokens": 67,
+        "cached_tokens": 0,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00028314999999999997,
+      "latency_ms": 1934.161
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "request_bytes": 21535,
+      "output_cap": 1200,
+      "reserve_usd": 0.0184635,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4176,
+        "output_tokens": 44,
+        "cached_tokens": 0,
+        "cache_write_tokens": 4054,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0010968,
+      "latency_ms": 2216.248
+    },
+    {
+      "case": "youtube",
+      "phase": "intent",
+      "request_bytes": 5370,
+      "output_cap": 300,
+      "reserve_usd": 0.007681,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 1188,
+        "output_tokens": 82,
+        "cached_tokens": 0,
+        "cache_write_tokens": 1185,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00039539999999999996,
+      "latency_ms": 2391.051
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "request_bytes": 22367,
+      "output_cap": 1200,
+      "reserve_usd": 0.0188795,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4340,
+        "output_tokens": 42,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 575,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0011354000000000002,
+      "latency_ms": 1898.925
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "request_bytes": 23366,
+      "output_cap": 1200,
+      "reserve_usd": 0.019379,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4627,
+        "output_tokens": 63,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 862,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00123235,
+      "latency_ms": 2006.036
+    },
+    {
+      "case": "youtube",
+      "phase": "intent",
+      "request_bytes": 6421,
+      "output_cap": 300,
+      "reserve_usd": 0.0082065,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 1500,
+        "output_tokens": 72,
+        "cached_tokens": 1075,
+        "cache_write_tokens": 422,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0004614,
+      "latency_ms": 1852.01
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "request_bytes": 23872,
+      "output_cap": 1200,
+      "reserve_usd": 0.019632,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4816,
+        "output_tokens": 45,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 1051,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.001258,
+      "latency_ms": 1868.116
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "request_bytes": 24587,
+      "output_cap": 1200,
+      "reserve_usd": 0.0199895,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 5083,
+        "output_tokens": 83,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 1318,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00137035,
+      "latency_ms": 1950.565
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "request_bytes": 23542,
+      "output_cap": 1200,
+      "reserve_usd": 0.019467,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4824,
+        "output_tokens": 54,
+        "cached_tokens": 3643,
+        "cache_write_tokens": 1059,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0012707999999999999,
+      "latency_ms": 2122.148
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "request_bytes": 24634,
+      "output_cap": 1200,
+      "reserve_usd": 0.020013,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 5140,
+        "output_tokens": 94,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 1375,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0013978,
+      "latency_ms": 2374.009
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "request_bytes": 24060,
+      "output_cap": 1200,
+      "reserve_usd": 0.019726,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4979,
+        "output_tokens": 54,
+        "cached_tokens": 3643,
+        "cache_write_tokens": 1214,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00130955,
+      "latency_ms": 1483.84
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "6320ee45999ecccdc8369810e324b9b4f36f0f49",
+      "request_bytes": 21535,
+      "output_cap": 1200,
+      "reserve_usd": 0.0184635,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4176,
+        "output_tokens": 32,
+        "cached_tokens": 4054,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0010824,
+      "latency_ms": 2200.902
+    },
+    {
+      "case": "youtube",
+      "phase": "intent",
+      "source_commit": "6320ee45999ecccdc8369810e324b9b4f36f0f49",
+      "request_bytes": 5329,
+      "output_cap": 300,
+      "reserve_usd": 0.0076605,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 1176,
+        "output_tokens": 70,
+        "cached_tokens": 1075,
+        "cache_write_tokens": 98,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.000378,
+      "latency_ms": 2176.973
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "6320ee45999ecccdc8369810e324b9b4f36f0f49",
+      "request_bytes": 22264,
+      "output_cap": 1200,
+      "reserve_usd": 0.018828,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4311,
+        "output_tokens": 27,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 546,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00111015,
+      "latency_ms": 1697.348
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "6320ee45999ecccdc8369810e324b9b4f36f0f49",
+      "request_bytes": 23683,
+      "output_cap": 1200,
+      "reserve_usd": 0.0195375,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4741,
+        "output_tokens": 33,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 976,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00122485,
+      "latency_ms": 1543.986
+    },
+    {
+      "case": "youtube",
+      "phase": "intent",
+      "source_commit": "6320ee45999ecccdc8369810e324b9b4f36f0f49",
+      "request_bytes": 6349,
+      "output_cap": 300,
+      "reserve_usd": 0.0081705,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 1471,
+        "output_tokens": 86,
+        "cached_tokens": 1075,
+        "cache_write_tokens": 393,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00047095,
+      "latency_ms": 2209.98
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "16c031caf92ea19e5ffe3cecc3f21d8c3d6e0538",
+      "request_bytes": 21535,
+      "output_cap": 1200,
+      "reserve_usd": 0.0184635,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4176,
+        "output_tokens": 32,
+        "cached_tokens": 4054,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0010824,
+      "latency_ms": 1924.194
+    },
+    {
+      "case": "youtube",
+      "phase": "intent",
+      "source_commit": "16c031caf92ea19e5ffe3cecc3f21d8c3d6e0538",
+      "request_bytes": 5329,
+      "output_cap": 300,
+      "reserve_usd": 0.0076605,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 1176,
+        "output_tokens": 56,
+        "cached_tokens": 1173,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0003612,
+      "latency_ms": 1630.516
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "16c031caf92ea19e5ffe3cecc3f21d8c3d6e0538",
+      "request_bytes": 22264,
+      "output_cap": 1200,
+      "reserve_usd": 0.018828,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4311,
+        "output_tokens": 27,
+        "cached_tokens": 4308,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00111015,
+      "latency_ms": 10154.337
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "16c031caf92ea19e5ffe3cecc3f21d8c3d6e0538",
+      "request_bytes": 23683,
+      "output_cap": 1200,
+      "reserve_usd": 0.0195375,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4741,
+        "output_tokens": 33,
+        "cached_tokens": 4738,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00122485,
+      "latency_ms": 1466.42
+    },
+    {
+      "case": "youtube",
+      "phase": "intent",
+      "source_commit": "16c031caf92ea19e5ffe3cecc3f21d8c3d6e0538",
+      "request_bytes": 6349,
+      "output_cap": 300,
+      "reserve_usd": 0.0081705,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 1471,
+        "output_tokens": 63,
+        "cached_tokens": 1468,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00044335,
+      "latency_ms": 2311.382
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "16c031caf92ea19e5ffe3cecc3f21d8c3d6e0538",
+      "request_bytes": 23823,
+      "output_cap": 1200,
+      "reserve_usd": 0.0196075,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4776,
+        "output_tokens": 22,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 1011,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0012204000000000002,
+      "latency_ms": 1628.919
+    },
+    {
+      "case": "youtube",
+      "phase": "intent",
+      "source_commit": "16c031caf92ea19e5ffe3cecc3f21d8c3d6e0538",
+      "request_bytes": 6240,
+      "output_cap": 300,
+      "reserve_usd": 0.008116,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 1444,
+        "output_tokens": 60,
+        "cached_tokens": 1075,
+        "cache_write_tokens": 366,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.000433,
+      "latency_ms": 1583.145
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "16c031caf92ea19e5ffe3cecc3f21d8c3d6e0538",
+      "request_bytes": 23716,
+      "output_cap": 1200,
+      "reserve_usd": 0.019554,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4754,
+        "output_tokens": 43,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 989,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0012400999999999998,
+      "latency_ms": 1678.967
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "16c031caf92ea19e5ffe3cecc3f21d8c3d6e0538",
+      "request_bytes": 23301,
+      "output_cap": 1200,
+      "reserve_usd": 0.0193465,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4607,
+        "output_tokens": 38,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 842,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0011973499999999998,
+      "latency_ms": 1605.528
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "16c031caf92ea19e5ffe3cecc3f21d8c3d6e0538",
+      "request_bytes": 24125,
+      "output_cap": 1200,
+      "reserve_usd": 0.0197585,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4862,
+        "output_tokens": 63,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 1097,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0012910999999999999,
+      "latency_ms": 2030.132
+    },
+    {
+      "case": "youtube",
+      "phase": "intent",
+      "source_commit": "16c031caf92ea19e5ffe3cecc3f21d8c3d6e0538",
+      "request_bytes": 7048,
+      "output_cap": 300,
+      "reserve_usd": 0.00852,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 1695,
+        "output_tokens": 59,
+        "cached_tokens": 1075,
+        "cache_write_tokens": 617,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00049455,
+      "latency_ms": 1873.733
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "16c031caf92ea19e5ffe3cecc3f21d8c3d6e0538",
+      "request_bytes": 25075,
+      "output_cap": 1200,
+      "reserve_usd": 0.0202335,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 5218,
+        "output_tokens": 34,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 1453,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0013453,
+      "latency_ms": 1377.717
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "a09a09bd62f35d134bd6230a8483c884d301e0a0",
+      "request_bytes": 21535,
+      "output_cap": 1200,
+      "reserve_usd": 0.0184635,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4176,
+        "output_tokens": 32,
+        "cached_tokens": 4054,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0010824,
+      "latency_ms": 2236.925
+    },
+    {
+      "case": "youtube",
+      "phase": "intent",
+      "source_commit": "a09a09bd62f35d134bd6230a8483c884d301e0a0",
+      "request_bytes": 5329,
+      "output_cap": 300,
+      "reserve_usd": 0.0076605,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 1176,
+        "output_tokens": 55,
+        "cached_tokens": 1173,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00036,
+      "latency_ms": 2260.074
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "a09a09bd62f35d134bd6230a8483c884d301e0a0",
+      "request_bytes": 22264,
+      "output_cap": 1200,
+      "reserve_usd": 0.018828,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4311,
+        "output_tokens": 27,
+        "cached_tokens": 4308,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00111015,
+      "latency_ms": 1450.212
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "a09a09bd62f35d134bd6230a8483c884d301e0a0",
+      "request_bytes": 23683,
+      "output_cap": 1200,
+      "reserve_usd": 0.0195375,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4741,
+        "output_tokens": 33,
+        "cached_tokens": 4738,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00122485,
+      "latency_ms": 1512.956
+    },
+    {
+      "case": "youtube",
+      "phase": "intent",
+      "source_commit": "a09a09bd62f35d134bd6230a8483c884d301e0a0",
+      "request_bytes": 6349,
+      "output_cap": 300,
+      "reserve_usd": 0.0081705,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 1471,
+        "output_tokens": 75,
+        "cached_tokens": 1468,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00045775,
+      "latency_ms": 2001.078
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "a09a09bd62f35d134bd6230a8483c884d301e0a0",
+      "request_bytes": 23823,
+      "output_cap": 1200,
+      "reserve_usd": 0.0196075,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4776,
+        "output_tokens": 22,
+        "cached_tokens": 4773,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0012204000000000002,
+      "latency_ms": 1276.847
+    },
+    {
+      "case": "youtube",
+      "phase": "intent",
+      "source_commit": "a09a09bd62f35d134bd6230a8483c884d301e0a0",
+      "request_bytes": 6240,
+      "output_cap": 300,
+      "reserve_usd": 0.008116,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 1444,
+        "output_tokens": 62,
+        "cached_tokens": 1441,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00043539999999999996,
+      "latency_ms": 1656.553
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "a09a09bd62f35d134bd6230a8483c884d301e0a0",
+      "request_bytes": 23716,
+      "output_cap": 1200,
+      "reserve_usd": 0.019554,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4754,
+        "output_tokens": 51,
+        "cached_tokens": 4751,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0012497,
+      "latency_ms": 2015.743
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "a09a09bd62f35d134bd6230a8483c884d301e0a0",
+      "request_bytes": 23337,
+      "output_cap": 1200,
+      "reserve_usd": 0.0193645,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4610,
+        "output_tokens": 41,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 845,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0012017,
+      "latency_ms": 1773.245
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "a09a09bd62f35d134bd6230a8483c884d301e0a0",
+      "request_bytes": 24159,
+      "output_cap": 1200,
+      "reserve_usd": 0.0197755,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4860,
+        "output_tokens": 44,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 1095,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0012678,
+      "latency_ms": 1585.837
+    },
+    {
+      "case": "youtube",
+      "phase": "intent",
+      "source_commit": "a09a09bd62f35d134bd6230a8483c884d301e0a0",
+      "request_bytes": 6992,
+      "output_cap": 300,
+      "reserve_usd": 0.008492,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 1671,
+        "output_tokens": 70,
+        "cached_tokens": 1075,
+        "cache_write_tokens": 593,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00050175,
+      "latency_ms": 2067.71
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "a09a09bd62f35d134bd6230a8483c884d301e0a0",
+      "request_bytes": 24341,
+      "output_cap": 1200,
+      "reserve_usd": 0.0198665,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4924,
+        "output_tokens": 45,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 1159,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.001285,
+      "latency_ms": 1944.404
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "a09a09bd62f35d134bd6230a8483c884d301e0a0",
+      "request_bytes": 24067,
+      "output_cap": 1200,
+      "reserve_usd": 0.0197295,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4874,
+        "output_tokens": 61,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 1109,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0012917,
+      "latency_ms": 2448.077
+    },
+    {
+      "case": "youtube",
+      "phase": "completion",
+      "source_commit": "a09a09bd62f35d134bd6230a8483c884d301e0a0",
+      "request_bytes": 10014,
+      "output_cap": 1200,
+      "reserve_usd": 0.012703,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 2539,
+        "output_tokens": 135,
+        "cached_tokens": 0,
+        "cache_write_tokens": 2536,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00079675,
+      "latency_ms": 2846.121
+    },
+    {
+      "case": "completion_protocol_probe",
+      "phase": "completion",
+      "source_commit": "d48793ac391a9724073fab36d8d459f34e9f561d",
+      "request_bytes": 10284,
+      "output_cap": 1200,
+      "reserve_usd": 0.012838,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 2605,
+        "output_tokens": 153,
+        "cached_tokens": 0,
+        "cache_write_tokens": 2602,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00083485,
+      "latency_ms": 2971.749
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "d48793ac391a9724073fab36d8d459f34e9f561d",
+      "request_bytes": 21535,
+      "output_cap": 1200,
+      "reserve_usd": 0.0184635,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4176,
+        "output_tokens": 44,
+        "cached_tokens": 4054,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0010968,
+      "latency_ms": 2320.444
+    },
+    {
+      "case": "youtube",
+      "phase": "intent",
+      "source_commit": "d48793ac391a9724073fab36d8d459f34e9f561d",
+      "request_bytes": 5370,
+      "output_cap": 300,
+      "reserve_usd": 0.007681,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 1188,
+        "output_tokens": 89,
+        "cached_tokens": 1185,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0004038,
+      "latency_ms": 1987.565
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "d48793ac391a9724073fab36d8d459f34e9f561d",
+      "request_bytes": 22367,
+      "output_cap": 1200,
+      "reserve_usd": 0.0188795,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4340,
+        "output_tokens": 44,
+        "cached_tokens": 4337,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0011378,
+      "latency_ms": 1632.894
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "d48793ac391a9724073fab36d8d459f34e9f561d",
+      "request_bytes": 23376,
+      "output_cap": 1200,
+      "reserve_usd": 0.019384,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4624,
+        "output_tokens": 41,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 859,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0012052,
+      "latency_ms": 1537.668
+    },
+    {
+      "case": "youtube",
+      "phase": "intent",
+      "source_commit": "d48793ac391a9724073fab36d8d459f34e9f561d",
+      "request_bytes": 6375,
+      "output_cap": 300,
+      "reserve_usd": 0.0081835,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 1479,
+        "output_tokens": 141,
+        "cached_tokens": 1075,
+        "cache_write_tokens": 401,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0005389500000000001,
+      "latency_ms": 2561.552
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "a41e16b6c020902e1a3f069961a5ecf022107756",
+      "request_bytes": 21535,
+      "output_cap": 1200,
+      "reserve_usd": 0.0184635,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4176,
+        "output_tokens": 32,
+        "cached_tokens": 4054,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0010824,
+      "latency_ms": 2014.138
+    },
+    {
+      "case": "youtube",
+      "phase": "intent",
+      "source_commit": "a41e16b6c020902e1a3f069961a5ecf022107756",
+      "request_bytes": 5329,
+      "output_cap": 300,
+      "reserve_usd": 0.0076605,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 1176,
+        "output_tokens": 55,
+        "cached_tokens": 1173,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00036,
+      "latency_ms": 1616.13
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "a41e16b6c020902e1a3f069961a5ecf022107756",
+      "request_bytes": 22264,
+      "output_cap": 1200,
+      "reserve_usd": 0.018828,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4311,
+        "output_tokens": 27,
+        "cached_tokens": 4308,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00111015,
+      "latency_ms": 1651.578
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "a41e16b6c020902e1a3f069961a5ecf022107756",
+      "request_bytes": 23683,
+      "output_cap": 1200,
+      "reserve_usd": 0.0195375,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4741,
+        "output_tokens": 33,
+        "cached_tokens": 4738,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00122485,
+      "latency_ms": 1836.436
+    },
+    {
+      "case": "youtube",
+      "phase": "intent",
+      "source_commit": "a41e16b6c020902e1a3f069961a5ecf022107756",
+      "request_bytes": 6967,
+      "output_cap": 300,
+      "reserve_usd": 0.0084795,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 1675,
+        "output_tokens": 82,
+        "cached_tokens": 1075,
+        "cache_write_tokens": 597,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00051715,
+      "latency_ms": 1973.128
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "a41e16b6c020902e1a3f069961a5ecf022107756",
+      "request_bytes": 23823,
+      "output_cap": 1200,
+      "reserve_usd": 0.0196075,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4776,
+        "output_tokens": 22,
+        "cached_tokens": 4773,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0012204000000000002,
+      "latency_ms": 1520.909
+    },
+    {
+      "case": "youtube",
+      "phase": "intent",
+      "source_commit": "a41e16b6c020902e1a3f069961a5ecf022107756",
+      "request_bytes": 6858,
+      "output_cap": 300,
+      "reserve_usd": 0.008425,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 1648,
+        "output_tokens": 73,
+        "cached_tokens": 1075,
+        "cache_write_tokens": 570,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0004996,
+      "latency_ms": 1887.792
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "a41e16b6c020902e1a3f069961a5ecf022107756",
+      "request_bytes": 23716,
+      "output_cap": 1200,
+      "reserve_usd": 0.019554,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4754,
+        "output_tokens": 59,
+        "cached_tokens": 4751,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0012592999999999999,
+      "latency_ms": 1875.202
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "a41e16b6c020902e1a3f069961a5ecf022107756",
+      "request_bytes": 23373,
+      "output_cap": 1200,
+      "reserve_usd": 0.0193825,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4615,
+        "output_tokens": 40,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 850,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00120175,
+      "latency_ms": 2124.309
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "a41e16b6c020902e1a3f069961a5ecf022107756",
+      "request_bytes": 24198,
+      "output_cap": 1200,
+      "reserve_usd": 0.019795,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4863,
+        "output_tokens": 36,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 1098,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00125895,
+      "latency_ms": 1434.664
+    },
+    {
+      "case": "youtube",
+      "phase": "intent",
+      "source_commit": "a41e16b6c020902e1a3f069961a5ecf022107756",
+      "request_bytes": 7189,
+      "output_cap": 300,
+      "reserve_usd": 0.0085905,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 1731,
+        "output_tokens": 67,
+        "cached_tokens": 1075,
+        "cache_write_tokens": 653,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00051315,
+      "latency_ms": 1809.66
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "a41e16b6c020902e1a3f069961a5ecf022107756",
+      "request_bytes": 24936,
+      "output_cap": 1200,
+      "reserve_usd": 0.020164,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 5130,
+        "output_tokens": 51,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 1365,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0013437,
+      "latency_ms": 2035.339
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "a41e16b6c020902e1a3f069961a5ecf022107756",
+      "request_bytes": 24656,
+      "output_cap": 1200,
+      "reserve_usd": 0.020024,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 5085,
+        "output_tokens": 58,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 1320,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00134085,
+      "latency_ms": 1797.116
+    },
+    {
+      "case": "youtube",
+      "phase": "completion",
+      "source_commit": "a41e16b6c020902e1a3f069961a5ecf022107756",
+      "request_bytes": 10999,
+      "output_cap": 1200,
+      "reserve_usd": 0.0131955,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 2821,
+        "output_tokens": 121,
+        "cached_tokens": 0,
+        "cache_write_tokens": 2818,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0008504500000000001,
+      "latency_ms": 4846.687
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "a449bb1f86fd3d5d317f4b99727783a679b7304d",
+      "request_bytes": 21535,
+      "output_cap": 1200,
+      "reserve_usd": 0.0184635,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4176,
+        "output_tokens": 44,
+        "cached_tokens": 4054,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0010968,
+      "latency_ms": 1820.706
+    },
+    {
+      "case": "youtube",
+      "phase": "intent",
+      "source_commit": "a449bb1f86fd3d5d317f4b99727783a679b7304d",
+      "request_bytes": 5370,
+      "output_cap": 300,
+      "reserve_usd": 0.007681,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 1188,
+        "output_tokens": 65,
+        "cached_tokens": 1185,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.000375,
+      "latency_ms": 1901.493
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "a449bb1f86fd3d5d317f4b99727783a679b7304d",
+      "request_bytes": 22367,
+      "output_cap": 1200,
+      "reserve_usd": 0.0188795,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4340,
+        "output_tokens": 51,
+        "cached_tokens": 4337,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0011462,
+      "latency_ms": 1788.468
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "a449bb1f86fd3d5d317f4b99727783a679b7304d",
+      "request_bytes": 23156,
+      "output_cap": 1200,
+      "reserve_usd": 0.019274,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4563,
+        "output_tokens": 39,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 798,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0011875499999999999,
+      "latency_ms": 1611.925
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "a449bb1f86fd3d5d317f4b99727783a679b7304d",
+      "request_bytes": 24116,
+      "output_cap": 1200,
+      "reserve_usd": 0.019754,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4858,
+        "output_tokens": 41,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 1093,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0012637,
+      "latency_ms": 1471.609
+    },
+    {
+      "case": "youtube",
+      "phase": "intent",
+      "source_commit": "a449bb1f86fd3d5d317f4b99727783a679b7304d",
+      "request_bytes": 7210,
+      "output_cap": 300,
+      "reserve_usd": 0.008601,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 1754,
+        "output_tokens": 84,
+        "cached_tokens": 1075,
+        "cache_write_tokens": 676,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0005392999999999999,
+      "latency_ms": 2168.152
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "a449bb1f86fd3d5d317f4b99727783a679b7304d",
+      "request_bytes": 24408,
+      "output_cap": 1200,
+      "reserve_usd": 0.0199,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4955,
+        "output_tokens": 47,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 1190,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0012951500000000001,
+      "latency_ms": 9868.905
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "a449bb1f86fd3d5d317f4b99727783a679b7304d",
+      "request_bytes": 24135,
+      "output_cap": 1200,
+      "reserve_usd": 0.0197635,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4943,
+        "output_tokens": 81,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 1178,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00133295,
+      "latency_ms": 1823.459
+    },
+    {
+      "case": "youtube",
+      "phase": "completion",
+      "source_commit": "a449bb1f86fd3d5d317f4b99727783a679b7304d",
+      "request_bytes": 8569,
+      "output_cap": 1200,
+      "reserve_usd": 0.0119805,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 2144,
+        "output_tokens": 138,
+        "cached_tokens": 0,
+        "cache_write_tokens": 2141,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0007016,
+      "latency_ms": 2169.274
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "a449bb1f86fd3d5d317f4b99727783a679b7304d",
+      "request_bytes": 23564,
+      "output_cap": 1200,
+      "reserve_usd": 0.019478,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4767,
+        "output_tokens": 52,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 1002,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00125415,
+      "latency_ms": 2377.605
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "a449bb1f86fd3d5d317f4b99727783a679b7304d",
+      "request_bytes": 24181,
+      "output_cap": 1200,
+      "reserve_usd": 0.0197865,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4987,
+        "output_tokens": 72,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 1222,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0013331500000000002,
+      "latency_ms": 2380.954
+    },
+    {
+      "case": "youtube",
+      "phase": "completion",
+      "source_commit": "a449bb1f86fd3d5d317f4b99727783a679b7304d",
+      "request_bytes": 9652,
+      "output_cap": 1200,
+      "reserve_usd": 0.012522,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 2508,
+        "output_tokens": 126,
+        "cached_tokens": 0,
+        "cache_write_tokens": 2505,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0007782,
+      "latency_ms": 2212.42
+    },
+    {
+      "case": "completion_exact_candidate_audit",
+      "phase": "completion",
+      "source_commit": "a449bb1f86fd3d5d317f4b99727783a679b7304d",
+      "request_bytes": 9652,
+      "output_cap": 1200,
+      "reserve_usd": 0.012522,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 2508,
+        "output_tokens": 121,
+        "cached_tokens": 2505,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0007722,
+      "latency_ms": 2582.242
+    },
+    {
+      "case": "review_low_correct",
+      "phase": "completion_low",
+      "source_commit": "a449bb1f86fd3d5d317f4b99727783a679b7304d",
+      "request_bytes": 9651,
+      "output_cap": 1200,
+      "reserve_usd": 0.0125215,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 2508,
+        "output_tokens": 238,
+        "cached_tokens": 0,
+        "cache_write_tokens": 2505,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0009126,
+      "latency_ms": 3952.949
+    },
+    {
+      "case": "review_low_wrong_url",
+      "phase": "completion_low",
+      "source_commit": "a449bb1f86fd3d5d317f4b99727783a679b7304d",
+      "request_bytes": 9657,
+      "output_cap": 1200,
+      "reserve_usd": 0.0125245,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 2510,
+        "output_tokens": 277,
+        "cached_tokens": 0,
+        "cache_write_tokens": 2507,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0009599,
+      "latency_ms": 4065.092
+    },
+    {
+      "case": "review_low_missing_post_read",
+      "phase": "completion_low",
+      "source_commit": "a449bb1f86fd3d5d317f4b99727783a679b7304d",
+      "request_bytes": 7387,
+      "output_cap": 1200,
+      "reserve_usd": 0.0113895,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 1762,
+        "output_tokens": 316,
+        "cached_tokens": 0,
+        "cache_write_tokens": 1759,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0008197,
+      "latency_ms": 4318.887
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "7741f08e3b65fe6e28221afd18eaa275ffa879e9",
+      "request_bytes": 21535,
+      "output_cap": 1200,
+      "reserve_usd": 0.0184635,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4176,
+        "output_tokens": 32,
+        "cached_tokens": 4054,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0010824,
+      "latency_ms": 2054.68
+    },
+    {
+      "case": "youtube",
+      "phase": "intent",
+      "source_commit": "7741f08e3b65fe6e28221afd18eaa275ffa879e9",
+      "request_bytes": 5329,
+      "output_cap": 300,
+      "reserve_usd": 0.0076605,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 1176,
+        "output_tokens": 57,
+        "cached_tokens": 1173,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00036239999999999997,
+      "latency_ms": 1591.42
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "7741f08e3b65fe6e28221afd18eaa275ffa879e9",
+      "request_bytes": 22264,
+      "output_cap": 1200,
+      "reserve_usd": 0.018828,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4311,
+        "output_tokens": 27,
+        "cached_tokens": 4308,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00111015,
+      "latency_ms": 1738.0
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "7741f08e3b65fe6e28221afd18eaa275ffa879e9",
+      "request_bytes": 23683,
+      "output_cap": 1200,
+      "reserve_usd": 0.0195375,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4741,
+        "output_tokens": 33,
+        "cached_tokens": 4738,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00122485,
+      "latency_ms": 1934.456
+    },
+    {
+      "case": "youtube",
+      "phase": "intent",
+      "source_commit": "7741f08e3b65fe6e28221afd18eaa275ffa879e9",
+      "request_bytes": 6967,
+      "output_cap": 300,
+      "reserve_usd": 0.0084795,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 1675,
+        "output_tokens": 71,
+        "cached_tokens": 1672,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00050395,
+      "latency_ms": 2369.864
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "7741f08e3b65fe6e28221afd18eaa275ffa879e9",
+      "request_bytes": 23823,
+      "output_cap": 1200,
+      "reserve_usd": 0.0196075,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4776,
+        "output_tokens": 22,
+        "cached_tokens": 4773,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0012204000000000002,
+      "latency_ms": 1893.209
+    },
+    {
+      "case": "youtube",
+      "phase": "intent",
+      "source_commit": "7741f08e3b65fe6e28221afd18eaa275ffa879e9",
+      "request_bytes": 6858,
+      "output_cap": 300,
+      "reserve_usd": 0.008425,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 1648,
+        "output_tokens": 65,
+        "cached_tokens": 1645,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00049,
+      "latency_ms": 2286.193
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "7741f08e3b65fe6e28221afd18eaa275ffa879e9",
+      "request_bytes": 23716,
+      "output_cap": 1200,
+      "reserve_usd": 0.019554,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4754,
+        "output_tokens": 45,
+        "cached_tokens": 4751,
+        "cache_write_tokens": 0,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0012425,
+      "latency_ms": 1408.72
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "7741f08e3b65fe6e28221afd18eaa275ffa879e9",
+      "request_bytes": 23314,
+      "output_cap": 1200,
+      "reserve_usd": 0.019353,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4599,
+        "output_tokens": 40,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 834,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00119775,
+      "latency_ms": 1421.507
+    },
+    {
+      "case": "youtube",
+      "phase": "intent",
+      "source_commit": "7741f08e3b65fe6e28221afd18eaa275ffa879e9",
+      "request_bytes": 6343,
+      "output_cap": 300,
+      "reserve_usd": 0.0081675,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 1474,
+        "output_tokens": 96,
+        "cached_tokens": 1075,
+        "cache_write_tokens": 396,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0004837,
+      "latency_ms": 2190.201
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "7741f08e3b65fe6e28221afd18eaa275ffa879e9",
+      "request_bytes": 24059,
+      "output_cap": 1200,
+      "reserve_usd": 0.0197255,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4884,
+        "output_tokens": 54,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 1119,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0012858,
+      "latency_ms": 2054.171
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "7741f08e3b65fe6e28221afd18eaa275ffa879e9",
+      "request_bytes": 25015,
+      "output_cap": 1200,
+      "reserve_usd": 0.0202035,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 5185,
+        "output_tokens": 60,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 1420,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00136825,
+      "latency_ms": 1711.011
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "7741f08e3b65fe6e28221afd18eaa275ffa879e9",
+      "request_bytes": 23961,
+      "output_cap": 1200,
+      "reserve_usd": 0.0196765,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4935,
+        "output_tokens": 50,
+        "cached_tokens": 3643,
+        "cache_write_tokens": 1170,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00129375,
+      "latency_ms": 1727.792
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "7741f08e3b65fe6e28221afd18eaa275ffa879e9",
+      "request_bytes": 25049,
+      "output_cap": 1200,
+      "reserve_usd": 0.0202205,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 5216,
+        "output_tokens": 62,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 1451,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.0013784000000000001,
+      "latency_ms": 2099.097
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "7741f08e3b65fe6e28221afd18eaa275ffa879e9",
+      "request_bytes": 24096,
+      "output_cap": 1200,
+      "reserve_usd": 0.019744,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 4925,
+        "output_tokens": 54,
+        "cached_tokens": 3643,
+        "cache_write_tokens": 1160,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00129605,
+      "latency_ms": 1855.999
+    },
+    {
+      "case": "youtube",
+      "phase": "principal",
+      "source_commit": "7741f08e3b65fe6e28221afd18eaa275ffa879e9",
+      "request_bytes": 25204,
+      "output_cap": 1200,
+      "reserve_usd": 0.020298,
+      "status": "completed",
+      "usage": {
+        "input_tokens": 5209,
+        "output_tokens": 61,
+        "cached_tokens": 3762,
+        "cache_write_tokens": 1444,
+        "model": "gpt-5.6-luna"
+      },
+      "estimated_usd": 0.00137545,
+      "latency_ms": 1835.165
+    }
+  ],
+  "exposure_upper_usd": 0.19152300000000022
+}
