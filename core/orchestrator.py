@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from typing import Any
+import time
+import json
 
 from core.router import Router, get_router
 from core.tools_registry import tools as TOOL_REGISTRY
@@ -32,6 +34,7 @@ class AurenOrchestrator:
         self.provider = provider or OpenAIProvider()
         self.router = router or get_router()
         self.response_cache = ResponseCache.from_config()
+        self.last_metrics = {}
 
     def get_client(self):
         getter = getattr(self.provider, "get_client", None)
@@ -96,7 +99,13 @@ class AurenOrchestrator:
             if cached is not None:
                 return _CachedResponse(cached, cache_key)
 
+        routing_started = time.perf_counter()
         toolset = self.router.select_tools(entrada, TOOL_REGISTRY)
+        self.last_metrics = {
+            "routing_ms": (time.perf_counter() - routing_started) * 1000,
+            "tool_schema_chars": len(json.dumps(toolset, ensure_ascii=False)),
+        }
+        provider_started = time.perf_counter()
         resposta = self.provider.create_response(
             entrada,
             response_id=response_id,
@@ -104,6 +113,7 @@ class AurenOrchestrator:
             tool_choice=tool_choice,
             tools=toolset,
         )
+        self.last_metrics["provider_ms"] = (time.perf_counter() - provider_started) * 1000
 
         if cache_key is not None:
             try:

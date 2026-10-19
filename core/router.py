@@ -384,6 +384,18 @@ class Router:
         texto = self._objetivo_para_roteamento(mensagem).strip().lower()
         domains = self._detectar_dominios(texto)
 
+        # Only self-contained conversation is tool-free. Ambiguous requests and
+        # continuations retain the full fallback so existing capabilities remain.
+        from core.utils import normalizar_nome
+        conversa = normalizar_nome(texto).strip(" .!?¡¿,")
+        if (re.fullmatch(r"(?:ola|oi|bom dia|boa tarde|boa noite)(?:[, ]+auren)?", conversa)
+                or (not domains and re.fullmatch(r"explique o que (?:e|significa) [\w ,?-]{1,120}", conversa)
+                    and not re.search(r"\b(?:e|depois|agora|abra|abrir|execute|executar|faca|clique|feche|salve|leia|consulte|verifique)\b",
+                                      conversa.split(" ", 4)[-1]))):
+            self.last_domains = ["conversation"]
+            self.last_tool_names = []
+            return []
+
         # Abertura simples de aplicativo nomeado: nao deixar instrucao interna
         # sobre "janelas" esconder abrir_programa nem forcar uma leitura inutil.
         # Sites/URLs reconhecidos seguem o caminho de navegador ja existente.

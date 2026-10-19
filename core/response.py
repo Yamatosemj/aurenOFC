@@ -43,6 +43,7 @@ def obter_metricas_roteamento() -> dict[str, object]:
     router = _orchestrator.router
     cache = _orchestrator.get_response_cache_stats()
     return {
+        **_orchestrator.last_metrics,
         "dominios": list(router.last_domains),
         "ferramentas": len(router.last_tool_names),
         "fallback_45": len(router.last_tool_names) == len(TOOL_REGISTRY),
