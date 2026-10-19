@@ -4,6 +4,11 @@ from tools import windows_window as windows
 from core.harness_completion import _mensagem_conclusao_local
 
 
+@pytest.fixture(autouse=True)
+def isolate_desktop(monkeypatch):
+    monkeypatch.setattr(windows, '_enumerar_janelas_windows', lambda **_: [])
+
+
 @pytest.mark.parametrize('name,state,command', [
     ('maximizar_janela_windows', 'maximizada', 3),
     ('minimizar_janela_windows', 'minimizada', 6),
@@ -49,3 +54,11 @@ def test_api_error_cannot_claim_normal_state(monkeypatch):
     result = windows.restaurar_janela_windows('Fixture')
     assert not result.ok and result.error_code == 'window_state_verification_error'
     assert 'PRIVATE' not in str(result)
+
+
+def test_ambiguous_window_state_change_requires_new_decision(monkeypatch):
+    monkeypatch.setattr(windows.os, 'name', 'nt')
+    monkeypatch.setattr(windows, '_enumerar_janelas_windows', lambda **_: [(1,'One Fixture'),(2,'Two Fixture')])
+    monkeypatch.setattr(windows, '_encontrar_janela_windows', lambda _: pytest.fail('Must not resolve arbitrarily'))
+    result=windows.maximizar_janela_windows('Fixture')
+    assert not result.ok and result.error_code=='window_target_ambiguous'

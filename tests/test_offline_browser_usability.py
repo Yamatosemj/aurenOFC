@@ -25,13 +25,18 @@ def test_search_fixture_with_real_browser_dom_and_dispatcher(tmp_path, monkeypat
             raise
         try:
             url = 'http://127.0.0.1/auren-fixture/search?q=teste'
+            video = 'http://127.0.0.1/auren-fixture/video/17'
             context.route('**/*', lambda route: route.fulfill(status=200,
-                content_type='text/html', body='<title>Pesquisa ficticia</title><h1>Resultado Ficticio 17</h1>')
-                if route.request.url == url else route.abort())
+                content_type='text/html', body='<title>Pesquisa ficticia</title><h1>Resultado Ficticio 17</h1><a href="/auren-fixture/video/17">Video Fixture 17</a>')
+                if route.request.url == url else route.fulfill(status=200, content_type='text/html',
+                    body='<title>Video Fixture 17</title><h1>Video Fixture 17 aberto</h1>')
+                if route.request.url == video else route.abort())
             for name, value in {'playwright': pw, 'browser_context': context,
                                 'pagina': context.pages[0], 'modo_navegador': 'oculto'}.items():
                 monkeypatch.setattr(browser, name, value)
-            pm = PermissionManager(confirmation_channel=SimpleNamespace(confirmar=lambda _: False))
+            confirmations = []
+            pm = PermissionManager(confirmation_channel=SimpleNamespace(
+                confirmar=lambda request: confirmations.append(request) or True))
             def execute(name, args):
                 return dispatcher.executar_ferramenta(SimpleNamespace(name=name, arguments=json.dumps(args)), pm, None)
             navigate = execute('navegar_navegador', {'url': url, 'modo': 'oculto'})
@@ -40,5 +45,11 @@ def test_search_fixture_with_real_browser_dom_and_dispatcher(tmp_path, monkeypat
             assert read.ok and read.conteudo_nao_confiavel
             assert 'Resultado Ficticio 17' in read.message
             assert verificar_resultado_navegador('navegar_navegador', json.dumps({'url': url}), read.data) is True
+            click = execute('clicar_elemento', {'alvo':'Video Fixture 17', 'indice':1})
+            assert click.ok
+            observed = execute('obter_contexto_navegador', {'foco':'Video Fixture 17'})
+            assert observed.ok and 'Video Fixture 17' in observed.message
+            assert browser.pagina.url == video
+            assert confirmations  # Reading untrusted DOM did not bypass permission.
         finally:
             context.close()

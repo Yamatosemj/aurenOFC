@@ -14,6 +14,7 @@ Executores (fast_paths, dispatcher, PermissionManager) nunca decidem; so executa
 from __future__ import annotations
 
 import re
+import json
 from dataclasses import dataclass
 from typing import Any
 
@@ -384,6 +385,22 @@ class Router:
         texto = self._objetivo_para_roteamento(mensagem).strip().lower()
         domains = self._detectar_dominios(texto)
 
+        # A machine-readable contract failure may need another capability.
+        # Broaden only this round, never based on instructions inside site text.
+        if isinstance(mensagem, (list, tuple)):
+            for item in mensagem:
+                if not isinstance(item, dict) or item.get('type') != 'function_call_output':
+                    continue
+                try:
+                    result = json.loads(item.get('output', ''))
+                except (TypeError, ValueError):
+                    continue
+                if (isinstance(result, dict) and result.get('ok') is False
+                        and not result.get('conteudo_nao_confiavel')
+                        and result.get('codigo_erro') == 'contract_error'):
+                    self.last_domains, self.last_tool_names = ['capability_recovery'], all_names
+                    return all_names
+
         # Only self-contained conversation is tool-free. Ambiguous requests and
         # continuations retain the full fallback so existing capabilities remain.
         from core.utils import normalizar_nome
@@ -405,6 +422,19 @@ class Router:
             texto,
         ) and self.local_decision.choice(texto).choice == "unknown_or_complex":
             domains = ["apps_files"]
+
+        # Reuse the current route and opening grammar, without app aliases or
+        # a second router. Compound/conditional/file requests keep the union.
+        simple_open = (domains == ['apps_files'] and re.fullmatch(
+            r'(?:auren[,!\s]+)?(?:abra|abre|abrir|inicie|iniciar|execute|executar)'
+            r'\s+(?:(?:o|a|um|uma)\s+)?[\wÀ-ÿ][\wÀ-ÿ ._+-]{1,70}', texto)
+            and not re.search(r'\b(?:e|depois|sem|nao|se|quando|antes|arquivo|pasta|documento|pdf|atalho)\b',
+                              normalizar_nome(texto)))
+        if simple_open:
+            selected = COMMON_TOOLS | {'abrir_programa', 'obter_geometria_janela_windows'}
+            ordered = [name for name in all_names if name in selected]
+            self.last_domains, self.last_tool_names = ['apps_files'], ordered
+            return ordered
 
         # Fechar um aplicativo exige capacidade Windows, mesmo quando seu nome
         # coincide com um servico web. Fechamento *por completo* tambem exige

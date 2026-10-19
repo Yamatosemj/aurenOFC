@@ -357,6 +357,14 @@ def _alterar_estado_janela(alvo, comando, esperado, ferramenta):
         return ToolResult.failure('Controle de janelas requer Windows.',
             error_code='platform_not_supported', tool_name=ferramenta)
 
+    pedido = normalizar_nome(alvo)
+    candidates = [(hwnd, title) for hwnd, title in _enumerar_janelas_windows(apenas_visiveis=False)
+                  if pedido and pedido in normalizar_nome(title)]
+    exact = [(hwnd, title) for hwnd, title in candidates if normalizar_nome(title) == pedido]
+    if len(exact or candidates) > 1:
+        return ToolResult.failure('Mais de uma janela corresponde ao alvo. Informe um titulo unico.',
+            error_code='window_target_ambiguous', tool_name=ferramenta)
+
     encontrado = _encontrar_janela_windows(alvo)
     if not encontrado:
         return ToolResult.failure(f"Nao encontrei uma janela correspondente a '{alvo}'.",

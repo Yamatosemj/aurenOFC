@@ -84,13 +84,11 @@ def encontrar_aplicativo(nome):
 
     aplicativos = buscar_aplicativos_do_windows()
 
-    for aplicativo in aplicativos:
-        nome_app = normalizar_nome(
-            aplicativo.get("Name", "")
-        )
-
-        if nome_app == pedido:
-            return aplicativo
+    exatos = [app for app in aplicativos if normalizar_nome(app.get('Name', '')) == pedido]
+    if len({app.get('AppID') for app in exatos}) > 1:
+        raise ApplicationAmbiguousError('application_catalog_ambiguous')
+    if exatos:
+        return exatos[0]
 
     palavras = set(pedido.split())
 
