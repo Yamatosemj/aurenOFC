@@ -1,7 +1,8 @@
 """Explicit live probe: real provider + normal Harness/Router/Dispatcher.
 
 No API call on import. --run is mandatory. One scenario per process; persistent
-budget reserves are never refunded, including failed or unknown-usage calls.
+reservations settle only against reported usage, with conservative rates.
+Unknown-usage calls keep their full reserve. No previous record is removed.
 Only synthetic windows and public YouTube recipe navigation are in scope.
 """
 import argparse
@@ -38,6 +39,19 @@ class LiveBudget:
         temp.write_text(json.dumps(self.data, indent=2), encoding='utf-8')
         temp.replace(self.path)
 
+    def exposure(self):
+        """Known usage at 2x+ published rates; unknown usage at full reserve."""
+        entries=self.data['calls']
+        # An inherited reserve with no entry is unknown, never free credit.
+        value=max(0,self.data['reserved_usd']-sum(e['reserve_usd'] for e in entries))
+        for entry in entries:
+            usage=entry.get('usage') or {}
+            inp,out=usage.get('input_tokens'),usage.get('output_tokens')
+            valid=(type(inp) is int and inp>0 and type(out) is int and out>=0
+                and inp<=entry['request_bytes']+8192 and out<=entry['output_cap'])
+            value += (inp*0.50+out*3)/1_000_000 if valid else entry['reserve_usd']
+        return value
+
     def create(self, **params):
         if params.get('model') != 'gpt-5.6-luna' or params.get('previous_response_id'):
             raise RuntimeError('Live budget requires the configured model and self-contained input')
@@ -55,9 +69,9 @@ class LiveBudget:
             raise RuntimeError('Live request exceeds text-only bounded budget')
         # Standard short-context published maximum is $0.25/M input-cache-write
         # and $1.20/M output. Reserve $0.50/$3, input byte upper bound +8192
-        # framing tokens, ignoring all cache discounts. Never refund reserves.
+        # framing tokens, ignoring all cache discounts. Keep every reserve entry.
         reserve = ((len(payload)+8192)*0.50 + params['max_output_tokens']*3)/1_000_000
-        if self.data['reserved_usd'] + reserve > self.LIMIT or len(self.data['calls']) >= 32:
+        if self.exposure() + reserve > self.LIMIT or len(self.data['calls']) >= 48:
             raise RuntimeError('Live credit reserve exhausted; no request sent')
         self.data['reserved_usd'] += reserve
         entry = {'case':self.case, 'phase':self.phase, 'source_commit':self.source_commit, 'request_bytes':len(payload),
@@ -84,6 +98,7 @@ class LiveBudget:
             raise
         finally:
             entry['latency_ms'] = round((time.perf_counter()-started)*1000,3)
+            self.data['exposure_upper_usd']=self.exposure()
             self.save()
 
 
@@ -211,12 +226,12 @@ def main():
         obter_chamadas=lambda r:[i for i in r.output if getattr(i,'type','')=='function_call'],
         obter_metricas_roteamento=lambda:orchestrator.last_metrics,
         comando_rapido=lambda _:(False,''),mostrar_uso=lambda:None,iniciar_tarefa=pm.iniciar_tarefa,
-        apos_tarefa=None,fechar=lambda:None,max_model_rounds=8)
+        apos_tarefa=None,fechar=lambda:None,max_model_rounds=12)
     goal={'greeting':'ola auren','maximize':'maximize '+title,
           'youtube':'Abra o YouTube, pesquise receitas de lasanha e abra o primeiro video organico relevante da lista. Ignore anuncios e confirme a URL e o titulo do video aberto.'}[args.case]
     before=len(meter.data['calls']);started=time.perf_counter()
     try:
-        _,answer=h.processar_mensagem(goal,execution_scope=allowed,model_budget=14)
+        _,answer=h.processar_mensagem(goal,execution_scope=allowed,model_budget=18)
         elapsed=(time.perf_counter()-started)*1000
         snapshot=h.current_task()
         independent={}
@@ -240,6 +255,7 @@ def main():
             'api_calls':len(meter.data['calls'])-before,'independent':independent,
             'executed':state['executed'],'confirmations':state['confirmations'],
             'reserved_total_usd':meter.data['reserved_usd'],
+            'exposure_upper_usd':meter.exposure(),
             'estimated_total_usd':meter.data['estimated_usd']}
         (folder/'result.json').write_text(json.dumps(result,indent=2),encoding='utf-8')
         print(json.dumps(result),flush=True)
