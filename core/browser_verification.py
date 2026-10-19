@@ -48,7 +48,7 @@ def _active_tab(abas: str) -> tuple[int, str, str] | None:
 
     indice = int(active.group(1))
     linha = re.search(
-        rf"(?m)^Aba {indice}:\s*(?P<titulo>.*?)\s*\|\s*(?P<url>.+?)(?:\s*\[ATIVA\])?$",
+        rf"(?m)^Aba {indice}:\s*(?P<titulo>.*)\s+\|\s+(?P<url>\S+)(?:\s*\[ATIVA\])?$",
         texto,
     )
     if not linha:

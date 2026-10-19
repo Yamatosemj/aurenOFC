@@ -42,7 +42,7 @@ Duas tentativas atingiram o teto experimental de 8 rodadas; corrigido no runner 
 - O revisor final omitia leituras posteriores da lista de referencias. Instrucao explicita exige referencias da mesma etapa. Falta de prova vira pendencia recuperavel uma unica vez no fluxo existente; referencias inexistentes continuam invalidas. Nenhuma referencia e inventada ou inserida automaticamente.
 - A mesma resposta/evidencia foi aceita em auditoria isolada e recusada no fluxo completo: variabilidade observada do revisor, nao prova de causa unica. Experimento reasoning=low aceitou controle correto e rejeitou URL errada e falta de pos-leitura. A tentativa completa falhou antes da auditoria final; ajuste de producao revertido, mantendo none e modelo original.
 
-Persistem falhas ponta a ponta do YouTube: guardas de navegador e referencias de prova. A sugestao selecionada por Enter precisa ser tratada genericamente por verificacao da consulta efetiva. Nao foram criados atalhos por aplicativo, segundo roteador ou bypass de autorizacao.
+A ultima recusa do guard foi reproduzida localmente: o parser de abas separava no primeiro |, incluindo parte do titulo na URL. Corrigido para o separador antes do campo URL; testes com multiplos | verificam destino correto e incorreto. Correcao nao repetida com API real. Persistem resultados Live ponta a ponta malsucedidos do YouTube e variabilidade nas referencias de prova. A sugestao selecionada por Enter precisa ser tratada genericamente por verificacao da consulta efetiva. Nao foram criados atalhos por aplicativo, segundo roteador ou bypass de autorizacao.
 
 ## Arquivos e regressao
 

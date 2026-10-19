@@ -32,3 +32,12 @@ def test_legacy_success_and_same_page_click_remain_unverified():
     assert verificar_resultado_navegador('clicar_elemento',args,context('https://example.test/article'),{}) is None
     data=evidence();data['clique']['url_depois']=data['clique']['url_antes']
     assert verificar_resultado_navegador('clicar_elemento',args,context('https://example.test/search'),data) is None
+
+
+@pytest.mark.parametrize('title', ['Recipe | Channel #215', 'One | Two | Three'])
+def test_title_separators_do_not_become_part_of_observed_url(title):
+    observed = context('https://example.test/article')
+    observed['abas'] = f"Aba ativa: 1\nAba 1: {title} | https://example.test/article [ATIVA]"
+    assert verificar_resultado_navegador('clicar_elemento', '{"alvo":"Article","indice":1}', observed, evidence()) is True
+    observed['abas'] = observed['abas'].replace('/article', '/other')
+    assert verificar_resultado_navegador('clicar_elemento', '{"alvo":"Article","indice":1}', observed, evidence()) is False
