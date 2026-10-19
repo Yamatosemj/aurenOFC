@@ -94,6 +94,28 @@ def verificar_resultado_navegador(
             return None
         return indice_atual == esperado
 
+    if ferramenta == 'clicar_elemento':
+        # This proves the observed link-navigation effect, not the semantic
+        # correctness of a destination. The final objective reviewer remains.
+        click = dados_acao.get('clique') if isinstance(dados_acao, dict) else None
+        if not isinstance(click, dict):
+            return None
+        if (click.get('tag') != 'a' or click.get('navegacao') is not True
+                or click.get('alvo') != args.get('alvo')
+                or type(click.get('indice')) is not int
+                or click.get('indice') != args.get('indice', 1)):
+            return None
+        try:
+            for value in (click.get('href'), click.get('url_antes'), click.get('url_depois')):
+                parsed = urlsplit(str(value or ''))
+                if parsed.scheme not in {'http','https'} or not parsed.hostname:
+                    return None
+            if (click['url_antes'] == click['url_depois'] and click.get('nova_aba') is not True):
+                return None
+            return _normalize_url(url_atual) == _normalize_url(click['url_depois'])
+        except (ValueError, KeyError):
+            return None
+
     if ferramenta == "preencher_elemento":
         return _controle_com_valor(
             str(dados.get("pagina") or ""),
