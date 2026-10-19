@@ -33,6 +33,7 @@ READ_ONLY_TOOLS = frozenset({
 MAX_OBJECTIVE_CHARS = 4000
 MAX_ARGUMENTS_CHARS = 3000
 MAX_CALLS = 12
+MAX_REVIEW_RESULT_CHARS = 2200  # Preserve the bounded evidence already held by the Harness.
 
 INSTRUCTIONS = """Voce e um revisor de intencao do assistente Auren. NAO execute ferramentas.
 Compare o PEDIDO ORIGINAL do usuario com TODAS as acoes propostas, seus
@@ -164,7 +165,7 @@ def criar_entrada_verificacao(
     anteriores = [
         {
             "ferramenta": str(item.get("ferramenta", ""))[:120],
-            "resultado": str(item.get("resultado", ""))[:700],
+            "resultado": str(item.get("resultado", ""))[:MAX_REVIEW_RESULT_CHARS],
         }
         for item in historico if item.get("ferramenta") != marcador
     ][-2:]
