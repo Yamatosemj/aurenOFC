@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import Any
-import os
 from dataclasses import replace
 
 from config import CACHE_KEY, MODEL
@@ -25,10 +24,9 @@ class OpenAIProvider:
     def get_client(self):
         if self._client is None:
             from openai import OpenAI
-            # Live tests must not multiply requests or wait the SDK's default
-            # ten minutes. Production configuration remains unchanged.
-            options = {"timeout": 45.0, "max_retries": 0} if os.getenv("AUREN_TEST_MODE") == "1" else {}
-            self._client = OpenAI(**options)
+            # One bounded attempt in normal use too. Harness owns recovery;
+            # hidden SDK retries must not multiply requests behind its budget.
+            self._client = OpenAI(timeout=45.0, max_retries=0)
         return self._client
 
     @staticmethod
@@ -85,6 +83,8 @@ class OpenAIProvider:
             raise IntentVerificationFailure("Falha ao consultar o revisor; uso desconhecido.") from exc
         usage.registrar_uso(resposta)
         try:
+            if getattr(resposta, 'status', None) in {'incomplete', 'failed', 'cancelled', 'in_progress', 'queued'}:
+                raise ValueError('Revisor retornou resposta incompleta.')
             decisao = interpretar_decisao(getattr(resposta, "output_text", ""))
         except ValueError as exc:
             raise IntentVerificationFailure("Resposta invalida do revisor.", usage.extrair_metricas_uso(resposta) or None) from exc
@@ -96,5 +96,7 @@ class OpenAIProvider:
             instructions=completion_instructions, input=completion_input(snapshot), tools=[],
             reasoning={'effort': 'none'}, text={'format': FORMAT}, max_output_tokens=1200, store=False)
         usage.registrar_uso(resposta)
+        if getattr(resposta, 'status', None) in {'incomplete', 'failed', 'cancelled', 'in_progress', 'queued'}:
+            raise RuntimeError('Revisor de conclusao retornou resposta incompleta.')
         import json
         return json.loads(str(getattr(resposta, 'output_text', '') or ''))

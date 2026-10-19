@@ -165,13 +165,13 @@ def test_live_sdk_timeout_and_retries_without_api(monkeypatch):
     assert captured == [{"timeout": 45.0, "max_retries": 0}]
 
 
-def test_normal_sdk_configuration_is_preserved(monkeypatch):
+def test_normal_sdk_configuration_is_bounded(monkeypatch):
     from providers.openai_provider import OpenAIProvider
     captured = []
     monkeypatch.delenv("AUREN_TEST_MODE", raising=False)
     monkeypatch.setitem(sys.modules, "openai", SimpleNamespace(OpenAI=lambda **options: captured.append(options) or object()))
     OpenAIProvider().get_client()
-    assert captured == [{}]
+    assert captured == [{"timeout": 45.0, "max_retries": 0}]
 
 
 @windows

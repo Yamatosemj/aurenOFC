@@ -5,6 +5,7 @@ from typing import Any, Callable
 
 from core.harness_serialization import _argumentos_da_chamada, _texto_seguro, _identidade_da_chamada
 from core.tool_result import ToolResult, from_legacy
+from core.tool_failures import STOP_MESSAGES
 
 
 def _executar_chamadas_rodada(
@@ -195,10 +196,16 @@ def _executar_chamadas_rodada(
                 "argumentos": argumentos,
                 "resultado": resultado_compacto,
                 "sucesso": ferramenta_sucesso,
+                "codigo_erro": resultado_estruturado.error_code,
                 "image_path": str(imagem_path) if imagem_path else "",
                 "dados": dict(resultado_estruturado.data or {}),
             }
         )
+
+        if not ferramenta_sucesso and resultado_estruturado.error_code in STOP_MESSAGES:
+            # A later call from the same proposal must not run after a refusal
+            # or an uncertain launch. The cycle still records task failure.
+            break
 
     if browser_verification_state is not None:
         browser_verification_state["pending"] = browser_verification_pending

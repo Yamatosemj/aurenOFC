@@ -20,6 +20,7 @@ from core.utils import normalizar_nome
 from core.task_verification import CompletionPending
 from core.execution_scope import scope_allows
 from core.task_evidence import requirement
+from core.tool_failures import STOP_MESSAGES
 
 
 def executar_ciclo(
@@ -49,6 +50,7 @@ def executar_ciclo(
     propostas_vetadas: set[tuple[str, str]] = set()
     reparo_pendente = False
     completion_retries = 0
+    failed_attempts = {}
 
     if harness.task_manager.should_cancel(harness._task_id):
         return harness._encerrar_cancelado("cancelado antes da primeira rodada")
@@ -78,6 +80,10 @@ def executar_ciclo(
         write_log("TASK_ADAPTIVE_DEPTH", task_id=harness._task_id, limite_base=harness.max_model_rounds, limite_adaptativo=limite_rodadas)
     for rodada in range(1, limite_rodadas + 1):
         chamadas = harness.obter_chamadas(resposta)
+        if any(failed_attempts.get((str(getattr(item, 'name', '')), _identidade_da_chamada(item)), 0) >= 2
+               for item in chamadas):
+            return harness._encerrar_falha('tool_no_progress',
+                'A mesma operação falhou duas vezes sem progresso. Interrompi a tarefa; nenhum resultado foi presumido.', rodada)
         if any(not scope_allows(item) for item in chamadas):
             return harness._encerrar_falha('execution_scope_denied',
                 'A proposta esta fora da rotina autorizada, revogada ou expirada. Nenhuma acao desta rodada foi executada.', rodada)
@@ -513,6 +519,17 @@ def executar_ciclo(
             harness._browser_verification_guard_attempts = 0
         if cancelado:
             return harness._encerrar_cancelado("cancelado durante execucao", rodada)
+
+        for item, result in zip(chamadas, resultados_rodada):
+            key = (str(getattr(item, 'name', '')), _identidade_da_chamada(item))
+            if result.get('sucesso'):
+                failed_attempts.pop(key, None)
+            else:
+                failed_attempts[key] = failed_attempts.get(key, 0) + 1
+                code = result.get('codigo_erro')
+                if code in STOP_MESSAGES:
+                    return harness._encerrar_falha(code,
+                        STOP_MESSAGES[code] + ' Etapas anteriores permanecem no histórico da tarefa.', rodada)
 
         paused = harness._checkpoint_between_rounds(safe=(
             not falha_nao_recuperada and not propostas_vetadas and not completion_retries
