@@ -85,10 +85,14 @@ class LocalDecisionEngine:
             "pausa", "pause", "pausar", "play", "toca", "retoma", "retomar",
             "proxima", "proximo", "anterior", "para a musica", "parar musica",
         }
+        if local_first_enabled():
+            # Bare continuations can refer to tabs, files or list items.
+            # Play/pause is a toggle, so it cannot guarantee pause or resume.
+            media = {"proxima musica", "musica anterior", "para a musica", "parar musica"}
         if normalized in media:
-            if normalized in {"proxima", "proximo"}:
+            if normalized in {"proxima", "proximo", "proxima musica"}:
                 acao = "proxima"
-            elif normalized == "anterior":
+            elif normalized in {"anterior", "musica anterior"}:
                 acao = "anterior"
             elif normalized in {"para a musica", "parar musica"}:
                 acao = "parar"

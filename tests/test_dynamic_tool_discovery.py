@@ -57,7 +57,7 @@ assert any(x["nome"] == "maximizar_janela_windows" for x in matches)
 assert perms.actions_executed == 0  # consulta nao exerce controle sobre o PC
 
 # Rodada seguinte: busca anterior ligada a function_call real e call_id correto.
-actual_call = SimpleNamespace(type="function_call", name=SEARCH_NAME, call_id="busca-1")
+actual_call = SimpleNamespace(type="function_call", name=SEARCH_NAME, call_id="busca-1", arguments=item.arguments)
 follow_up = [
     {"role": "user", "content": [{"type": "input_text", "text": "Objetivo original: faça aquilo"}]},
     actual_call,
@@ -90,7 +90,7 @@ def fake_dispatch(item):
     recorded.append((item.name, json.loads(item.arguments)))
     return ToolResult.success("ok", tool_name=item.name)
 for phrase, name, args in [
-    ("pausa", "controle_midia_windows", {"acao": "play_pause"}),
+    ("proxima musica", "controle_midia_windows", {"acao": "proxima"}),
     ("coloque o volume em 40", "definir_volume_windows", {"percentual": 40}),
     ("ative o mudo", "definir_mudo_windows", {"ativado": True}),
 ]:

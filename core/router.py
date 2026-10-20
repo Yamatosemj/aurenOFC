@@ -348,6 +348,8 @@ class Router:
             primeira_linha = estado.split("\n", 2)[1]
             if primeira_linha.startswith("Objetivo original: "):
                 return primeira_linha[len("Objetivo original: "):].strip()
+        if discovery_enabled() and estado is not entrada:
+            return cls._extract_text(estado)
         return cls._extract_text(entrada)
 
     def _detectar_dominios(self, mensagem: Any) -> list[str]:
@@ -400,8 +402,9 @@ class Router:
                         and not result.get('conteudo_nao_confiavel')
                         and result.get('codigo_erro') == 'contract_error'):
                     if discovery_enabled():
-                        self.last_domains, self.last_tool_names = ["capability_recovery"], [SEARCH_NAME]
-                        return [SEARCH_NAME]
+                        # Keep the ordinary domain and any validated search
+                        # result; an old error must not hide a repaired schema.
+                        break
                     self.last_domains, self.last_tool_names = ['capability_recovery'], all_names
                     return all_names
 
@@ -421,11 +424,18 @@ class Router:
         # da resposta imediatamente anterior. Nunca usamos texto da pagina/usuario
         # para habilitar schemas. Mantemos tambem a busca para recuperacao.
         descobertas = discovered_from_round(mensagem, available_tools) if discovery_enabled() else []
-        if descobertas:
-            selected = set(descobertas) | {SEARCH_NAME}
-            ordered = [name for name in all_names if name in selected]
-            self.last_domains, self.last_tool_names = ["discovery_result"], ordered
-            return ordered
+        retained = set(descobertas)
+        if discovery_enabled() and isinstance(mensagem, (list, tuple)):
+            retained.update(getattr(item, "name", "") for item in mensagem
+                            if getattr(item, "type", "") == "function_call"
+                            and getattr(item, "name", "") in all_names
+                            and getattr(item, "name", "") != SEARCH_NAME)
+
+        def with_discovery(names):
+            if not discovery_enabled():
+                return names
+            selected = set(names) | retained | {SEARCH_NAME}
+            return [name for name in all_names if name in selected]
 
         # Abertura simples de aplicativo nomeado: nao deixar instrucao interna
         # sobre "janelas" esconder abrir_programa nem forcar uma leitura inutil.
@@ -446,7 +456,7 @@ class Router:
                               normalizar_nome(texto)))
         if simple_open:
             selected = COMMON_TOOLS | {'abrir_programa', 'obter_geometria_janela_windows'}
-            ordered = [name for name in all_names if name in selected]
+            ordered = with_discovery([name for name in all_names if name in selected])
             self.last_domains, self.last_tool_names = ['apps_files'], ordered
             return ordered
 
@@ -469,8 +479,9 @@ class Router:
         # uma capacidade com apenas um contrato compacto.
         if not domains:
             if discovery_enabled():
-                self.last_domains, self.last_tool_names = ["discovery"], [SEARCH_NAME]
-                return [SEARCH_NAME]
+                ordered = with_discovery([])
+                self.last_domains, self.last_tool_names = ["discovery"], ordered
+                return ordered
             self.last_domains = []
             self.last_tool_names = all_names
             return all_names
@@ -502,7 +513,7 @@ class Router:
             selected.update(TOOL_GROUPS["input"])
             selected.update(TOOL_GROUPS["uia"])
 
-        ordered = [name for name in all_names if name in selected]
+        ordered = with_discovery([name for name in all_names if name in selected])
 
         # Protecao: uma rota especializada precisa manter pelo menos as
         # ferramentas de ancoragem. O sistema (hora/RAM/uptime), por exemplo,

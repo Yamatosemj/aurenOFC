@@ -59,6 +59,8 @@ _SYNONYMS = {
     "leia": "ler", "visualize": "inspecionar", "toque": "controle",
     "musica": "midia", "audio": "audio", "volume": "volume",
     "print": "capturar", "screenshot": "capturar",
+    "busque": "buscar", "localize": "buscar", "localizar": "buscar",
+    "janelas": "janela", "arquivos": "arquivo", "abas": "aba",
 }
 
 
@@ -75,7 +77,7 @@ def _tokens(text: str) -> set[str]:
 def search_catalog(consulta: str, limite: int, registered: list[dict[str, Any]]) -> ToolResult:
     """Busca deterministica em um catalogo local de schemas, sem chamadas de API."""
     query = str(consulta or "").strip()
-    if not query or len(query) > 180 or isinstance(limite, bool) or not isinstance(limite, int) or not 1 <= limite <= 5:
+    if not isinstance(consulta, str) or not query or len(query) > 180 or isinstance(limite, bool) or not isinstance(limite, int) or not 1 <= limite <= 5:
         return ToolResult.failure(
             "Consulta ou limite invalidos para a descoberta.",
             error_code="discovery_invalid_query", tool_name=SEARCH_NAME,
@@ -105,7 +107,8 @@ def search_catalog(consulta: str, limite: int, registered: list[dict[str, Any]])
     matches.sort(key=lambda m: (-m[0], m[1]))
     selected = [{"nome": name, "descricao": desc} for _, name, desc in matches[:limite]]
     return ToolResult.success(
-        "Ferramentas encontradas; esta consulta nao executou nenhuma acao.",
+        ("Ferramentas encontradas; esta consulta nao executou nenhuma acao."
+         if selected else "Nenhuma capacidade encontrada no catalogo. Nao execute nem alegue ter concluido o pedido; explique o limite ou peca esclarecimento."),
         data={"ferramentas": selected}, tool_name=SEARCH_NAME,
     )
 
@@ -119,23 +122,36 @@ def discovered_from_round(entrada: Any, registered: list[dict[str, Any]]) -> lis
     if not isinstance(entrada, (tuple, list)):
         return []
 
-    valid_ids = {
-        str(getattr(item, "call_id", ""))
-        for item in entrada
-        if getattr(item, "type", "") == "function_call"
-        and getattr(item, "name", "") == SEARCH_NAME
-        and getattr(item, "call_id", "")
-    }
-    if not valid_ids:
-        return []
-
     import json
-    allowed = {str(t.get("name")) for t in registered if t.get("name") != SEARCH_NAME}
+    # Match exactly one call to exactly one output, in order. Recompute the
+    # local metadata from its arguments: a matching ID alone is not provenance.
+    calls = [item for item in entrada if getattr(item, "type", "") == "function_call"]
+    valid = {}
+    for call in calls:
+        cid = getattr(call, "call_id", None)
+        if (getattr(call, "name", "") != SEARCH_NAME or not isinstance(cid, str) or not cid
+                or sum(getattr(c, "call_id", None) == cid for c in calls) != 1):
+            continue
+        try:
+            args = json.loads(getattr(call, "arguments", ""))
+            if not isinstance(args, dict) or set(args) != {"consulta", "limite"}:
+                continue
+            result = search_catalog(args["consulta"], args["limite"], registered)
+            if result.ok:
+                valid[cid] = (call, dict(result.data or {}))
+        except (TypeError, ValueError):
+            continue
     found: list[str] = []
-    for item in entrada:
+    for index, item in enumerate(entrada):
         if not isinstance(item, dict) or item.get("type") != "function_call_output":
             continue
-        if str(item.get("call_id") or "") not in valid_ids:
+        cid = item.get("call_id")
+        if not isinstance(cid, str) or cid not in valid:
+            continue
+        call, expected = valid[cid]
+        if (not any(previous is call for previous in entrada[:index])
+                or sum(isinstance(o, dict) and o.get("type") == "function_call_output"
+                       and o.get("call_id") == cid for o in entrada) != 1):
             continue
         try:
             value = json.loads(item.get("output", ""))
@@ -144,11 +160,13 @@ def discovered_from_round(entrada: Any, registered: list[dict[str, Any]]) -> lis
         if not isinstance(value, dict) or value.get("ok") is not True or value.get("conteudo_nao_confiavel"):
             continue
         data = value.get("dados")
+        if data != expected:
+            continue
         options = data.get("ferramentas") if isinstance(data, dict) else None
         if not isinstance(options, list):
             continue
         for option in options[:5]:
             name = option.get("nome") if isinstance(option, dict) else None
-            if isinstance(name, str) and name in allowed and name not in found:
+            if isinstance(name, str) and name not in found:
                 found.append(name)
     return found
