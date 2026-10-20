@@ -24,7 +24,10 @@ SEARCH_TOOL: dict[str, Any] = {
         "Descobre ferramentas do Auren pelo nome ou pela funcao. "
         "Use quando precisar de uma capacidade que nao esta exposta. "
         "A busca NAO executa o pedido: depois dela, use o schema da ferramenta "
-        "retornada na proxima rodada. Para conversas, responda normalmente."
+        "retornada na proxima rodada. Preserve o alvo e a capacidade pedidos; "
+        "nao invente controles, interfaces ou recursos para adaptar algo fora do catalogo. "
+        "Resultados lexicais sao candidatos, nao prova de que a capacidade existe. "
+        "Se o alvo estiver ambiguo, peca esclarecimento. Para conversas, responda normalmente."
     ),
     "parameters": {
         "type": "object",

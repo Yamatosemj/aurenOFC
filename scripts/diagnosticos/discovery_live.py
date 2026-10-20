@@ -31,7 +31,7 @@ def worker(args):
     from core.tool_result import ToolResult
     from core import harness_runtime as runtime
     from tools import dispatcher
-    folder=args.evidence/(args.mode+'-'+args.case);folder.mkdir()
+    folder=args.evidence/(args.mode+'-'+args.case+('-'+args.label if args.label else ''));folder.mkdir()
     runtime.LOG_DIR=folder/'logs';runtime.CHAT_LOGS_DIR=runtime.LOG_DIR/'chats'
     runtime.TASK_LOG_DIR=runtime.LOG_DIR/'tasks';runtime.LOG_FILE=runtime.LOG_DIR/'auren.log'
     # Replace EVERY terminal handler before creating a model. Only catalog
@@ -44,7 +44,7 @@ def worker(args):
     pm=PermissionManager(confirmation_channel=NS(confirmar=lambda _:False))
     provider=OpenAIProvider();client=provider.get_client()
     meter=DiscoveryBudget(args.evidence/'budget.json',resume=True)
-    meter.mode=args.mode;meter.case=args.case
+    meter.mode=args.mode;meter.case=args.case+('-'+args.label if args.label else '')
     provider._client=NS(responses=NS(create=lambda **kw:meter.create(client.responses.create,**kw)))
     orchestrator=AurenOrchestrator(provider=provider,router=Router())
     rounds=[];executed=[]
@@ -65,6 +65,7 @@ def worker(args):
         comando_rapido=lambda m:(False,''),iniciar_tarefa=pm.iniciar_tarefa,apos_tarefa=None,fechar=lambda:None,
         obter_metricas_roteamento=lambda:orchestrator.last_metrics,max_model_rounds=5)
     prompts={'greeting':'ola auren','discovery':'Mostre os titulos abertos.',
+             'explicit_titles':'Mostre os titulos dos aplicativos visiveis no computador.',
              'unsupported':'Acione o teletransporte quantico para Marte.'}
     before=len(meter.data['calls']);start=time.perf_counter()
     try:
@@ -86,7 +87,8 @@ def worker(args):
 def main():
     p=argparse.ArgumentParser();p.add_argument('--run',action='store_true');p.add_argument('--worker',action='store_true')
     p.add_argument('--baseline',type=Path);p.add_argument('--evidence',type=Path,required=True)
-    p.add_argument('--mode',choices=['baseline','proposed']);p.add_argument('--case',choices=['greeting','discovery','unsupported'])
+    p.add_argument('--label',default='')
+    p.add_argument('--mode',choices=['baseline','proposed']);p.add_argument('--case',choices=['greeting','discovery','unsupported','explicit_titles'])
     args=p.parse_args()
     if not args.run:p.error('--run required for paid calls')
     args.evidence=args.evidence.resolve()
