@@ -196,7 +196,8 @@ async function conversar(texto){
  eco.textContent="Você: "+texto;cap.textContent="";define("pensando");
  try{
   const result=await postApi("/api/message",{text:texto});
-  if(result.mode){modoAtual=result.mode;if(modoAtual==="off")pintaModo()}
+  // O polling atualiza modo e cabecalho juntos; manter apenas o off imediato.
+  if(result.mode==="off"){modoAtual="off";pintaModo()}
  }catch(err){if(s===seq)agir("confusa","Não consegui enviar: "+err.message)}
 }
 

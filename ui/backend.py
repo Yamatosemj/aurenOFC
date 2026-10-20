@@ -434,6 +434,7 @@ class AurenUiWorker:
             valid = self._enabled and not self._closing.is_set()
         if not valid or harness is None or self._scheduler is None:
             return
+        started = False
         try:
             current = harness.current_task()
             if current is not None and current.state.value not in {'completed', 'failed', 'cancelled'}:
@@ -443,6 +444,7 @@ class AurenUiWorker:
             if not any(r['status'] == 'enabled' and r['next_due'] <= time.time() for r in self._scheduler.list(chat_id=chat)):
                 return
             self.events.put(UiEvent('busy', generation=generation))
+            started = True
             token = current_session_guard.set(lambda: self._generation_is_active(generation))
             try:
                 for event in self._scheduler.tick(harness, chat_id=chat):
@@ -453,4 +455,6 @@ class AurenUiWorker:
         except Exception:
             self.events.put(UiEvent('notice', 'A rotina encontrou um erro e nao foi confirmada. Confira suas tarefas.', generation=generation))
         finally:
-            self.events.put(UiEvent('idle', generation=generation))
+            # Consultar a agenda sem executar nada nao e atividade da sessao.
+            if started:
+                self.events.put(UiEvent('idle', generation=generation))

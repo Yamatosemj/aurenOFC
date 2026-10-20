@@ -1,5 +1,7 @@
 # Auren — Estado operacional
 
+> **Candidata Etapa 2A sobre #172:** sincronizacao do cabecalho e eventos de inatividade da interface corrigidos em branch isolada; testes e limites em [ETAPA2A_INTERFACE_20261020.md](docs/estabilizacao/ETAPA2A_INTERFACE_20261020.md). Sem merge, API real ou atualizacao pessoal; SHA final no relatorio de entrega.
+
 > **Leia este arquivo primeiro em toda nova conversa ou tarefa de manutenção.** Este documento descreve o **estado corrente verificado**, não um diário de PRs. Confirme as afirmações dinâmicas com a `main`, as PRs abertas e os checks atuais no GitHub antes de agir.
 >
 > **Manutencao:** otimizacao de latencia A-E, branch `otimizacao/latencia-e-contexto-20261019`, sobre #166 (`025351c`), preservando as candidatas anteriores. Main remota `70b040d`, sem merge ou substituicao da instalacao pessoal. [Relatorio de entrega](docs/estabilizacao/LATENCIA_ENTREGA_20261019.md); SHA final e CI na PR.
