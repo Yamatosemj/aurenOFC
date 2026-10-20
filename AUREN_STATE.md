@@ -8,7 +8,7 @@
 
 ## 1. Situação e trabalho em foco
 
-- **PR #173, descoberta opt-in, draft:** validacao de metadados/call_id e preservacao de dominios compostos corrigidas. Matriz offline de 100 prompts e API real com handlers sinteticos registradas; Live encontrou regressao de selecao e permanece bloqueio para rollout/merge. Rodada paga encerrada em 11 chamadas, US$ 0,00796931 estimados e US$ 0,4224 reservados sob teto total US$ 0,50. Sem efeitos Windows/browser, merge ou alteracao da instalacao pessoal. [Relatorio e evidencias](docs/experimentos/PR173_VALIDACAO.md); CI do HEAD na PR.
+- **PR #173, descoberta opt-in, draft:** bootstrap experimental melhora algumas escolhas, mas nao demonstrou menor custo total contra #172; manter descoberta off como referencia, sem rollout/merge. Segunda rodada independente encerrada: 176 chamadas, US$ 0,05158722 estimados; maior exposicao com reserva US$ 0,464436 sob teto US$ 0,50. 78 ensaios sinteticos, sem acoes Windows/browser reais ou alteracao da instalacao pessoal. [Investigacao, comparacoes e limites](docs/experimentos/PR173_RODADA2.md); historico da rodada anterior preservado; CI final na PR.
 
 - **Latencia, candidata de 19/10 (sem merge):** A-E na base #166: instrumentacao, descoberta exata, evidencia Win32, sequencias interrompiveis e contexto menor no Router existente. Cinco PRs encadeadas; instalacao pessoal preservada. Testes, ganhos medidos e limites em [entrega](docs/estabilizacao/LATENCIA_ENTREGA_20261019.md). Live adicional: saudacao 2,875 s e maximizacao sintetica 4,592 s aprovadas; YouTube ainda falha ponta a ponta. Consumo estimado US$ 0,09391080 de US$ 0,50. Seguimento na branch `validacao/latencia-live-20261019`; [evidencias e limites](docs/estabilizacao/LATENCIA_LIVE_20261019.md). Nenhum merge.
 

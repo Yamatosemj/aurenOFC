@@ -1,5 +1,11 @@
 # Experimento opt-in — roteamento local + descoberta dinamica (19/10/2026)
 
+**Investigacao posterior:** [segunda rodada independente da PR #173](PR173_RODADA2.md).
+O bootstrap opcional (`AUREN_DISCOVERY_POLICY=bootstrap`, junto da flag principal)
+foi comparado a #172 e a politica anterior; nao demonstrou economia total geral.
+Permanece opt-in, sem recomendacao de rollout. A base #172 com descoberta off
+continua a referencia de uso. Nenhuma instalacao pessoal foi alterada.
+
 ## Objetivo
 
 Combinar dois padroes conhecidos sem copiar suas implementacoes:
