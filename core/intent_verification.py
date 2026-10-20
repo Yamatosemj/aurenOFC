@@ -27,7 +27,7 @@ READ_ONLY_TOOLS = frozenset({
     "capturar_tela_windows", "listar_abas", "obter_contexto_navegador",
     "ler_pagina", "consultar_memoria_persistente", "buscar_arquivo",
     "inspecionar_arquivo", "ler_arquivo", "buscar_aplicativos_do_windows",
-    "localizar_arquivo", "pesquisar_web",
+    "localizar_arquivo", "pesquisar_web", "buscar_ferramentas",
 })
 
 MAX_OBJECTIVE_CHARS = 4000

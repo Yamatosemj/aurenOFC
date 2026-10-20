@@ -1,0 +1,403 @@
+[
+  {
+    "mode": "baseline",
+    "case": "discovery",
+    "source_sha": "48717bb68fd3545d31aa33028261fa33f9f50177",
+    "task_state": "completed",
+    "error": "",
+    "calls": 1,
+    "duration_ms": 3052.55,
+    "rounds": [
+      {
+        "routing_ms": 3.569499999684922,
+        "tool_schema_chars": 24185,
+        "provider_ms": 2923.8390999998956,
+        "schemas": [
+          "abrir_programa",
+          "buscar_arquivo",
+          "inspecionar_arquivo",
+          "ler_arquivo",
+          "salvar_memoria_persistente",
+          "consultar_memoria_persistente",
+          "esquecer_memoria_persistente",
+          "listar_janelas_windows",
+          "focar_janela_windows",
+          "minimizar_janela_windows",
+          "maximizar_janela_windows",
+          "obter_geometria_janela_windows",
+          "mover_janela_windows",
+          "redimensionar_janela_windows",
+          "restaurar_janela_windows",
+          "fechar_janela_windows",
+          "obter_status_windows",
+          "listar_processos_windows",
+          "encerrar_processo_windows",
+          "ler_area_transferencia_windows",
+          "definir_area_transferencia_windows",
+          "pressionar_tecla_windows",
+          "mover_mouse_windows",
+          "clicar_mouse_windows",
+          "arrastar_mouse_windows",
+          "obter_audio_windows",
+          "definir_volume_windows",
+          "definir_mudo_windows",
+          "controle_midia_windows",
+          "inspecionar_interface_windows",
+          "clicar_elemento_windows",
+          "preencher_elemento_windows",
+          "alternar_elemento_windows",
+          "selecionar_elemento_windows",
+          "navegar_navegador",
+          "obter_contexto_navegador",
+          "ler_pagina",
+          "clicar_elemento",
+          "preencher_elemento",
+          "pressionar_tecla",
+          "listar_abas",
+          "abrir_nova_aba",
+          "trocar_aba",
+          "fechar_aba",
+          "voltar_pagina",
+          "avancar_pagina",
+          "recarregar_pagina",
+          "rolar_pagina",
+          "capturar_tela_windows"
+        ]
+      }
+    ],
+    "executed": [
+      {
+        "tool": "listar_janelas_windows",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "fixture_observed": true,
+    "real_terminal_effects": 0,
+    "limitation": "Real API; synthetic handlers, no real UI/Windows success claim",
+    "answer_chars": 65
+  },
+  {
+    "mode": "baseline",
+    "case": "explicit_titles",
+    "source_sha": "48717bb68fd3545d31aa33028261fa33f9f50177",
+    "task_state": "completed",
+    "error": "",
+    "calls": 1,
+    "duration_ms": 2953.811,
+    "rounds": [
+      {
+        "routing_ms": 3.943500000787026,
+        "tool_schema_chars": 24185,
+        "provider_ms": 2826.922199999899,
+        "schemas": [
+          "abrir_programa",
+          "buscar_arquivo",
+          "inspecionar_arquivo",
+          "ler_arquivo",
+          "salvar_memoria_persistente",
+          "consultar_memoria_persistente",
+          "esquecer_memoria_persistente",
+          "listar_janelas_windows",
+          "focar_janela_windows",
+          "minimizar_janela_windows",
+          "maximizar_janela_windows",
+          "obter_geometria_janela_windows",
+          "mover_janela_windows",
+          "redimensionar_janela_windows",
+          "restaurar_janela_windows",
+          "fechar_janela_windows",
+          "obter_status_windows",
+          "listar_processos_windows",
+          "encerrar_processo_windows",
+          "ler_area_transferencia_windows",
+          "definir_area_transferencia_windows",
+          "pressionar_tecla_windows",
+          "mover_mouse_windows",
+          "clicar_mouse_windows",
+          "arrastar_mouse_windows",
+          "obter_audio_windows",
+          "definir_volume_windows",
+          "definir_mudo_windows",
+          "controle_midia_windows",
+          "inspecionar_interface_windows",
+          "clicar_elemento_windows",
+          "preencher_elemento_windows",
+          "alternar_elemento_windows",
+          "selecionar_elemento_windows",
+          "navegar_navegador",
+          "obter_contexto_navegador",
+          "ler_pagina",
+          "clicar_elemento",
+          "preencher_elemento",
+          "pressionar_tecla",
+          "listar_abas",
+          "abrir_nova_aba",
+          "trocar_aba",
+          "fechar_aba",
+          "voltar_pagina",
+          "avancar_pagina",
+          "recarregar_pagina",
+          "rolar_pagina",
+          "capturar_tela_windows"
+        ]
+      }
+    ],
+    "executed": [
+      {
+        "tool": "listar_janelas_windows",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "fixture_observed": true,
+    "real_terminal_effects": 0,
+    "limitation": "Real API; synthetic handlers, no real UI/Windows success claim",
+    "answer_chars": 65
+  },
+  {
+    "mode": "baseline",
+    "case": "greeting",
+    "source_sha": "48717bb68fd3545d31aa33028261fa33f9f50177",
+    "task_state": "completed",
+    "error": "",
+    "calls": 1,
+    "duration_ms": 4371.367,
+    "rounds": [
+      {
+        "routing_ms": 5.317099999956554,
+        "tool_schema_chars": 2,
+        "provider_ms": 4240.816599999562,
+        "schemas": []
+      }
+    ],
+    "executed": [],
+    "fixture_observed": false,
+    "real_terminal_effects": 0,
+    "limitation": "Real API; synthetic handlers, no real UI/Windows success claim",
+    "answer_chars": 44
+  },
+  {
+    "mode": "baseline",
+    "case": "unsupported",
+    "source_sha": "48717bb68fd3545d31aa33028261fa33f9f50177",
+    "task_state": "failed",
+    "error": "execution_scope_denied",
+    "calls": 1,
+    "duration_ms": 3210.551,
+    "rounds": [
+      {
+        "routing_ms": 3.602300000238756,
+        "tool_schema_chars": 24185,
+        "provider_ms": 3127.767899999526,
+        "schemas": [
+          "abrir_programa",
+          "buscar_arquivo",
+          "inspecionar_arquivo",
+          "ler_arquivo",
+          "salvar_memoria_persistente",
+          "consultar_memoria_persistente",
+          "esquecer_memoria_persistente",
+          "listar_janelas_windows",
+          "focar_janela_windows",
+          "minimizar_janela_windows",
+          "maximizar_janela_windows",
+          "obter_geometria_janela_windows",
+          "mover_janela_windows",
+          "redimensionar_janela_windows",
+          "restaurar_janela_windows",
+          "fechar_janela_windows",
+          "obter_status_windows",
+          "listar_processos_windows",
+          "encerrar_processo_windows",
+          "ler_area_transferencia_windows",
+          "definir_area_transferencia_windows",
+          "pressionar_tecla_windows",
+          "mover_mouse_windows",
+          "clicar_mouse_windows",
+          "arrastar_mouse_windows",
+          "obter_audio_windows",
+          "definir_volume_windows",
+          "definir_mudo_windows",
+          "controle_midia_windows",
+          "inspecionar_interface_windows",
+          "clicar_elemento_windows",
+          "preencher_elemento_windows",
+          "alternar_elemento_windows",
+          "selecionar_elemento_windows",
+          "navegar_navegador",
+          "obter_contexto_navegador",
+          "ler_pagina",
+          "clicar_elemento",
+          "preencher_elemento",
+          "pressionar_tecla",
+          "listar_abas",
+          "abrir_nova_aba",
+          "trocar_aba",
+          "fechar_aba",
+          "voltar_pagina",
+          "avancar_pagina",
+          "recarregar_pagina",
+          "rolar_pagina",
+          "capturar_tela_windows"
+        ]
+      }
+    ],
+    "executed": [],
+    "fixture_observed": false,
+    "real_terminal_effects": 0,
+    "limitation": "Real API; synthetic handlers, no real UI/Windows success claim",
+    "answer_chars": 105
+  },
+  {
+    "mode": "proposed",
+    "case": "discovery",
+    "source_sha": "f8f26193fd322d6a076f485f19b2f2dfb82cd0b8",
+    "task_state": "failed",
+    "error": "execution_scope_denied",
+    "calls": 2,
+    "duration_ms": 4234.324,
+    "rounds": [
+      {
+        "routing_ms": 4.31750000007014,
+        "tool_schema_chars": 696,
+        "provider_ms": 2849.403000000166,
+        "schemas": [
+          "buscar_ferramentas"
+        ]
+      },
+      {
+        "routing_ms": 1.6666000001350767,
+        "tool_schema_chars": 2733,
+        "provider_ms": 1229.973699999391,
+        "schemas": [
+          "listar_janelas_windows",
+          "navegar_navegador",
+          "obter_contexto_navegador",
+          "listar_abas",
+          "abrir_nova_aba",
+          "buscar_ferramentas"
+        ]
+      }
+    ],
+    "executed": [
+      {
+        "tool": "buscar_ferramentas",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "fixture_observed": false,
+    "real_terminal_effects": 0,
+    "limitation": "Real API; synthetic handlers, no real UI/Windows success claim",
+    "answer_chars": 105
+  },
+  {
+    "mode": "proposed",
+    "case": "explicit_titles",
+    "source_sha": "ca8af5224d766a3bcf67f9bacf900c034ed4ac54",
+    "task_state": "failed",
+    "error": "execution_scope_denied",
+    "calls": 2,
+    "duration_ms": 4270.339,
+    "rounds": [
+      {
+        "routing_ms": 4.590300000018033,
+        "tool_schema_chars": 940,
+        "provider_ms": 2752.158899999813,
+        "schemas": [
+          "buscar_ferramentas"
+        ]
+      },
+      {
+        "routing_ms": 1.6261000000667991,
+        "tool_schema_chars": 2647,
+        "provider_ms": 1379.9856000005093,
+        "schemas": [
+          "listar_janelas_windows",
+          "focar_janela_windows",
+          "obter_geometria_janela_windows",
+          "fechar_janela_windows",
+          "capturar_tela_windows",
+          "buscar_ferramentas"
+        ]
+      }
+    ],
+    "executed": [
+      {
+        "tool": "buscar_ferramentas",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "fixture_observed": false,
+    "real_terminal_effects": 0,
+    "limitation": "Real API; synthetic handlers, no real UI/Windows success claim",
+    "answer_chars": 105
+  },
+  {
+    "mode": "proposed",
+    "case": "greeting",
+    "source_sha": "f8f26193fd322d6a076f485f19b2f2dfb82cd0b8",
+    "task_state": "completed",
+    "error": "",
+    "calls": 1,
+    "duration_ms": 2237.107,
+    "rounds": [
+      {
+        "routing_ms": 16.848799999934272,
+        "tool_schema_chars": 2,
+        "provider_ms": 2128.7319000002753,
+        "schemas": []
+      }
+    ],
+    "executed": [],
+    "fixture_observed": false,
+    "real_terminal_effects": 0,
+    "limitation": "Real API; synthetic handlers, no real UI/Windows success claim",
+    "answer_chars": 44
+  },
+  {
+    "mode": "proposed",
+    "case": "unsupported",
+    "source_sha": "f8f26193fd322d6a076f485f19b2f2dfb82cd0b8",
+    "task_state": "failed",
+    "error": "execution_scope_denied",
+    "calls": 2,
+    "duration_ms": 14318.402,
+    "rounds": [
+      {
+        "routing_ms": 5.921199999647797,
+        "tool_schema_chars": 696,
+        "provider_ms": 3396.0158999998384,
+        "schemas": [
+          "buscar_ferramentas"
+        ]
+      },
+      {
+        "routing_ms": 2.0339000002422836,
+        "tool_schema_chars": 3659,
+        "provider_ms": 10763.507499999832,
+        "schemas": [
+          "controle_midia_windows",
+          "inspecionar_interface_windows",
+          "clicar_elemento_windows",
+          "obter_contexto_navegador",
+          "clicar_elemento",
+          "buscar_ferramentas"
+        ]
+      }
+    ],
+    "executed": [
+      {
+        "tool": "buscar_ferramentas",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "fixture_observed": false,
+    "real_terminal_effects": 0,
+    "limitation": "Real API; synthetic handlers, no real UI/Windows success claim",
+    "answer_chars": 105
+  }
+]

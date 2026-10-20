@@ -15,11 +15,13 @@ from __future__ import annotations
 
 import re
 import json
+import os
 from dataclasses import dataclass
 from typing import Any
 
 from core.capability_resolver import CapabilityResolution, CapabilityResolver
 from core.local_decision import DecisionResult, LocalDecisionEngine
+from core.tool_discovery import SEARCH_NAME, discovered_from_round, enabled as discovery_enabled
 
 
 # Ferramentas de ancoragem que ajudam em tarefas curtas sem obrigar o modelo a
@@ -30,6 +32,10 @@ COMMON_TOOLS = {
     "obter_status_windows",
     "listar_janelas_windows",
 }
+
+# Cheap state readers already used by the existing domain routes. Available
+# schemas are not execution/permission grants. No target or prompt-specific rule.
+DISCOVERY_BOOTSTRAP_TOOLS = COMMON_TOOLS | {"listar_abas", "obter_audio_windows"}
 
 TOOL_GROUPS = {
     "browser": {
@@ -347,6 +353,8 @@ class Router:
             primeira_linha = estado.split("\n", 2)[1]
             if primeira_linha.startswith("Objetivo original: "):
                 return primeira_linha[len("Objetivo original: "):].strip()
+        if discovery_enabled() and estado is not entrada:
+            return cls._extract_text(estado)
         return cls._extract_text(entrada)
 
     def _detectar_dominios(self, mensagem: Any) -> list[str]:
@@ -398,6 +406,10 @@ class Router:
                 if (isinstance(result, dict) and result.get('ok') is False
                         and not result.get('conteudo_nao_confiavel')
                         and result.get('codigo_erro') == 'contract_error'):
+                    if discovery_enabled():
+                        # Keep the ordinary domain and any validated search
+                        # result; an old error must not hide a repaired schema.
+                        break
                     self.last_domains, self.last_tool_names = ['capability_recovery'], all_names
                     return all_names
 
@@ -412,6 +424,23 @@ class Router:
             self.last_domains = ["conversation"]
             self.last_tool_names = []
             return []
+
+        # A busca anterior veio do proprio Dispatcher e pertence a um call_id
+        # da resposta imediatamente anterior. Nunca usamos texto da pagina/usuario
+        # para habilitar schemas. Mantemos tambem a busca para recuperacao.
+        descobertas = discovered_from_round(mensagem, available_tools) if discovery_enabled() else []
+        retained = set(descobertas)
+        if discovery_enabled() and isinstance(mensagem, (list, tuple)):
+            retained.update(getattr(item, "name", "") for item in mensagem
+                            if getattr(item, "type", "") == "function_call"
+                            and getattr(item, "name", "") in all_names
+                            and getattr(item, "name", "") != SEARCH_NAME)
+
+        def with_discovery(names):
+            if not discovery_enabled():
+                return names
+            selected = set(names) | retained | {SEARCH_NAME}
+            return [name for name in all_names if name in selected]
 
         # Abertura simples de aplicativo nomeado: nao deixar instrucao interna
         # sobre "janelas" esconder abrir_programa nem forcar uma leitura inutil.
@@ -432,7 +461,7 @@ class Router:
                               normalizar_nome(texto)))
         if simple_open:
             selected = COMMON_TOOLS | {'abrir_programa', 'obter_geometria_janela_windows'}
-            ordered = [name for name in all_names if name in selected]
+            ordered = with_discovery([name for name in all_names if name in selected])
             self.last_domains, self.last_tool_names = ['apps_files'], ordered
             return ordered
 
@@ -450,13 +479,26 @@ class Router:
                 if "process" not in domains:
                     domains.append("process")
 
-        # Sem sinal suficientemente claro: preserva 100% da compatibilidade.
+        # Sem dominio reconhecido, nao enviamos os 49 schemas quando a
+        # descoberta esta habilitada: o modelo pode conversar ou pesquisar
+        # uma capacidade com apenas um contrato compacto.
         if not domains:
+            if discovery_enabled():
+                bootstrap = (DISCOVERY_BOOTSTRAP_TOOLS
+                             if os.getenv("AUREN_DISCOVERY_POLICY", "").strip() == "bootstrap" else set())
+                ordered = with_discovery(bootstrap)
+                self.last_domains, self.last_tool_names = ["discovery"], ordered
+                return ordered
             self.last_domains = []
             self.last_tool_names = all_names
             return all_names
 
-        selected = set(COMMON_TOOLS)
+        # Domain routes already provide their own observation tools. The
+        # experiment defers unrelated anchors to search rather than presenting
+        # them as additional work; mixed domains still receive the full union.
+        selected = (set() if discovery_enabled()
+                    and os.getenv("AUREN_DISCOVERY_POLICY", "").strip() == "bootstrap"
+                    else set(COMMON_TOOLS))
         spotify_desktop_only = "spotify_desktop" in domains
         for domain in domains:
             if spotify_desktop_only and domain == "browser":
@@ -483,14 +525,14 @@ class Router:
             selected.update(TOOL_GROUPS["input"])
             selected.update(TOOL_GROUPS["uia"])
 
-        ordered = [name for name in all_names if name in selected]
+        ordered = with_discovery([name for name in all_names if name in selected])
 
         # Protecao: uma rota especializada precisa manter pelo menos as
         # ferramentas de ancoragem. O sistema (hora/RAM/uptime), por exemplo,
         # corretamente pode ficar com apenas 3 ferramentas.
         if len(ordered) < 2:
-            ordered = all_names
-            domains = []
+            ordered = [SEARCH_NAME] if discovery_enabled() else all_names
+            domains = ["discovery"] if discovery_enabled() else []
 
         self.last_domains = domains
         self.last_tool_names = ordered

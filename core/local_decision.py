@@ -20,6 +20,12 @@ SITES_CONHECIDOS: dict[str, str] = {
 # para o modelo, como antes: promover uma delas a atalho seria mudar comportamento.
 ESCOLHAS_EXECUTADAS_LOCALMENTE = frozenset({"get_system_status", "open_tabs", "open_url", "open_known_site"})
 
+# Home Assistant-style local-first: so promover contratos reversiveis de audio
+# sob opt-in. As mesmas politicas do Dispatcher continuam obrigatorias.
+from core.tool_discovery import enabled as local_first_enabled
+if local_first_enabled():
+    ESCOLHAS_EXECUTADAS_LOCALMENTE |= frozenset({"control_media", "set_volume", "set_mute"})
+
 
 @dataclass(frozen=True)
 class DecisionResult:
@@ -79,10 +85,14 @@ class LocalDecisionEngine:
             "pausa", "pause", "pausar", "play", "toca", "retoma", "retomar",
             "proxima", "proximo", "anterior", "para a musica", "parar musica",
         }
+        if local_first_enabled():
+            # Bare continuations can refer to tabs, files or list items.
+            # Play/pause is a toggle, so it cannot guarantee pause or resume.
+            media = {"proxima musica", "musica anterior", "para a musica", "parar musica"}
         if normalized in media:
-            if normalized in {"proxima", "proximo"}:
+            if normalized in {"proxima", "proximo", "proxima musica"}:
                 acao = "proxima"
-            elif normalized == "anterior":
+            elif normalized in {"anterior", "musica anterior"}:
                 acao = "anterior"
             elif normalized in {"para a musica", "parar musica"}:
                 acao = "parar"

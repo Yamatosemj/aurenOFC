@@ -112,6 +112,13 @@ def executar_ciclo(
                 "Nao executei a acao vetada e nao recebi uma alternativa verificavel. A tarefa nao foi concluida.", rodada)
 
         if not chamadas:
+            from core.tool_discovery import SEARCH_NAME, enabled as discovery_enabled
+            if (discovery_enabled() and (exigir_ferramenta or normalizar_nome(objetivo).split(' ', 1)[0]
+                                        in {'execute', 'executar', 'faca', 'faz'}) and historico
+                    and all(item.get("ferramenta") == SEARCH_NAME for item in historico)):
+                return harness._encerrar_falha('discovery_action_not_executed',
+                    'A descoberta consultou apenas o catalogo; a acao pedida nao foi executada. '
+                    'Nao encontrei uma execucao verificavel para concluir o pedido.', rodada)
             # O usuario ja respondeu SIM ao esclarecimento contextual. Uma
             # segunda pergunta equivalente do modelo nao e nova autorizacao:
             # pedimos uma acao verificavel, sem executar nada diretamente.

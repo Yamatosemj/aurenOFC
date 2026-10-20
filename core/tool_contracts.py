@@ -93,6 +93,7 @@ _CAPABILITY_RULES: tuple[tuple[str, str], ...] = (
     ("salvar_memoria_persistente", "memory.write"),
     ("consultar_memoria_persistente", "memory.read"),
     ("esquecer_memoria_persistente", "memory.write"),
+    ("buscar_ferramentas", "tool.discovery"),
     ("abrir_programa", "application.open"),
     ("buscar_arquivo", "file.search"),
     ("inspecionar_arquivo", "file.inspect"),

@@ -937,3 +937,9 @@ tools = [
         "strict": True
     }
 ]
+
+# Descoberta e experimental e nao modifica os 49 contratos padrao.
+# A configuracao e lida no inicio do processo: reinicie apos mudar a flag.
+from core.tool_discovery import SEARCH_TOOL, enabled as discovery_enabled
+if discovery_enabled():
+    tools.append(SEARCH_TOOL)

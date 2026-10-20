@@ -1,0 +1,75 @@
+[
+  {
+    "id": "dev_titles",
+    "split": "regression",
+    "turns": [
+      "Mostre os titulos dos aplicativos visiveis no computador."
+    ],
+    "required": [
+      "listar_janelas_windows"
+    ],
+    "facts": [
+      "Relatorio Sintetico",
+      "Editor Sintetico"
+    ],
+    "scope": [
+      "listar_janelas_windows"
+    ]
+  },
+  {
+    "id": "heldout_audio",
+    "split": "regression",
+    "turns": [
+      "Me informe a porcentagem do som e se ele esta silenciado."
+    ],
+    "required": [
+      "obter_audio_windows"
+    ],
+    "facts": [
+      "42"
+    ],
+    "scope": [
+      "obter_audio_windows"
+    ]
+  },
+  {
+    "id": "heldout_clipboard",
+    "split": "regression",
+    "turns": [
+      "Recupere o texto que copiei por ultimo."
+    ],
+    "required": [
+      "ler_area_transferencia_windows"
+    ],
+    "facts": [
+      "COPIA-53"
+    ],
+    "scope": [
+      "ler_area_transferencia_windows"
+    ]
+  },
+  {
+    "id": "heldout_continuation",
+    "split": "regression",
+    "turns": [
+      "Liste as abas que existem no navegador.",
+      "Leia o conteudo da segunda aba e informe seu titulo e codigo."
+    ],
+    "required": [
+      "listar_abas",
+      "trocar_aba",
+      "ler_pagina"
+    ],
+    "facts": [
+      "Guia Beta",
+      "BETA-82"
+    ],
+    "scope": [
+      "listar_abas",
+      "trocar_aba",
+      "ler_pagina",
+      "obter_contexto_navegador"
+    ],
+    "active_tab": 2
+  }
+]
