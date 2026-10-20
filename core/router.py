@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import re
 import json
+import os
 from dataclasses import dataclass
 from typing import Any
 
@@ -31,6 +32,10 @@ COMMON_TOOLS = {
     "obter_status_windows",
     "listar_janelas_windows",
 }
+
+# Cheap state readers already used by the existing domain routes. Available
+# schemas are not execution/permission grants. No target or prompt-specific rule.
+DISCOVERY_BOOTSTRAP_TOOLS = COMMON_TOOLS | {"listar_abas", "obter_audio_windows"}
 
 TOOL_GROUPS = {
     "browser": {
@@ -479,7 +484,9 @@ class Router:
         # uma capacidade com apenas um contrato compacto.
         if not domains:
             if discovery_enabled():
-                ordered = with_discovery([])
+                bootstrap = (DISCOVERY_BOOTSTRAP_TOOLS
+                             if os.getenv("AUREN_DISCOVERY_POLICY", "").strip() == "bootstrap" else set())
+                ordered = with_discovery(bootstrap)
                 self.last_domains, self.last_tool_names = ["discovery"], ordered
                 return ordered
             self.last_domains = []
