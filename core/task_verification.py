@@ -1,5 +1,6 @@
 """Evidence references for compound goals; no permission or tool execution."""
 import json
+from core.context_encoding import context_json
 
 from core.intent_verification import READ_ONLY_TOOLS
 
@@ -82,11 +83,11 @@ class CompletionValidationFailure(RuntimeError):
 def completion_input(snapshot):
     if len(snapshot.objective) > 12000 or len(snapshot.steps) > 100 or len(snapshot.result) > 12000:
         raise RuntimeError('Evidencia excede limite da verificacao; nao truncar objetivo silenciosamente.')
-    return json.dumps({'objective': snapshot.objective, 'candidate_answer': snapshot.result,
+    return context_json({'objective': snapshot.objective, 'candidate_answer': snapshot.result,
         'plan': [{'index': s.index, 'instruction': s.instruction} for s in snapshot.plan.steps],
         'execution': [{'number': i, 'tool': s.tool, 'arguments': s.arguments,
                        'success': s.success, 'result': s.result}
-                      for i, s in enumerate(snapshot.steps, 1)]}, ensure_ascii=False)
+                      for i, s in enumerate(snapshot.steps, 1)]}, component="reviews")
 
 
 def validate_completion(result, snapshot):
