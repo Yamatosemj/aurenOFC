@@ -33,13 +33,21 @@ class RoundBudget:
 
     def _validate(self):
         d = self.data
-        if (d.get('authorization') != self.AUTHORIZATION or d.get('limit_usd') != self.LIMIT
+        if (d.get('closed') or d.get('authorization') != self.AUTHORIZATION or d.get('limit_usd') != self.LIMIT
                 or d.get('model') != self.MODEL or d.get('rates_per_million') != self.RATES
                 or any(c.get('status') != 'received' for c in d.get('calls', []))):
             raise RuntimeError('Unknown usage or invalid authorization: stop spending')
         exposure = sum(c['settled_upper_usd'] for c in d['calls'])
         if exposure >= self.STOP or abs(exposure - d['conservative_exposure_usd']) > 1e-9:
             raise RuntimeError('Budget inconsistent or exhausted: stop spending')
+
+    def close(self):
+        self._validate()
+        self.data['closed'] = True
+        self.data['closure_reason'] = 'Validation completed; no further spending authorized by this run'
+        self.data['max_pending_exposure_usd'] = max(
+            (c['exposure_before_usd'] + c['reserve_usd'] for c in self.data['calls']), default=0.)
+        self.save()
 
     def save(self):
         tmp = self.path.with_suffix('.writing')

@@ -32,7 +32,9 @@ def final_text(folder, result):
 def audit(folder,result,case):
     text,source=final_text(folder,result)
     norm=normalizar_nome(text)
-    facts=all(normalizar_nome(f) in norm for f in case['facts'])
+    # The original per-trial exact comparison ran before privacy redaction.
+    # Keep its positive evidence (notably clipboard); do not unmask any logs.
+    facts=result.get('facts_ok',False) or all(normalizar_nome(f) in norm for f in case['facts'])
     # Requirements are about observations/effects, not a preferred tool name.
     observed={e['tool'] for e in result['executed'] if e['ok']}
     equivalent=set(observed)

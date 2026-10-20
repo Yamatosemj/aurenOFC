@@ -30,6 +30,15 @@ def test_reservation_precedes_transport_and_only_valid_usage_settles(tmp_path):
     with pytest.raises(FileExistsError):RoundBudget(meter.path)
 
 
+def test_closed_round_cannot_be_spent_or_resumed(tmp_path):
+    meter=RoundBudget(tmp_path/'ledger.json')
+    meter.create(lambda **kw:response(),**params())
+    meter.close()
+    with pytest.raises(RuntimeError):meter.create(lambda **kw:pytest.fail('closed round'),**params())
+    with pytest.raises(RuntimeError):RoundBudget(meter.path,resume=True)
+    assert meter.data['closed'] and meter.data['max_pending_exposure_usd']<.49
+
+
 @pytest.mark.parametrize('bad',['timeout','missing','model','bound','reasoning'])
 def test_unknown_or_invalid_usage_stops_all_future_calls_and_resume(tmp_path,bad):
     m=RoundBudget(tmp_path/'ledger.json')
