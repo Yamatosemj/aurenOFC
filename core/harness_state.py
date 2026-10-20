@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Callable
 import json
+from core.context_encoding import context_json
 
 
 def _montar_estado(
@@ -30,7 +31,7 @@ def _montar_estado(
                   'Passos salvos no checkpoint DESTA MESMA tarefa continuam validos; nao repita seus efeitos.')
     if plano is not None:
         linhas.extend(['PLANO LOCAL (estimativa, nunca autorizacao):',
-            json.dumps([{'etapa': s.index, 'instrucao': s.instruction} for s in plano.steps], ensure_ascii=False),
+            context_json([{'etapa': s.index, 'instrucao': s.instruction} for s in plano.steps], component="plan"),
             'Confira o pedido integral e suas dependencias. Proponha o proximo passo ou uma sequencia curta cujos argumentos ja sejam conhecidos.',
             'Antes de concluir, obtenha evidencia das etapas; sucesso de comando nao comprova o estado final.'])
 

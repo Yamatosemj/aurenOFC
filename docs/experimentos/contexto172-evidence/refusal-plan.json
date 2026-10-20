@@ -1,0 +1,127 @@
+{
+  "case": "refusal",
+  "split": "heldout",
+  "variant": "plan",
+  "intent_fixture": "aprovar",
+  "permission_fixture": "allow",
+  "source_sha": "e62f316f4a3b74804ac3ef50ce32f9f1b9a8a30e",
+  "dirty": false,
+  "scripted_success": true,
+  "calls_to_fake_transport": 1,
+  "phases": {
+    "principal": 1
+  },
+  "input_tokens_proxy": 8396,
+  "output_tokens_proxy": 12,
+  "offline_duration_ms": 89.848,
+  "turns": [
+    {
+      "state": "completed",
+      "error": "",
+      "answer_matches": true,
+      "facts_ok": true,
+      "actions_match": true,
+      "request_indices": [
+        0
+      ],
+      "executed": []
+    }
+  ],
+  "requests": [
+    {
+      "phase": "principal",
+      "components": {
+        "instructions": {
+          "chars": 12728,
+          "tokens_proxy": 2909
+        },
+        "schemas": {
+          "chars": 22883,
+          "tokens_proxy": 5157
+        },
+        "state_or_review": {
+          "chars": 1454,
+          "tokens_proxy": 330
+        }
+      },
+      "input_tokens_proxy": 8396,
+      "output_tokens_proxy": 12,
+      "stable_prefix_chars": 35770,
+      "same_phase_shared_prefix_chars": 0,
+      "instructions_sha256": "16913a173fb07a77cd7498e15783c409c6702545961dcf1a2614b88f0fd3792e",
+      "schemas_sha256": "febfb0c50e280ad8d1590bca9f868c927b8db541d032769e21bfab66f218e1a0",
+      "schema_names": [
+        "abrir_programa",
+        "buscar_arquivo",
+        "inspecionar_arquivo",
+        "ler_arquivo",
+        "salvar_memoria_persistente",
+        "consultar_memoria_persistente",
+        "esquecer_memoria_persistente",
+        "listar_janelas_windows",
+        "focar_janela_windows",
+        "minimizar_janela_windows",
+        "maximizar_janela_windows",
+        "obter_geometria_janela_windows",
+        "mover_janela_windows",
+        "redimensionar_janela_windows",
+        "restaurar_janela_windows",
+        "fechar_janela_windows",
+        "obter_status_windows",
+        "listar_processos_windows",
+        "encerrar_processo_windows",
+        "ler_area_transferencia_windows",
+        "definir_area_transferencia_windows",
+        "pressionar_tecla_windows",
+        "mover_mouse_windows",
+        "clicar_mouse_windows",
+        "arrastar_mouse_windows",
+        "obter_audio_windows",
+        "definir_volume_windows",
+        "definir_mudo_windows",
+        "controle_midia_windows",
+        "inspecionar_interface_windows",
+        "clicar_elemento_windows",
+        "preencher_elemento_windows",
+        "alternar_elemento_windows",
+        "selecionar_elemento_windows",
+        "navegar_navegador",
+        "obter_contexto_navegador",
+        "ler_pagina",
+        "clicar_elemento",
+        "preencher_elemento",
+        "pressionar_tecla",
+        "listar_abas",
+        "abrir_nova_aba",
+        "trocar_aba",
+        "fechar_aba",
+        "voltar_pagina",
+        "avancar_pagina",
+        "recarregar_pagina",
+        "rolar_pagina",
+        "capturar_tela_windows"
+      ],
+      "previous_response_id": null,
+      "cache_options": {
+        "ttl": "30m"
+      },
+      "actual_input_tokens": null,
+      "actual_cached_tokens": null,
+      "actual_cache_write_tokens": null,
+      "actual_api_latency_ms": null,
+      "actual_estimated_usd": null,
+      "retrieved_context_chars": 0,
+      "retrieved_context_present": false,
+      "state_chars": 1454
+    }
+  ],
+  "context_builds": [
+    {
+      "sections": {},
+      "chars": 0
+    }
+  ],
+  "real_api_calls": 0,
+  "real_terminal_effects": 0,
+  "paid_usd": 0
+}

@@ -1,0 +1,446 @@
+{
+  "token_method": "tiktoken 0.12.0 o200k_base component proxy; not provider usage",
+  "actual_api_calls": 0,
+  "paid_usd": 0,
+  "actual_cache_tokens": null,
+  "actual_cache_writes": null,
+  "actual_api_latency_ms": null,
+  "reference_rates_per_million": {
+    "input": 0.2,
+    "cached": 0.02,
+    "cache_write": 0.25,
+    "output": 1.2
+  },
+  "variants": {
+    "base": {
+      "trials": 8,
+      "tasks": 9,
+      "scripted_success": 8,
+      "fake_calls": 28,
+      "input_tokens_proxy": 96534,
+      "output_tokens_proxy": 908,
+      "total_tokens_proxy": 97442,
+      "phases": {
+        "principal": 20,
+        "intent": 4,
+        "completion": 4
+      },
+      "components_input_proxy": {
+        "instructions": 64632,
+        "schemas": 20681,
+        "state_or_review": 4508,
+        "response_format": 868,
+        "message": 5025,
+        "function_call": 392,
+        "function_call_output": 428
+      },
+      "offline_median_ms": 225.031,
+      "hypothetical_usd_all_input_uncached": 0.0203964,
+      "hypothetical_usd_all_input_cache_write": 0.0252231,
+      "hypothetical_usd_all_input_cached": 0.0030202799999999998
+    },
+    "reviews": {
+      "trials": 8,
+      "tasks": 9,
+      "scripted_success": 8,
+      "fake_calls": 28,
+      "input_tokens_proxy": 96382,
+      "output_tokens_proxy": 908,
+      "total_tokens_proxy": 97290,
+      "phases": {
+        "principal": 20,
+        "intent": 4,
+        "completion": 4
+      },
+      "components_input_proxy": {
+        "instructions": 64632,
+        "schemas": 20681,
+        "state_or_review": 4356,
+        "response_format": 868,
+        "message": 5025,
+        "function_call": 392,
+        "function_call_output": 428
+      },
+      "offline_median_ms": 202.6325,
+      "hypothetical_usd_all_input_uncached": 0.020366,
+      "hypothetical_usd_all_input_cache_write": 0.0251851,
+      "hypothetical_usd_all_input_cached": 0.0030172399999999996
+    },
+    "plan": {
+      "trials": 8,
+      "tasks": 9,
+      "scripted_success": 8,
+      "fake_calls": 28,
+      "input_tokens_proxy": 96418,
+      "output_tokens_proxy": 908,
+      "total_tokens_proxy": 97326,
+      "phases": {
+        "principal": 20,
+        "intent": 4,
+        "completion": 4
+      },
+      "components_input_proxy": {
+        "instructions": 64632,
+        "schemas": 20681,
+        "state_or_review": 4465,
+        "response_format": 868,
+        "message": 4952,
+        "function_call": 392,
+        "function_call_output": 428
+      },
+      "offline_median_ms": 203.6635,
+      "hypothetical_usd_all_input_uncached": 0.0203732,
+      "hypothetical_usd_all_input_cache_write": 0.025194099999999997,
+      "hypothetical_usd_all_input_cached": 0.00301796
+    },
+    "combined": {
+      "trials": 8,
+      "tasks": 9,
+      "scripted_success": 8,
+      "fake_calls": 28,
+      "input_tokens_proxy": 96266,
+      "output_tokens_proxy": 908,
+      "total_tokens_proxy": 97174,
+      "phases": {
+        "principal": 20,
+        "intent": 4,
+        "completion": 4
+      },
+      "components_input_proxy": {
+        "instructions": 64632,
+        "schemas": 20681,
+        "state_or_review": 4313,
+        "response_format": 868,
+        "message": 4952,
+        "function_call": 392,
+        "function_call_output": 428
+      },
+      "offline_median_ms": 221.3045,
+      "hypothetical_usd_all_input_uncached": 0.020342799999999998,
+      "hypothetical_usd_all_input_cache_write": 0.025156099999999997,
+      "hypothetical_usd_all_input_cached": 0.00301492
+    }
+  },
+  "pairs": [
+    {
+      "case": "audio_batch",
+      "variant": "base",
+      "input_tokens_proxy": 13826,
+      "saved_input_proxy": 0,
+      "output_tokens_proxy": 201,
+      "fake_calls": 5,
+      "offline_duration_ms": 281.775,
+      "scripted_success": true
+    },
+    {
+      "case": "audio_new",
+      "variant": "base",
+      "input_tokens_proxy": 13830,
+      "saved_input_proxy": 0,
+      "output_tokens_proxy": 202,
+      "fake_calls": 5,
+      "offline_duration_ms": 274.77,
+      "scripted_success": true
+    },
+    {
+      "case": "audio_read",
+      "variant": "base",
+      "input_tokens_proxy": 7642,
+      "saved_input_proxy": 0,
+      "output_tokens_proxy": 37,
+      "fake_calls": 2,
+      "offline_duration_ms": 144.441,
+      "scripted_success": true
+    },
+    {
+      "case": "audio_sequence",
+      "variant": "base",
+      "input_tokens_proxy": 17759,
+      "saved_input_proxy": 0,
+      "output_tokens_proxy": 219,
+      "fake_calls": 6,
+      "offline_duration_ms": 312.861,
+      "scripted_success": true
+    },
+    {
+      "case": "page_read",
+      "variant": "base",
+      "input_tokens_proxy": 9365,
+      "saved_input_proxy": 0,
+      "output_tokens_proxy": 39,
+      "fake_calls": 2,
+      "offline_duration_ms": 175.292,
+      "scripted_success": true
+    },
+    {
+      "case": "refusal",
+      "variant": "base",
+      "input_tokens_proxy": 8399,
+      "saved_input_proxy": 0,
+      "output_tokens_proxy": 12,
+      "fake_calls": 1,
+      "offline_duration_ms": 106.194,
+      "scripted_success": true
+    },
+    {
+      "case": "tabs_followup",
+      "variant": "base",
+      "input_tokens_proxy": 21583,
+      "saved_input_proxy": 0,
+      "output_tokens_proxy": 171,
+      "fake_calls": 6,
+      "offline_duration_ms": 355.434,
+      "scripted_success": true
+    },
+    {
+      "case": "windows_read",
+      "variant": "base",
+      "input_tokens_proxy": 4130,
+      "saved_input_proxy": 0,
+      "output_tokens_proxy": 27,
+      "fake_calls": 1,
+      "offline_duration_ms": 131.455,
+      "scripted_success": true
+    },
+    {
+      "case": "audio_batch",
+      "variant": "reviews",
+      "input_tokens_proxy": 13785,
+      "saved_input_proxy": 41,
+      "output_tokens_proxy": 201,
+      "fake_calls": 5,
+      "offline_duration_ms": 284.178,
+      "scripted_success": true
+    },
+    {
+      "case": "audio_new",
+      "variant": "reviews",
+      "input_tokens_proxy": 13789,
+      "saved_input_proxy": 41,
+      "output_tokens_proxy": 202,
+      "fake_calls": 5,
+      "offline_duration_ms": 257.186,
+      "scripted_success": true
+    },
+    {
+      "case": "audio_read",
+      "variant": "reviews",
+      "input_tokens_proxy": 7642,
+      "saved_input_proxy": 0,
+      "output_tokens_proxy": 37,
+      "fake_calls": 2,
+      "offline_duration_ms": 145.877,
+      "scripted_success": true
+    },
+    {
+      "case": "audio_sequence",
+      "variant": "reviews",
+      "input_tokens_proxy": 17714,
+      "saved_input_proxy": 45,
+      "output_tokens_proxy": 219,
+      "fake_calls": 6,
+      "offline_duration_ms": 306.612,
+      "scripted_success": true
+    },
+    {
+      "case": "page_read",
+      "variant": "reviews",
+      "input_tokens_proxy": 9365,
+      "saved_input_proxy": 0,
+      "output_tokens_proxy": 39,
+      "fake_calls": 2,
+      "offline_duration_ms": 148.079,
+      "scripted_success": true
+    },
+    {
+      "case": "refusal",
+      "variant": "reviews",
+      "input_tokens_proxy": 8399,
+      "saved_input_proxy": 0,
+      "output_tokens_proxy": 12,
+      "fake_calls": 1,
+      "offline_duration_ms": 85.637,
+      "scripted_success": true
+    },
+    {
+      "case": "tabs_followup",
+      "variant": "reviews",
+      "input_tokens_proxy": 21558,
+      "saved_input_proxy": 25,
+      "output_tokens_proxy": 171,
+      "fake_calls": 6,
+      "offline_duration_ms": 363.7,
+      "scripted_success": true
+    },
+    {
+      "case": "windows_read",
+      "variant": "reviews",
+      "input_tokens_proxy": 4130,
+      "saved_input_proxy": 0,
+      "output_tokens_proxy": 27,
+      "fake_calls": 1,
+      "offline_duration_ms": 121.924,
+      "scripted_success": true
+    },
+    {
+      "case": "audio_batch",
+      "variant": "plan",
+      "input_tokens_proxy": 13805,
+      "saved_input_proxy": 21,
+      "output_tokens_proxy": 201,
+      "fake_calls": 5,
+      "offline_duration_ms": 258.877,
+      "scripted_success": true
+    },
+    {
+      "case": "audio_new",
+      "variant": "plan",
+      "input_tokens_proxy": 13809,
+      "saved_input_proxy": 21,
+      "output_tokens_proxy": 202,
+      "fake_calls": 5,
+      "offline_duration_ms": 259.839,
+      "scripted_success": true
+    },
+    {
+      "case": "audio_read",
+      "variant": "plan",
+      "input_tokens_proxy": 7636,
+      "saved_input_proxy": 6,
+      "output_tokens_proxy": 37,
+      "fake_calls": 2,
+      "offline_duration_ms": 148.06,
+      "scripted_success": true
+    },
+    {
+      "case": "audio_sequence",
+      "variant": "plan",
+      "input_tokens_proxy": 17715,
+      "saved_input_proxy": 44,
+      "output_tokens_proxy": 219,
+      "fake_calls": 6,
+      "offline_duration_ms": 311.213,
+      "scripted_success": true
+    },
+    {
+      "case": "page_read",
+      "variant": "plan",
+      "input_tokens_proxy": 9359,
+      "saved_input_proxy": 6,
+      "output_tokens_proxy": 39,
+      "fake_calls": 2,
+      "offline_duration_ms": 148.45,
+      "scripted_success": true
+    },
+    {
+      "case": "refusal",
+      "variant": "plan",
+      "input_tokens_proxy": 8396,
+      "saved_input_proxy": 3,
+      "output_tokens_proxy": 12,
+      "fake_calls": 1,
+      "offline_duration_ms": 89.848,
+      "scripted_success": true
+    },
+    {
+      "case": "tabs_followup",
+      "variant": "plan",
+      "input_tokens_proxy": 21571,
+      "saved_input_proxy": 12,
+      "output_tokens_proxy": 171,
+      "fake_calls": 6,
+      "offline_duration_ms": 362.467,
+      "scripted_success": true
+    },
+    {
+      "case": "windows_read",
+      "variant": "plan",
+      "input_tokens_proxy": 4127,
+      "saved_input_proxy": 3,
+      "output_tokens_proxy": 27,
+      "fake_calls": 1,
+      "offline_duration_ms": 120.073,
+      "scripted_success": true
+    },
+    {
+      "case": "audio_batch",
+      "variant": "combined",
+      "input_tokens_proxy": 13764,
+      "saved_input_proxy": 62,
+      "output_tokens_proxy": 201,
+      "fake_calls": 5,
+      "offline_duration_ms": 279.902,
+      "scripted_success": true
+    },
+    {
+      "case": "audio_new",
+      "variant": "combined",
+      "input_tokens_proxy": 13768,
+      "saved_input_proxy": 62,
+      "output_tokens_proxy": 202,
+      "fake_calls": 5,
+      "offline_duration_ms": 284.885,
+      "scripted_success": true
+    },
+    {
+      "case": "audio_read",
+      "variant": "combined",
+      "input_tokens_proxy": 7636,
+      "saved_input_proxy": 6,
+      "output_tokens_proxy": 37,
+      "fake_calls": 2,
+      "offline_duration_ms": 148.124,
+      "scripted_success": true
+    },
+    {
+      "case": "audio_sequence",
+      "variant": "combined",
+      "input_tokens_proxy": 17670,
+      "saved_input_proxy": 89,
+      "output_tokens_proxy": 219,
+      "fake_calls": 6,
+      "offline_duration_ms": 296.11,
+      "scripted_success": true
+    },
+    {
+      "case": "page_read",
+      "variant": "combined",
+      "input_tokens_proxy": 9359,
+      "saved_input_proxy": 6,
+      "output_tokens_proxy": 39,
+      "fake_calls": 2,
+      "offline_duration_ms": 162.707,
+      "scripted_success": true
+    },
+    {
+      "case": "refusal",
+      "variant": "combined",
+      "input_tokens_proxy": 8396,
+      "saved_input_proxy": 3,
+      "output_tokens_proxy": 12,
+      "fake_calls": 1,
+      "offline_duration_ms": 105.057,
+      "scripted_success": true
+    },
+    {
+      "case": "tabs_followup",
+      "variant": "combined",
+      "input_tokens_proxy": 21546,
+      "saved_input_proxy": 37,
+      "output_tokens_proxy": 171,
+      "fake_calls": 6,
+      "offline_duration_ms": 360.714,
+      "scripted_success": true
+    },
+    {
+      "case": "windows_read",
+      "variant": "combined",
+      "input_tokens_proxy": 4127,
+      "saved_input_proxy": 3,
+      "output_tokens_proxy": 27,
+      "fake_calls": 1,
+      "offline_duration_ms": 126.918,
+      "scripted_success": true
+    }
+  ]
+}

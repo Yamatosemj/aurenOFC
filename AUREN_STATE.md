@@ -8,6 +8,8 @@
 
 ## 1. Situação e trabalho em foco
 
+- **Experimento de contexto sobre #172:** branch separada experiment/context-audit-172, descoberta da #173 preservada em draft. Duas compactacoes JSON opcionais: reducao offline proxy de 0,278% na entrada, mesmas chamadas e acoes simuladas; custo real e qualidade do modelo pendentes de nova autorizacao Live. Zero chamadas pagas. [Auditoria, limites e evidencias](docs/experimentos/CONTEXTO_172.md).
+
 - **Latencia, candidata de 19/10 (sem merge):** A-E na base #166: instrumentacao, descoberta exata, evidencia Win32, sequencias interrompiveis e contexto menor no Router existente. Cinco PRs encadeadas; instalacao pessoal preservada. Testes, ganhos medidos e limites em [entrega](docs/estabilizacao/LATENCIA_ENTREGA_20261019.md). Live adicional: saudacao 2,875 s e maximizacao sintetica 4,592 s aprovadas; YouTube ainda falha ponta a ponta. Consumo estimado US$ 0,09391080 de US$ 0,50. Seguimento na branch `validacao/latencia-live-20261019`; [evidencias e limites](docs/estabilizacao/LATENCIA_LIVE_20261019.md). Nenhum merge.
 
 - **Validação da #165:** 121 testes representativos offline aprovados; pacote anterior íntegro, mas herdava configuração pytest ancestral por omitir `pytest.ini`. Inclusão da configuração própria corrigida com regressão antes/depois. Runtime e proteções da #165 preservados. Workflow manual Windows/Linux tentado, porém rede da sessão bloqueou o acionamento; zero runs confirmados para o HEAD da #165. Ambiente local tem openai 3.15.0, divergente do pin 3.26.0; não houve instalação global ou chamada real. Suíte final e pacote atualizado por SHA na PR. **CI e provider real pendentes; nenhuma autorização Live renovada.** [Comparações, bloqueios e comandos exatos](docs/estabilizacao/VALIDACAO_165.md).

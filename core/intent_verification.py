@@ -8,6 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 import json
 import re
+from core.context_encoding import context_json
 from typing import Any, Sequence
 
 
@@ -179,7 +180,7 @@ def criar_entrada_verificacao(
             "pergunta": confirmadas[-1],
             "resposta": "sim",
         }
-    return json.dumps(payload, ensure_ascii=False)
+    return context_json(payload, component="reviews")
 
 
 def interpretar_decisao(texto: str) -> IntentDecision:

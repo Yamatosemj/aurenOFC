@@ -1,0 +1,169 @@
+{
+  "case": "page_read",
+  "split": "heldout",
+  "variant": "base",
+  "intent_fixture": "aprovar",
+  "permission_fixture": "allow",
+  "source_sha": "48717bb68fd3545d31aa33028261fa33f9f50177",
+  "dirty": false,
+  "scripted_success": true,
+  "calls_to_fake_transport": 2,
+  "phases": {
+    "principal": 2
+  },
+  "input_tokens_proxy": 9365,
+  "output_tokens_proxy": 39,
+  "offline_duration_ms": 175.292,
+  "turns": [
+    {
+      "state": "completed",
+      "error": "",
+      "answer_matches": true,
+      "facts_ok": true,
+      "actions_match": true,
+      "request_indices": [
+        0,
+        1
+      ],
+      "executed": [
+        {
+          "tool": "ler_pagina",
+          "arguments": {
+            "foco": "codigo"
+          },
+          "ok": true,
+          "error": null
+        }
+      ]
+    }
+  ],
+  "requests": [
+    {
+      "phase": "principal",
+      "components": {
+        "instructions": {
+          "chars": 12728,
+          "tokens_proxy": 2909
+        },
+        "schemas": {
+          "chars": 6152,
+          "tokens_proxy": 1381
+        },
+        "state_or_review": {
+          "chars": 1457,
+          "tokens_proxy": 331
+        }
+      },
+      "input_tokens_proxy": 4621,
+      "output_tokens_proxy": 33,
+      "stable_prefix_chars": 19039,
+      "same_phase_shared_prefix_chars": 0,
+      "instructions_sha256": "16913a173fb07a77cd7498e15783c409c6702545961dcf1a2614b88f0fd3792e",
+      "schemas_sha256": "b760b3f96137b238837043646ab2fb8db97c13d9a3aa68ff853b4328ee083fca",
+      "schema_names": [
+        "abrir_programa",
+        "consultar_memoria_persistente",
+        "listar_janelas_windows",
+        "obter_status_windows",
+        "navegar_navegador",
+        "obter_contexto_navegador",
+        "ler_pagina",
+        "clicar_elemento",
+        "preencher_elemento",
+        "pressionar_tecla",
+        "listar_abas",
+        "abrir_nova_aba",
+        "trocar_aba",
+        "fechar_aba",
+        "voltar_pagina",
+        "avancar_pagina",
+        "recarregar_pagina",
+        "rolar_pagina"
+      ],
+      "previous_response_id": null,
+      "cache_options": {
+        "ttl": "30m"
+      },
+      "actual_input_tokens": null,
+      "actual_cached_tokens": null,
+      "actual_cache_write_tokens": null,
+      "actual_api_latency_ms": null,
+      "actual_estimated_usd": null,
+      "retrieved_context_chars": 0,
+      "retrieved_context_present": false,
+      "state_chars": 1457
+    },
+    {
+      "phase": "principal",
+      "components": {
+        "instructions": {
+          "chars": 12728,
+          "tokens_proxy": 2909
+        },
+        "schemas": {
+          "chars": 6152,
+          "tokens_proxy": 1381
+        },
+        "message": {
+          "chars": 1537,
+          "tokens_proxy": 363
+        },
+        "function_call": {
+          "chars": 100,
+          "tokens_proxy": 33
+        },
+        "function_call_output": {
+          "chars": 188,
+          "tokens_proxy": 58
+        }
+      },
+      "input_tokens_proxy": 4744,
+      "output_tokens_proxy": 6,
+      "stable_prefix_chars": 19039,
+      "same_phase_shared_prefix_chars": 19039,
+      "instructions_sha256": "16913a173fb07a77cd7498e15783c409c6702545961dcf1a2614b88f0fd3792e",
+      "schemas_sha256": "b760b3f96137b238837043646ab2fb8db97c13d9a3aa68ff853b4328ee083fca",
+      "schema_names": [
+        "abrir_programa",
+        "consultar_memoria_persistente",
+        "listar_janelas_windows",
+        "obter_status_windows",
+        "navegar_navegador",
+        "obter_contexto_navegador",
+        "ler_pagina",
+        "clicar_elemento",
+        "preencher_elemento",
+        "pressionar_tecla",
+        "listar_abas",
+        "abrir_nova_aba",
+        "trocar_aba",
+        "fechar_aba",
+        "voltar_pagina",
+        "avancar_pagina",
+        "recarregar_pagina",
+        "rolar_pagina"
+      ],
+      "previous_response_id": null,
+      "cache_options": {
+        "ttl": "30m"
+      },
+      "actual_input_tokens": null,
+      "actual_cached_tokens": null,
+      "actual_cache_write_tokens": null,
+      "actual_api_latency_ms": null,
+      "actual_estimated_usd": null,
+      "retrieved_context_chars": 0,
+      "retrieved_context_present": false,
+      "state_chars": 1457
+    }
+  ],
+  "context_builds": [
+    {
+      "sections": {},
+      "chars": 0
+    }
+  ],
+  "real_api_calls": 0,
+  "real_terminal_effects": 0,
+  "paid_usd": 0
+}

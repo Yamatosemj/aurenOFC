@@ -1,0 +1,39 @@
+{
+  "base_sha": "48717bb68fd3545d31aa33028261fa33f9f50177",
+  "cases_sha256": "e35e23a0be6adffd2128f6d67d0536ba84f7385b743a145a1fde3f58c981b09d",
+  "runner_sha256": "39b8783597a5bfe50c6560b79216cbb0c64c11df70e91bd0b63995cd2bf8c15f",
+  "order": "balanced cyclic rotation across eight cases; one isolated process per case/variant",
+  "method": "scripted responses, real Harness/Router/Dispatcher/contracts/PM/provider serializers; o200k_base component proxy",
+  "provider_usage": null,
+  "paid_usd": 0,
+  "variants": {
+    "base": {
+      "trials": 8,
+      "scripted_success": 8,
+      "fake_calls": 28,
+      "input_tokens_proxy": 96534,
+      "output_tokens_proxy": 908
+    },
+    "reviews": {
+      "trials": 8,
+      "scripted_success": 8,
+      "fake_calls": 28,
+      "input_tokens_proxy": 96382,
+      "output_tokens_proxy": 908
+    },
+    "plan": {
+      "trials": 8,
+      "scripted_success": 8,
+      "fake_calls": 28,
+      "input_tokens_proxy": 96418,
+      "output_tokens_proxy": 908
+    },
+    "combined": {
+      "trials": 8,
+      "scripted_success": 8,
+      "fake_calls": 28,
+      "input_tokens_proxy": 96266,
+      "output_tokens_proxy": 908
+    }
+  }
+}

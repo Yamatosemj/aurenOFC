@@ -108,7 +108,7 @@ Estados terminais: **COMPLETED**, **FAILED** e **CANCELLED**. A transicao de qua
 
 ### Contexto e historico
 
-[harness_state.py](../../core/harness_state.py) limita o **estado textual compacto a 4500 caracteres** (configurado no Harness), conserva os **2** itens recentes do historico de ferramentas e usa **contexto completo somente na primeira rodada**. O contexto de sessao e limitado adicionalmente pelo SessionContextManager; recebe historico, fatos, memoria, estrategias e skills conforme disponibilidade e politicas.
+[harness_state.py](../../core/harness_state.py) aplica um corte de **4500 caracteres** ao estado (mais marcador quando truncado), conserva os **2** itens recentes do historico de ferramentas e inclui o contexto recuperado tambem nas continuacoes normais (`incluir_contexto=True`). O contexto de sessao e limitado adicionalmente pelo SessionContextManager; recebe historico, fatos, memoria, estrategias e skills conforme disponibilidade e politicas. [Auditoria offline sobre a #172, payloads e limites](../experimentos/CONTEXTO_172.md).
 
 [harness_round_input.py](../../core/harness_round_input.py) evita reutilizar a cadeia inteira de respostas. Nao utiliza previous_response_id. Isso **nao e memoria infinita**: historicos mais antigos podem ser omitidos dos prompts; somente armazenamento e recuperacao de contexto permitem continuidade entre conversas.
 

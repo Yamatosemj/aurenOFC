@@ -1,0 +1,397 @@
+{
+  "case": "tabs_followup",
+  "split": "heldout",
+  "variant": "plan",
+  "intent_fixture": "aprovar",
+  "permission_fixture": "allow",
+  "source_sha": "e62f316f4a3b74804ac3ef50ce32f9f1b9a8a30e",
+  "dirty": false,
+  "scripted_success": true,
+  "calls_to_fake_transport": 6,
+  "phases": {
+    "principal": 4,
+    "intent": 1,
+    "completion": 1
+  },
+  "input_tokens_proxy": 21571,
+  "output_tokens_proxy": 171,
+  "offline_duration_ms": 362.467,
+  "turns": [
+    {
+      "state": "completed",
+      "error": "",
+      "answer_matches": false,
+      "facts_ok": true,
+      "actions_match": true,
+      "request_indices": [
+        0
+      ],
+      "executed": [
+        {
+          "tool": "listar_abas",
+          "arguments": {},
+          "ok": true,
+          "error": null
+        }
+      ]
+    },
+    {
+      "state": "completed",
+      "error": "",
+      "answer_matches": true,
+      "facts_ok": true,
+      "actions_match": true,
+      "request_indices": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "executed": [
+        {
+          "tool": "trocar_aba",
+          "arguments": {
+            "indice": 2
+          },
+          "ok": true,
+          "error": null
+        },
+        {
+          "tool": "ler_pagina",
+          "arguments": {
+            "foco": "codigo"
+          },
+          "ok": true,
+          "error": null
+        }
+      ]
+    }
+  ],
+  "requests": [
+    {
+      "phase": "principal",
+      "components": {
+        "instructions": {
+          "chars": 12728,
+          "tokens_proxy": 2909
+        },
+        "schemas": {
+          "chars": 6152,
+          "tokens_proxy": 1381
+        },
+        "state_or_review": {
+          "chars": 1460,
+          "tokens_proxy": 334
+        }
+      },
+      "input_tokens_proxy": 4624,
+      "output_tokens_proxy": 26,
+      "stable_prefix_chars": 19039,
+      "same_phase_shared_prefix_chars": 0,
+      "instructions_sha256": "16913a173fb07a77cd7498e15783c409c6702545961dcf1a2614b88f0fd3792e",
+      "schemas_sha256": "b760b3f96137b238837043646ab2fb8db97c13d9a3aa68ff853b4328ee083fca",
+      "schema_names": [
+        "abrir_programa",
+        "consultar_memoria_persistente",
+        "listar_janelas_windows",
+        "obter_status_windows",
+        "navegar_navegador",
+        "obter_contexto_navegador",
+        "ler_pagina",
+        "clicar_elemento",
+        "preencher_elemento",
+        "pressionar_tecla",
+        "listar_abas",
+        "abrir_nova_aba",
+        "trocar_aba",
+        "fechar_aba",
+        "voltar_pagina",
+        "avancar_pagina",
+        "recarregar_pagina",
+        "rolar_pagina"
+      ],
+      "previous_response_id": null,
+      "cache_options": {
+        "ttl": "30m"
+      },
+      "actual_input_tokens": null,
+      "actual_cached_tokens": null,
+      "actual_cache_write_tokens": null,
+      "actual_api_latency_ms": null,
+      "actual_estimated_usd": null,
+      "retrieved_context_chars": 0,
+      "retrieved_context_present": false,
+      "state_chars": 1460
+    },
+    {
+      "phase": "principal",
+      "components": {
+        "instructions": {
+          "chars": 12728,
+          "tokens_proxy": 2909
+        },
+        "schemas": {
+          "chars": 6152,
+          "tokens_proxy": 1381
+        },
+        "state_or_review": {
+          "chars": 2384,
+          "tokens_proxy": 592
+        }
+      },
+      "input_tokens_proxy": 4882,
+      "output_tokens_proxy": 32,
+      "stable_prefix_chars": 19039,
+      "same_phase_shared_prefix_chars": 19039,
+      "instructions_sha256": "16913a173fb07a77cd7498e15783c409c6702545961dcf1a2614b88f0fd3792e",
+      "schemas_sha256": "b760b3f96137b238837043646ab2fb8db97c13d9a3aa68ff853b4328ee083fca",
+      "schema_names": [
+        "abrir_programa",
+        "consultar_memoria_persistente",
+        "listar_janelas_windows",
+        "obter_status_windows",
+        "navegar_navegador",
+        "obter_contexto_navegador",
+        "ler_pagina",
+        "clicar_elemento",
+        "preencher_elemento",
+        "pressionar_tecla",
+        "listar_abas",
+        "abrir_nova_aba",
+        "trocar_aba",
+        "fechar_aba",
+        "voltar_pagina",
+        "avancar_pagina",
+        "recarregar_pagina",
+        "rolar_pagina"
+      ],
+      "previous_response_id": null,
+      "cache_options": {
+        "ttl": "30m"
+      },
+      "actual_input_tokens": null,
+      "actual_cached_tokens": null,
+      "actual_cache_write_tokens": null,
+      "actual_api_latency_ms": null,
+      "actual_estimated_usd": null,
+      "retrieved_context_chars": 936,
+      "retrieved_context_present": true,
+      "state_chars": 2384
+    },
+    {
+      "phase": "intent",
+      "components": {
+        "instructions": {
+          "chars": 4336,
+          "tokens_proxy": 1016
+        },
+        "response_format": {
+          "chars": 323,
+          "tokens_proxy": 85
+        },
+        "state_or_review": {
+          "chars": 182,
+          "tokens_proxy": 56
+        }
+      },
+      "input_tokens_proxy": 1157,
+      "output_tokens_proxy": 33,
+      "stable_prefix_chars": 4742,
+      "same_phase_shared_prefix_chars": 0,
+      "instructions_sha256": "1ab43f506b149ff23dff3b0abc8df85f424cb2bfa7ef1022e409396769840071",
+      "schemas_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "schema_names": [],
+      "previous_response_id": null,
+      "cache_options": null,
+      "actual_input_tokens": null,
+      "actual_cached_tokens": null,
+      "actual_cache_write_tokens": null,
+      "actual_api_latency_ms": null,
+      "actual_estimated_usd": null
+    },
+    {
+      "phase": "principal",
+      "components": {
+        "instructions": {
+          "chars": 12728,
+          "tokens_proxy": 2909
+        },
+        "schemas": {
+          "chars": 6152,
+          "tokens_proxy": 1381
+        },
+        "message": {
+          "chars": 2475,
+          "tokens_proxy": 635
+        },
+        "function_call": {
+          "chars": 93,
+          "tokens_proxy": 32
+        },
+        "function_call_output": {
+          "chars": 75,
+          "tokens_proxy": 24
+        }
+      },
+      "input_tokens_proxy": 4981,
+      "output_tokens_proxy": 33,
+      "stable_prefix_chars": 19039,
+      "same_phase_shared_prefix_chars": 19039,
+      "instructions_sha256": "16913a173fb07a77cd7498e15783c409c6702545961dcf1a2614b88f0fd3792e",
+      "schemas_sha256": "b760b3f96137b238837043646ab2fb8db97c13d9a3aa68ff853b4328ee083fca",
+      "schema_names": [
+        "abrir_programa",
+        "consultar_memoria_persistente",
+        "listar_janelas_windows",
+        "obter_status_windows",
+        "navegar_navegador",
+        "obter_contexto_navegador",
+        "ler_pagina",
+        "clicar_elemento",
+        "preencher_elemento",
+        "pressionar_tecla",
+        "listar_abas",
+        "abrir_nova_aba",
+        "trocar_aba",
+        "fechar_aba",
+        "voltar_pagina",
+        "avancar_pagina",
+        "recarregar_pagina",
+        "rolar_pagina"
+      ],
+      "previous_response_id": null,
+      "cache_options": {
+        "ttl": "30m"
+      },
+      "actual_input_tokens": null,
+      "actual_cached_tokens": null,
+      "actual_cache_write_tokens": null,
+      "actual_api_latency_ms": null,
+      "actual_estimated_usd": null,
+      "retrieved_context_chars": 936,
+      "retrieved_context_present": true,
+      "state_chars": 2384
+    },
+    {
+      "phase": "principal",
+      "components": {
+        "instructions": {
+          "chars": 12728,
+          "tokens_proxy": 2909
+        },
+        "schemas": {
+          "chars": 6152,
+          "tokens_proxy": 1381
+        },
+        "message": {
+          "chars": 2542,
+          "tokens_proxy": 657
+        },
+        "function_call": {
+          "chars": 100,
+          "tokens_proxy": 33
+        },
+        "function_call_output": {
+          "chars": 188,
+          "tokens_proxy": 58
+        }
+      },
+      "input_tokens_proxy": 5038,
+      "output_tokens_proxy": 6,
+      "stable_prefix_chars": 19039,
+      "same_phase_shared_prefix_chars": 19039,
+      "instructions_sha256": "16913a173fb07a77cd7498e15783c409c6702545961dcf1a2614b88f0fd3792e",
+      "schemas_sha256": "b760b3f96137b238837043646ab2fb8db97c13d9a3aa68ff853b4328ee083fca",
+      "schema_names": [
+        "abrir_programa",
+        "consultar_memoria_persistente",
+        "listar_janelas_windows",
+        "obter_status_windows",
+        "navegar_navegador",
+        "obter_contexto_navegador",
+        "ler_pagina",
+        "clicar_elemento",
+        "preencher_elemento",
+        "pressionar_tecla",
+        "listar_abas",
+        "abrir_nova_aba",
+        "trocar_aba",
+        "fechar_aba",
+        "voltar_pagina",
+        "avancar_pagina",
+        "recarregar_pagina",
+        "rolar_pagina"
+      ],
+      "previous_response_id": null,
+      "cache_options": {
+        "ttl": "30m"
+      },
+      "actual_input_tokens": null,
+      "actual_cached_tokens": null,
+      "actual_cache_write_tokens": null,
+      "actual_api_latency_ms": null,
+      "actual_estimated_usd": null,
+      "retrieved_context_chars": 936,
+      "retrieved_context_present": true,
+      "state_chars": 2446
+    },
+    {
+      "phase": "completion",
+      "components": {
+        "instructions": {
+          "chars": 2789,
+          "tokens_proxy": 597
+        },
+        "response_format": {
+          "chars": 581,
+          "tokens_proxy": 132
+        },
+        "state_or_review": {
+          "chars": 536,
+          "tokens_proxy": 160
+        }
+      },
+      "input_tokens_proxy": 889,
+      "output_tokens_proxy": 41,
+      "stable_prefix_chars": 3412,
+      "same_phase_shared_prefix_chars": 0,
+      "instructions_sha256": "955010513d2eefd9ce7fd28e3d1bff21ca64ce7987990920959dfaea5b1ca31c",
+      "schemas_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "schema_names": [],
+      "previous_response_id": null,
+      "cache_options": null,
+      "actual_input_tokens": null,
+      "actual_cached_tokens": null,
+      "actual_cache_write_tokens": null,
+      "actual_api_latency_ms": null,
+      "actual_estimated_usd": null
+    }
+  ],
+  "context_builds": [
+    {
+      "sections": {},
+      "chars": 0
+    },
+    {
+      "sections": {
+        "turnos": {
+          "chars": 264,
+          "tokens_proxy": 73
+        },
+        "tarefa": {
+          "chars": 284,
+          "tokens_proxy": 77
+        },
+        "estrategias": {
+          "chars": 384,
+          "tokens_proxy": 111
+        }
+      },
+      "chars": 936
+    }
+  ],
+  "real_api_calls": 0,
+  "real_terminal_effects": 0,
+  "paid_usd": 0
+}
