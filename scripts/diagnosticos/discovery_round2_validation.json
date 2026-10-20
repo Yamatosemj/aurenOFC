@@ -1,0 +1,5 @@
+[
+  {"id":"fresh_audio","split":"heldout","turns":["Consulte o audio atual do sistema: quero o volume master e saber se o mudo esta ligado."],"required":["obter_audio_windows"],"facts":["42"],"scope":["obter_audio_windows"]},
+  {"id":"fresh_tabs","split":"heldout","turns":["Confira os titulos das abas atuais do navegador."],"required":["listar_abas"],"facts":["Guia Alfa","Guia Beta"],"scope":["listar_abas","obter_contexto_navegador"]},
+  {"id":"fresh_compound_audio","split":"heldout","turns":["Liste as janelas visiveis e consulte o audio atual, informando titulos, volume e mudo."],"required":["listar_janelas_windows","obter_audio_windows"],"facts":["Relatorio Sintetico","Editor Sintetico","42"],"scope":["listar_janelas_windows","obter_audio_windows"]}
+]

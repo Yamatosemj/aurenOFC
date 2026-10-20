@@ -4,8 +4,6 @@ from pathlib import Path
 import subprocess
 import sys
 
-import pytest
-
 ROOT=Path(__file__).resolve().parents[1]
 
 
@@ -41,6 +39,20 @@ from core.tools_registry import tools
 assert 'buscar_ferramentas' not in {t['name'] for t in tools}
 assert Router().select_tool_names('faca isso',tools)==[t['name'] for t in tools]
 ''',enabled=False)
+
+
+def test_known_domains_defer_unrelated_anchors_but_preserve_mixed_routes():
+    isolated('''
+from core.router import Router
+from core.tools_registry import tools
+r=Router()
+audio=set(r.select_tool_names('consulte o audio atual',tools))
+assert 'obter_audio_windows' in audio and 'buscar_ferramentas' in audio
+assert not {'listar_janelas_windows','obter_status_windows','consultar_memoria_persistente'} & audio
+mixed=set(r.select_tool_names('consulte o audio e a ram',tools))
+assert {'obter_audio_windows','obter_status_windows','buscar_ferramentas'} <= mixed
+assert {'ler_pagina','ler_arquivo','buscar_ferramentas'} <= set(r.select_tool_names('leia a pagina e o arquivo guia.txt',tools))
+''')
 
 
 def test_registered_tool_is_dynamically_loaded_without_replacing_compound_domains():

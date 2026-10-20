@@ -493,7 +493,12 @@ class Router:
             self.last_tool_names = all_names
             return all_names
 
-        selected = set(COMMON_TOOLS)
+        # Domain routes already provide their own observation tools. The
+        # experiment defers unrelated anchors to search rather than presenting
+        # them as additional work; mixed domains still receive the full union.
+        selected = (set() if discovery_enabled()
+                    and os.getenv("AUREN_DISCOVERY_POLICY", "").strip() == "bootstrap"
+                    else set(COMMON_TOOLS))
         spotify_desktop_only = "spotify_desktop" in domains
         for domain in domains:
             if spotify_desktop_only and domain == "browser":

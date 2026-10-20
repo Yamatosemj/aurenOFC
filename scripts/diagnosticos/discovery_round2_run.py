@@ -21,8 +21,8 @@ SPEC=importlib.util.spec_from_file_location('round2_budget',SCRIPT.with_name('di
 MODULE=importlib.util.module_from_spec(SPEC);SPEC.loader.exec_module(MODULE)
 
 
-def cases():
-    return json.loads(SCRIPT.with_name('discovery_round2_cases.json').read_text(encoding='utf-8'))
+def cases(path=None):
+    return json.loads((path or SCRIPT.with_name('discovery_round2_cases.json')).read_text(encoding='utf-8'))
 
 
 def worker(args):
@@ -34,7 +34,7 @@ def worker(args):
     from core.session import SessionContextManager
     from core import harness_runtime as runtime
     from tools import dispatcher
-    case=next(c for c in cases() if c['id']==args.case)
+    case=next(c for c in cases(args.cases_file) if c['id']==args.case)
     name=f'{args.trial}-{args.case}-{args.variant}'
     folder=args.evidence/name;folder.mkdir()
     runtime.LOG_DIR=folder/'logs';runtime.CHAT_LOGS_DIR=runtime.LOG_DIR/'chats'
@@ -95,7 +95,7 @@ def worker(args):
         import providers.openai_provider as provider_module
         provider_module.CACHE_KEY='pr173-round2-balanced'
         provider=OpenAIProvider();client=provider.get_client()
-        meter=MODULE.RoundBudget(args.evidence/'budget.json',resume=True)
+        meter=MODULE.RoundBudget(args.budget or args.evidence/'budget.json',resume=True)
         meter.case=f'{args.case}-{args.trial}';meter.variant=args.variant
         provider._client=NS(responses=NS(create=lambda **kw:meter.create(client.responses.create,**kw)))
         orchestrator=AurenOrchestrator(provider=provider,router=Router())
@@ -168,8 +168,8 @@ def worker(args):
             **{k:sum(u.get(k,0) for u in usage) for k in ('input_tokens','output_tokens','cached_tokens','cache_write_tokens','reasoning_tokens')}}
         (folder/'result.json').write_text(json.dumps(result,indent=2),encoding='utf-8')
         print(json.dumps({k:v for k,v in result.items() if k not in {'executed','rounds','confirmations'}},ensure_ascii=True),flush=True)
-        if args.offline and any('provider_error' in t['error'] for t in turns):
-            raise RuntimeError('Offline provider protocol failed; do not proceed to paid validation')
+        if any('provider_error' in t['error'] for t in turns):
+            raise RuntimeError('Provider protocol, API or budget failed; stop batch')
     finally:
         h.shutdown()
         if client:client.close()
@@ -178,18 +178,19 @@ def worker(args):
 def main():
     p=argparse.ArgumentParser();p.add_argument('--run',action='store_true');p.add_argument('--offline',action='store_true')
     p.add_argument('--worker',action='store_true');p.add_argument('--evidence',type=Path,required=True)
+    p.add_argument('--cases-file',type=Path);p.add_argument('--budget',type=Path)
     p.add_argument('--base',type=Path);p.add_argument('--current',type=Path);p.add_argument('--case')
     p.add_argument('--variant',default='candidate');p.add_argument('--trial',type=int,default=0)
     p.add_argument('--repeats',type=int,default=1);p.add_argument('--split',choices=['development','heldout','all'],default='all')
     args=p.parse_args();args.evidence=args.evidence.resolve()
     if not(args.run or args.offline):p.error('--run for paid API or --offline required')
     if args.worker:return worker(args)
-    selected=[c for c in cases() if args.split=='all' or c['split']==args.split]
+    selected=[c for c in cases(args.cases_file) if args.split=='all' or c['split']==args.split]
     variants=[('base',args.base),('current',args.current),('candidate',SCRIPT.parents[2])]
     if args.offline:variants=[variants[-1]]
     if any(root is None for _,root in variants):p.error('--base and --current required')
     args.evidence.mkdir(parents=True,exist_ok=True)
-    manifest={'cases_sha256':hashlib.sha256(SCRIPT.with_name('discovery_round2_cases.json').read_bytes()).hexdigest(),
+    manifest={'cases_sha256':hashlib.sha256((args.cases_file or SCRIPT.with_name('discovery_round2_cases.json')).read_bytes()).hexdigest(),
         'order':'cyclic Latin order by case+trial; serial calls; identical synthetic world',
         'variants':{v:str(root) for v,root in variants},'split':args.split,'repeats':args.repeats}
     manifest_path=args.evidence/('manifest-'+args.split+('-offline' if args.offline else '')+'.json')
@@ -206,9 +207,11 @@ def main():
                 cmd=[sys.executable,str(SCRIPT),'--worker','--evidence',str(args.evidence),
                      '--case',case['id'],'--variant',variant,'--trial',str(trial),
                      '--offline' if args.offline else '--run']
+                if args.cases_file:cmd.extend(['--cases-file',str(args.cases_file.resolve())])
+                if args.budget:cmd.extend(['--budget',str(args.budget.resolve())])
                 done=subprocess.run(cmd,cwd=root,env=env,timeout=240)
                 if done.returncode:raise RuntimeError('Worker failed; stop batch, retain shared ledger')
-                if not args.offline:MODULE.RoundBudget(args.evidence/'budget.json',resume=True)
+                if not args.offline:MODULE.RoundBudget(args.budget or args.evidence/'budget.json',resume=True)
 
 
 if __name__=='__main__':main()
