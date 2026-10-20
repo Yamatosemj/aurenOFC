@@ -15,13 +15,14 @@ Definir `AUREN_DYNAMIC_TOOL_DISCOVERY=1` **antes** de iniciar o processo Python.
 Reiniciar o Auren ao mudar a flag. Sem a variavel, todo o comportamento antigo
 de tool routing e dos atalhos locais permanece igual.
 
-Nao habilitar na instalacao pessoal nem consumir API Live apenas para provar esta PR.
-O experimento ainda precisa de CI e testes de uso real autorizados.
+Nao habilitar na instalacao pessoal. A autorizacao especifica de API paga da
+PR #173 foi exercida somente com handlers sinteticos: houve regressoes reais
+de selecao, sem acoes no desktop. [Relatorio, custos e limites](PR173_VALIDACAO.md).
 
 ## Comportamento do prototipo
 
 1. Intents deterministicas existentes: status, URL, sites e abas continuam locais.
-2. Com opt-in, pausa/proxima/anterior e volume/mudo, quando expressos na gramatica
+2. Com opt-in, proxima musica/musica anterior/parar musica e volume/mudo, quando expressos na gramatica
    exata de `LocalDecisionEngine`, tambem sao encaminhados ao mesmo Dispatcher
    pelo mesmo `fast_paths`. Frases compostas nao ganham atalhos novos.
 3. As conversas explicitas identificadas pelo Router continuam sem schemas.
@@ -32,7 +33,10 @@ O experimento ainda precisa de CI e testes de uso real autorizados.
    e devolve no maximo cinco nomes e descricoes compactas. Ela NAO executa.
 7. Na proxima rodada, quando um `function_call_output` corresponde a um
    `function_call` genuino de busca (mesmo `call_id`), o Router expõe
-   somente os schemas que vieram da busca e o schema de busca.
+   os schemas que vieram da busca, a uniao dos dominios do objetivo e a busca.
+   Metadados sao recalculados dos argumentos registrados; IDs duplicados,
+   outputs fora de ordem e payloads divergentes sao rejeitados. A ferramenta
+   da rodada anterior permanece disponivel sem cache entre tarefas.
 8. Chamadas executaveis continuam pelo **Dispatcher, contrato, PermissionManager,
    guards de tarefa e verificacao de resultado**. Nenhuma autorizacao e
    passada junto dos metadados de busca.
@@ -40,6 +44,10 @@ O experimento ainda precisa de CI e testes de uso real autorizados.
 ## Limites conhecidos e riscos
 
 - Busca local e lexical, nao semantica; pode omitir a ferramenta certa.
+- A consulta escolhida pelo modelo pode inventar o dominio errado; o Live
+  reproduziu isso mesmo quando o schema correto estava entre os candidatos.
+- "proximo", "anterior", "pausa" e "play" nao ganham executor local no modo
+  experimental: podem ser referencias ambiguas ou um toggle sem estado conhecido.
 - Um pedido desconhecido que precisa de acao exige uma rodada de busca adicional.
   Portanto reduzir tokens iniciais **pode piorar a latencia**: medir.
 - O input das continuacoes guarda a rodada imediatamente anterior, nao uma
