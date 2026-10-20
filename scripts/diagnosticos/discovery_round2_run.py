@@ -117,7 +117,7 @@ def worker(args):
         from core.intent_verification import IntentDecision
         scripted=list(case['required'])
         n=[0]
-        def model(entrada,**kw):
+        def model(entrada,response_id=None,reasoning_effort='none',tool_choice=None):
             names=Router().select_tool_names(entrada,tools)
             calls=[]
             if scripted:
@@ -126,7 +126,8 @@ def worker(args):
                     'buscar_arquivo':{'consulta':'roteiro.txt'}}.get(tool,{})
                 c=NS(type='function_call',name=tool,arguments=json.dumps(parameters),call_id='f'+str(n[0]))
                 calls=[c];selected_proposals.append({'tool':tool,'arguments':c.arguments})
-            return NS(output=calls,output_text=' '.join(case['facts']) if not calls else '',usage=None)
+            text=('Nao existe essa capacidade no catalogo.' if case.get('refusal') else ' '.join(case['facts']))
+            return NS(output=calls,output_text=text if not calls else '',usage=None)
         intent=lambda *a:IntentDecision('aprovar','Synthetic coherent step')
         completion=None  # offline checks safety plumbing, not semantic-review quality
     h=AurenHarness(criar_resposta=model,executar_ferramenta=execute,verificar_intencao=intent,
@@ -167,6 +168,8 @@ def worker(args):
             **{k:sum(u.get(k,0) for u in usage) for k in ('input_tokens','output_tokens','cached_tokens','cache_write_tokens','reasoning_tokens')}}
         (folder/'result.json').write_text(json.dumps(result,indent=2),encoding='utf-8')
         print(json.dumps({k:v for k,v in result.items() if k not in {'executed','rounds','confirmations'}},ensure_ascii=True),flush=True)
+        if args.offline and any('provider_error' in t['error'] for t in turns):
+            raise RuntimeError('Offline provider protocol failed; do not proceed to paid validation')
     finally:
         h.shutdown()
         if client:client.close()
