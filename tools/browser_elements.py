@@ -8,16 +8,19 @@ from core.utils import normalizar_nome
 from core.tool_result import ToolResult
 
 
-def encontrar_elemento(alvo, indice=1, preferir_campo=False):
+class InvalidSelectionError(ValueError):
+    """Selection rejected before any click or fill is attempted."""
+
+
+def encontrar_elemento(alvo, indice=None, preferir_campo=False):
     from tools import browser as _browser
 
+    if not isinstance(alvo, str) or not alvo.strip():
+        raise InvalidSelectionError("O alvo deve ser um texto nao vazio.")
+    if not isinstance(indice, int) or isinstance(indice, bool) or indice < 1:
+        raise InvalidSelectionError("Informe um indice inteiro explicito comecando em 1.")
+    alvo = alvo.strip()
     p = _browser.obter_pagina()
-    alvo = (alvo or "").strip()
-
-    if not alvo:
-        raise ValueError("O alvo nao pode estar vazio.")
-
-    indice = max(1, indice)
     padrao = re.compile(
         re.escape(alvo),
         re.IGNORECASE
@@ -65,6 +68,18 @@ def encontrar_elemento(alvo, indice=1, preferir_campo=False):
                 pass
         return saida
 
+    def selecionar(encontrados):
+        if not encontrados:
+            return None
+        # A match fixes the candidate set. An absent occurrence must not
+        # broaden the target to a weaker role/name/attribute match.
+        if indice > len(encontrados):
+            raise InvalidSelectionError(
+                f"Indice {indice} fora do intervalo para '{alvo}': "
+                f"{len(encontrados)} ocorrencia(s) visivel(is)."
+            )
+        return encontrados[indice - 1]
+
     def procurar_atributo(atributo, tags=None):
         valor = json.dumps(alvo, ensure_ascii=False)
         if tags:
@@ -77,12 +92,9 @@ def encontrar_elemento(alvo, indice=1, preferir_campo=False):
 
         try:
             encontrados = visiveis(p.locator(seletor))
-            if len(encontrados) >= indice:
-                return encontrados[indice - 1]
         except Exception:
-            pass
-
-        return None
+            return None
+        return selecionar(encontrados)
 
     # Identificadores HTML exatos ajudam quando a interface não expõe um
     # nome acessível estável, como um input com name=search_query.
@@ -105,10 +117,11 @@ def encontrar_elemento(alvo, indice=1, preferir_campo=False):
             encontrados = visiveis(
                 p.get_by_role(papel, name=padrao_exato)
             )
-            if len(encontrados) >= indice:
-                return encontrados[indice - 1]
         except Exception:
-            pass
+            continue
+        encontrado = selecionar(encontrados)
+        if encontrado is not None:
+            return encontrado
 
     # Depois usa correspondencia parcial como fallback.
     for papel in papeis:
@@ -116,10 +129,11 @@ def encontrar_elemento(alvo, indice=1, preferir_campo=False):
             encontrados = visiveis(
                 p.get_by_role(papel, name=padrao)
             )
-            if len(encontrados) >= indice:
-                return encontrados[indice - 1]
         except Exception:
-            pass
+            continue
+        encontrado = selecionar(encontrados)
+        if encontrado is not None:
+            return encontrado
 
     # Por ultimo, tenta label, placeholder e texto. Para preenchimento,
     # label/placeholder tambem ficam antes de texto generico.
@@ -133,25 +147,26 @@ def encontrar_elemento(alvo, indice=1, preferir_campo=False):
         for padrao_atual in (padrao_exato, padrao):
             try:
                 encontrados = visiveis(metodo(padrao_atual))
-                if len(encontrados) >= indice:
-                    return encontrados[indice - 1]
             except Exception:
-                pass
+                continue
+            encontrado = selecionar(encontrados)
+            if encontrado is not None:
+                return encontrado
 
-    raise ValueError(
+    raise InvalidSelectionError(
         f"Nao encontrei o elemento '{alvo}' na pagina."
     )
 
-def clicar_elemento(alvo, indice=1):
+def clicar_elemento(alvo, indice=None):
     from tools import browser as _browser
 
     try:
-        p = _browser.obter_pagina()
-        url_anterior = p.url
         elemento = encontrar_elemento(
             alvo,
             indice
         )
+        p = _browser.obter_pagina()
+        url_anterior = p.url
 
         # Identifica informacao do elemento antes do clique para melhorar
         # a verificacao local de conclusao sem chamar o modelo novamente.
@@ -199,12 +214,17 @@ def clicar_elemento(alvo, indice=1):
             'url_antes': url_anterior, 'url_depois': url_atual,
             'navegacao': navegacao == 'sim', 'nova_aba': bool(novas_abas)}})
 
+    except InvalidSelectionError as erro:
+        return ToolResult.failure(
+            f"Nao consegui clicar em '{alvo}': {erro}",
+            error_code="invalid_selection", tool_name="clicar_elemento",
+        )
     except Exception as erro:
         return (
             f"Nao consegui clicar em '{alvo}': {erro}"
         )
 
-def preencher_elemento(alvo, texto, indice=1):
+def preencher_elemento(alvo, texto, indice=None):
     try:
         elemento = encontrar_elemento(
             alvo,
@@ -221,6 +241,11 @@ def preencher_elemento(alvo, texto, indice=1):
             f"Preenchi '{alvo}' com o texto informado."
         )
 
+    except InvalidSelectionError as erro:
+        return ToolResult.failure(
+            f"Nao consegui preencher '{alvo}': {erro}",
+            error_code="invalid_selection", tool_name="preencher_elemento",
+        )
     except Exception as erro:
         return (
             f"Nao consegui preencher '{alvo}': {erro}"
