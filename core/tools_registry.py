@@ -715,8 +715,11 @@ tools = [
                 },
                 "indice": {
                     "type": "integer",
+                    "minimum": 1,
                     "description": (
-                        "Numero da ocorrencia. Comeca em 1."
+                        "Numero explicito da ocorrencia visivel, comecando em 1, "
+                        "no primeiro conjunto correspondente por prioridade de busca. "
+                        "Fora do intervalo falha sem buscar um alvo mais generico."
                     )
                 }
             },
@@ -747,8 +750,11 @@ tools = [
                 },
                 "indice": {
                     "type": "integer",
+                    "minimum": 1,
                     "description": (
-                        "Numero da ocorrencia. Comeca em 1."
+                        "Numero explicito da ocorrencia visivel, comecando em 1, "
+                        "no primeiro conjunto correspondente por prioridade de busca. "
+                        "Fora do intervalo falha sem buscar um alvo mais generico."
                     )
                 }
             },
