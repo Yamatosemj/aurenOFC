@@ -134,6 +134,7 @@ def worker(args):
             'stable_prefix_chars': len(prefix), 'same_phase_shared_prefix_chars': len(shared),
             'instructions_sha256': hashlib.sha256(kw['instructions'].encode()).hexdigest(),
             'schemas_sha256': hashlib.sha256(text(kw.get('tools', [])).encode()).hexdigest(),
+            'schema_names': [tool.get('name',tool.get('type')) for tool in kw.get('tools',[])],
             'previous_response_id': kw.get('previous_response_id'),
             'cache_options': kw.get('prompt_cache_options'),
             'actual_input_tokens': None, 'actual_cached_tokens': None, 'actual_cache_write_tokens': None,
@@ -256,8 +257,9 @@ def main():
     variants = [('base', args.base), ('reviews', SCRIPT.parents[2]),
                 ('plan', SCRIPT.parents[2]), ('combined', SCRIPT.parents[2])]
     cases = json.loads(args.cases.read_text(encoding='utf-8'))
-    for case in cases:
-        for variant, root in variants:
+    for index, case in enumerate(cases):
+        rotation=index % len(variants)
+        for variant, root in variants[rotation:]+variants[:rotation]:
             env = dict(os.environ)
             for name, flag in FLAGS.items():
                 env[flag] = '1' if variant in (name,'combined') else '0'
@@ -268,6 +270,8 @@ def main():
             results.append(json.loads(output.read_text(encoding='utf-8')))
     summary = {'base_sha': '48717bb68fd3545d31aa33028261fa33f9f50177',
         'cases_sha256': hashlib.sha256(args.cases.read_bytes()).hexdigest(),
+        'runner_sha256': hashlib.sha256(SCRIPT.read_bytes()).hexdigest(),
+        'order': 'balanced cyclic rotation across eight cases; one isolated process per case/variant',
         'method': 'scripted responses, real Harness/Router/Dispatcher/contracts/PM/provider serializers; o200k_base component proxy',
         'provider_usage': None, 'paid_usd': 0, 'variants': {}}
     for variant, _ in variants:
