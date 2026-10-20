@@ -74,7 +74,7 @@ A seção de tarefas não replica argumentos e exclui resultados da ferramenta `
 
 ### O que segue para as rodadas do modelo
 
-A primeira rodada recebe objetivo e contexto no estado textual. O estado é cortado em **4500 caracteres** pelo Harness. Nas continuações, [harness_round_input.py](../../core/harness_round_input.py) usa estado sem o contexto completo, até 2 entradas recentes de histórico, chamadas da resposta anterior e seus outputs; imagens podem ser adicionadas em mensagens user.
+A primeira rodada recebe objetivo e contexto no estado textual. O Harness aplica corte de **4500 caracteres**, com marcador adicional quando truncado. Nas continuações normais, [harness_round_input.py](../../core/harness_round_input.py) também inclui o contexto recuperado (`incluir_contexto=True`), até 2 entradas anteriores de histórico, chamadas da resposta anterior e seus outputs; imagens podem ser adicionadas em mensagens user. Os resultados atuais são excluídos do histórico textual por contagem para evitar repetição com os outputs. [Auditoria offline sobre a #172 e evidências por chamada](../experimentos/CONTEXTO_172.md).
 
 O Harness passa `response_id=None` e esforço `none`. Portanto **não usa previous_response_id**, embora o provider aceite esse argumento para outros chamadores. Limitar o estado não limita sozinho todo o payload: outputs e imagens são itens separados. O corte textual também não equivale a resumo semântico.
 

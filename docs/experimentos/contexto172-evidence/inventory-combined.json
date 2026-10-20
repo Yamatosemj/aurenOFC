@@ -1,0 +1,64 @@
+{
+  "method": "o200k_base proxy, not model-specific provider usage",
+  "instructions": {
+    "principal": {
+      "chars": 12728,
+      "tokens_proxy": 2909,
+      "sha256": "16913a173fb07a77cd7498e15783c409c6702545961dcf1a2614b88f0fd3792e"
+    },
+    "intent": {
+      "chars": 4336,
+      "tokens_proxy": 1016,
+      "sha256": "1ab43f506b149ff23dff3b0abc8df85f424cb2bfa7ef1022e409396769840071"
+    },
+    "completion": {
+      "chars": 2789,
+      "tokens_proxy": 597,
+      "sha256": "955010513d2eefd9ce7fd28e3d1bff21ca64ce7987990920959dfaea5b1ca31c"
+    }
+  },
+  "registry": {
+    "chars": 22883,
+    "tokens_proxy": 5157,
+    "sha256": "febfb0c50e280ad8d1590bca9f868c927b8db541d032769e21bfab66f218e1a0",
+    "count": 49
+  },
+  "blank_lines_experiment": {
+    "before": {
+      "chars": 12728,
+      "tokens_proxy": 2909,
+      "sha256": "16913a173fb07a77cd7498e15783c409c6702545961dcf1a2614b88f0fd3792e"
+    },
+    "after": {
+      "chars": 12709,
+      "tokens_proxy": 2909,
+      "sha256": "5bed82bf87428d5769c0ef55e2acd26179a0e85f2eea9a517c773dbfd417437c"
+    },
+    "implemented": false,
+    "reason": "No token reduction"
+  },
+  "state_boundaries": [
+    {
+      "context_chars": 0,
+      "state": {
+        "chars": 2016,
+        "tokens_proxy": 476,
+        "sha256": "ca979006ba2443b64d65da45b5791685c5b51d02c1171e2ee06b1a49c394f89e"
+      },
+      "has_visual_pending_reminder": true,
+      "has_browser_pending_reminder": true,
+      "truncated": false
+    },
+    {
+      "context_chars": 3600,
+      "state": {
+        "chars": 4534,
+        "tokens_proxy": 680,
+        "sha256": "124ec1ea35d15f258c04913804f7ef447bfdec65236b7baf0d785c91ad9c87f4"
+      },
+      "has_visual_pending_reminder": false,
+      "has_browser_pending_reminder": false,
+      "truncated": true
+    }
+  ]
+}

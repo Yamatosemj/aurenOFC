@@ -1,0 +1,145 @@
+{
+  "case": "audio_read",
+  "split": "development",
+  "variant": "plan",
+  "intent_fixture": "aprovar",
+  "permission_fixture": "allow",
+  "source_sha": "e62f316f4a3b74804ac3ef50ce32f9f1b9a8a30e",
+  "dirty": false,
+  "scripted_success": true,
+  "calls_to_fake_transport": 2,
+  "phases": {
+    "principal": 2
+  },
+  "input_tokens_proxy": 7636,
+  "output_tokens_proxy": 37,
+  "offline_duration_ms": 148.06,
+  "turns": [
+    {
+      "state": "completed",
+      "error": "",
+      "answer_matches": true,
+      "facts_ok": true,
+      "actions_match": true,
+      "request_indices": [
+        0,
+        1
+      ],
+      "executed": [
+        {
+          "tool": "obter_audio_windows",
+          "arguments": {},
+          "ok": true,
+          "error": null
+        }
+      ]
+    }
+  ],
+  "requests": [
+    {
+      "phase": "principal",
+      "components": {
+        "instructions": {
+          "chars": 12728,
+          "tokens_proxy": 2909
+        },
+        "schemas": {
+          "chars": 2382,
+          "tokens_proxy": 529
+        },
+        "state_or_review": {
+          "chars": 1464,
+          "tokens_proxy": 334
+        }
+      },
+      "input_tokens_proxy": 3772,
+      "output_tokens_proxy": 27,
+      "stable_prefix_chars": 15269,
+      "same_phase_shared_prefix_chars": 0,
+      "instructions_sha256": "16913a173fb07a77cd7498e15783c409c6702545961dcf1a2614b88f0fd3792e",
+      "schemas_sha256": "f8e9e79d60fe51766ae018abaa58bd764cbe4f2a960205d4f6640324693534db",
+      "schema_names": [
+        "consultar_memoria_persistente",
+        "listar_janelas_windows",
+        "obter_status_windows",
+        "obter_audio_windows",
+        "definir_volume_windows",
+        "definir_mudo_windows",
+        "controle_midia_windows"
+      ],
+      "previous_response_id": null,
+      "cache_options": {
+        "ttl": "30m"
+      },
+      "actual_input_tokens": null,
+      "actual_cached_tokens": null,
+      "actual_cache_write_tokens": null,
+      "actual_api_latency_ms": null,
+      "actual_estimated_usd": null,
+      "retrieved_context_chars": 0,
+      "retrieved_context_present": false,
+      "state_chars": 1464
+    },
+    {
+      "phase": "principal",
+      "components": {
+        "instructions": {
+          "chars": 12728,
+          "tokens_proxy": 2909
+        },
+        "schemas": {
+          "chars": 2382,
+          "tokens_proxy": 529
+        },
+        "message": {
+          "chars": 1544,
+          "tokens_proxy": 366
+        },
+        "function_call": {
+          "chars": 89,
+          "tokens_proxy": 27
+        },
+        "function_call_output": {
+          "chars": 98,
+          "tokens_proxy": 33
+        }
+      },
+      "input_tokens_proxy": 3864,
+      "output_tokens_proxy": 10,
+      "stable_prefix_chars": 15269,
+      "same_phase_shared_prefix_chars": 15269,
+      "instructions_sha256": "16913a173fb07a77cd7498e15783c409c6702545961dcf1a2614b88f0fd3792e",
+      "schemas_sha256": "f8e9e79d60fe51766ae018abaa58bd764cbe4f2a960205d4f6640324693534db",
+      "schema_names": [
+        "consultar_memoria_persistente",
+        "listar_janelas_windows",
+        "obter_status_windows",
+        "obter_audio_windows",
+        "definir_volume_windows",
+        "definir_mudo_windows",
+        "controle_midia_windows"
+      ],
+      "previous_response_id": null,
+      "cache_options": {
+        "ttl": "30m"
+      },
+      "actual_input_tokens": null,
+      "actual_cached_tokens": null,
+      "actual_cache_write_tokens": null,
+      "actual_api_latency_ms": null,
+      "actual_estimated_usd": null,
+      "retrieved_context_chars": 0,
+      "retrieved_context_present": false,
+      "state_chars": 1464
+    }
+  ],
+  "context_builds": [
+    {
+      "sections": {},
+      "chars": 0
+    }
+  ],
+  "real_api_calls": 0,
+  "real_terminal_effects": 0,
+  "paid_usd": 0
+}

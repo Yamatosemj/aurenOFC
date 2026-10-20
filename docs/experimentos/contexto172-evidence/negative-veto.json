@@ -1,0 +1,195 @@
+{
+  "case": "audio_batch",
+  "split": "development",
+  "variant": "combined",
+  "intent_fixture": "bloquear",
+  "permission_fixture": "allow",
+  "source_sha": "b3c9a2bda3ccee7c7ea19b194097193f67283b4f",
+  "dirty": false,
+  "scripted_success": false,
+  "calls_to_fake_transport": 4,
+  "phases": {
+    "principal": 3,
+    "intent": 1
+  },
+  "input_tokens_proxy": 12766,
+  "output_tokens_proxy": 132,
+  "offline_duration_ms": 209.32,
+  "turns": [
+    {
+      "state": "failed",
+      "error": "intent_replan_empty",
+      "answer_matches": false,
+      "facts_ok": false,
+      "actions_match": false,
+      "request_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "executed": [
+        {
+          "tool": "obter_audio_windows",
+          "arguments": {},
+          "ok": true,
+          "error": null
+        }
+      ]
+    }
+  ],
+  "requests": [
+    {
+      "phase": "principal",
+      "components": {
+        "instructions": {
+          "chars": 12728,
+          "tokens_proxy": 2909
+        },
+        "schemas": {
+          "chars": 2382,
+          "tokens_proxy": 529
+        },
+        "state_or_review": {
+          "chars": 1517,
+          "tokens_proxy": 358
+        }
+      },
+      "input_tokens_proxy": 3796,
+      "output_tokens_proxy": 63,
+      "stable_prefix_chars": 15269,
+      "same_phase_shared_prefix_chars": 0,
+      "instructions_sha256": "16913a173fb07a77cd7498e15783c409c6702545961dcf1a2614b88f0fd3792e",
+      "schemas_sha256": "f8e9e79d60fe51766ae018abaa58bd764cbe4f2a960205d4f6640324693534db",
+      "previous_response_id": null,
+      "cache_options": {
+        "ttl": "30m"
+      },
+      "actual_input_tokens": null,
+      "actual_cached_tokens": null,
+      "actual_cache_write_tokens": null,
+      "actual_api_latency_ms": null,
+      "actual_estimated_usd": null,
+      "retrieved_context_chars": 0,
+      "retrieved_context_present": false,
+      "state_chars": 1517
+    },
+    {
+      "phase": "intent",
+      "components": {
+        "instructions": {
+          "chars": 4336,
+          "tokens_proxy": 1016
+        },
+        "response_format": {
+          "chars": 323,
+          "tokens_proxy": 85
+        },
+        "state_or_review": {
+          "chars": 287,
+          "tokens_proxy": 83
+        }
+      },
+      "input_tokens_proxy": 1184,
+      "output_tokens_proxy": 33,
+      "stable_prefix_chars": 4742,
+      "same_phase_shared_prefix_chars": 0,
+      "instructions_sha256": "1ab43f506b149ff23dff3b0abc8df85f424cb2bfa7ef1022e409396769840071",
+      "schemas_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "previous_response_id": null,
+      "cache_options": null,
+      "actual_input_tokens": null,
+      "actual_cached_tokens": null,
+      "actual_cache_write_tokens": null,
+      "actual_api_latency_ms": null,
+      "actual_estimated_usd": null
+    },
+    {
+      "phase": "principal",
+      "components": {
+        "instructions": {
+          "chars": 12728,
+          "tokens_proxy": 2909
+        },
+        "schemas": {
+          "chars": 2382,
+          "tokens_proxy": 529
+        },
+        "state_or_review": {
+          "chars": 1912,
+          "tokens_proxy": 458
+        }
+      },
+      "input_tokens_proxy": 3896,
+      "output_tokens_proxy": 27,
+      "stable_prefix_chars": 15269,
+      "same_phase_shared_prefix_chars": 15269,
+      "instructions_sha256": "16913a173fb07a77cd7498e15783c409c6702545961dcf1a2614b88f0fd3792e",
+      "schemas_sha256": "f8e9e79d60fe51766ae018abaa58bd764cbe4f2a960205d4f6640324693534db",
+      "previous_response_id": null,
+      "cache_options": {
+        "ttl": "30m"
+      },
+      "actual_input_tokens": null,
+      "actual_cached_tokens": null,
+      "actual_cache_write_tokens": null,
+      "actual_api_latency_ms": null,
+      "actual_estimated_usd": null,
+      "retrieved_context_chars": 0,
+      "retrieved_context_present": false,
+      "state_chars": 1912
+    },
+    {
+      "phase": "principal",
+      "components": {
+        "instructions": {
+          "chars": 12728,
+          "tokens_proxy": 2909
+        },
+        "schemas": {
+          "chars": 2382,
+          "tokens_proxy": 529
+        },
+        "message": {
+          "chars": 1603,
+          "tokens_proxy": 392
+        },
+        "function_call": {
+          "chars": 89,
+          "tokens_proxy": 27
+        },
+        "function_call_output": {
+          "chars": 98,
+          "tokens_proxy": 33
+        }
+      },
+      "input_tokens_proxy": 3890,
+      "output_tokens_proxy": 9,
+      "stable_prefix_chars": 15269,
+      "same_phase_shared_prefix_chars": 15269,
+      "instructions_sha256": "16913a173fb07a77cd7498e15783c409c6702545961dcf1a2614b88f0fd3792e",
+      "schemas_sha256": "f8e9e79d60fe51766ae018abaa58bd764cbe4f2a960205d4f6640324693534db",
+      "previous_response_id": null,
+      "cache_options": {
+        "ttl": "30m"
+      },
+      "actual_input_tokens": null,
+      "actual_cached_tokens": null,
+      "actual_cache_write_tokens": null,
+      "actual_api_latency_ms": null,
+      "actual_estimated_usd": null,
+      "retrieved_context_chars": 0,
+      "retrieved_context_present": false,
+      "state_chars": 1517
+    }
+  ],
+  "context_builds": [
+    {
+      "sections": {},
+      "chars": 0
+    }
+  ],
+  "real_api_calls": 0,
+  "real_terminal_effects": 0,
+  "paid_usd": 0
+}

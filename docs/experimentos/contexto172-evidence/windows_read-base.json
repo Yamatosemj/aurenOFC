@@ -1,0 +1,96 @@
+{
+  "case": "windows_read",
+  "split": "development",
+  "variant": "base",
+  "intent_fixture": "aprovar",
+  "permission_fixture": "allow",
+  "source_sha": "48717bb68fd3545d31aa33028261fa33f9f50177",
+  "dirty": false,
+  "scripted_success": true,
+  "calls_to_fake_transport": 1,
+  "phases": {
+    "principal": 1
+  },
+  "input_tokens_proxy": 4130,
+  "output_tokens_proxy": 27,
+  "offline_duration_ms": 131.455,
+  "turns": [
+    {
+      "state": "completed",
+      "error": "",
+      "answer_matches": false,
+      "facts_ok": true,
+      "actions_match": true,
+      "request_indices": [
+        0
+      ],
+      "executed": [
+        {
+          "tool": "listar_janelas_windows",
+          "arguments": {},
+          "ok": true,
+          "error": null
+        }
+      ]
+    }
+  ],
+  "requests": [
+    {
+      "phase": "principal",
+      "components": {
+        "instructions": {
+          "chars": 12728,
+          "tokens_proxy": 2909
+        },
+        "schemas": {
+          "chars": 4018,
+          "tokens_proxy": 890
+        },
+        "state_or_review": {
+          "chars": 1445,
+          "tokens_proxy": 331
+        }
+      },
+      "input_tokens_proxy": 4130,
+      "output_tokens_proxy": 27,
+      "stable_prefix_chars": 16905,
+      "same_phase_shared_prefix_chars": 0,
+      "instructions_sha256": "16913a173fb07a77cd7498e15783c409c6702545961dcf1a2614b88f0fd3792e",
+      "schemas_sha256": "8b2749c28463e6cf5a56a73609a5f554e3df2963e19330933f3643ac93a3a132",
+      "schema_names": [
+        "consultar_memoria_persistente",
+        "listar_janelas_windows",
+        "focar_janela_windows",
+        "minimizar_janela_windows",
+        "maximizar_janela_windows",
+        "obter_geometria_janela_windows",
+        "mover_janela_windows",
+        "redimensionar_janela_windows",
+        "restaurar_janela_windows",
+        "fechar_janela_windows",
+        "obter_status_windows"
+      ],
+      "previous_response_id": null,
+      "cache_options": {
+        "ttl": "30m"
+      },
+      "actual_input_tokens": null,
+      "actual_cached_tokens": null,
+      "actual_cache_write_tokens": null,
+      "actual_api_latency_ms": null,
+      "actual_estimated_usd": null,
+      "retrieved_context_chars": 0,
+      "retrieved_context_present": false,
+      "state_chars": 1445
+    }
+  ],
+  "context_builds": [
+    {
+      "sections": {},
+      "chars": 0
+    }
+  ],
+  "real_api_calls": 0,
+  "real_terminal_effects": 0,
+  "paid_usd": 0
+}
