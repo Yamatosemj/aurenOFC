@@ -177,10 +177,13 @@ def verificar_antes_de_agir(
                 "um ciclo de perguntas sem executar a acao.",
                 rodada,
             )
-        harness._guardar_esclarecimento(objetivo, pergunta)
-        harness.task_manager.complete(pergunta, task_id=harness._task_id)
+        # The intent schema requires a nonempty prompt, not a question mark.
+        pending_question = pergunta if pergunta.endswith('?') else pergunta + '?'
+        if not harness._aguardar_esclarecimento(objetivo, pending_question):
+            return harness._encerrar_falha('intent_clarification_invalid_question',
+                'Nao consegui identificar um esclarecimento dirigido ao pedido.', rodada)
         harness._registrar_turno("assistant", pergunta)
-        write_log("TASK_END", task_id=harness._task_id, status="needs_clarification", rodada=rodada)
+        write_log("TASK_WAITING", task_id=harness._task_id, status="needs_clarification", rodada=rodada)
         return False, resposta_wrapper(pergunta)
 
     if decisao.decisao == "bloquear":

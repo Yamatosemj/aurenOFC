@@ -67,7 +67,7 @@ def test_ambiguous_target_asks_without_dispatch():
     _, response = harness.processar_mensagem("mude isso")
     assert dispatched == []
     assert response.output_text == "Qual aplicativo devo alterar?"
-    assert harness.current_task().state is TaskState.COMPLETED
+    assert harness.current_task().state is TaskState.WAITING
     assert harness.current_task().steps == ()
 
 

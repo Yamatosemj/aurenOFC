@@ -193,7 +193,7 @@ def test_real_clarification_is_displayed_without_claiming_read_completion(tmp_pa
     h, _ = harness(tmp_path, lambda *a:response(candidate))
     try:
         _, answer = h.processar_mensagem('Leia o arquivo')
-        assert h.current_task().state is TaskState.FAILED and not h.current_task().steps
+        assert h.current_task().state is TaskState.WAITING and not h.current_task().steps
         assert 'Qual arquivo devo ler?' in answer.output_text
         assert 'Já li o arquivo.' not in answer.output_text
         assert h._pergunta_pendente is not None

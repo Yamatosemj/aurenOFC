@@ -224,6 +224,7 @@ class AurenHarness:
         self.skill_library = context.skills if context.skills is not None else SkillLibrary(PROJECT_ROOT / "skills")
         self._contexto_tarefa = ""
         self._pergunta_pendente: PerguntaPendente | None = None
+        self._clarification = None  # Same-session task identity/restrictions only.
         self._confirmacao_esclarecimento: str | None = None
         self._task_id = ""
         self._session: SessionContext | None = None
@@ -507,14 +508,37 @@ class AurenHarness:
         )
 
     def _limpar_estado_sessao(self) -> None:
+        if getattr(self, '_clarification', None) is not None and not self.task_manager.closed:
+            self.cancel_current_task('Sessao encerrada durante esclarecimento.')
         self._session = None
         self._chat_started_here = False
         self._pergunta_pendente = None
+        self._clarification = None
         self._confirmacao_esclarecimento = None
 
     def _guardar_esclarecimento(self, objetivo: str, pergunta: str) -> None:
         if pergunta_de_esclarecimento(objetivo, pergunta):
             self._pergunta_pendente = PerguntaPendente(objetivo, pergunta[-350:])
+
+    def _aguardar_esclarecimento(self, objetivo: str, pergunta: str) -> bool:
+        if not pergunta_de_esclarecimento(objetivo, pergunta):
+            return False
+        self._guardar_esclarecimento(objetivo, pergunta)
+        if self._pergunta_pendente is None:
+            return False
+        snapshot = self.current_task()
+        self.task_manager.wait_for_model(snapshot.task_id)
+        self._clarification = {
+            'task_id': snapshot.task_id, 'chat_id': snapshot.chat_id,
+            'scope': current_scope.get(),
+            'limits': self.permission_manager.checkpoint_limits() if self.permission_manager is not None else None,
+            'trace': self._trace, 'started_perf': self._trace_started_perf,
+            'guards': {name: (dict(getattr(self, name)) if name == '_browser_verification_state'
+                             else getattr(self, name)) for name in (
+                '_vision_reobserve_pending', '_vision_guard_attempts', '_multitab_guard_attempts',
+                '_browser_verification_pending', '_browser_verification_guard_attempts', '_browser_verification_state')},
+        }
+        return True
 
 
     def _processar_mensagem_impl(self, mensagem: str) -> tuple[bool, Any]:
@@ -536,9 +560,49 @@ class AurenHarness:
         self._browser_verification_state["pending"] = False
         objetivo_log = mensagem.strip()
         pendente_anterior = self._pergunta_pendente
+        pending = getattr(self, '_clarification', None)
+        current = self.current_task()
+        continuing = bool(pendente_anterior is not None and pending is not None
+            and current is not None and current.task_id == pending['task_id']
+            and current.chat_id == (self._session.chat_id if self._session else None)
+            and current.state is TaskState.WAITING)
+        if pending is not None and not continuing:
+            self._pergunta_pendente = pendente_anterior = None
+            self._clarification = None
         objetivo_efetivo, status_continuacao = resolver_continuacao(
             pendente_anterior, objetivo_log,
         )
+        if continuing:
+            from core.harness_followup import resposta_inconclusiva, novo_pedido
+            if novo_pedido(objetivo_log) and normalizar_nome(objetivo_log) not in SIM:
+                objetivo_efetivo, status_continuacao = objetivo_log, 'normal'
+            if self.task_manager.should_cancel(current.task_id) or status_continuacao == 'cancelar':
+                self._trace, self._trace_started_perf = pending['trace'], pending['started_perf']
+                self._pergunta_pendente = self._clarification = None
+                self._encerrar_cancelado('cancelado durante esclarecimento')
+                return False, _RespostaWrapper('Certo, nao vou executar a acao pendente.')
+            if (normalizar_nome(objetivo_log) in SIM
+                    and normalizar_nome(pendente_anterior.pergunta).split()[0] in {'qual','quais','onde','quando','quanto','quantos','como'}):
+                return False, _RespostaWrapper(pendente_anterior.pergunta)
+            if resposta_inconclusiva(objetivo_log) or (
+                    objetivo_efetivo == objetivo_log and not novo_pedido(objetivo_log)
+                    and normalizar_nome(objetivo_log) not in SIM):
+                return False, _RespostaWrapper(pendente_anterior.pergunta)
+            if novo_pedido(objetivo_log) and objetivo_efetivo == objetivo_log:
+                self.task_manager.cancel(task_id=current.task_id, reason='Substituida por novo pedido explicito.')
+                if pending['trace'] is not None:
+                    try:
+                        pending['trace'].finish(status='cancelled', error='Novo pedido explicito.')
+                    except Exception as exc:
+                        _write_log('TRACE_ERROR', task_id=current.task_id, etapa='clarification_cancel', erro=type(exc).__name__)
+                continuing = False
+            else:
+                old_scope, new_scope = pending['scope'], current_scope.get()
+                if old_scope is not None:
+                    current_scope.set(lambda item: old_scope(item) is True
+                        and (new_scope is None or new_scope(item) is True))
+                if pending['limits'] is not None and self.permission_manager is not None:
+                    self.permission_manager.restore_limits(pending['limits'])
         # Um "sim" apenas responde a pergunta pendente do mesmo chat.
         # Essa confirmacao contextual NAO substitui a autorizacao local do
         # PermissionManager para encerrar processos ou outros efeitos.
@@ -548,8 +612,9 @@ class AurenHarness:
             and normalizar_nome(objetivo_log) in SIM
             else None
         )
-        # A pendencia pertence somente a proxima mensagem, nunca a outros chats.
+        # Consume only an accepted answer in this chat; inconclusive turns keep it.
         self._pergunta_pendente = None
+        self._clarification = None
         planning_ms = 0.0
         try:
             planning_started = time.perf_counter()
@@ -574,25 +639,29 @@ class AurenHarness:
         context_ms = (time.perf_counter() - context_started_perf) * 1000.0
         if self._contexto_tarefa:
             self._contexto_tarefa = self._texto_seguro(self._contexto_tarefa, self.context.max_chars)
-        task_snapshot = self.task_manager.create(
+        task_snapshot = current if continuing else self.task_manager.create(
             objetivo_efetivo,
             chat_id=self._session.chat_id if self._session else None,
             **({"plan": plan} if getattr(self.task_manager, "persistent", False) else {}),
         )
         self._task_id = task_snapshot.task_id
         self.task_manager.start(self._task_id)
-        if getattr(self.task_manager, 'persistent', False):
+        if getattr(self.task_manager, 'persistent', False) and not continuing:
             budget = self._limite_de_rodadas(objetivo_efetivo) * 3
             cap = getattr(self, '_model_budget_cap', None)
             self.task_manager.configure_model_budget(min(budget, cap) if cap is not None else budget, self._task_id)
+        elif continuing and getattr(self.task_manager, 'persistent', False) and self._model_budget_cap is not None:
+            self.task_manager.configure_model_budget(min(task_snapshot.model_limit, self._model_budget_cap), self._task_id)
         try:
-            self._trace = self.trace_store.start_task(
+            self._trace = pending['trace'] if continuing else self.trace_store.start_task(
                 task_id=self._task_id,
                 chat_id=self._session.chat_id if self._session else None,
                 objective=objetivo_efetivo,
                 started_at=task_snapshot.created_at,
                 started_perf=self._trace_started_perf,
             )
+            if continuing:
+                self._trace_started_perf = pending['started_perf']
             self._trace.record_stage(
                 "contexto",
                 context_ms,
@@ -611,6 +680,22 @@ class AurenHarness:
             objetivo_resolvido=objetivo_efetivo if objetivo_efetivo != objetivo_log else None,
         )
         self._registrar_turno("user", objetivo_log)
+
+        if continuing:
+            # Reuse evidence from this task; never replay completed effects.
+            for name, value in pending['guards'].items():
+                setattr(self, name, value)
+            self._resume_history = [{'ferramenta': step.tool, 'argumentos': step.arguments,
+                'resultado': step.result} for step in task_snapshot.steps]
+            self._clarification_resuming = True
+            try:
+                if any(step.success is False for step in task_snapshot.steps):
+                    return self._encerrar_falha('clarification_unrecovered_failure',
+                        'Uma etapa anterior falhou; nao presumi sua recuperacao ao receber o esclarecimento.')
+                return self._executar_ciclo(objetivo_efetivo)
+            finally:
+                self._clarification_resuming = False
+                self._resume_history = []
 
         if status_continuacao in {"cancelar", "sem_pendencia"}:
             mensagem_final = (
@@ -778,6 +863,8 @@ class AurenHarness:
             return
         if chat_id not in self.task_manager.list_chat_ids():
             raise RuntimeError('Conversa nao encontrada.')
+        if getattr(self, '_clarification', None) is not None:
+            self.cancel_current_task('Conversa alterada durante esclarecimento.')
         self.task_manager.clear_current()
         self._encerrar_sessao_chat('switched')
         fresh = _create_chat_session()
@@ -996,7 +1083,7 @@ class AurenHarness:
         finally:
             try:
                 trace = self._trace
-                if trace is not None:
+                if trace is not None and getattr(self, '_clarification', None) is None:
                     snapshot = self.task_manager.current_snapshot()
                     status = snapshot.state.value if snapshot is not None else "failed"
                     error = snapshot.error if snapshot is not None else ""
@@ -1027,6 +1114,9 @@ class AurenHarness:
                 _CURRENT_SESSION.reset(token)
                 current_scope.reset(scope_token)
                 self._model_budget_cap = None
+                snapshot = self.current_task()
+                if snapshot is not None and snapshot.state in {TaskState.COMPLETED, TaskState.FAILED, TaskState.CANCELLED}:
+                    self._pergunta_pendente = self._clarification = None
 
     def shutdown(self, *, timeout: float = 1.0) -> str:
         """Finaliza a fila com prazo e encerra recursos e sessão do canal."""
@@ -1063,6 +1153,14 @@ class AurenHarness:
         }:
             return False
         self.task_manager.request_cancel(snapshot.task_id)
+        if getattr(self, '_clarification', None) is not None and snapshot.state is TaskState.WAITING:
+            self.task_manager.cancel(task_id=snapshot.task_id, reason=reason)
+            if self._clarification['trace'] is not None:
+                try:
+                    self._clarification['trace'].finish(status='cancelled', error=reason)
+                except Exception as exc:
+                    _write_log('TRACE_ERROR', task_id=snapshot.task_id, etapa='clarification_cancel', erro=type(exc).__name__)
+            self._pergunta_pendente = self._clarification = None
         _write_log(
             "TASK_CANCEL_REQUESTED",
             task_id=snapshot.task_id,
