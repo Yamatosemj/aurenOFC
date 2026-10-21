@@ -1,6 +1,6 @@
 # Auren — Estado operacional
 
-> **Candidata local Etapa 4A sobre #177:** esclarecimentos mantêm a tarefa em WAITING e retomam sua identidade/progresso na mesma sessão; [escopo e limites](docs/estabilizacao/ETAPA4A_ESCLARECIMENTO_20261020.md). Sem publicação, Live ou desktop real; SHA/testes no relatório externo. D/A/C e validações adiadas continuam pendentes.
+> **Etapa 4A.1 — publicação isolada sobre #177:** esclarecimentos mantêm a tarefa em WAITING e retomam sua identidade/progresso na mesma sessão; [escopo e limites](docs/estabilizacao/ETAPA4A_ESCLARECIMENTO_20261020.md). Correção preservada no commit `9824f5b4f0dd06ac011e4d54b9baed975355e09b`; publicação em draft e validação pelo workflow manual hospedado Ubuntu/Windows, sem merge. Resultados finais na PR da branch `estabilizacao/etapa4a-esclarecimento-20261020` e no relatório externo `etapa4a/RELATORIO_ETAPA4A1.md`. Sem Live, runner pessoal ou desktop real; D/A/C e validações adiadas continuam pendentes.
 
 > **Candidata local Etapa 3B.1A sobre #176:** validação antes de efeitos no clique nativo e falha estruturada para índice UIA inválido; [escopo e limites](docs/estabilizacao/ETAPA3B1A_EXECUTORES_20261020.md). Sem publicação ou desktop real; SHA e evidências no relatório externo da entrega.
 
