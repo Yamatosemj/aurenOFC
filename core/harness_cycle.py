@@ -19,7 +19,7 @@ from core.harness_closure import (_alvo_fechamento, _comprovou_fechamento, _orie
 from core.utils import normalizar_nome
 from core.task_verification import CompletionPending
 from core.execution_scope import scope_allows
-from core.task_evidence import requirement
+from core.task_evidence import requirement, missing_evidence
 from core.tool_failures import STOP_MESSAGES
 
 
@@ -124,6 +124,14 @@ def executar_ciclo(
 
         if not chamadas:
             question = str(getattr(resposta, 'output_text', '') or '').strip()
+            # A clarification must not publish an unsupported completion claim.
+            # Preserve the directed question, as the evidence guard did before
+            # clarification started returning early with WAITING.
+            tail = question.rsplit('. ', 1)[-1].strip()
+            if (missing_evidence(harness.current_task())
+                    and normalizar_nome(tail).startswith(('qual ', 'quais ', 'onde ',
+                        'quando ', 'como ', 'devo ', 'quer ', 'voce quer ', 'pode informar '))):
+                question = tail
             # Directed clarification of an unfinished request is not completion.
             # Social invitations/common questions retain their normal flow.
             if (not (getattr(harness, '_confirmacao_esclarecimento', None)
