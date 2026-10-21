@@ -1,6 +1,7 @@
 """Continuidade limitada de esclarecimentos, sem executar ferramentas diretamente.
 
-Um seguimento so vale para a proxima mensagem do MESMO Harness/sessao.
+Um seguimento so vale no MESMO Harness/sessao; respostas inconclusivas nao
+consomem a tarefa que aguarda informacao.
 Toda acao resolvida volta ao fluxo usual Router -> Dispatcher -> permissao.
 """
 from __future__ import annotations
@@ -22,6 +23,16 @@ SIM = frozenset({"sim", "sim pode", "pode", "pode sim", "isso", "isso mesmo", "c
 NAO = frozenset({"nao", "nao pode", "nao precisa", "deixa", "deixa pra la", "cancela", "cancelar"})
 
 
+def resposta_inconclusiva(mensagem: str) -> bool:
+    return normalizar_nome(mensagem) in {'', 'nao sei', 'talvez', 'nao entendi', 'ola', 'oi'}
+
+
+def novo_pedido(mensagem: str) -> bool:
+    texto = normalizar_nome(mensagem)
+    return _parece_tarefa_de_acao(texto) or bool(re.match(
+        r'^(?:auren\s+)?(?:me\s+)?(?:consulte|crie|cria|criar|lembre|lembrar|adie|adiar|agende|agendar|quero|preciso)\b', texto))
+
+
 def pergunta_de_esclarecimento(objetivo: str, pergunta: str) -> bool:
     """An invitation to start a conversation does not suspend an objective.
 
@@ -39,6 +50,7 @@ def pergunta_de_esclarecimento(objetivo: str, pergunta: str) -> bool:
         r"(?:como|em que) (?:posso|podemos) (?:te |lhe )?ajudar|"
         r"(?:posso ajudar|precisa de) (?:em )?(?:mais )?(?:alguma coisa|algo)|"
         r"sobre o que (?:quer|gostaria de) conversar"
+        r"|(?:entendeu|faz sentido|e voce|esta claro)"
     )
     return re.search(r"(?:" + invitation + r")$", question) is None
 

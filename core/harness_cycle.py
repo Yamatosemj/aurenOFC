@@ -100,6 +100,17 @@ def executar_ciclo(
                 return harness._encerrar_falha('resume_effect_repeated',
                     'Nao repeti um efeito ja registrado antes da interrupcao.', rodada)
 
+        if getattr(harness, '_clarification_resuming', False):
+            from core.harness_serialization import _argumentos_da_chamada
+            from types import SimpleNamespace
+            if any(str(item.name) not in READ_ONLY_TOOLS
+                   and any(step.success is True and step.tool == str(item.name)
+                           and _identidade_da_chamada(SimpleNamespace(arguments=step.arguments))
+                               == _identidade_da_chamada(SimpleNamespace(arguments=_argumentos_da_chamada(item)))
+                           for step in harness.current_task().steps) for item in chamadas):
+                return harness._encerrar_falha('clarification_effect_repeated',
+                    'Nao repeti uma acao ja executada antes do esclarecimento.', rodada)
+
         if propostas_vetadas and any(
             (str(getattr(item, "name", "")), _identidade_da_chamada(item)) in propostas_vetadas
             for item in chamadas
@@ -112,6 +123,17 @@ def executar_ciclo(
                 "Nao executei a acao vetada e nao recebi uma alternativa verificavel. A tarefa nao foi concluida.", rodada)
 
         if not chamadas:
+            question = str(getattr(resposta, 'output_text', '') or '').strip()
+            # Directed clarification of an unfinished request is not completion.
+            # Social invitations/common questions retain their normal flow.
+            if (not (getattr(harness, '_confirmacao_esclarecimento', None)
+                        and normalizar_nome(question) == normalizar_nome(harness._confirmacao_esclarecimento))
+                    and not _confirmacao_fechamento_ja_respondida(objetivo,
+                        getattr(harness, '_confirmacao_esclarecimento', None), question)
+                    and harness._aguardar_esclarecimento(objetivo, question)):
+                harness._registrar_turno('assistant', question)
+                write_log('TASK_WAITING', task_id=harness._task_id, status='needs_clarification', rodada=rodada)
+                return False, resposta_wrapper(question)
             # O usuario ja respondeu SIM ao esclarecimento contextual. Uma
             # segunda pergunta equivalente do modelo nao e nova autorizacao:
             # pedimos uma acao verificavel, sem executar nada diretamente.
@@ -252,11 +274,10 @@ def executar_ciclo(
                 objetivo, historico,
             ):
                 if final_texto.endswith("?"):
-                    harness._guardar_esclarecimento(objetivo, final_texto)
-                    harness.task_manager.complete(final_texto, task_id=harness._task_id)
+                    harness._aguardar_esclarecimento(objetivo, final_texto)
                     harness._registrar_turno("assistant", final_texto)
                     write_log(
-                        "TASK_END", task_id=harness._task_id,
+                        "TASK_WAITING", task_id=harness._task_id,
                         status="needs_clarification", rodada=rodada,
                     )
                     return False, resposta_wrapper(final_texto)
@@ -301,14 +322,6 @@ def executar_ciclo(
                     return False, resposta_wrapper(harness.MSG_ERRO_PROVIDER)
                 resposta, _latencia, _metricas = chamada_verificacao
                 continue
-
-            # Uma pergunta apos consulta nao conclui a acao pedida.
-            # Guardamos somente o objetivo original e a pergunta, jamais
-            # uma proposta mutante nao autorizada pelo usuario.
-            if final_texto.endswith("?") and all(
-                item.get("ferramenta") in READ_ONLY_TOOLS for item in historico
-            ):
-                harness._guardar_esclarecimento(objetivo, final_texto)
 
             checked = harness._verify_completion(objetivo, candidate_answer=final_texto)
             if isinstance(checked, CompletionPending):
