@@ -1,0 +1,167 @@
+[
+    {
+        "source":  null,
+        "permission":  "pending",
+        "id":  "short-open",
+        "tags":  [
+                     "short",
+                     "automation"
+                 ],
+        "audio":  null,
+        "license":  null,
+        "sha256":  null,
+        "reference":  "Abra o Bloco de Notas."
+    },
+    {
+        "source":  null,
+        "permission":  "pending",
+        "id":  "short-volume",
+        "tags":  [
+                     "short",
+                     "automation",
+                     "numbers"
+                 ],
+        "audio":  null,
+        "license":  null,
+        "sha256":  null,
+        "reference":  "Defina o volume em quarenta por cento."
+    },
+    {
+        "source":  null,
+        "permission":  "pending",
+        "id":  "short-negative",
+        "tags":  [
+                     "short",
+                     "automation",
+                     "negation"
+                 ],
+        "audio":  null,
+        "license":  null,
+        "sha256":  null,
+        "reference":  "Não feche a janela do Chrome."
+    },
+    {
+        "source":  null,
+        "permission":  "pending",
+        "id":  "proper-names",
+        "tags":  [
+                     "proper_names",
+                     "automation"
+                 ],
+        "audio":  null,
+        "license":  null,
+        "sha256":  null,
+        "reference":  "Pesquise sobre Machado de Assis e Conceição Evaristo."
+    },
+    {
+        "source":  null,
+        "permission":  "pending",
+        "id":  "apps",
+        "tags":  [
+                     "proper_names",
+                     "automation"
+                 ],
+        "audio":  null,
+        "license":  null,
+        "sha256":  null,
+        "reference":  "Abra o WhatsApp e procure a conversa com João Guilherme."
+    },
+    {
+        "source":  null,
+        "permission":  "pending",
+        "id":  "long-multi",
+        "tags":  [
+                     "long",
+                     "automation"
+                 ],
+        "audio":  null,
+        "license":  null,
+        "sha256":  null,
+        "reference":  "Abra o navegador, pesquise uma receita de pão de queijo mineiro e deixe a página aberta para eu conferir os ingredientes antes de continuar."
+    },
+    {
+        "source":  null,
+        "permission":  "pending",
+        "id":  "long-natural",
+        "tags":  [
+                     "long",
+                     "natural"
+                 ],
+        "audio":  null,
+        "license":  null,
+        "sha256":  null,
+        "reference":  "Eu preciso organizar as informações da reunião de amanhã, mas primeiro quero que você leia o documento de exemplo e me diga quais tópicos ainda precisam de esclarecimento."
+    },
+    {
+        "source":  null,
+        "permission":  "pending",
+        "id":  "hesitation",
+        "tags":  [
+                     "hesitation",
+                     "automation"
+                 ],
+        "audio":  null,
+        "license":  null,
+        "sha256":  null,
+        "reference":  "É, abra, por favor, o navegador, ah, na página de pesquisa."
+    },
+    {
+        "source":  null,
+        "permission":  "pending",
+        "note":  "Gravar pausa de 1 segundo depois de navegador; manter referencia literal.",
+        "tags":  [
+                     "pause",
+                     "proper_names",
+                     "automation"
+                 ],
+        "id":  "pause",
+        "audio":  null,
+        "license":  null,
+        "sha256":  null,
+        "reference":  "Abra o navegador e depois procure previsão do tempo em São José dos Campos."
+    },
+    {
+        "source":  null,
+        "seed":  20261021,
+        "id":  "noise-command",
+        "audio":  null,
+        "permission":  "pending",
+        "tags":  [
+                     "noise",
+                     "automation"
+                 ],
+        "noise_snr_db":  15,
+        "sha256":  null,
+        "license":  null,
+        "reference":  "Minimize a janela atual e mostre o volume do Windows."
+    },
+    {
+        "source":  null,
+        "seed":  20261022,
+        "id":  "noise-names",
+        "audio":  null,
+        "permission":  "pending",
+        "tags":  [
+                     "noise",
+                     "proper_names"
+                 ],
+        "noise_snr_db":  15,
+        "sha256":  null,
+        "license":  null,
+        "reference":  "Procure vídeos de Elis Regina e Antônio Carlos Jobim."
+    },
+    {
+        "source":  null,
+        "permission":  "pending",
+        "id":  "clarification",
+        "tags":  [
+                     "short",
+                     "clarification",
+                     "numbers"
+                 ],
+        "audio":  null,
+        "license":  null,
+        "sha256":  null,
+        "reference":  "Quarenta por cento, por favor."
+    }
+]
