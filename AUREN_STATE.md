@@ -1,5 +1,7 @@
 # Auren — Estado operacional
 
+> **Candidata local Etapa 3B.1A sobre #176:** validação antes de efeitos no clique nativo e falha estruturada para índice UIA inválido; [escopo e limites](docs/estabilizacao/ETAPA3B1A_EXECUTORES_20261020.md). Sem publicação ou desktop real; SHA e evidências no relatório externo da entrega.
+
 > **Candidata local Etapa 3A.1 sobre #175:** integridade dos índices de clique/preenchimento do navegador; escopo e limites em [ETAPA3A1_SELECAO_20261020.md](docs/estabilizacao/ETAPA3A1_SELECAO_20261020.md). Sem publicação, merge ou alteração de permissões; SHA e evidências no relatório externo da entrega.
 
 > **Candidata Etapa 2A sobre #172:** sincronizacao do cabecalho e eventos de inatividade da interface corrigidos em branch isolada; testes e limites em [ETAPA2A_INTERFACE_20261020.md](docs/estabilizacao/ETAPA2A_INTERFACE_20261020.md). Sem merge, API real ou atualizacao pessoal; SHA final no relatorio de entrega.

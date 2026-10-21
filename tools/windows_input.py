@@ -222,22 +222,16 @@ def clicar_mouse_windows(x, y, botao="esquerdo", descricao=""):
         return "Controle do mouse global so esta disponivel no Windows."
 
     try:
-        x = int(x)
-        y = int(y)
-        user32 = _user32()
-        origem_x, origem_y, largura, altura = _limites_tela_virtual_windows(user32)
-        limite_x = origem_x + largura
-        limite_y = origem_y + altura
-        if x < origem_x or y < origem_y or x >= limite_x or y >= limite_y:
-            return (
-                f"Coordenadas fora da area de trabalho virtual: ({x}, {y}). "
-                f"Limites detectados: x={origem_x}..{limite_x - 1}, "
-                f"y={origem_y}..{limite_y - 1}."
+        # Validate the direct entry point before querying or moving the desktop.
+        # Match integer/string contracts without truncating floats or bools.
+        if (not isinstance(x, int) or isinstance(x, bool)
+                or not isinstance(y, int) or isinstance(y, bool)
+                or not isinstance(descricao, str)):
+            return ToolResult.failure(
+                "Coordenadas devem ser inteiros e descricao deve ser texto.",
+                error_code="mouse_arguments_invalid", tool_name="clicar_mouse_windows",
             )
-        if not user32.SetCursorPos(x, y):
-            return "Nao consegui posicionar o mouse."
-
-        button = str(botao).strip().lower()
+        button = botao.strip().lower() if isinstance(botao, str) else None
         events = {
             "esquerdo": (0x0002, 0x0004),
             "left": (0x0002, 0x0004),
@@ -251,7 +245,20 @@ def clicar_mouse_windows(x, y, botao="esquerdo", descricao=""):
             return ToolResult.failure(
                 "Botao invalido. Use esquerdo, direito ou meio.",
                 error_code="mouse_button_invalid",
+                tool_name="clicar_mouse_windows",
             )
+        user32 = _user32()
+        origem_x, origem_y, largura, altura = _limites_tela_virtual_windows(user32)
+        limite_x = origem_x + largura
+        limite_y = origem_y + altura
+        if x < origem_x or y < origem_y or x >= limite_x or y >= limite_y:
+            return (
+                f"Coordenadas fora da area de trabalho virtual: ({x}, {y}). "
+                f"Limites detectados: x={origem_x}..{limite_x - 1}, "
+                f"y={origem_y}..{limite_y - 1}."
+            )
+        if not user32.SetCursorPos(x, y):
+            return "Nao consegui posicionar o mouse."
         MOUSEEVENTF = getattr(user32, "mouse_event")
         MOUSEEVENTF(down_up[0], 0, 0, 0, 0)
         time.sleep(0.02)

@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import tempfile
 
+from core.tool_result import ToolResult
 from tools.windows_window import _encontrar_janela_windows, _user32
 
 
@@ -916,15 +917,16 @@ def inspecionar_interface_windows(alvo_janela="", foco="", max_itens=40):
     return "\n".join(linhas)
 
 def _executar_acao_ui_windows(operacao, alvo_janela, alvo, indice, texto=None, permitir_protegido=False):
+    # Python defaults remain 1; an explicitly supplied index must obey the
+    # same integer/minimum contract as the Dispatcher, before window lookup.
+    if not isinstance(indice, int) or isinstance(indice, bool) or indice < 1:
+        return ToolResult.failure(
+            "Indice de elemento invalido. Informe um inteiro comecando em 1.",
+            error_code="uia_index_invalid", tool_name=f"{operacao}_elemento_windows",
+        )
     hwnd, titulo, erro = _ui_automation_janela(alvo_janela)
     if erro:
         return erro
-    try:
-        indice = int(indice)
-        if indice < 1:
-            return "O indice do elemento deve comecar em 1."
-    except (TypeError, ValueError):
-        return "Indice de elemento invalido."
     dados = {"hwnd": _ui_automation_hwnd_int(hwnd), "alvo": str(alvo or ""), "indice": indice}
     if texto is not None:
         dados["texto"] = str(texto)
