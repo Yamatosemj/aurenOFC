@@ -95,6 +95,7 @@ Estados terminais: **COMPLETED**, **FAILED** e **CANCELLED**. A transicao de qua
 - **request_cancel()** marca flag cooperativa; **should_cancel()** e consultado antes de rodadas, entre chamadas e antes de conclusoes locais; **cancel_current_task()** devolve False quando nao ha tarefa ativa.
 - **Nao ha rollback implicito:** cancelamento nao interrompe necessariamente uma chamada externa ja em execucao, nem desfaz cliques, arquivos ou mudancas no Windows. A UI tambem nao garante cancelamento instantaneo.
 - **Nao ha agendamento persistente por TaskManager:** memoria SQLite conversacional, traces SQLite e fila de estrategia sao mecanismos diferentes. Nao vender "retomar tarefa depois de reiniciar" como capacidade deste manager.
+- **Limitação conhecida da continuidade de esclarecimentos:** uma tarefa em WAITING e sua pergunta pendente ficam apenas na memoria do processo. Encerrar e reiniciar o Auren perde essa pendencia; a resposta posterior nao retoma o mesmo task_id. Os traces persistidos nao reconstroem a tarefa nem suas permissoes.
 
 ## 4. Continuidade, verificacao e encerramento
 

@@ -171,6 +171,7 @@ def criar_harness(confirmation_channel=None) -> AurenHarness:
         fechar=fechar_navegador,
         obter_metricas_roteamento=obter_metricas_roteamento,
         verificar_intencao=verificar_intencao,
+        permission_manager=task_permission_manager,
         planejar_atalho=_planejar_atalho,
         context=session_context,
         # Below DEFAULT_MAX_MODEL_ROUNDS this is a hard ceiling, including

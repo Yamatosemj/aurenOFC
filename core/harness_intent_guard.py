@@ -6,7 +6,25 @@ import json
 import re
 
 from core.intent_verification import precisa_verificar, proposta_simples_exata
+from core.harness_followup import pergunta_de_esclarecimento
+from core.tools_registry import tools as registered_tools
 from core.utils import normalizar_nome
+
+_KNOWN_TOOLS = frozenset(item['name'] for item in registered_tools)
+
+
+def _nomes_propostos(chamadas: list[Any]) -> list[str]:
+    """Nomes de ferramentas conhecidas, sem argumentos ou texto do modelo."""
+    return [name if name in _KNOWN_TOOLS else '[ferramenta_desconhecida]'
+            for item in chamadas[:12]
+            for name in [str(getattr(item, 'name', '') or '')]]
+
+
+def _tipo_pergunta(pergunta: str) -> str:
+    inicio = normalizar_nome(pergunta).split()
+    word = inicio[0] if inicio else ''
+    return word if word in {'qual', 'quais', 'onde', 'quando', 'quanto',
+                            'quantos', 'como', 'devo', 'quer', 'voce', 'pode'} else 'outro'
 
 
 def _diagnostico_propostas_bloqueadas(chamadas: list[Any]) -> list[dict[str, Any]]:
@@ -67,6 +85,7 @@ def verificar_antes_de_agir(
         task_id=harness._task_id,
         rodada=rodada,
         quantidade=len(chamadas),
+        propostas=_nomes_propostos(chamadas),
     )
     try:
         historico_revisor = list(historico)
@@ -92,19 +111,10 @@ def verificar_antes_de_agir(
             rodada,
         )
 
-    write_log(
-        "INTENT_VERIFICATION_RESULT",
-        task_id=harness._task_id,
-        rodada=rodada,
-        decisao=decisao.decisao,
-        **({
-            "motivo": str(decisao.motivo or "")[:350],
-            "propostas": _diagnostico_propostas_bloqueadas(chamadas),
-        } if decisao.decisao == "bloquear" else {}),
-    )
-
     if decisao.decisao == "esclarecer":
         pergunta = str(decisao.pergunta or "").strip()
+        safe_question = pergunta if pergunta.endswith('?') else pergunta + '?'
+        question_type = _tipo_pergunta(pergunta)
         if not pergunta:
             return harness._encerrar_falha(
                 "intent_verification_empty_question",
@@ -131,13 +141,31 @@ def verificar_antes_de_agir(
                 "um ciclo de perguntas sem executar a acao.",
                 rodada,
             )
-        harness._guardar_esclarecimento(objetivo, pergunta)
-        harness.task_manager.complete(pergunta, task_id=harness._task_id)
+        registered = (pergunta_de_esclarecimento(objetivo, safe_question)
+                      and harness._aguardar_esclarecimento(objetivo, safe_question))
+        write_log(
+            'INTENT_VERIFICATION_RESULT', task_id=harness._task_id,
+            rodada=rodada, decisao='esclarecer', pergunta_tipo=question_type,
+            pergunta_chars=len(pergunta), pergunta_registrada=registered,
+            propostas=_nomes_propostos(chamadas),
+        )
+        if not registered:
+            return harness._encerrar_falha(
+                'clarification_invalid_question',
+                'Nao consegui manter o esclarecimento pendente.', rodada,
+            )
         harness._registrar_turno("assistant", pergunta)
-        write_log("TASK_END", task_id=harness._task_id, status="needs_clarification", rodada=rodada)
+        write_log('TASK_WAITING', task_id=harness._task_id,
+                  status='needs_clarification', rodada=rodada)
         return False, resposta_wrapper(pergunta)
 
     if decisao.decisao == "bloquear":
+        write_log(
+            'INTENT_VERIFICATION_RESULT', task_id=harness._task_id,
+            rodada=rodada, decisao='bloquear',
+            motivo=str(decisao.motivo or '')[:350],
+            propostas=_diagnostico_propostas_bloqueadas(chamadas),
+        )
         return harness._encerrar_falha(
             "intent_verification_blocked",
             "Nao executei a acao proposta porque ela nao corresponde com seguranca ao seu pedido. "
@@ -145,6 +173,8 @@ def verificar_antes_de_agir(
             rodada,
         )
 
+    write_log('INTENT_VERIFICATION_RESULT', task_id=harness._task_id,
+              rodada=rodada, decisao='aprovar', propostas=_nomes_propostos(chamadas))
     if harness.task_manager.should_cancel(harness._task_id):
         return harness._encerrar_cancelado("cancelado apos revisao de intencao", rodada)
 

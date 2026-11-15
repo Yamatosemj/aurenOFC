@@ -316,6 +316,36 @@ class PermissionManager:
         self.last_authorized_action_tool = None
         self._fonte_nao_confiavel_pendente = None
 
+    def checkpoint_limits(self) -> dict[str, Any]:
+        """Preserva contadores e travas de uma tarefa que aguarda resposta."""
+        fields = (
+            'max_actions', 'max_consecutive_failures', 'max_same_failed_actions',
+            'max_no_progress_repeats', 'actions_attempted', 'actions_executed',
+            'actions_failed', 'consecutive_failures', 'last_failed_action_signature',
+            'same_failed_action_count', 'last_successful_action_signature',
+            'same_successful_action_count', '_fonte_nao_confiavel_pendente',
+        )
+        return {name: getattr(self, name) for name in fields}
+
+    def restore_limits(self, checkpoint: dict[str, Any]) -> None:
+        """Retoma a tarefa sem renovar orcamentos nem afrouxar limites."""
+        if not isinstance(checkpoint, dict):
+            raise TypeError('Checkpoint de permissao invalido.')
+        for name in ('max_actions', 'max_consecutive_failures',
+                     'max_same_failed_actions', 'max_no_progress_repeats'):
+            setattr(self, name, min(getattr(self, name), checkpoint[name]))
+        for name in (
+            'actions_attempted', 'actions_executed', 'actions_failed',
+            'consecutive_failures', 'last_failed_action_signature',
+            'same_failed_action_count', 'last_successful_action_signature',
+            'same_successful_action_count', '_fonte_nao_confiavel_pendente',
+        ):
+            setattr(self, name, checkpoint[name])
+        # O checkpoint preserva o orçamento, nunca uma autorização anterior.
+        # Toda nova ação volta a passar por autorizar() e, se exigido, confirmar().
+        self.last_authorized_action_signature = None
+        self.last_authorized_action_tool = None
+
     def conta_para_limite(self, nome_ferramenta: str) -> bool:
         """Indica se a capacidade da tool consome o orcamento de acoes."""
         return self._capability(nome_ferramenta) in self.COUNTED_CAPABILITIES
