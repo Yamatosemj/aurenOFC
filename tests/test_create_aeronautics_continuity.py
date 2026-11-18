@@ -53,7 +53,8 @@ def build(tmp_path, monkeypatch):
 
         def model(text, *_args):
             model_inputs.append(str(text))
-            return next(answers)
+            answer = next(answers)
+            return answer(text) if callable(answer) else answer
 
         def review(goal, proposed, history):
             reviews.append((goal, [item.name for item in proposed], list(history)))
@@ -98,7 +99,7 @@ def build(tmp_path, monkeypatch):
 
 
 def google_result(item):
-    if item.name == 'navegar_navegador':
+    if item.name == 'navegar_navegador' and json.loads(item.arguments).get('url') == GOOGLE_SEARCH:
         return ToolResult.success('URL atual: https://www.google.com/sorry/index',
                                   tool_name=item.name)
     if item.name == 'obter_contexto_navegador':
@@ -508,14 +509,16 @@ def test_cancel_button_closes_waiting_task(build):
     assert case.harness._clarification is None
 
 
-@pytest.mark.xfail(strict=True, reason='Etapa 3: resultado encontrado ainda nao e aberto')
-def test_complete_goal_still_requires_opening_result(build):
-    """Stage 1 sentinel: remains failing until later goal-completion work."""
+def test_complete_goal_proposes_opening_result_after_clarification(build):
+    """A etapa 3 propoe a abertura; conferir a URL final pertence a etapa 4."""
     case = build(google_script() + [
         response(call('ler_pagina', foco='resultado mais relevante')),
-        response(text='Create Aeronautics - Minecraft Mods')],
+        response(text='Create Aeronautics - Minecraft Mods'),
+        lambda prompt: response(call('navegar_navegador', url=RESULT_URL))
+            if 'abrir_resultado' in str(prompt) else response(text='Resultado descrito.')],
         [IntentDecision('aprovar', 'buscar'),
-         IntentDecision('esclarecer', 'bloqueio externo', 'Devo verificar novamente?')],
+         IntentDecision('esclarecer', 'bloqueio externo', 'Devo verificar novamente?'),
+         IntentDecision('aprovar', 'site escolhido')],
         google_result)
     case.harness.processar_mensagem(GOAL)
     case.harness.processar_mensagem('nao, verifique o com maior relevancia')
@@ -524,4 +527,4 @@ def test_complete_goal_still_requires_opening_result(build):
         or (name == 'clicar_elemento'
             and args.get('alvo') == 'Create Aeronautics - Minecraft Mods')
         for name, args in case.tools[2:]
-    )
+    ), ([name for name, _ in case.tools], case.harness.current_task().error)
