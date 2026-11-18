@@ -3,9 +3,57 @@ from __future__ import annotations
 
 from typing import Callable
 
+import json
 import re
 
 from core.utils import normalizar_nome
+
+
+def _obrigacoes_browser_pendentes(objetivo: str, passos: tuple[object, ...]) -> tuple[str, ...]:
+    """Acompanha apenas a sequencia explicita navegador -> busca -> resultado."""
+    texto = normalizar_nome(objetivo)
+    quer_pesquisa = bool(re.search(r'\b(?:pesquise|pesquisar|pesquisa|busque|buscar)\b', texto))
+    quer_navegador = bool(re.search(r'\b(?:abra|abre|abrir) (?:o )?navegador\b', texto))
+    quer_resultado = quer_pesquisa and bool(re.search(
+        r'\b(?:abra|abre|abrir|entre|entrar|acesse|acessar|clique|clicar)\b'
+        r'.{0,65}\b(?:site|resultado|link)\b', texto,
+    ))
+    if not (quer_pesquisa or quer_navegador):
+        return ()
+
+    navegador_aberto = False
+    pesquisa_feita = False
+    resultado_aberto = False
+    for passo in passos:
+        if getattr(passo, 'success', None) is not True:
+            continue
+        nome = str(getattr(passo, 'tool', ''))
+        try:
+            args = json.loads(str(getattr(passo, 'arguments', '{}')))
+        except (TypeError, ValueError):
+            args = {}
+        if not isinstance(args, dict):
+            args = {}
+        if nome == 'navegar_navegador':
+            url = str(args.get('url') or '')
+            navegador_aberto = True
+            busca = bool(re.search(r'(?:[?&](?:q|query|search)=|/search(?:[/?]|$))',
+                                   url, flags=re.IGNORECASE))
+            if busca:
+                pesquisa_feita = True
+            elif pesquisa_feita and url.lower().startswith(('http://', 'https://')):
+                resultado_aberto = True
+        elif nome == 'clicar_elemento' and pesquisa_feita:
+            resultado_aberto = True
+
+    pendentes = []
+    if quer_navegador and not navegador_aberto:
+        pendentes.append('abrir_navegador')
+    if quer_pesquisa and not pesquisa_feita:
+        pendentes.append('pesquisar')
+    if quer_resultado and not resultado_aberto:
+        pendentes.append('abrir_resultado')
+    return tuple(pendentes)
 
 
 def _parece_tarefa_visual_composta(objetivo: str) -> bool:

@@ -246,10 +246,10 @@ def test_orcamento_corta_secoes_de_menor_prioridade(tmp_path):
 def test_harness_envia_historico_do_mesmo_chat_ao_modelo(tmp_path, monkeypatch):
     store = _store(tmp_path)
     harness, enviados = _harness(tmp_path, monkeypatch, SessionContextManager(store))
-    harness.processar_mensagem("pesquise teclados mecanicos")
-    harness.processar_mensagem("abre o segundo resultado")
+    harness.processar_mensagem("o que sao teclados mecanicos")
+    harness.processar_mensagem("e qual a diferenca entre modelos")
     assert "Conversa recente" not in enviados[0]
-    assert "pesquise teclados mecanicos" in enviados[1]
+    assert "o que sao teclados mecanicos" in enviados[1]
     assert "resposta 1" in enviados[1]
 
 

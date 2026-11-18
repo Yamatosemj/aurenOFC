@@ -14,6 +14,7 @@ from core.browser_verification import verificar_resultado_navegador
 from core.vision import clear_active_vision_geometry, get_active_vision_geometry, prepare_vision_result_content
 from core.harness_intent_guard import verificar_antes_de_agir
 from core.harness_serialization import _argumentos_da_chamada
+from core.harness_heuristics import _obrigacoes_browser_pendentes
 from core.intent_verification import READ_ONLY_TOOLS
 from core.harness_closure import (_alvo_fechamento, _comprovou_fechamento, _orientacao_verificacao, _encerramento_sem_progresso, _repeticao_encerramento_sem_verificar, _reconsulta_processos_pendente, _confirmacao_fechamento_ja_respondida)
 from core.utils import normalizar_nome
@@ -39,7 +40,9 @@ def executar_ciclo(
     # Se o usuario claramente pediu uma acao, a primeira rodada
     # precisa produzir uma ferramenta. Isso evita uma rodada vazia
     # em que o modelo responde sem executar nada.
-    exigir_ferramenta = harness._parece_tarefa_de_acao(objetivo) and not historico
+    exigir_ferramenta = (harness._parece_tarefa_de_acao(objetivo)
+                         or bool(_obrigacoes_browser_pendentes(
+                             objetivo, harness.current_task().steps))) and not historico
     empty_response_retries = 0
     falha_nao_recuperada = False
     # Uma falha so sai deste conjunto apos repetir com sucesso o mesmo passo.
@@ -49,6 +52,8 @@ def executar_ciclo(
     tentativas_verificacao_fechamento = 0
     tentativas_confirmacao_repetida = 0
     tentativas_reconsulta_processos = 0
+    ultima_pendencia: tuple[str, ...] = ()
+    tentativas_pendencia = 0
 
     if harness.task_manager.should_cancel(harness._task_id):
         return harness._encerrar_cancelado("cancelado antes da primeira rodada")
@@ -300,14 +305,56 @@ def executar_ciclo(
             # Uma pergunta apos consulta nao conclui a acao pedida.
             # Guardamos somente o objetivo original e a pergunta, jamais
             # uma proposta mutante nao autorizada pelo usuario.
-            if final_texto.endswith("?") and all(
+            pendentes = _obrigacoes_browser_pendentes(
+                objetivo, harness.current_task().steps)
+            if final_texto.endswith("?") and (pendentes or all(
                 item.get("ferramenta") in READ_ONLY_TOOLS for item in historico
-            ):
+            )):
                 if harness._aguardar_esclarecimento(objetivo, final_texto):
                     harness._registrar_turno('assistant', final_texto)
                     write_log('TASK_WAITING', task_id=harness._task_id,
                               status='needs_clarification', rodada=rodada)
                     return False, resposta_wrapper(final_texto)
+
+            if pendentes:
+                if pendentes != ultima_pendencia:
+                    ultima_pendencia, tentativas_pendencia = pendentes, 0
+                if tentativas_pendencia >= 1:
+                    return harness._encerrar_falha(
+                        'composite_action_pending',
+                        'Nao consegui executar todas as acoes solicitadas; a tarefa nao foi concluida.',
+                        rodada,
+                    )
+                tentativas_pendencia += 1
+                write_log('TASK_OBLIGATIONS_PENDING', task_id=harness._task_id,
+                          rodada=rodada, pendentes=list(pendentes))
+                estado_pendente = harness._montar_estado(
+                    objetivo, historico, [{
+                        'ferramenta': 'guard_obrigacoes', 'argumentos': '{}',
+                        'resultado': (
+                            'OBRIGACOES_PENDENTES: ' + ', '.join(pendentes) + '. '
+                            'A resposta textual nao conclui essas acoes. '
+                            'Proponha somente a proxima ferramenta necessaria; '
+                            'revisor e permissoes continuam obrigatorios.'
+                        ),
+                    }],
+                )
+                nova_chamada = _executar_rodada_modelo_impl(
+                    estado_pendente,
+                    rodada=rodada + 1,
+                    task_id=harness._task_id,
+                    task_manager=harness.task_manager,
+                    pedir_modelo=harness._pedir_modelo,
+                    log_resposta_modelo=harness._log_resposta_modelo,
+                    write_log=write_log,
+                    input_items=1,
+                    estado_chars=len(estado_pendente),
+                    tool_choice='required', log_tool_choice='required',
+                )
+                if nova_chamada is None:
+                    return False, resposta_wrapper(harness._mensagem_erro_modelo())
+                resposta, _latencia, _metricas = nova_chamada
+                continue
 
             resposta = _finalizar_resposta_sucesso(
                 objetivo,
@@ -501,12 +548,14 @@ def executar_ciclo(
         # Conclusao local so e permitida sem falha nao recuperada; com
         # falha, o ciclo segue para a proxima rodada do modelo (nunca
         # reexecuta as chamadas da rodada atual).
-        if not falha_nao_recuperada and harness._pode_encerrar_localmente(
-            objetivo,
-            resultados_rodada,
-            vision_reobserve_pending=harness._vision_reobserve_pending,
-            browser_verification_pending=harness._browser_verification_pending,
-        ):
+        if (not falha_nao_recuperada
+                and not _obrigacoes_browser_pendentes(objetivo, harness.current_task().steps)
+                and harness._pode_encerrar_localmente(
+                    objetivo,
+                    resultados_rodada,
+                    vision_reobserve_pending=harness._vision_reobserve_pending,
+                    browser_verification_pending=harness._browser_verification_pending,
+                )):
             if harness.task_manager.should_cancel(harness._task_id):
                 return harness._encerrar_cancelado("cancelado antes da conclusao local", rodada)
             ferramenta_final = resultados_rodada[-1]["ferramenta"]
