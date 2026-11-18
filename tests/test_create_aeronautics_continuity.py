@@ -510,16 +510,30 @@ def test_cancel_button_closes_waiting_task(build):
 
 
 def test_complete_goal_proposes_opening_result_after_clarification(build):
-    """A etapa 3 propoe a abertura; conferir a URL final pertence a etapa 4."""
+    """A abertura e proposta depois de observar os links recuperados."""
+    contexts = [0]
+
+    def recovered_result(item):
+        if item.name == 'obter_contexto_navegador':
+            contexts[0] += 1
+            if contexts[0] > 1:
+                return ToolResult.success('Resultados recuperados', data={
+                    'abas': 'Aba ativa: 1\nAba 1: Busca | ' + GOOGLE_SEARCH + ' [ATIVA]',
+                    'pagina': ('Links relevantes:\n- texto=Create Aeronautics - '
+                               'Minecraft Mods | href=' + RESULT_URL),
+                }, tool_name=item.name)
+        return google_result(item)
+
     case = build(google_script() + [
         response(call('ler_pagina', foco='resultado mais relevante')),
+        response(call('obter_contexto_navegador', foco='resultados')),
         response(text='Create Aeronautics - Minecraft Mods'),
         lambda prompt: response(call('navegar_navegador', url=RESULT_URL))
             if 'abrir_resultado' in str(prompt) else response(text='Resultado descrito.')],
         [IntentDecision('aprovar', 'buscar'),
          IntentDecision('esclarecer', 'bloqueio externo', 'Devo verificar novamente?'),
          IntentDecision('aprovar', 'site escolhido')],
-        google_result)
+        recovered_result)
     case.harness.processar_mensagem(GOAL)
     case.harness.processar_mensagem('nao, verifique o com maior relevancia')
     assert any(

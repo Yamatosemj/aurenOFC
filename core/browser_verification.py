@@ -8,7 +8,9 @@ from __future__ import annotations
 import json
 import re
 from typing import Any
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urljoin, urlsplit
+
+from core.utils import normalizar_nome
 
 
 def _parse_args(arguments: str) -> dict[str, Any] | None:
@@ -31,7 +33,12 @@ def _normalize_url(value: str) -> str:
         return url.rstrip("/")
     scheme = parsed.scheme.lower()
     hostname = (parsed.hostname or "").lower().removeprefix("www.")
-    port = parsed.port
+    if not hostname:
+        return ""
+    try:
+        port = parsed.port
+    except ValueError:
+        return ""
     default_port = (scheme == "https" and port == 443) or (scheme == "http" and port == 80)
     netloc = hostname
     if port is not None and not default_port:
@@ -55,6 +62,88 @@ def _active_tab(abas: str) -> tuple[int, str, str] | None:
         return None
 
     return indice, linha.group("titulo").strip(), linha.group("url").strip()
+
+
+def contexto_resultados(dados: Any) -> dict[str, Any] | None:
+    """Retem apenas a URL ativa e os links observados na pagina de busca."""
+    if not isinstance(dados, dict):
+        return None
+    ativa = _active_tab(str(dados.get('abas') or ''))
+    if ativa is None:
+        return None
+    pagina = str(dados.get('pagina') or '')
+    candidatos = pagina.split('Candidatos de link na ordem da pagina:', 1)
+    trecho = candidatos[1] if len(candidatos) == 2 else pagina
+    links = []
+    for linha in trecho.splitlines():
+        match = re.match(r'^- (?:posicao=\d+ \| )?texto=(.*?) \| href=(\S+)',
+                         linha.strip())
+        if match:
+            url = urljoin(ativa[2], match.group(2))
+            if urlsplit(url).scheme in {'http', 'https'} and _normalize_url(url):
+                links.append({'titulo': match.group(1).strip(), 'url': url})
+        if len(links) >= 20:
+            break
+    return {'url': ativa[2], 'links': links}
+
+
+def destino_resultado(
+    contexto: dict[str, Any], ferramenta: str, argumentos: str, indice: int | None,
+) -> dict[str, str] | None:
+    """Vincula a acao a um link observado antes da abertura."""
+    args = _parse_args(argumentos)
+    if args is None or not contexto.get('links'):
+        return None
+    links = contexto['links']
+    escolhido = None
+    if ferramenta == 'navegar_navegador':
+        url = _normalize_url(str(args.get('url') or ''))
+        if url:
+            escolhido = next((item for item in links
+                              if _normalize_url(item['url']) == url), None)
+    elif ferramenta == 'clicar_elemento':
+        alvo = normalizar_nome(str(args.get('alvo') or ''))
+        escolhido = next((item for item in links
+                          if alvo and (alvo == normalizar_nome(item['titulo'])
+                                       or alvo in normalizar_nome(item['titulo']))), None)
+    if escolhido is None or (indice is not None and links.index(escolhido) != indice - 1):
+        return None
+    return {'url': escolhido['url'], 'titulo': escolhido['titulo']}
+
+
+def confirmar_destino_resultado(
+    contexto_antes: dict[str, Any], destino: dict[str, str], dados_depois: Any,
+) -> bool:
+    """Exige mudanca de pagina e URL compatível com o link escolhido."""
+    if not isinstance(dados_depois, dict):
+        return False
+    ativa = _active_tab(str(dados_depois.get('abas') or ''))
+    if ativa is None:
+        return False
+    _indice, titulo, observado = ativa
+    anterior = _normalize_url(str(contexto_antes.get('url') or ''))
+    observado_norm = _normalize_url(observado)
+    if not observado_norm or observado_norm == anterior:
+        return False
+    esperado = _normalize_url(destino['url'])
+    if observado_norm == esperado:
+        return True
+    # Links de busca podem apontar para um redirecionador explicito.
+    parsed = urlsplit(destino['url'])
+    for key in ('url', 'q', 'target'):
+        for value in parse_qs(parsed.query).get(key, []):
+            if value.startswith(('http://', 'https://')) and _normalize_url(value) == observado_norm:
+                return True
+    # Redirecionamento no mesmo host com o titulo esperado. Nao inferir
+    # legitimidade de um dominio diferente apenas pelo texto da pagina.
+    expected_host = (urlsplit(esperado).hostname or '').removeprefix('www.')
+    observed_host = (urlsplit(observado_norm).hostname or '').removeprefix('www.')
+    expected_slug = urlsplit(esperado).path.rstrip('/').rsplit('/', 1)[-1]
+    observed_slug = urlsplit(observado_norm).path.rstrip('/').rsplit('/', 1)[-1]
+    return bool(expected_host and expected_host == observed_host
+                and expected_slug and expected_slug == observed_slug
+                and len(normalizar_nome(destino['titulo'])) >= 8
+                and normalizar_nome(titulo) == normalizar_nome(destino['titulo']))
 
 
 def verificar_resultado_navegador(

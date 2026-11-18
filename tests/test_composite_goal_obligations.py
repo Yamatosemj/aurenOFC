@@ -1,4 +1,4 @@
-"""Etapa 3: objetivos compostos com modelo e navegador inteiramente simulados."""
+"""Objetivos compostos com modelo e navegador inteiramente simulados."""
 from __future__ import annotations
 
 import json
@@ -39,6 +39,7 @@ def run_goal(tmp_path, monkeypatch):
     def run(goal, answers, *, fail_result=False):
         answers = iter(answers)
         tools, inputs = [], []
+        browser = {'url': '', 'title': ''}
         permission = PermissionManager(confirmation_channel=SimpleNamespace(confirmar=lambda _: True))
 
         def model(prompt, *_args):
@@ -52,6 +53,21 @@ def run_goal(tmp_path, monkeypatch):
             if fail_result and args.get('url') == RESULT_URL:
                 return ToolResult.failure('Abertura simulada falhou',
                                           error_code='simulated_failure', tool_name=item.name)
+            if item.name == 'navegar_navegador':
+                browser['url'] = args['url']
+                browser['title'] = ('Pesquisa' if 'google.com/search' in args['url']
+                                    else 'Create Aeronautics - Minecraft Mods')
+            if item.name == 'obter_contexto_navegador':
+                result_url = ('https://example.test/receitas' if 'receitas' in browser['url']
+                              else RESULT_URL)
+                title = ('Receitas' if 'receitas' in browser['url']
+                         else 'Create Aeronautics - Minecraft Mods')
+                page = (f'Links relevantes:\n- texto={title} | href={result_url}'
+                        if 'google.com/search' in browser['url'] else 'Pagina atual')
+                return ToolResult.success('Contexto simulado', data={
+                    'abas': (f"Aba ativa: 1\nAba 1: {browser['title']} | "
+                             f"{browser['url']} [ATIVA]"), 'pagina': page,
+                }, tool_name=item.name)
             return ToolResult.success('Resultado simulado', tool_name=item.name)
 
         harness = AurenHarness(
@@ -63,9 +79,6 @@ def run_goal(tmp_path, monkeypatch):
             permission_manager=permission, task_manager=TaskManager(),
             trace_store=TaskTraceStore(tmp_path / ('trace-' + str(len(opened)) + '.sqlite3')),
         )
-        # A verificacao independente do estado do navegador pertence a Etapa 4.
-        # Aqui isolamos apenas a proposta/execucao das obrigacoes do objetivo.
-        harness._parece_tarefa_browser_verificavel = lambda _: False
         opened.append(harness)
         _, reply = harness.processar_mensagem(goal)
         return SimpleNamespace(harness=harness, reply=reply, tools=tools, inputs=inputs)
@@ -88,8 +101,10 @@ def _open_after_obligation(prompt):
 def test_search_then_open_result_executes_second_action(run_goal, goal):
     case = run_goal(goal, [
         _response(_call('navegar_navegador', url=SEARCH_URL)),
+        _response(_call('obter_contexto_navegador', foco='resultados')),
         _response(text='Create Aeronautics - Minecraft Mods: ' + RESULT_URL),
         _open_after_obligation,
+        _response(_call('obter_contexto_navegador', foco='destino')),
         _response(text='Site aberto.'),
     ])
     assert case.harness.current_task().state is TaskState.COMPLETED
@@ -99,16 +114,19 @@ def test_search_then_open_result_executes_second_action(run_goal, goal):
 
 def test_open_browser_search_recipes_then_open_result(run_goal):
     case = run_goal('Abra o navegador, pesquise receitas e entre no primeiro resultado.', [
-        _response(_call('navegar_navegador', url='about:blank')),
+        _response(_call('navegar_navegador', url='https://example.test/start')),
+        _response(_call('obter_contexto_navegador', foco='aba')),
         _response(_call('navegar_navegador', url='https://www.google.com/search?q=receitas')),
+        _response(_call('obter_contexto_navegador', foco='resultados')),
         _response(text='Primeiro resultado: https://example.test/receitas'),
         lambda prompt: _response(_call('navegar_navegador', url='https://example.test/receitas'))
             if 'abrir_resultado' in str(prompt) else _response(text='Primeiro resultado encontrado.'),
+        _response(_call('obter_contexto_navegador', foco='destino')),
         _response(text='Site aberto.'),
     ])
     assert case.harness.current_task().state is TaskState.COMPLETED
     assert [args['url'] for name, args in case.tools if name == 'navegar_navegador'] == [
-        'about:blank', 'https://www.google.com/search?q=receitas',
+        'https://example.test/start', 'https://www.google.com/search?q=receitas',
         'https://example.test/receitas',
     ]
 
@@ -134,18 +152,21 @@ def test_search_only_does_not_open_result(run_goal):
 def test_repeated_text_without_opening_result_fails_safely(run_goal):
     case = run_goal('Pesquise Create Aeronautics e abra o site mais relevante.', [
         _response(_call('navegar_navegador', url=SEARCH_URL)),
+        _response(_call('obter_contexto_navegador', foco='resultados')),
         _response(text='Encontrei o site.'),
         lambda prompt: _response(text='Encontrei o site.')
             if 'abrir_resultado' in str(prompt) else _response(text='Sem acao.'),
     ])
     assert case.harness.current_task().state is TaskState.FAILED
     assert case.harness.current_task().error == 'composite_action_pending'
-    assert len(case.tools) == 1
+    assert [name for name, _ in case.tools] == [
+        'navegar_navegador', 'obter_contexto_navegador']
 
 
 def test_failed_opening_is_not_reported_as_completed(run_goal):
     case = run_goal('Pesquise Create Aeronautics e abra o site mais relevante.', [
         _response(_call('navegar_navegador', url=SEARCH_URL)),
+        _response(_call('obter_contexto_navegador', foco='resultados')),
         _response(text='Encontrei o site.'),
         _open_after_obligation,
         _response(text='Nao consegui abrir.'),
@@ -158,8 +179,10 @@ def test_failed_opening_is_not_reported_as_completed(run_goal):
 def test_question_after_search_waits_and_resumes_same_task(run_goal):
     case = run_goal('Pesquise Create Aeronautics e abra o resultado escolhido.', [
         _response(_call('navegar_navegador', url=SEARCH_URL)),
+        _response(_call('obter_contexto_navegador', foco='resultados')),
         _response(text='Qual resultado devo abrir?'),
         _response(_call('navegar_navegador', url=RESULT_URL)),
+        _response(_call('obter_contexto_navegador', foco='destino')),
         _response(text='Resultado aberto.'),
     ])
     waiting = case.harness.current_task()

@@ -9,21 +9,40 @@ import re
 from core.utils import normalizar_nome
 
 
-def _obrigacoes_browser_pendentes(objetivo: str, passos: tuple[object, ...]) -> tuple[str, ...]:
+def _pede_abrir_resultado(objetivo: str) -> bool:
+    texto = normalizar_nome(objetivo)
+    quer_pesquisa = bool(re.search(r'\b(?:pesquise|pesquisar|pesquisa|busque|buscar)\b', texto))
+    return quer_pesquisa and bool(re.search(
+        r'\b(?:abra|abre|abrir|entre|entrar|acesse|acessar|clique|clicar)\b'
+        r'.{0,65}\b(?:site|resultado|link)\b', texto,
+    ))
+
+
+def _indice_resultado(objetivo: str) -> int | None:
+    texto = normalizar_nome(objetivo)
+    partes = texto.rsplit('esclarecimento do usuario ', 1)
+    for trecho in reversed(partes):
+        for indice, palavra in enumerate(('primeiro', 'segundo', 'terceiro'), 1):
+            if re.search(rf'\b{palavra}\b', trecho):
+                return indice
+        if 'mais relevante' in trecho:
+            return 1
+    return None
+
+
+def _obrigacoes_browser_pendentes(
+    objetivo: str, passos: tuple[object, ...], *, destino_verificado: bool = False,
+) -> tuple[str, ...]:
     """Acompanha apenas a sequencia explicita navegador -> busca -> resultado."""
     texto = normalizar_nome(objetivo)
     quer_pesquisa = bool(re.search(r'\b(?:pesquise|pesquisar|pesquisa|busque|buscar)\b', texto))
     quer_navegador = bool(re.search(r'\b(?:abra|abre|abrir) (?:o )?navegador\b', texto))
-    quer_resultado = quer_pesquisa and bool(re.search(
-        r'\b(?:abra|abre|abrir|entre|entrar|acesse|acessar|clique|clicar)\b'
-        r'.{0,65}\b(?:site|resultado|link)\b', texto,
-    ))
+    quer_resultado = _pede_abrir_resultado(objetivo)
     if not (quer_pesquisa or quer_navegador):
         return ()
 
     navegador_aberto = False
     pesquisa_feita = False
-    resultado_aberto = False
     for passo in passos:
         if getattr(passo, 'success', None) is not True:
             continue
@@ -41,17 +60,14 @@ def _obrigacoes_browser_pendentes(objetivo: str, passos: tuple[object, ...]) -> 
                                    url, flags=re.IGNORECASE))
             if busca:
                 pesquisa_feita = True
-            elif pesquisa_feita and url.lower().startswith(('http://', 'https://')):
-                resultado_aberto = True
-        elif nome == 'clicar_elemento' and pesquisa_feita:
-            resultado_aberto = True
+            # Sucesso da ferramenta nao prova que o destino foi alcancado.
 
     pendentes = []
     if quer_navegador and not navegador_aberto:
         pendentes.append('abrir_navegador')
     if quer_pesquisa and not pesquisa_feita:
         pendentes.append('pesquisar')
-    if quer_resultado and not resultado_aberto:
+    if quer_resultado and not destino_verificado:
         pendentes.append('abrir_resultado')
     return tuple(pendentes)
 
@@ -255,10 +271,10 @@ def _parece_tarefa_de_acao(objetivo: str) -> bool:
         "toca", "toque", "tocar",
         "reproduz", "reproduza", "reproduzir",
         "clica", "clicar", "clique",
-        "preenche", "preencher",
+        "preenche", "preencher", "preencha",
         "digita", "digitar",
-        "pesquisa", "pesquisar",
-        "busca", "buscar",
+        "pesquisa", "pesquisar", "pesquise",
+        "busca", "buscar", "busque",
         "navega", "navegar",
         "entra", "entrar",
         "vai", "ir",

@@ -1,8 +1,30 @@
-from core.browser_verification import verificar_resultado_navegador
+from core.browser_verification import (
+    confirmar_destino_resultado, contexto_resultados, verificar_resultado_navegador,
+)
 
 
 def _contexto(abas):
     return {"abas": abas, "pagina": "conteudo"}
+
+
+def test_search_redirector_requires_its_explicit_target_url():
+    before = {'url': 'https://www.google.com/search?q=auren'}
+    expected = {
+        'url': 'https://www.google.com/url?q=https%3A%2F%2Fexample.test%2Fmod',
+        'titulo': 'Auren Mod',
+    }
+    assert confirmar_destino_resultado(before, expected, _contexto(
+        'Aba ativa: 1\nAba 1: Auren Mod | https://example.test/mod [ATIVA]'))
+    assert not confirmar_destino_resultado(before, expected, _contexto(
+        'Aba ativa: 1\nAba 1: Auren Mod | https://unrelated.test/mod [ATIVA]'))
+
+
+def test_malformed_result_link_is_not_kept_as_destination():
+    context = {
+        'abas': 'Aba ativa: 1\nAba 1: Busca | https://google.test/search?q=x [ATIVA]',
+        'pagina': 'Links relevantes:\n- texto=Resultado | href=https://site.test:bad/page',
+    }
+    assert contexto_resultados(context)['links'] == []
 
 
 def test_navigation_verification_accepts_equivalent_normalized_url():
