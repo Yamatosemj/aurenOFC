@@ -252,6 +252,25 @@ class ChromeRequestHandler(BaseHTTPRequestHandler):
     def _bad(self, code: int, message: str) -> None:
         self._json(code, {"error": message})
 
+    def _reject_post(self, code: int, message: str) -> None:
+        # A resposta pode se perder no Windows se fecharmos o socket com o
+        # corpo da requisicao ainda pendente (RST / WinError 10053 no cliente).
+        # So consumimos corpos com tamanho declarado dentro do limite local.
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            length = -1
+        if 0 < length <= MAX_REQUEST_BYTES:
+            previous_timeout = self.connection.gettimeout()
+            try:
+                self.connection.settimeout(1.0)
+                self.rfile.read(length)
+            except TimeoutError:
+                pass
+            finally:
+                self.connection.settimeout(previous_timeout)
+        self._bad(code, message)
+
     def _authorized(self) -> bool:
         return secrets.compare_digest(self.headers.get("X-Auren-Token", ""), self.server.app.token)
 
@@ -293,10 +312,10 @@ class ChromeRequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         if not self._secure() or not self._authorized():
-            self._bad(403, "Sessao nao autorizada.")
+            self._reject_post(403, "Sessao nao autorizada.")
             return
         if self.headers.get("Content-Type", "").split(";")[0].strip().lower() != "application/json":
-            self._bad(415, "Somente JSON e aceito.")
+            self._reject_post(415, "Somente JSON e aceito.")
             return
         try:
             length = int(self.headers.get("Content-Length", "-1"))
