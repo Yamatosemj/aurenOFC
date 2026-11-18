@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any
 import json
+from typing import Any
 
 from core.harness_completion import _concluir_tarefa_localmente, _finalizar_resposta_sucesso, _tentar_retry_resposta_vazia
 from core.harness_guards import _tratar_rodada_sem_ferramentas as _tratar_rodada_sem_ferramentas_impl
@@ -13,9 +13,18 @@ from core.harness_tools import _executar_chamadas_rodada as _executar_chamadas_r
 from core.browser_verification import verificar_resultado_navegador
 from core.vision import clear_active_vision_geometry, get_active_vision_geometry, prepare_vision_result_content
 from core.harness_intent_guard import verificar_antes_de_agir
+from core.harness_serialization import _argumentos_da_chamada
 from core.intent_verification import READ_ONLY_TOOLS
 from core.harness_closure import (_alvo_fechamento, _comprovou_fechamento, _orientacao_verificacao, _encerramento_sem_progresso, _repeticao_encerramento_sem_verificar, _reconsulta_processos_pendente, _confirmacao_fechamento_ja_respondida)
 from core.utils import normalizar_nome
+
+
+def _assinatura_acao(nome: str, argumentos: str) -> tuple[str, str]:
+    try:
+        argumentos = json.dumps(json.loads(argumentos), sort_keys=True, ensure_ascii=False)
+    except (TypeError, ValueError):
+        argumentos = str(argumentos)
+    return nome, argumentos
 
 
 def executar_ciclo(
@@ -24,25 +33,33 @@ def executar_ciclo(
     resposta_wrapper: Any,
     write_log: Any,
 ) -> tuple[bool, Any]:
-    historico: list[dict[str, str]] = []
+    historico: list[dict[str, str]] = list(getattr(harness, '_resume_history', []))
     resultados_rodada: list[dict[str, str]] = []
 
     # Se o usuario claramente pediu uma acao, a primeira rodada
     # precisa produzir uma ferramenta. Isso evita uma rodada vazia
     # em que o modelo responde sem executar nada.
-    exigir_ferramenta = harness._parece_tarefa_de_acao(objetivo)
+    exigir_ferramenta = harness._parece_tarefa_de_acao(objetivo) and not historico
     empty_response_retries = 0
     falha_nao_recuperada = False
     # Uma falha so sai deste conjunto apos repetir com sucesso o mesmo passo.
     # Nao usar apenas o resultado da ultima ferramenta da rodada.
     falhas_pendentes: set[tuple[str, str]] = set()
-    ferramentas_executadas = 0
+    ferramentas_executadas = len(historico)
     tentativas_verificacao_fechamento = 0
     tentativas_confirmacao_repetida = 0
     tentativas_reconsulta_processos = 0
 
     if harness.task_manager.should_cancel(harness._task_id):
         return harness._encerrar_cancelado("cancelado antes da primeira rodada")
+
+    limite_rodadas = harness._task_round_limit or harness._limite_de_rodadas(objetivo)
+    harness._task_round_limit = limite_rodadas
+    rodadas_restantes = limite_rodadas - harness._task_rounds_used
+    if rodadas_restantes <= 0:
+        return harness._encerrar_falha(
+            'model_round_limit', harness._mensagem_erro_modelo(),
+        )
 
     estado_inicial = harness._montar_estado(objetivo, historico, incluir_contexto=True)
     # Ponto unico de chamada ao provider: `harness._pedir_modelo(` permanece
@@ -61,14 +78,27 @@ def executar_ciclo(
         log_tool_choice="required" if exigir_ferramenta else "auto",
     )
     if chamada is None:
-        return False, resposta_wrapper(harness.MSG_ERRO_PROVIDER)
+        return False, resposta_wrapper(harness._mensagem_erro_modelo())
     resposta, latencia_ms, metricas_roteamento = chamada
 
-    limite_rodadas = harness._limite_de_rodadas(objetivo)
     if limite_rodadas != harness.max_model_rounds:
         write_log("TASK_ADAPTIVE_DEPTH", task_id=harness._task_id, limite_base=harness.max_model_rounds, limite_adaptativo=limite_rodadas)
-    for rodada in range(1, limite_rodadas + 1):
+    for rodada in range(1, rodadas_restantes + 1):
         chamadas = harness.obter_chamadas(resposta)
+
+        if getattr(harness, '_clarification_resuming', False):
+            completed = {
+                _assinatura_acao(step.tool, step.arguments)
+                for step in harness.current_task().steps if step.success is True
+                and step.tool not in READ_ONLY_TOOLS
+            }
+            if any(_assinatura_acao(str(getattr(item, 'name', '')),
+                                    _argumentos_da_chamada(item)) in completed
+                   for item in chamadas):
+                return harness._encerrar_falha(
+                    'clarification_effect_repeated',
+                    'Nao repeti uma acao ja executada antes do esclarecimento.', rodada,
+                )
 
         if harness.task_manager.should_cancel(harness._task_id):
             return harness._encerrar_cancelado("cancelado durante a tarefa", rodada)
@@ -122,7 +152,7 @@ def executar_ciclo(
                     log_tool_choice="required",
                 )
                 if nova_chamada is None:
-                    return False, resposta_wrapper(harness.MSG_ERRO_PROVIDER)
+                    return False, resposta_wrapper(harness._mensagem_erro_modelo())
                 resposta, _latencia, _metricas = nova_chamada
                 continue
 
@@ -181,7 +211,7 @@ def executar_ciclo(
                     exigir_ferramenta=exigir_ferramenta,
                     empty_response_retries=empty_response_retries,
                     task_id=harness._task_id,
-                    mensagem_erro_provider=harness.MSG_ERRO_PROVIDER,
+                    mensagem_erro_provider=harness._mensagem_erro_modelo(),
                     task_manager=harness.task_manager,
                     montar_estado=harness._montar_estado,
                     pedir_modelo=harness._pedir_modelo,
@@ -214,11 +244,14 @@ def executar_ciclo(
                 objetivo, historico,
             ):
                 if final_texto.endswith("?"):
-                    harness._guardar_esclarecimento(objetivo, final_texto)
-                    harness.task_manager.complete(final_texto, task_id=harness._task_id)
+                    if not harness._aguardar_esclarecimento(objetivo, final_texto):
+                        return harness._encerrar_falha(
+                            'clarification_invalid_question',
+                            'Nao consegui manter o esclarecimento pendente.', rodada,
+                        )
                     harness._registrar_turno("assistant", final_texto)
                     write_log(
-                        "TASK_END", task_id=harness._task_id,
+                        "TASK_WAITING", task_id=harness._task_id,
                         status="needs_clarification", rodada=rodada,
                     )
                     return False, resposta_wrapper(final_texto)
@@ -260,7 +293,7 @@ def executar_ciclo(
                     log_tool_choice="required",
                 )
                 if chamada_verificacao is None:
-                    return False, resposta_wrapper(harness.MSG_ERRO_PROVIDER)
+                    return False, resposta_wrapper(harness._mensagem_erro_modelo())
                 resposta, _latencia, _metricas = chamada_verificacao
                 continue
 
@@ -270,7 +303,11 @@ def executar_ciclo(
             if final_texto.endswith("?") and all(
                 item.get("ferramenta") in READ_ONLY_TOOLS for item in historico
             ):
-                harness._guardar_esclarecimento(objetivo, final_texto)
+                if harness._aguardar_esclarecimento(objetivo, final_texto):
+                    harness._registrar_turno('assistant', final_texto)
+                    write_log('TASK_WAITING', task_id=harness._task_id,
+                              status='needs_clarification', rodada=rodada)
+                    return False, resposta_wrapper(final_texto)
 
             resposta = _finalizar_resposta_sucesso(
                 objetivo,
@@ -369,7 +406,7 @@ def executar_ciclo(
                     log_tool_choice="required",
                 )
                 if nova_chamada is None:
-                    return False, resposta_wrapper(harness.MSG_ERRO_PROVIDER)
+                    return False, resposta_wrapper(harness._mensagem_erro_modelo())
                 resposta, _latencia, _metricas = nova_chamada
                 continue
             tentativas_reconsulta_processos = 0
@@ -520,7 +557,7 @@ def executar_ciclo(
             estado_chars=len(estado_enviado),
         )
         if chamada is None:
-            return False, resposta_wrapper(harness.MSG_ERRO_PROVIDER)
+            return False, resposta_wrapper(harness._mensagem_erro_modelo())
         resposta, latencia_ms, metricas_roteamento = chamada
 
     harness.task_manager.fail(

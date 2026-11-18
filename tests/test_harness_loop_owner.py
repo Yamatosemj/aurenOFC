@@ -148,8 +148,9 @@ def test_limite_de_rodadas_padrao_encerra_a_tarefa():
     bench = _Bench(lambda n, b: _resp([_call(n)]))
     _, resposta, task = bench.run("leia a pagina")
     assert task.state is TaskState.FAILED
-    assert "limite local de rodadas" in task.error
+    assert task.error == "model_round_limit"
     assert len(bench.tools) == AurenHarness.DEFAULT_MAX_MODEL_ROUNDS
+    assert bench.model_calls == AurenHarness.DEFAULT_MAX_MODEL_ROUNDS
     assert resposta is not None
 
 
@@ -439,7 +440,8 @@ def test_ciclo_tem_um_unico_ponto_de_chamada_ao_modelo_e_nao_toca_no_agent():
     assert "harness.agent" not in fonte
     assert "harness._pedir_modelo" in fonte
     assert "harness._limite_de_rodadas" in fonte
-    assert "range(1, limite_rodadas + 1)" in fonte  # um unico `for` de rodadas
+    assert "rodadas_restantes = limite_rodadas - harness._task_rounds_used" in fonte
+    assert "for rodada in range(1, rodadas_restantes + 1)" in fonte
     assert fonte.count("for rodada in") == 1
 
 
