@@ -54,6 +54,12 @@ def resposta_pertinente(pergunta: str, mensagem: str) -> bool:
         return bool(re.fullmatch(r'(?:quero|abre|abra) (?:o )?(?:primeiro|segundo|terceiro|\d+)', answer))
     if 'navegador' in question:
         return bool(re.fullmatch(r'(?:quero|prefiro) (?:o )?(?:chrome|edge|firefox|brave|opera)', answer))
+    if 'aplicativo' in question or 'programa' in question:
+        return bool(re.fullmatch(
+            r'(?:quero (?:o|a) |prefiro (?:o |a )?)[a-z0-9.+-]+'
+            r'(?: [a-z0-9.+-]+){0,2}',
+            answer,
+        ))
     return False
 
 

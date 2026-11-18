@@ -175,23 +175,25 @@ def test_new_request_cancels_waiting_task(build):
     assert case.harness.current_task().objective == 'Consulte o status do Windows.'
 
 
-def test_agora_abre_spotify_replaces_waiting_task(build):
+@pytest.mark.parametrize('new_request', ['agora abre o Spotify', 'quero abrir o Spotify'])
+def test_agora_abre_spotify_replaces_waiting_task(build, new_request):
     case = build(google_script() + [response(text='Novo pedido recebido.')],
         [IntentDecision('aprovar', 'buscar'),
          IntentDecision('esclarecer', 'bloqueio externo', 'Devo verificar novamente?')],
         google_result)
     case.harness.processar_mensagem(GOAL)
     old = case.harness.current_task()
-    case.harness.processar_mensagem('agora abre o Spotify')
+    case.harness.processar_mensagem(new_request)
     assert case.harness.task_manager.get_snapshot(old.task_id).state is TaskState.CANCELLED
     assert case.harness.current_task().task_id != old.task_id
-    assert case.harness.current_task().objective == 'agora abre o Spotify'
+    assert case.harness.current_task().objective == new_request
 
 
 @pytest.mark.parametrize('question,answer', [
     ('Qual resultado devo abrir?', 'quero o segundo'),
     ('Qual resultado devo abrir?', 'abre o primeiro'),
     ('Qual navegador você quer usar?', 'quero o Chrome'),
+    ('Com qual aplicativo devo abrir?', 'quero o Chrome'),
 ])
 def test_command_shaped_answer_keeps_original_task(build, question, answer):
     case = build([
