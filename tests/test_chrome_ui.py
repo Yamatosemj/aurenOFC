@@ -240,6 +240,30 @@ def test_strict_json_size_schema_and_content_type():
         assert status == 400
 
 
+def test_rejected_post_responses_survive_multiple_connections():
+    """Corpos curtos rejeitados nao devem resetar a resposta no Windows."""
+    with running_server() as (app, worker, port):
+        for _ in range(30):
+            status, _, body = request(
+                port, "POST", "/api/mode", {"mode": "active"},
+            )
+            assert status == 403
+            assert json.loads(body)["error"]
+
+            status, _, body = request(
+                port, "POST", "/api/mode", {"mode": "active"},
+                {**auth(app), "Content-Type": "text/plain"},
+            )
+            assert status == 415
+            assert json.loads(body)["error"]
+
+        status, _, body = request(
+            port, "POST", "/api/mode", {"mode": "active"}, auth(app),
+        )
+        assert status == 200
+        assert json.loads(body)["mode"] == "active"
+
+
 def test_html_is_prototype_derived_real_ui_and_nonce_is_bound_to_csp():
     source = INDEX_PATH.read_text(encoding="utf-8")
     assert "const E={" in source and '"ouvindo"' in source and '"pensando"' in source
