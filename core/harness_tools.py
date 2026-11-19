@@ -110,10 +110,11 @@ def _executar_chamadas_rodada(
 
         result_context_checked = False
         if destination_state is not None and ferramenta_sucesso:
-            if (destination_state.get('verified')
-                    and nome in browser_state_mutating_tools):
+            if nome in browser_state_mutating_tools:
                 destination_state['verified'] = False
                 destination_state['before'] = None
+                if nome not in {'clicar_elemento', 'navegar_navegador'}:
+                    destination_state.pop('pending_action', None)
             if nome == 'navegar_navegador' and is_search:
                 destination_state.update(search_done=True, before=None,
                                          pending_action=None, verified=False)
@@ -128,6 +129,7 @@ def _executar_chamadas_rodada(
                         destination_state.pop('pending_action', None)
                 elif destination_state.get('search_done') and not destination_state.get('verified'):
                     before = contexto_resultados(dados)
+                    destination_state['before'] = None
                     if before is not None and re.search(
                         r'(?:[?&](?:q|query|search)=|/search(?:[/?]|$))',
                         before['url'], flags=re.IGNORECASE,

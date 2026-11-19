@@ -1,5 +1,6 @@
 from core.browser_verification import (
-    confirmar_destino_resultado, contexto_resultados, verificar_resultado_navegador,
+    confirmar_destino_resultado, contexto_resultados, destino_resultado,
+    verificar_resultado_navegador,
 )
 
 
@@ -25,6 +26,41 @@ def test_malformed_result_link_is_not_kept_as_destination():
         'pagina': 'Links relevantes:\n- texto=Resultado | href=https://site.test:bad/page',
     }
     assert contexto_resultados(context)['links'] == []
+
+
+def test_similar_url_with_different_page_or_query_is_not_destination():
+    before = {'url': 'https://search.test/search?q=auren'}
+    expected = {'url': 'https://example.test/mods/create-aeronautics?id=1',
+                'titulo': 'Create Aeronautics - Minecraft Mods'}
+    for observed in (
+        'https://example.test/archive/create-aeronautics?id=1',
+        'https://example.test/mods/create-aeronautics?id=2',
+    ):
+        assert not confirmar_destino_resultado(before, expected, _contexto(
+            'Aba ativa: 1\nAba 1: Create Aeronautics - Minecraft Mods | '
+            + observed + ' [ATIVA]'))
+
+
+def test_result_opened_in_new_active_tab_is_observed():
+    before = {'url': 'https://search.test/search?q=auren'}
+    expected = {'url': 'https://example.test/mods/create-aeronautics',
+                'titulo': 'Create Aeronautics - Minecraft Mods'}
+    observed = _contexto(
+        'Abas abertas: 2\nAba ativa: 2\n'
+        'Aba 1: Busca | https://search.test/search?q=auren\n'
+        'Aba 2: Create Aeronautics - Minecraft Mods | '
+        'https://example.test/mods/create-aeronautics [ATIVA]')
+    assert confirmar_destino_resultado(before, expected, observed)
+
+
+def test_click_index_binds_destination_to_selected_matching_link():
+    before = {'url': 'https://search.test/search?q=auren', 'links': [
+        {'titulo': 'Create Aeronautics', 'url': 'https://example.test/first'},
+        {'titulo': 'Create Aeronautics', 'url': 'https://example.test/second'},
+    ]}
+    selected = destino_resultado(before, 'clicar_elemento',
+                                 '{"alvo":"Create Aeronautics","indice":2}', None)
+    assert selected == before['links'][1]
 
 
 def test_navigation_verification_accepts_equivalent_normalized_url():

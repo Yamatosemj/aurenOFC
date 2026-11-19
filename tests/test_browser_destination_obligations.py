@@ -68,6 +68,10 @@ def scenario(tmp_path, monkeypatch):
                 current['title'] = 'Create Aeronautics - Minecraft Mods'
                 stale_read[0] = stale_first_destination_read
                 return ToolResult.success('Cliquei', tool_name=item.name)
+            if item.name == 'voltar_pagina':
+                current['url'] = 'https://other.test/start'
+                current['title'] = 'Outra pagina'
+                return ToolResult.success('Voltei', tool_name=item.name)
             if item.name == 'obter_contexto_navegador':
                 if not include_context:
                     return ToolResult.success('Sem dados estruturados', tool_name=item.name)
@@ -135,9 +139,9 @@ def test_failed_opening_is_not_success(scenario):
     assert case.harness.current_task().state is TaskState.FAILED
 
 
-def test_legitimate_same_host_redirect_with_matching_title(scenario):
+def test_same_page_redirect_with_tracking_parameter(scenario):
     case = scenario(_sequence(call('navegar_navegador', url=RESULT)),
-                    destination='https://www.example.test/mods/create-aeronautics?utm_source=search')
+                    destination='https://www.example.test/create-aeronautics?utm_source=search')
     case.harness.processar_mensagem(GOAL)
     assert case.harness.current_task().state is TaskState.COMPLETED
 
@@ -172,6 +176,34 @@ def test_delayed_observation_can_be_rechecked_without_reopening(scenario):
     case.harness.processar_mensagem(GOAL)
     assert case.harness.current_task().state is TaskState.COMPLETED
     assert [name for name, _ in case.calls].count('clicar_elemento') == 1
+
+
+def test_old_search_context_cannot_authorize_open_after_page_change(scenario):
+    answers = [response(call('navegar_navegador', url=SEARCH)),
+               response(call('obter_contexto_navegador', foco='resultados')),
+               response(call('voltar_pagina')),
+               response(call('navegar_navegador', url=RESULT)),
+               response(call('obter_contexto_navegador', foco='destino')),
+               response(text='Site aberto.')]
+    case = scenario(answers)
+    case.harness.processar_mensagem(GOAL)
+    assert case.harness.current_task().state is TaskState.FAILED
+    assert ('navegar_navegador', {'url': RESULT}) not in case.calls
+
+
+def test_new_browser_read_invalidates_old_search_links(scenario):
+    def observe_other_page(_prompt):
+        case.current.update(url='https://other.test/start', title='Outra pagina')
+        return response(call('obter_contexto_navegador', foco='pagina atual'))
+
+    case = scenario([response(call('navegar_navegador', url=SEARCH)),
+                     response(call('obter_contexto_navegador', foco='resultados')),
+                     observe_other_page,
+                     response(call('navegar_navegador', url=RESULT)),
+                     response(text='Site aberto.')])
+    case.harness.processar_mensagem(GOAL)
+    assert case.harness.current_task().state is TaskState.FAILED
+    assert ('navegar_navegador', {'url': RESULT}) not in case.calls
 
 
 def test_clarification_resumes_same_task_and_verifies_destination(scenario):

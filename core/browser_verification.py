@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 import re
 from typing import Any
-from urllib.parse import parse_qs, urljoin, urlsplit
+from urllib.parse import parse_qs, parse_qsl, urljoin, urlsplit
 
 from core.utils import normalizar_nome
 
@@ -103,9 +103,15 @@ def destino_resultado(
                               if _normalize_url(item['url']) == url), None)
     elif ferramenta == 'clicar_elemento':
         alvo = normalizar_nome(str(args.get('alvo') or ''))
-        escolhido = next((item for item in links
-                          if alvo and (alvo == normalizar_nome(item['titulo'])
-                                       or alvo in normalizar_nome(item['titulo']))), None)
+        candidatos = [item for item in links
+                      if alvo and (alvo == normalizar_nome(item['titulo'])
+                                   or alvo in normalizar_nome(item['titulo']))]
+        try:
+            indice_clique = int(args.get('indice', 1))
+        except (TypeError, ValueError):
+            return None
+        if 1 <= indice_clique <= len(candidatos):
+            escolhido = candidatos[indice_clique - 1]
     if escolhido is None or (indice is not None and links.index(escolhido) != indice - 1):
         return None
     return {'url': escolhido['url'], 'titulo': escolhido['titulo']}
@@ -134,14 +140,21 @@ def confirmar_destino_resultado(
         for value in parse_qs(parsed.query).get(key, []):
             if value.startswith(('http://', 'https://')) and _normalize_url(value) == observado_norm:
                 return True
-    # Redirecionamento no mesmo host com o titulo esperado. Nao inferir
-    # legitimidade de um dominio diferente apenas pelo texto da pagina.
-    expected_host = (urlsplit(esperado).hostname or '').removeprefix('www.')
-    observed_host = (urlsplit(observado_norm).hostname or '').removeprefix('www.')
-    expected_slug = urlsplit(esperado).path.rstrip('/').rsplit('/', 1)[-1]
-    observed_slug = urlsplit(observado_norm).path.rstrip('/').rsplit('/', 1)[-1]
-    return bool(expected_host and expected_host == observed_host
-                and expected_slug and expected_slug == observed_slug
+    # Aceitar apenas variacoes irrelevantes da mesma pagina: upgrade HTTPS,
+    # prefixo www e parametros de rastreamento. O titulo nao prova que outro
+    # caminho ou outro identificador de pagina seja o resultado escolhido.
+    expected_parts = urlsplit(esperado)
+    observed_parts = urlsplit(observado_norm)
+    def query_without_tracking(query: str) -> list[tuple[str, str]]:
+        return sorted((key, value) for key, value in parse_qsl(query, keep_blank_values=True)
+                      if not key.lower().startswith('utm_'))
+
+    return bool(expected_parts.netloc == observed_parts.netloc
+                and expected_parts.path == observed_parts.path
+                and (expected_parts.scheme == observed_parts.scheme
+                     or (expected_parts.scheme == 'http' and observed_parts.scheme == 'https'))
+                and query_without_tracking(expected_parts.query)
+                == query_without_tracking(observed_parts.query)
                 and len(normalizar_nome(destino['titulo'])) >= 8
                 and normalizar_nome(titulo) == normalizar_nome(destino['titulo']))
 
