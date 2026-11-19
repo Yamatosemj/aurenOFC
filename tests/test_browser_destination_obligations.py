@@ -139,6 +139,34 @@ def test_failed_opening_is_not_success(scenario):
     assert case.harness.current_task().state is TaskState.FAILED
 
 
+def test_result_redirected_to_google_verification_is_not_opened(scenario):
+    case = scenario(_sequence(call('navegar_navegador', url=RESULT)),
+                    destination='https://www.google.com/sorry/index')
+    case.harness.processar_mensagem(GOAL)
+    assert case.harness.current_task().state is TaskState.WAITING
+    assert case.harness._browser_destination_state.get('verified') is False
+    assert [name for name, _ in case.calls].count('navegar_navegador') == 2
+
+
+def test_manual_resolution_of_result_challenge_verifies_selected_destination(scenario):
+    answers = [response(call('navegar_navegador', url=SEARCH)),
+               response(call('obter_contexto_navegador', foco='resultados')),
+               response(call('navegar_navegador', url=RESULT)),
+               response(call('obter_contexto_navegador', foco='bloqueio')),
+               response(call('obter_contexto_navegador', foco='apos verificacao')),
+               response(text='Site aberto.')]
+    case = scenario(answers, destination='https://www.google.com/sorry/index')
+    case.harness.processar_mensagem(GOAL)
+    waiting = case.harness.current_task()
+    assert waiting.state is TaskState.WAITING
+    case.current.update(url=RESULT, title='Create Aeronautics - Minecraft Mods')
+    case.harness.processar_mensagem('pronto')
+    assert case.harness.current_task().task_id == waiting.task_id
+    assert case.harness.current_task().state is TaskState.COMPLETED
+    assert case.harness._browser_destination_state.get('verified') is True
+    assert [name for name, _ in case.calls].count('navegar_navegador') == 2
+
+
 def test_same_page_redirect_with_tracking_parameter(scenario):
     case = scenario(_sequence(call('navegar_navegador', url=RESULT)),
                     destination='https://www.example.test/create-aeronautics?utm_source=search')

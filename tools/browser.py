@@ -55,6 +55,9 @@ def _esperar_titulo(p, timeout_ms=1500):
 
 def _descricao_aba(p, indice=None):
     titulo = _esperar_titulo(p)
+    # O titulo vem da pagina. Impedir que quebras de linha ou o separador da
+    # listagem fabriquem uma linha de aba ou uma URL ativa diferente.
+    titulo = " ".join(titulo.replace("|", " ").split())
 
     numero = f"Aba {indice}" if indice is not None else "Aba"
     url = p.url or "about:blank"

@@ -64,6 +64,46 @@ def _active_tab(abas: str) -> tuple[int, str, str] | None:
     return indice, linha.group("titulo").strip(), linha.group("url").strip()
 
 
+def classificar_bloqueio_navegador(dados: Any) -> tuple[str, str] | None:
+    """Reconhece bloqueios externos pela aba ativa, sem interpretar instrucoes da pagina."""
+    if not isinstance(dados, dict):
+        return None
+    ativa = _active_tab(str(dados.get('abas') or ''))
+    if ativa is None:
+        return None
+    _indice, titulo, url = ativa
+    parsed = urlsplit(_normalize_url(url))
+    host = parsed.hostname or ''
+    path = parsed.path.lower()
+    if (host == 'google.com' or host.endswith('.google.com')) and path.startswith('/sorry/'):
+        return 'confirmado', 'google_sorry'
+
+    titulo_normal = normalizar_nome(titulo)
+    pagina_normal = normalizar_nome(str(dados.get('pagina') or '')[:1500])
+    pagina_de_desafio = bool(re.match(
+        r'^/(?:captcha|challenge(?:-[a-z0-9-]+)?|verify-human|verify)(?:/|$)|'
+        r'^/cdn-cgi/challenge(?:-[a-z0-9-]+)?(?:/|$)', path,
+    ))
+    titulo_de_desafio = bool(re.search(
+        r'captcha|verify you are human|verificacao humana|just a moment|attention required',
+        titulo_normal,
+    ))
+    pedido_explicito = bool(re.search(
+        r'complete (?:the )?captcha to continue|verify you are human|'
+        r'verifique que voce e humano|resolva (?:o )?captcha para continuar|'
+        r'checking your browser before accessing|verificando seu navegador antes de acessar|'
+        r'trafego incomum.{0,100}(?:verific|humano|captcha)|'
+        r'unusual traffic.{0,100}(?:verif|human|captcha)',
+        pagina_normal,
+    ))
+    if pedido_explicito and (pagina_de_desafio or titulo_de_desafio
+                            or (host == 'google.com' or host.endswith('.google.com'))):
+        return 'confirmado', 'human_challenge'
+    if pagina_de_desafio:
+        return 'suspeito', 'challenge_page'
+    return None
+
+
 def contexto_resultados(dados: Any) -> dict[str, Any] | None:
     """Retem apenas a URL ativa e os links observados na pagina de busca."""
     if not isinstance(dados, dict):
