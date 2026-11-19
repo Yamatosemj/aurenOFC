@@ -6,7 +6,8 @@ from typing import Any, Callable
 
 from core.harness_serialization import _argumentos_da_chamada, _texto_seguro
 from core.browser_verification import (
-    confirmar_destino_resultado, contexto_resultados, destino_resultado,
+    classificar_bloqueio_navegador, confirmar_destino_resultado,
+    contexto_resultados, destino_resultado,
 )
 from core.tool_result import ToolResult, from_legacy
 
@@ -33,6 +34,7 @@ def _executar_chamadas_rodada(
     browser_verifier: Callable[[str, str, Any, Any], bool | None] | None = None,
     falhas_pendentes: set[tuple[str, str]] | None = None,
     destination_state: dict[str, Any] | None = None,
+    block_state: dict[str, Any] | None = None,
     result_index: int | None = None,
 ) -> tuple[list[dict[str, Any]], int, bool, bool, bool]:
     """Executa a rodada sem apagar falhas anteriores por sucessos nao relacionados.
@@ -57,6 +59,11 @@ def _executar_chamadas_rodada(
             break
 
         nome = str(getattr(item, "name", "desconhecida"))
+        if (block_state is not None
+                and (block_state.get('needs_recheck') or block_state.get('observation_required'))
+                and nome != browser_verification_tool):
+            block_state['unsafe_attempt'] = True
+            break
         argumentos = _argumentos_da_chamada(item)
         task_manager.begin_step(
             nome,
@@ -76,7 +83,7 @@ def _executar_chamadas_rodada(
         tool_started_perf = time.perf_counter()
         preflight_error = None
         is_search = False
-        if destination_state is not None and nome == 'navegar_navegador':
+        if (destination_state is not None or block_state is not None) and nome == 'navegar_navegador':
             is_search = bool(re.search(r'(?:[?&](?:q|query|search)=|/search(?:[/?]|$))',
                                        argumentos, flags=re.IGNORECASE))
         if (destination_state is not None and destination_state.get('search_done')
@@ -107,6 +114,54 @@ def _executar_chamadas_rodada(
             tool_name=nome,
         )
         ferramenta_sucesso = resultado_estruturado.ok
+
+        if block_state is not None and ferramenta_sucesso:
+            if nome == 'navegar_navegador' and is_search:
+                block_state['search_attempted'] = True
+            if nome in {'navegar_navegador', 'abrir_nova_aba'}:
+                url_atual = re.search(r'(?m)^URL atual:\s*(https?://\S+)',
+                                      resultado_estruturado.message)
+                if url_atual and classificar_bloqueio_navegador({
+                    'abas': f'Aba ativa: 1\nAba 1: Navegador | {url_atual.group(1)} [ATIVA]',
+                    'pagina': '',
+                }) == ('confirmado', 'google_sorry'):
+                    block_state['observation_required'] = True
+            if nome == browser_verification_tool:
+                block_state['observation_required'] = False
+                dados_bloqueio = dict(resultado_estruturado.data or {})
+                classificacao = classificar_bloqueio_navegador(dados_bloqueio)
+                rechecando = bool(block_state.get('needs_recheck'))
+                if rechecando:
+                    block_state['rechecks'] = int(block_state.get('rechecks', 0)) + 1
+                    block_state['needs_recheck'] = False
+                if classificacao is not None and classificacao[0] == 'confirmado':
+                    block_state.update(confirmed=True, suspected=False, reason=classificacao[1])
+                    opening_result = bool(destination_state is not None
+                                          and destination_state.get('pending_action'))
+                    block_state['search_blocked'] = bool(
+                        block_state.get('search_attempted') and not opening_result)
+                elif classificacao is None:
+                    before_recheck = contexto_resultados(dados_bloqueio)
+                    if rechecando and before_recheck is None:
+                        block_state.update(confirmed=False, suspected=True,
+                                           reason='recheck_unavailable')
+                    elif rechecando:
+                        block_state.update(confirmed=False, suspected=False)
+                    if before_recheck is not None and re.search(
+                        r'(?:[?&](?:q|query|search)=|/search(?:[/?]|$))',
+                        before_recheck['url'], flags=re.IGNORECASE,
+                    ):
+                        block_state['search_blocked'] = False
+                        if destination_state is not None:
+                            destination_state.update(search_done=True, before=before_recheck)
+                elif classificacao is not None:
+                    # A suspeita nao vira bloqueio confirmado sem evidencias novas.
+                    block_state.update(confirmed=False, suspected=True,
+                                       reason=classificacao[1])
+                if (block_state.get('confirmed') or block_state.get('suspected')) and destination_state is not None:
+                    # O link escolhido continua vinculado a abertura anterior;
+                    # uma intervencao humana ainda pode levar ao mesmo destino.
+                    destination_state.update(before=None, verified=False, search_done=False)
 
         result_context_checked = False
         if destination_state is not None and ferramenta_sucesso:
@@ -255,6 +310,8 @@ def _executar_chamadas_rodada(
                 "dados": dict(resultado_estruturado.data or {}),
             }
         )
+        if block_state is not None and (block_state.get('confirmed') or block_state.get('suspected')):
+            break
 
     if browser_verification_state is not None:
         browser_verification_state["pending"] = browser_verification_pending

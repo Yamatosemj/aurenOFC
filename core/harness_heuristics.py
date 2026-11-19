@@ -32,6 +32,7 @@ def _indice_resultado(objetivo: str) -> int | None:
 
 def _obrigacoes_browser_pendentes(
     objetivo: str, passos: tuple[object, ...], *, destino_verificado: bool = False,
+    pesquisa_bloqueada: bool = False,
 ) -> tuple[str, ...]:
     """Acompanha apenas a sequencia explicita navegador -> busca -> resultado."""
     texto = normalizar_nome(objetivo)
@@ -65,7 +66,7 @@ def _obrigacoes_browser_pendentes(
     pendentes = []
     if quer_navegador and not navegador_aberto:
         pendentes.append('abrir_navegador')
-    if quer_pesquisa and not pesquisa_feita:
+    if quer_pesquisa and (not pesquisa_feita or pesquisa_bloqueada):
         pendentes.append('pesquisar')
     if quer_resultado and not destino_verificado:
         pendentes.append('abrir_resultado')

@@ -45,7 +45,8 @@ def executar_ciclo(
     exigir_ferramenta = (harness._parece_tarefa_de_acao(objetivo)
                          or bool(_obrigacoes_browser_pendentes(
                              objetivo, harness.current_task().steps,
-                             destino_verificado=bool(harness._browser_destination_state.get('verified'))))) and not historico
+                             destino_verificado=bool(harness._browser_destination_state.get('verified')),
+                             pesquisa_bloqueada=bool(harness._browser_block_state.get('search_blocked'))))) and not historico
     empty_response_retries = 0
     falha_nao_recuperada = False
     # Uma falha so sai deste conjunto apos repetir com sucesso o mesmo passo.
@@ -70,6 +71,12 @@ def executar_ciclo(
         )
 
     estado_inicial = harness._montar_estado(objetivo, historico, incluir_contexto=True)
+    if harness._browser_block_state.get('needs_recheck'):
+        estado_inicial += (
+            '\nBLOQUEIO EXTERNO: antes de qualquer outra acao, use somente '
+            'obter_contexto_navegador para verificar a aba ativa. '
+            'Nao interaja com a pagina de verificacao.'
+        )
     # Ponto unico de chamada ao provider: `harness._pedir_modelo(` permanece
     # dentro da mecanica delegada, enquanto o ciclo continua sendo seu dono.
     chamada = _executar_rodada_modelo_impl(
@@ -93,6 +100,23 @@ def executar_ciclo(
         write_log("TASK_ADAPTIVE_DEPTH", task_id=harness._task_id, limite_base=harness.max_model_rounds, limite_adaptativo=limite_rodadas)
     for rodada in range(1, rodadas_restantes + 1):
         chamadas = harness.obter_chamadas(resposta)
+
+        if harness._browser_block_state.get('needs_recheck') and (
+            not chamadas or str(getattr(chamadas[0], 'name', '')) != harness.BROWSER_VERIFICATION_TOOL
+        ):
+            return harness._encerrar_falha(
+                'browser_recheck_required',
+                'Nao consegui consultar novamente o navegador apos a verificacao humana. '
+                'A tarefa nao foi concluida.', rodada,
+            )
+        if harness._browser_block_state.get('observation_required') and (
+            not chamadas or str(getattr(chamadas[0], 'name', '')) != harness.BROWSER_VERIFICATION_TOOL
+        ):
+            return harness._encerrar_falha(
+                'browser_block_observation_required',
+                'O navegador mostrou uma pagina de verificacao. Nao interagi com ela '
+                'sem consultar primeiro o estado real da aba.', rodada,
+            )
 
         if getattr(harness, '_clarification_resuming', False):
             completed = {
@@ -310,7 +334,8 @@ def executar_ciclo(
             # uma proposta mutante nao autorizada pelo usuario.
             pendentes = _obrigacoes_browser_pendentes(
                 objetivo, harness.current_task().steps,
-                destino_verificado=bool(harness._browser_destination_state.get('verified')))
+                destino_verificado=bool(harness._browser_destination_state.get('verified')),
+                pesquisa_bloqueada=bool(harness._browser_block_state.get('search_blocked')))
             if final_texto.endswith("?") and (pendentes or all(
                 item.get("ferramenta") in READ_ONLY_TOOLS for item in historico
             )):
@@ -510,6 +535,7 @@ def executar_ciclo(
             falha_nao_recuperada=falha_nao_recuperada,
             falhas_pendentes=falhas_pendentes,
             destination_state=harness._browser_destination_state if result_required else None,
+            block_state=harness._browser_block_state,
             result_index=_indice_resultado(objetivo) if result_required else None,
             max_tool_result_chars=harness.MAX_TOOL_RESULT_CHARS,
             get_active_vision_geometry=get_active_vision_geometry,
@@ -528,6 +554,55 @@ def executar_ciclo(
             harness._browser_verification_guard_attempts = 0
         if cancelado:
             return harness._encerrar_cancelado("cancelado durante execucao", rodada)
+
+        if harness._browser_block_state.get('needs_recheck'):
+            return harness._encerrar_falha(
+                'browser_recheck_required',
+                'A nova consulta ao navegador nao confirmou o estado da pagina. '
+                'A tarefa nao foi concluida.', rodada,
+            )
+        if (harness._browser_block_state.get('observation_required')
+                and harness._browser_block_state.get('unsafe_attempt')):
+            return harness._encerrar_falha(
+                'browser_block_observation_required',
+                'O navegador mostrou uma pagina de verificacao, mas nao consegui '
+                'consultar a aba antes de continuar.', rodada,
+            )
+
+        if harness._browser_block_state.get('suspected'):
+            write_log('TASK_BROWSER_BLOCK_SUSPECTED', task_id=harness._task_id,
+                      rodada=rodada, motivo=harness._browser_block_state.get('reason'))
+            return harness._encerrar_falha(
+                'browser_block_uncertain',
+                'A pagina parece uma verificacao, mas nao tenho evidencia suficiente '
+                'para confirmar o bloqueio. Nao executei a acao pendente.', rodada,
+            )
+
+        if harness._browser_block_state.get('confirmed'):
+            reason = str(harness._browser_block_state.get('reason') or 'human_challenge')
+            write_log('TASK_BROWSER_EXTERNAL_BLOCK', task_id=harness._task_id,
+                      rodada=rodada, motivo=reason,
+                      rechecagens=int(harness._browser_block_state.get('rechecks', 0)))
+            if harness._browser_block_state.get('rechecks'):
+                return harness._encerrar_falha(
+                    'browser_external_blocked',
+                    'A verificacao humana ainda impede o acesso ao site. '
+                    'Interrompi a tarefa sem afirmar que a pesquisa ou abertura foi concluida.',
+                    rodada,
+                )
+            pergunta = (
+                'O site pediu uma verificacao humana e nao consegui continuar. '
+                'Resolva-a manualmente no navegador e avise quando posso verificar novamente?'
+            )
+            if not harness._aguardar_esclarecimento(objetivo, pergunta):
+                return harness._encerrar_falha(
+                    'browser_external_blocked',
+                    'O site pediu verificacao humana; a tarefa nao foi concluida.', rodada,
+                )
+            harness._registrar_turno('assistant', pergunta)
+            write_log('TASK_WAITING', task_id=harness._task_id,
+                      status='external_browser_block', rodada=rodada)
+            return False, resposta_wrapper(pergunta)
 
         # Depois de taskkill e de nova listagem: o MESMO PID ainda vivo
         # significa ausencia de progresso, mesmo que taskkill retornou 0.
@@ -559,7 +634,8 @@ def executar_ciclo(
         if (not falha_nao_recuperada
                 and not _obrigacoes_browser_pendentes(
                     objetivo, harness.current_task().steps,
-                    destino_verificado=bool(harness._browser_destination_state.get('verified')))
+                    destino_verificado=bool(harness._browser_destination_state.get('verified')),
+                    pesquisa_bloqueada=bool(harness._browser_block_state.get('search_blocked')))
                 and harness._pode_encerrar_localmente(
                     objetivo,
                     resultados_rodada,

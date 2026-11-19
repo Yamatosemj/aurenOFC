@@ -1,11 +1,46 @@
 from core.browser_verification import (
-    confirmar_destino_resultado, contexto_resultados, destino_resultado,
+    classificar_bloqueio_navegador, confirmar_destino_resultado,
+    contexto_resultados, destino_resultado,
     verificar_resultado_navegador,
 )
 
 
 def _contexto(abas):
     return {"abas": abas, "pagina": "conteudo"}
+
+
+def test_google_sorry_is_confirmed_external_block():
+    assert classificar_bloqueio_navegador({
+        'abas': 'Aba ativa: 1\nAba 1: Google | https://www.google.com/sorry/index [ATIVA]',
+        'pagina': 'Trafego incomum. Verifique que voce e humano.',
+    }) == ('confirmado', 'google_sorry')
+
+
+def test_normal_page_and_incidental_captcha_mention_are_not_blocked():
+    for page in ('Resultados normais', 'Artigo sobre como funcionam sistemas CAPTCHA'):
+        assert classificar_bloqueio_navegador({
+            'abas': 'Aba ativa: 1\nAba 1: Busca | https://search.test/search?q=auren [ATIVA]',
+            'pagina': page,
+        }) is None
+    assert classificar_bloqueio_navegador({
+        'abas': 'Aba ativa: 1\nAba 1: CAPTCHA | https://site.test/articles/captcha [ATIVA]',
+        'pagina': 'Artigo sobre sistemas de verificacao na web.',
+    }) is None
+
+
+def test_explicit_human_challenge_is_confirmed_but_ambiguous_title_is_suspected():
+    assert classificar_bloqueio_navegador({
+        'abas': 'Aba ativa: 1\nAba 1: Verify you are human | https://site.test/challenge [ATIVA]',
+        'pagina': 'Complete the CAPTCHA to continue.',
+    }) == ('confirmado', 'human_challenge')
+    assert classificar_bloqueio_navegador({
+        'abas': 'Aba ativa: 1\nAba 1: CAPTCHA | https://site.test/challenge [ATIVA]',
+        'pagina': 'Loading',
+    }) == ('suspeito', 'challenge_page')
+    assert classificar_bloqueio_navegador({
+        'abas': 'Aba ativa: 1\nAba 1: Just a moment... | https://site.test/cdn-cgi/challenge-platform [ATIVA]',
+        'pagina': 'Checking your browser before accessing this website.',
+    }) == ('confirmado', 'human_challenge')
 
 
 def test_search_redirector_requires_its_explicit_target_url():

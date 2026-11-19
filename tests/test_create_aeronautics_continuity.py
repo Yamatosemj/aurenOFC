@@ -119,6 +119,223 @@ def google_script():
             response(call('clicar_elemento', alvo='Create Aeronautics - Minecraft Mods'))]
 
 
+def test_google_block_waits_without_reviewer_prompt_or_challenge_click(build):
+    case = build(google_script(), [IntentDecision('aprovar', 'buscar'),
+                                   IntentDecision('aprovar', 'contexto')], google_result)
+    _, reply = case.harness.processar_mensagem(GOAL)
+    assert case.harness.current_task().state is TaskState.WAITING
+    assert 'verificacao' in reply.output_text.lower()
+    assert [name for name, _ in case.tools] == [
+        'navegar_navegador', 'obter_contexto_navegador']
+    assert not case.harness._browser_destination_state.get('verified')
+
+
+def test_google_block_still_waits_for_simple_search(build):
+    case = build([response(call('navegar_navegador', url=GOOGLE_SEARCH)),
+                  response(call('obter_contexto_navegador', foco='busca')),
+                  response(text='Pesquisa concluida.')],
+                 [IntentDecision('aprovar', 'buscar'), IntentDecision('aprovar', 'ler')],
+                 google_result)
+    case.harness.processar_mensagem('Pesquise Create Aeronautics.')
+    assert case.harness.current_task().state is TaskState.WAITING
+
+
+def test_known_block_url_requires_context_before_any_challenge_click(build):
+    case = build([response(call('navegar_navegador', url=GOOGLE_SEARCH)),
+                  response(call('clicar_elemento', alvo='Nao sou um robo')),
+                  response(text='Concluido.')],
+                 [IntentDecision('aprovar', 'buscar'), IntentDecision('aprovar', 'clicar')],
+                 google_result)
+    case.harness.processar_mensagem(GOAL)
+    assert [name for name, _ in case.tools] == ['navegar_navegador']
+    assert case.harness.current_task().state is TaskState.FAILED
+    assert case.harness.current_task().error == 'browser_block_observation_required'
+
+
+def test_known_block_url_stops_click_in_same_model_batch(build):
+    case = build([response(call('navegar_navegador', url=GOOGLE_SEARCH),
+                           call('clicar_elemento', alvo='Nao sou um robo'))],
+                 [IntentDecision('aprovar', 'buscar')], google_result)
+    case.harness.processar_mensagem(GOAL)
+    assert [name for name, _ in case.tools] == ['navegar_navegador']
+    assert case.harness.current_task().error == 'browser_block_observation_required'
+
+
+def test_suspected_challenge_does_not_claim_success_or_click(build):
+    def suspicious(item):
+        if item.name == 'obter_contexto_navegador':
+            return ToolResult.success('Contexto', data={
+                'abas': 'Aba ativa: 1\nAba 1: CAPTCHA | https://site.test/challenge [ATIVA]',
+                'pagina': 'Loading',
+            }, tool_name=item.name)
+        return ToolResult.success('Naveguei', tool_name=item.name)
+
+    case = build([response(call('navegar_navegador', url=GOOGLE_SEARCH)),
+                  response(call('obter_contexto_navegador', foco='busca')),
+                  response(call('clicar_elemento', alvo='Continuar'))],
+                 [IntentDecision('aprovar', 'buscar'), IntentDecision('aprovar', 'clicar')],
+                 suspicious)
+    case.harness.processar_mensagem(GOAL)
+    assert case.harness.current_task().error == 'browser_block_uncertain'
+    assert [name for name, _ in case.tools] == [
+        'navegar_navegador', 'obter_contexto_navegador']
+
+
+def test_manual_resolution_rechecks_before_opening_same_task(build):
+    state = {'blocked': True, 'url': GOOGLE_SEARCH}
+
+    def tool(item):
+        if item.name == 'navegar_navegador':
+            state['url'] = json.loads(item.arguments)['url']
+            return ToolResult.success('Naveguei', tool_name=item.name)
+        if item.name == 'obter_contexto_navegador':
+            if state['blocked']:
+                return google_result(item)
+            if state['url'] == GOOGLE_SEARCH:
+                return ToolResult.success('Resultados', data={
+                    'abas': f'Aba ativa: 1\nAba 1: Busca | {GOOGLE_SEARCH} [ATIVA]',
+                    'pagina': 'Links relevantes:\n- texto=Create Aeronautics - Minecraft Mods | href=' + RESULT_URL,
+                }, tool_name=item.name)
+            return ToolResult.success('Destino', data={
+                'abas': f'Aba ativa: 1\nAba 1: Create Aeronautics - Minecraft Mods | {RESULT_URL} [ATIVA]',
+                'pagina': 'Pagina de destino',
+            }, tool_name=item.name)
+        raise AssertionError(item.name)
+
+    case = build([response(call('navegar_navegador', url=GOOGLE_SEARCH)),
+                  response(call('obter_contexto_navegador', foco='busca')),
+                  response(call('obter_contexto_navegador', foco='apos verificacao')),
+                  response(call('navegar_navegador', url=RESULT_URL)),
+                  response(call('obter_contexto_navegador', foco='destino')),
+                  response(text='Site aberto.')],
+                 [IntentDecision('aprovar', 'passo')] * 5, tool)
+    case.harness.processar_mensagem(GOAL)
+    waiting = case.harness.current_task()
+    assert waiting.state is TaskState.WAITING
+    state['blocked'] = False
+    case.harness.processar_mensagem('pronto, resolvi a verificacao')
+    final = case.harness.current_task()
+    assert final.task_id == waiting.task_id
+    assert final.state is TaskState.COMPLETED, (
+        final.error, [name for name, _ in case.tools],
+        case.harness._browser_block_state, case.harness._browser_destination_state,
+        case.events[-12:],
+    )
+    assert [name for name, _ in case.tools].count('navegar_navegador') == 2
+    assert [name for name, _ in case.tools][2] == 'obter_contexto_navegador'
+    assert case.harness._browser_destination_state.get('verified') is True
+
+
+def test_persistent_google_block_stops_after_recheck(build):
+    case = build([response(call('navegar_navegador', url=GOOGLE_SEARCH)),
+                  response(call('obter_contexto_navegador', foco='busca')),
+                  response(call('obter_contexto_navegador', foco='apos verificacao')),
+                  response(call('clicar_elemento', alvo='Verificar'))],
+                 [IntentDecision('aprovar', 'passo')] * 4, google_result)
+    case.harness.processar_mensagem(GOAL)
+    waiting = case.harness.current_task()
+    assert waiting.state is TaskState.WAITING
+    case.harness.processar_mensagem('pronto')
+    assert case.harness.current_task().task_id == waiting.task_id
+    assert case.harness.current_task().state is TaskState.FAILED
+    assert case.harness.current_task().error == 'browser_external_blocked'
+    assert [name for name, _ in case.tools] == [
+        'navegar_navegador', 'obter_contexto_navegador', 'obter_contexto_navegador']
+
+
+def test_block_resume_rejects_action_before_new_context(build):
+    case = build(google_script()[:2] + [
+        response(call('clicar_elemento', alvo='Nao sou um robo'))],
+        [IntentDecision('aprovar', 'buscar'), IntentDecision('aprovar', 'clicar')],
+        google_result)
+    case.harness.processar_mensagem(GOAL)
+    task_id = case.harness.current_task().task_id
+    case.harness.processar_mensagem('pronto')
+    assert case.harness.current_task().task_id == task_id
+    assert case.harness.current_task().error == 'browser_recheck_required'
+    assert [name for name, _ in case.tools] == [
+        'navegar_navegador', 'obter_contexto_navegador']
+
+
+def test_recheck_without_real_browser_state_does_not_release_block(build):
+    def missing_after_first(item):
+        if item.name == 'obter_contexto_navegador' and reads[0]:
+            return ToolResult.success('Sem dados estruturados', tool_name=item.name)
+        if item.name == 'obter_contexto_navegador':
+            reads[0] += 1
+        return google_result(item)
+
+    reads = [0]
+    case = build(google_script()[:2] + [
+        response(call('obter_contexto_navegador', foco='apos verificacao')),
+        response(call('navegar_navegador', url=RESULT_URL))],
+        [IntentDecision('aprovar', 'buscar')], missing_after_first)
+    case.harness.processar_mensagem(GOAL)
+    waiting = case.harness.current_task()
+    assert waiting.state is TaskState.WAITING
+    case.harness.processar_mensagem('pronto')
+    assert case.harness.current_task().task_id == waiting.task_id
+    assert case.harness.current_task().error == 'browser_block_uncertain'
+    assert [name for name, _ in case.tools] == [
+        'navegar_navegador', 'obter_contexto_navegador', 'obter_contexto_navegador']
+
+
+def test_block_wait_does_not_renew_model_round_limit(build):
+    case = build(google_script()[:2],
+        [IntentDecision('aprovar', 'buscar')], google_result,
+        max_model_rounds=2)
+    case.harness.processar_mensagem(GOAL)
+    waiting = case.harness.current_task()
+    assert waiting.state is TaskState.WAITING
+    calls_before = len(case.model_inputs)
+    case.harness.processar_mensagem('pronto')
+    assert case.harness.current_task().task_id == waiting.task_id
+    assert case.harness.current_task().error == 'model_round_limit'
+    assert len(case.model_inputs) == calls_before
+
+
+def test_block_wait_keeps_permission_action_budget(build, monkeypatch):
+    state = {'blocked': True}
+    case = build([response(call('navegar_navegador', url=GOOGLE_SEARCH, modo='visivel')),
+                  response(call('obter_contexto_navegador', foco='busca')),
+                  response(call('obter_contexto_navegador', foco='apos verificacao')),
+                  response(call('navegar_navegador', url=RESULT_URL, modo='visivel')),
+                  response(text='Nao abri.')],
+                 [IntentDecision('aprovar', 'buscar'), IntentDecision('aprovar', 'abrir')],
+                 max_actions=1, use_dispatcher=True)
+
+    def navigate(args, _memory, _context):
+        case.effects.append(('navegar_navegador', dict(args)))
+        return ToolResult.success('Naveguei', tool_name='navegar_navegador')
+
+    def context(args, _memory, _context):
+        case.effects.append(('obter_contexto_navegador', dict(args)))
+        if state['blocked']:
+            return ToolResult.success('Bloqueio', data={
+                'abas': 'Aba ativa: 1\nAba 1: Google | https://www.google.com/sorry/index [ATIVA]',
+                'pagina': 'Trafego incomum',
+            }, tool_name='obter_contexto_navegador')
+        return ToolResult.success('Resultados', data={
+            'abas': f'Aba ativa: 1\nAba 1: Busca | {GOOGLE_SEARCH} [ATIVA]',
+            'pagina': 'Links relevantes:\n- texto=Create Aeronautics - Minecraft Mods | href=' + RESULT_URL,
+        }, tool_name='obter_contexto_navegador')
+
+    monkeypatch.setitem(dispatcher.TOOL_HANDLERS, 'navegar_navegador', navigate)
+    monkeypatch.setitem(dispatcher.TOOL_HANDLERS, 'obter_contexto_navegador', context)
+    case.harness.processar_mensagem(GOAL)
+    waiting = case.harness.current_task()
+    assert waiting.state is TaskState.WAITING
+    assert case.permission.actions_attempted == 1
+    assert case.permission.last_authorized_action_signature is not None
+    state['blocked'] = False
+    case.harness.processar_mensagem('pronto')
+    assert case.harness.current_task().task_id == waiting.task_id
+    assert case.permission.actions_attempted == 1
+    assert case.harness.current_task().state is TaskState.FAILED
+    assert case.permission.last_authorized_action_tool == 'obter_contexto_navegador'
+    assert [name for name, _ in case.effects].count('navegar_navegador') == 1
+
+
 def test_google_block_keeps_original_task_waiting(build):
     case = build(google_script(),
         [IntentDecision('aprovar', 'buscar'),
@@ -135,15 +352,15 @@ def test_google_block_keeps_original_task_waiting(build):
         'navegar_navegador', 'obter_contexto_navegador']
     assert [name for name, _ in case.tools] == [
         'navegar_navegador', 'obter_contexto_navegador']
-    assert case.reviews[-1][1] == ['clicar_elemento']
+    assert not any(name == 'clicar_elemento' for name, _ in case.tools)
+    assert any(name == 'TASK_BROWSER_EXTERNAL_BLOCK' for name, _ in case.events)
     assert any(name == 'TASK_WAITING' and data['task_id'] == task.task_id
                for name, data in case.events)
 
 
-def test_answer_resumes_same_id_and_preserves_google_evidence(build):
-    case = build(google_script() + [
-        response(call('ler_pagina', foco='resultado mais relevante')),
-        response(text='Create Aeronautics - Minecraft Mods')],
+def test_answer_rechecks_same_id_and_preserves_google_evidence(build):
+    case = build(google_script()[:2] + [
+        response(call('obter_contexto_navegador', foco='apos verificacao'))],
         [IntentDecision('aprovar', 'buscar'),
          IntentDecision('esclarecer', 'bloqueio externo', 'Devo verificar novamente?')],
         google_result)
@@ -157,7 +374,8 @@ def test_answer_resumes_same_id_and_preserves_google_evidence(build):
     assert [step.tool for step in final.steps][:2] == [
         'navegar_navegador', 'obter_contexto_navegador']
     assert [name for name, _ in case.tools].count('navegar_navegador') == 1
-    assert [name for name, _ in case.tools].count('ler_pagina') == 1
+    assert [name for name, _ in case.tools].count('obter_contexto_navegador') == 2
+    assert final.error == 'browser_external_blocked'
 
 
 def test_new_request_cancels_waiting_task(build):
@@ -272,10 +490,9 @@ def test_nao_esquece_isso_cancels_without_model_or_tool(build):
 
 
 @pytest.mark.parametrize('answer', ['sim', 'pode ser'])
-def test_short_yes_resumes_only_yes_no_question_without_repeating_steps(build, answer):
-    case = build(google_script() + [
-        response(call('ler_pagina', foco='resultado mais relevante')),
-        response(text='Create Aeronautics - Minecraft Mods')],
+def test_short_yes_does_not_claim_manual_verification_was_resolved(build, answer):
+    case = build(google_script()[:2] + [
+        response(call('obter_contexto_navegador', foco='apos verificacao'))],
         [IntentDecision('aprovar', 'buscar'),
          IntentDecision('esclarecer', 'bloqueio externo', 'Devo verificar novamente?')],
         google_result)
@@ -284,7 +501,8 @@ def test_short_yes_resumes_only_yes_no_question_without_repeating_steps(build, a
     case.harness.processar_mensagem(answer)
     assert case.harness.current_task().task_id == old.task_id
     assert [name for name, _ in case.tools] == [
-        'navegar_navegador', 'obter_contexto_navegador', 'ler_pagina']
+        'navegar_navegador', 'obter_contexto_navegador']
+    assert case.harness.current_task().state is TaskState.WAITING
 
 
 def test_completed_effect_is_not_replayed_after_clarification(build):
@@ -487,11 +705,11 @@ def test_inconclusive_reply_keeps_same_wait_without_model_call(build):
         [IntentDecision('aprovar', 'buscar'),
          IntentDecision('esclarecer', 'bloqueio externo', 'Devo verificar novamente?')],
         google_result)
-    case.harness.processar_mensagem(GOAL)
+    _, original_question = case.harness.processar_mensagem(GOAL)
     waiting = case.harness.current_task()
     calls_before = len(case.model_inputs)
     _, answer = case.harness.processar_mensagem('talvez')
-    assert answer.output_text == 'Devo verificar novamente?'
+    assert answer.output_text == original_question.output_text
     assert case.harness.current_task().task_id == waiting.task_id
     assert case.harness.current_task().state is TaskState.WAITING
     assert len(case.model_inputs) == calls_before
@@ -524,14 +742,12 @@ def test_complete_goal_proposes_opening_result_after_clarification(build):
                 }, tool_name=item.name)
         return google_result(item)
 
-    case = build(google_script() + [
-        response(call('ler_pagina', foco='resultado mais relevante')),
+    case = build(google_script()[:2] + [
         response(call('obter_contexto_navegador', foco='resultados')),
         response(text='Create Aeronautics - Minecraft Mods'),
         lambda prompt: response(call('navegar_navegador', url=RESULT_URL))
             if 'abrir_resultado' in str(prompt) else response(text='Resultado descrito.')],
         [IntentDecision('aprovar', 'buscar'),
-         IntentDecision('esclarecer', 'bloqueio externo', 'Devo verificar novamente?'),
          IntentDecision('aprovar', 'site escolhido')],
         recovered_result)
     case.harness.processar_mensagem(GOAL)
