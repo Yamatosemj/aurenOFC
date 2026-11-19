@@ -161,6 +161,26 @@ def test_known_block_url_stops_click_in_same_model_batch(build):
     assert case.harness.current_task().error == 'browser_block_observation_required'
 
 
+def test_empty_context_cannot_release_known_google_block_for_click(build):
+    def empty_read(item):
+        if item.name == 'navegar_navegador':
+            return ToolResult.success('URL atual: https://www.google.com/sorry/index',
+                                      tool_name=item.name)
+        if item.name == 'obter_contexto_navegador':
+            return ToolResult.success('Sem dados estruturados', tool_name=item.name)
+        return ToolResult.success('Cliquei', tool_name=item.name)
+
+    case = build([response(call('navegar_navegador', url=GOOGLE_SEARCH),
+                           call('obter_contexto_navegador', foco='busca'),
+                           call('clicar_elemento', alvo='Nao sou um robo'))],
+                 [IntentDecision('aprovar', 'buscar')], empty_read)
+    case.harness.processar_mensagem('Pesquise Create Aeronautics.')
+    assert [name for name, _ in case.tools] == [
+        'navegar_navegador', 'obter_contexto_navegador']
+    assert case.harness.current_task().state is TaskState.FAILED
+    assert case.harness.current_task().error == 'browser_block_observation_required'
+
+
 def test_suspected_challenge_does_not_claim_success_or_click(build):
     def suspicious(item):
         if item.name == 'obter_contexto_navegador':
@@ -216,11 +236,7 @@ def test_manual_resolution_rechecks_before_opening_same_task(build):
     case.harness.processar_mensagem('pronto, resolvi a verificacao')
     final = case.harness.current_task()
     assert final.task_id == waiting.task_id
-    assert final.state is TaskState.COMPLETED, (
-        final.error, [name for name, _ in case.tools],
-        case.harness._browser_block_state, case.harness._browser_destination_state,
-        case.events[-12:],
-    )
+    assert final.state is TaskState.COMPLETED, final.error
     assert [name for name, _ in case.tools].count('navegar_navegador') == 2
     assert [name for name, _ in case.tools][2] == 'obter_contexto_navegador'
     assert case.harness._browser_destination_state.get('verified') is True

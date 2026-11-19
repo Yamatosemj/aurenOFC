@@ -127,8 +127,10 @@ def _executar_chamadas_rodada(
                 }) == ('confirmado', 'google_sorry'):
                     block_state['observation_required'] = True
             if nome == browser_verification_tool:
-                block_state['observation_required'] = False
                 dados_bloqueio = dict(resultado_estruturado.data or {})
+                contexto_observado = contexto_resultados(dados_bloqueio)
+                if contexto_observado is not None:
+                    block_state['observation_required'] = False
                 classificacao = classificar_bloqueio_navegador(dados_bloqueio)
                 rechecando = bool(block_state.get('needs_recheck'))
                 if rechecando:
@@ -141,7 +143,7 @@ def _executar_chamadas_rodada(
                     block_state['search_blocked'] = bool(
                         block_state.get('search_attempted') and not opening_result)
                 elif classificacao is None:
-                    before_recheck = contexto_resultados(dados_bloqueio)
+                    before_recheck = contexto_observado
                     if rechecando and before_recheck is None:
                         block_state.update(confirmed=False, suspected=True,
                                            reason='recheck_unavailable')
