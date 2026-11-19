@@ -161,13 +161,13 @@ def destino_resultado(
     if ferramenta == 'navegar_navegador':
         url = _normalize_url(str(args.get('url') or ''))
         if url:
-            candidatos = ([links[indice - 1]] if indice is not None
-                          and 1 <= indice <= len(links) else links)
-            escolhido = next((item for item in candidatos
+            candidatos = ([(indice - 1, links[indice - 1])] if indice is not None
+                          and 1 <= indice <= len(links) else enumerate(links))
+            escolhido = next(((posicao, item) for posicao, item in candidatos
                               if _normalize_url(item['url']) == url), None)
     elif ferramenta == 'clicar_elemento':
         alvo = normalizar_nome(str(args.get('alvo') or ''))
-        candidatos = [item for item in links
+        candidatos = [(posicao, item) for posicao, item in enumerate(links)
                       if alvo and (alvo == normalizar_nome(item['titulo'])
                                    or alvo in normalizar_nome(item['titulo']))]
         try:
@@ -176,9 +176,9 @@ def destino_resultado(
             return None
         if 1 <= indice_clique <= len(candidatos):
             escolhido = candidatos[indice_clique - 1]
-    if escolhido is None or (indice is not None and links.index(escolhido) != indice - 1):
+    if escolhido is None or (indice is not None and escolhido[0] != indice - 1):
         return None
-    return {'url': escolhido['url'], 'titulo': escolhido['titulo']}
+    return {'url': escolhido[1]['url'], 'titulo': escolhido[1]['titulo']}
 
 
 def confirmar_destino_resultado(

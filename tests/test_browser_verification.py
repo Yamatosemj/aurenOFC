@@ -234,6 +234,34 @@ def test_repeated_candidate_urls_do_not_shift_explicit_third_result():
                              '{"url":"https://same.test/page"}', 2) == before['links'][1]
 
 
+def test_identical_results_preserve_explicit_second_position():
+    repeated = {'titulo': 'Mesmo resultado', 'url': 'https://same.test/page'}
+    before = contexto_resultados({
+        'abas': ('Aba ativa: 1\nAba 1: Busca | '
+                 'https://search.test/search?q=auren [ATIVA]'),
+        'pagina': (
+            'Candidatos de link na ordem da pagina:\n'
+            '- posicao=1 | texto=Mesmo resultado | href=https://same.test/page\n'
+            '- posicao=2 | texto=Mesmo resultado | href=https://same.test/page\n'
+            '- posicao=3 | texto=Outro resultado | href=https://other.test/page\n'
+        ),
+    })
+    assert before['links'][:2] == [repeated, repeated]
+
+    assert destino_resultado(
+        before, 'navegar_navegador',
+        '{"url":"https://same.test/page"}', 2,
+    ) == repeated
+    assert destino_resultado(
+        before, 'clicar_elemento',
+        '{"alvo":"Mesmo resultado","indice":2}', 2,
+    ) == repeated
+    assert destino_resultado(
+        before, 'navegar_navegador',
+        '{"url":"https://other.test/page"}', 2,
+    ) is None
+
+
 def test_page_title_cannot_forge_links_before_browser_generated_sections():
     dados = {
         'abas': ('Aba ativa: 1\nAba 1: Busca | '
