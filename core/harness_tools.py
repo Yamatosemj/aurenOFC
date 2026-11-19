@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import re
 import time
 from typing import Any, Callable
 
 from core.harness_serialization import _argumentos_da_chamada, _texto_seguro
+from core.browser_verification import (
+    confirmar_destino_resultado, contexto_resultados, destino_resultado,
+)
 from core.tool_result import ToolResult, from_legacy
 
 
@@ -28,6 +32,8 @@ def _executar_chamadas_rodada(
     browser_verification_tool: str = "obter_contexto_navegador",
     browser_verifier: Callable[[str, str, Any, Any], bool | None] | None = None,
     falhas_pendentes: set[tuple[str, str]] | None = None,
+    destination_state: dict[str, Any] | None = None,
+    result_index: int | None = None,
 ) -> tuple[list[dict[str, Any]], int, bool, bool, bool]:
     """Executa a rodada sem apagar falhas anteriores por sucessos nao relacionados.
 
@@ -68,8 +74,27 @@ def _executar_chamadas_rodada(
         )
 
         tool_started_perf = time.perf_counter()
+        preflight_error = None
+        is_search = False
+        if destination_state is not None and nome == 'navegar_navegador':
+            is_search = bool(re.search(r'(?:[?&](?:q|query|search)=|/search(?:[/?]|$))',
+                                       argumentos, flags=re.IGNORECASE))
+        if (destination_state is not None and destination_state.get('search_done')
+                and nome in {'clicar_elemento', 'navegar_navegador'} and not is_search):
+            before = destination_state.get('before')
+            expected = (destino_resultado(before, nome, argumentos, result_index)
+                        if isinstance(before, dict) else None)
+            if expected is None:
+                preflight_error = ToolResult.failure(
+                    'Nao ha contexto de busca suficiente para confirmar este resultado.',
+                    error_code='result_precontext_missing', tool_name=nome,
+                )
+            else:
+                destination_state['pending_action'] = {'before': before, 'expected': expected}
+                destination_state['before'] = None
+                destination_state['verified'] = False
         try:
-            resultado_bruto = executar_ferramenta(item)
+            resultado_bruto = preflight_error or executar_ferramenta(item)
         except Exception as erro:
             resultado_bruto = ToolResult.failure(
                 f"Falha inesperada no harness: {erro}",
@@ -83,13 +108,43 @@ def _executar_chamadas_rodada(
         )
         ferramenta_sucesso = resultado_estruturado.ok
 
+        result_context_checked = False
+        if destination_state is not None and ferramenta_sucesso:
+            if nome in browser_state_mutating_tools:
+                destination_state['verified'] = False
+                destination_state['before'] = None
+                if nome not in {'clicar_elemento', 'navegar_navegador'}:
+                    destination_state.pop('pending_action', None)
+            if nome == 'navegar_navegador' and is_search:
+                destination_state.update(search_done=True, before=None,
+                                         pending_action=None, verified=False)
+            elif nome == browser_verification_tool:
+                pending_action = destination_state.get('pending_action')
+                dados = dict(resultado_estruturado.data or {})
+                if pending_action is not None:
+                    result_context_checked = True
+                    destination_state['verified'] = confirmar_destino_resultado(
+                        pending_action['before'], pending_action['expected'], dados)
+                    if destination_state['verified']:
+                        destination_state.pop('pending_action', None)
+                elif destination_state.get('search_done') and not destination_state.get('verified'):
+                    before = contexto_resultados(dados)
+                    destination_state['before'] = None
+                    if before is not None and re.search(
+                        r'(?:[?&](?:q|query|search)=|/search(?:[/?]|$))',
+                        before['url'], flags=re.IGNORECASE,
+                    ):
+                        destination_state['before'] = before
+        elif destination_state is not None and nome in {'clicar_elemento', 'navegar_navegador'}:
+            destination_state.pop('pending_action', None)
+
         if ferramenta_sucesso and nome in browser_state_mutating_tools:
             browser_verification_pending = True
             if browser_verification_state is not None:
                 browser_verification_state["ferramenta"] = nome
                 browser_verification_state["argumentos"] = argumentos
                 browser_verification_state["dados_acao"] = dict(resultado_estruturado.data or {})
-        elif ferramenta_sucesso and nome == browser_verification_tool:
+        elif ferramenta_sucesso and nome == browser_verification_tool and browser_verification_pending:
             verificado = None
             if browser_verifier is not None and browser_verification_state is not None:
                 verificado = browser_verifier(
@@ -98,6 +153,10 @@ def _executar_chamadas_rodada(
                     resultado_estruturado.data or {},
                     browser_verification_state.get("dados_acao"),
                 )
+            if (result_context_checked
+                    and str(browser_verification_state.get('ferramenta') or '')
+                    in {'clicar_elemento', 'navegar_navegador'}):
+                verificado = bool(destination_state.get('verified'))
             write_log(
                 "TASK_BROWSER_VERIFICATION",
                 task_id=task_id,

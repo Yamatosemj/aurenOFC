@@ -14,7 +14,9 @@ from core.browser_verification import verificar_resultado_navegador
 from core.vision import clear_active_vision_geometry, get_active_vision_geometry, prepare_vision_result_content
 from core.harness_intent_guard import verificar_antes_de_agir
 from core.harness_serialization import _argumentos_da_chamada
-from core.harness_heuristics import _obrigacoes_browser_pendentes
+from core.harness_heuristics import (
+    _indice_resultado, _obrigacoes_browser_pendentes, _pede_abrir_resultado,
+)
 from core.intent_verification import READ_ONLY_TOOLS
 from core.harness_closure import (_alvo_fechamento, _comprovou_fechamento, _orientacao_verificacao, _encerramento_sem_progresso, _repeticao_encerramento_sem_verificar, _reconsulta_processos_pendente, _confirmacao_fechamento_ja_respondida)
 from core.utils import normalizar_nome
@@ -42,7 +44,8 @@ def executar_ciclo(
     # em que o modelo responde sem executar nada.
     exigir_ferramenta = (harness._parece_tarefa_de_acao(objetivo)
                          or bool(_obrigacoes_browser_pendentes(
-                             objetivo, harness.current_task().steps))) and not historico
+                             objetivo, harness.current_task().steps,
+                             destino_verificado=bool(harness._browser_destination_state.get('verified'))))) and not historico
     empty_response_retries = 0
     falha_nao_recuperada = False
     # Uma falha so sai deste conjunto apos repetir com sucesso o mesmo passo.
@@ -306,7 +309,8 @@ def executar_ciclo(
             # Guardamos somente o objetivo original e a pergunta, jamais
             # uma proposta mutante nao autorizada pelo usuario.
             pendentes = _obrigacoes_browser_pendentes(
-                objetivo, harness.current_task().steps)
+                objetivo, harness.current_task().steps,
+                destino_verificado=bool(harness._browser_destination_state.get('verified')))
             if final_texto.endswith("?") and (pendentes or all(
                 item.get("ferramenta") in READ_ONLY_TOOLS for item in historico
             )):
@@ -470,7 +474,9 @@ def executar_ciclo(
         if resultado_revisao is not None:
             return resultado_revisao
 
-        browser_verification_enabled = harness._parece_tarefa_browser_verificavel(objetivo)
+        result_required = _pede_abrir_resultado(objetivo)
+        browser_verification_enabled = (
+            harness._parece_tarefa_browser_verificavel(objetivo) or result_required)
         if browser_verification_enabled:
             browser_verification_state = harness._browser_verification_state
             browser_verification_state["pending"] = harness._browser_verification_pending
@@ -503,6 +509,8 @@ def executar_ciclo(
             browser_verifier=verificar_resultado_navegador,
             falha_nao_recuperada=falha_nao_recuperada,
             falhas_pendentes=falhas_pendentes,
+            destination_state=harness._browser_destination_state if result_required else None,
+            result_index=_indice_resultado(objetivo) if result_required else None,
             max_tool_result_chars=harness.MAX_TOOL_RESULT_CHARS,
             get_active_vision_geometry=get_active_vision_geometry,
             clear_active_vision_geometry=clear_active_vision_geometry,
@@ -549,7 +557,9 @@ def executar_ciclo(
         # falha, o ciclo segue para a proxima rodada do modelo (nunca
         # reexecuta as chamadas da rodada atual).
         if (not falha_nao_recuperada
-                and not _obrigacoes_browser_pendentes(objetivo, harness.current_task().steps)
+                and not _obrigacoes_browser_pendentes(
+                    objetivo, harness.current_task().steps,
+                    destino_verificado=bool(harness._browser_destination_state.get('verified')))
                 and harness._pode_encerrar_localmente(
                     objetivo,
                     resultados_rodada,

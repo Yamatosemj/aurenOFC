@@ -221,6 +221,7 @@ class AurenHarness:
         self._browser_verification_pending = False
         self._browser_verification_guard_attempts = 0
         self._browser_verification_state: dict[str, Any] = {"pending": False}
+        self._browser_destination_state: dict[str, Any] = {}
         # O Ari usa uma fila de prioridade para tarefas de fundo. No Auren ela
         # fica restrita a aprendizado/persistencia pos-tarefa para não atrasar a resposta.
         self._background_queue = AgentTaskQueue(max_workers=1, max_results=100)
@@ -527,6 +528,7 @@ class AurenHarness:
                 '_browser_verification_pending': self._browser_verification_pending,
                 '_browser_verification_guard_attempts': self._browser_verification_guard_attempts,
                 '_browser_verification_state': dict(self._browser_verification_state),
+                '_browser_destination_state': dict(self._browser_destination_state),
             },
         }
         return True
@@ -548,6 +550,7 @@ class AurenHarness:
         self._browser_verification_guard_attempts = 0
         self._browser_verification_state.clear()
         self._browser_verification_state["pending"] = False
+        self._browser_destination_state.clear()
         objetivo_log = mensagem.strip()
         pendente_anterior = self._pergunta_pendente
         pending = self._clarification
