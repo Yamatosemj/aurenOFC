@@ -39,7 +39,8 @@ def scenario(tmp_path, monkeypatch):
     created = []
 
     def build(answers, *, destination=RESULT, click_ok=True, include_links=True,
-              include_context=True, stale_first_destination_read=False):
+              include_context=True, stale_first_destination_read=False,
+              search_page=None):
         answers = iter(answers)
         calls, inputs = [], []
         current = {'url': '', 'title': ''}
@@ -78,8 +79,10 @@ def scenario(tmp_path, monkeypatch):
                 observed_url = SEARCH if stale_read[0] else current['url']
                 observed_title = 'Pesquisa' if stale_read[0] else current['title']
                 stale_read[0] = False
-                page = ('Links relevantes:\n- texto=Create Aeronautics - Minecraft Mods | '
-                        f'href={RESULT}' if observed_url == SEARCH and include_links else 'Pagina atual')
+                page = ((search_page or
+                         ('Links relevantes:\n- texto=Create Aeronautics - Minecraft Mods | '
+                          f'href={RESULT}'))
+                        if observed_url == SEARCH and include_links else 'Pagina atual')
                 tabs = (f"Aba ativa: 1\nAba 1: {observed_title} | "
                         f"{observed_url} [ATIVA]")
                 return ToolResult.success('Contexto', data={'abas': tabs, 'pagina': page},
@@ -262,3 +265,40 @@ def test_clarification_choice_overrides_original_result_rank():
                  'Esclarecimento do usuario: o segundo')
     assert _indice_resultado(objective) == 2
     assert _indice_resultado(objective.replace('o segundo', 'sim')) == 1
+
+
+def test_most_relevant_does_not_mean_first_result():
+    assert _indice_resultado('Pesquise Create Aeronautics e entre no site mais relevante.') is None
+    assert _indice_resultado('Pesquise Create Aeronautics e abra o primeiro resultado.') == 1
+
+
+def test_most_relevant_can_open_observed_nonfirst_result(scenario):
+    second = 'https://modrinth.test/mod/create-aeronautics'
+    search_page = (
+        'Links relevantes:\n'
+        '- texto=Create Aeronautics - Minecraft Mods | href=' + second + '\n'
+        'Candidatos de link na ordem da pagina:\n'
+        '- posicao=1 | texto=Outra pagina | href=https://other.test/page\n'
+        '- posicao=2 | texto=Create Aeronautics - Minecraft Mods | href=' + second
+    )
+    case = scenario(_sequence(call('navegar_navegador', url=second)),
+                    destination=second, search_page=search_page)
+    case.harness.processar_mensagem(GOAL)
+    assert case.harness.current_task().state is TaskState.COMPLETED
+    assert ('navegar_navegador', {'url': second}) in case.calls
+    assert case.harness._browser_destination_state['verified'] is True
+
+
+def test_repeated_unverifiable_result_stops_before_model_round_limit(scenario):
+    answers = [response(call('navegar_navegador', url=SEARCH)),
+               response(call('obter_contexto_navegador', foco='resultados'))]
+    for _ in range(6):
+        answers.extend((response(call('navegar_navegador', url=RESULT)),
+                        response(call('obter_contexto_navegador', foco='resultados'))))
+    case = scenario(answers, include_links=False)
+    case.harness.processar_mensagem(GOAL)
+    task = case.harness.current_task()
+    assert task.state is TaskState.FAILED
+    assert task.error == 'browser_result_no_progress'
+    assert [name for name, _ in case.calls].count('navegar_navegador') == 1
+    assert len(case.inputs) < case.harness._task_round_limit

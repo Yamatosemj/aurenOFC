@@ -113,14 +113,24 @@ def contexto_resultados(dados: Any) -> dict[str, Any] | None:
         return None
     pagina = str(dados.get('pagina') or '')
     candidatos = pagina.split('Candidatos de link na ordem da pagina:', 1)
-    trecho = candidatos[1] if len(candidatos) == 2 else pagina
+    relevantes = pagina.split('Links relevantes:', 1)
+    trechos = [candidatos[1]] if len(candidatos) == 2 else []
+    if len(relevantes) == 2:
+        trechos.append(relevantes[1].split('Candidatos de link na ordem da pagina:', 1)[0])
     links = []
-    for linha in trecho.splitlines():
-        match = re.match(r'^- (?:posicao=\d+ \| )?texto=(.*?) \| href=(\S+)',
-                         linha.strip())
-        if match:
+    for trecho in trechos:
+        iniciou = False
+        for linha in trecho.splitlines():
+            match = re.match(r'^- (?:posicao=\d+ \| )?texto=(.*?) \| href=(\S+)',
+                             linha.strip())
+            if not match:
+                if linha.strip() or iniciou:
+                    break
+                continue
+            iniciou = True
             url = urljoin(ativa[2], match.group(2))
-            if urlsplit(url).scheme in {'http', 'https'} and _normalize_url(url):
+            if (urlsplit(url).scheme in {'http', 'https'} and _normalize_url(url)
+                    and not any(item['url'] == url for item in links)):
                 links.append({'titulo': match.group(1).strip(), 'url': url})
         if len(links) >= 20:
             break

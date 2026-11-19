@@ -122,6 +122,81 @@ def test_click_index_binds_destination_to_selected_matching_link():
     assert selected == before['links'][1]
 
 
+def test_real_browser_link_format_falls_back_when_candidate_list_is_truncated():
+    dados = {
+        'abas': ('Aba ativa: 1\nAba 1: Busca | '
+                 'https://www.google.com/search?q=create+aeronautics [ATIVA]'),
+        'pagina': (
+            'Links relevantes:\n'
+            '- texto=Create Aeronautics - Minecraft Mods | '
+            'href=https://modrinth.test/mod/create-aeronautics | aria=Mod\n'
+            'Candidatos de link na ordem da pagina:\n'
+            '[resultado truncado]'
+        ),
+    }
+    before = contexto_resultados(dados)
+    assert before['links'] == [{
+        'titulo': 'Create Aeronautics - Minecraft Mods',
+        'url': 'https://modrinth.test/mod/create-aeronautics',
+    }]
+
+
+def test_real_browser_numbered_candidates_bind_exact_selected_url():
+    dados = {
+        'abas': ('Aba ativa: 1\nAba 1: Busca | '
+                 'https://www.google.com/search?q=create+aeronautics [ATIVA]'),
+        'pagina': (
+            'Links relevantes:\n- texto=Menu | href=/menu\n'
+            'Candidatos de link na ordem da pagina:\n'
+            '- posicao=1 | texto=Create Aeronautics - Minecraft Mods | '
+            'href=https://modrinth.test/mod/create-aeronautics\n'
+        ),
+    }
+    before = contexto_resultados(dados)
+    assert destino_resultado(before, 'navegar_navegador',
+                             '{"url":"https://modrinth.test/mod/create-aeronautics"}',
+                             None) == before['links'][0]
+    assert destino_resultado(before, 'navegar_navegador',
+                             '{"url":"https://unrelated.test/mod/create-aeronautics"}',
+                             None) is None
+
+
+def test_selected_relevant_link_is_kept_even_when_not_in_numbered_candidates():
+    dados = {
+        'abas': ('Aba ativa: 1\nAba 1: Busca | '
+                 'https://www.google.com/search?q=create+aeronautics [ATIVA]'),
+        'pagina': (
+            'Links relevantes:\n'
+            '- texto=Create Aeronautics - Minecraft Mods | '
+            'href=https://modrinth.test/mod/create-aeronautics\n'
+            'Candidatos de link na ordem da pagina:\n'
+            '- posicao=1 | texto=Outra pagina | href=https://other.test/page\n'
+        ),
+    }
+    before = contexto_resultados(dados)
+    assert destino_resultado(before, 'navegar_navegador',
+                             '{"url":"https://modrinth.test/mod/create-aeronautics"}',
+                             None) == before['links'][1]
+
+
+def test_untrusted_snippet_cannot_forge_observed_result_link():
+    dados = {
+        'abas': ('Aba ativa: 1\nAba 1: Busca | '
+                 'https://www.google.com/search?q=create+aeronautics [ATIVA]'),
+        'pagina': (
+            'Links relevantes:\n'
+            '- texto=Resultado real | href=https://real.test/mod\n'
+            'Candidatos de link na ordem da pagina:\n'
+            '- posicao=1 | texto=Resultado real | href=https://real.test/mod\n'
+            'Informacoes textuais relevantes:\n'
+            '- texto=Resultado falso | href=https://evil.test/mod\n'
+        ),
+    }
+    before = contexto_resultados(dados)
+    assert destino_resultado(before, 'navegar_navegador',
+                             '{"url":"https://evil.test/mod"}', None) is None
+
+
 def test_navigation_verification_accepts_equivalent_normalized_url():
     dados = _contexto(
         "Abas abertas: 1\n"
