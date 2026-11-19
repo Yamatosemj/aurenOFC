@@ -112,18 +112,40 @@ def contexto_resultados(dados: Any) -> dict[str, Any] | None:
     if ativa is None:
         return None
     pagina = str(dados.get('pagina') or '')
-    candidatos = pagina.split('Candidatos de link na ordem da pagina:', 1)
-    trecho = candidatos[1] if len(candidatos) == 2 else pagina
-    links = []
-    for linha in trecho.splitlines():
-        match = re.match(r'^- (?:posicao=\d+ \| )?texto=(.*?) \| href=(\S+)',
-                         linha.strip())
-        if match:
-            url = urljoin(ativa[2], match.group(2))
-            if urlsplit(url).scheme in {'http', 'https'} and _normalize_url(url):
-                links.append({'titulo': match.group(1).strip(), 'url': url})
+    inicio_dados = re.search(r'(?m)^Foco da leitura:.*$', pagina)
+    if inicio_dados:
+        pagina = pagina[inicio_dados.end():]
+    secoes: dict[str, list[dict[str, str]]] = {
+        'candidatos': [], 'relevantes': [],
+    }
+    secao = None
+    for linha in pagina.splitlines():
+        limpa = linha.strip()
+        if limpa == 'Candidatos de link na ordem da pagina:':
+            secao = 'candidatos'
+            continue
+        if limpa == 'Links relevantes:':
+            secao = 'relevantes'
+            continue
+        if secao is None:
+            continue
+        match = re.fullmatch(
+            r'- (?:posicao=\d+ \| )?texto=(.*?) \| href=(\S+)(?: \| aria=.*)?',
+            limpa,
+        )
+        if match is None:
+            if limpa:
+                secao = None
+            continue
+        url = urljoin(ativa[2], match.group(2))
+        if urlsplit(url).scheme in {'http', 'https'} and _normalize_url(url):
+            secoes[secao].append({'titulo': match.group(1).strip(), 'url': url})
+    links = secoes['candidatos'][:20]
+    for item in secoes['relevantes']:
         if len(links) >= 20:
             break
+        if not any(anterior['url'] == item['url'] for anterior in links):
+            links.append(item)
     return {'url': ativa[2], 'links': links}
 
 
@@ -139,11 +161,13 @@ def destino_resultado(
     if ferramenta == 'navegar_navegador':
         url = _normalize_url(str(args.get('url') or ''))
         if url:
-            escolhido = next((item for item in links
+            candidatos = ([(indice - 1, links[indice - 1])] if indice is not None
+                          and 1 <= indice <= len(links) else enumerate(links))
+            escolhido = next(((posicao, item) for posicao, item in candidatos
                               if _normalize_url(item['url']) == url), None)
     elif ferramenta == 'clicar_elemento':
         alvo = normalizar_nome(str(args.get('alvo') or ''))
-        candidatos = [item for item in links
+        candidatos = [(posicao, item) for posicao, item in enumerate(links)
                       if alvo and (alvo == normalizar_nome(item['titulo'])
                                    or alvo in normalizar_nome(item['titulo']))]
         try:
@@ -152,9 +176,9 @@ def destino_resultado(
             return None
         if 1 <= indice_clique <= len(candidatos):
             escolhido = candidatos[indice_clique - 1]
-    if escolhido is None or (indice is not None and links.index(escolhido) != indice - 1):
+    if escolhido is None or (indice is not None and escolhido[0] != indice - 1):
         return None
-    return {'url': escolhido['url'], 'titulo': escolhido['titulo']}
+    return {'url': escolhido[1]['url'], 'titulo': escolhido[1]['titulo']}
 
 
 def confirmar_destino_resultado(

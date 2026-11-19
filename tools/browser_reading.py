@@ -11,7 +11,7 @@ def ler_pagina(foco):
     try:
         p = _browser.obter_pagina()
 
-        foco = (foco or "").strip()
+        foco = re.sub(r"\s+", " ", str(foco or "")).strip()
         foco_normalizado = normalizar_nome(foco)
         palavras_foco = [
             palavra for palavra in foco_normalizado.split()
@@ -68,7 +68,7 @@ def ler_pagina(foco):
 
         titulo = ""
         try:
-            titulo = p.title()
+            titulo = re.sub(r"\s+", " ", str(p.title())).strip()
         except Exception:
             titulo = ""
 
@@ -569,6 +569,27 @@ def ler_pagina(foco):
             ""
         ]
 
+        linhas.extend(["Links relevantes:"])
+        links = dados.get("links", [])
+        if not links:
+            linhas.append("- Nenhum link relevante encontrado.")
+        else:
+            for item in links:
+                extra = f" | aria={item.get('aria', '')}" if item.get('aria') else ""
+                linhas.append(
+                    f"- texto={item.get('texto', '')} | href={item.get('href', '')}{extra}"
+                )
+
+        if foco_operacional and foco_resultados:
+            candidatos = dados.get("candidatosOrdem", [])
+            if candidatos:
+                linhas.extend(["", "Candidatos de link na ordem da pagina:"])
+                for i, item in enumerate(candidatos, 1):
+                    linhas.append(
+                        f"- posicao={i} | texto={item.get('texto', '')} | href={item.get('href', '')}"
+                    )
+        linhas.append("")
+
         resultados_estruturados = dados.get("resultadosEstruturados", [])
         if resultados_estruturados and foco_resultados:
             linhas.append("Resultados de video estruturados:")
@@ -629,26 +650,6 @@ def ler_pagina(foco):
             if item.get("value"):
                 partes.append(f"valor={item['value']}")
             linhas.append("- " + " | ".join(partes))
-
-        linhas.extend(["", "Links relevantes:"])
-        links = dados.get("links", [])
-        if not links:
-            linhas.append("- Nenhum link relevante encontrado.")
-        else:
-            for item in links:
-                extra = f" | aria={item.get('aria', '')}" if item.get('aria') else ""
-                linhas.append(
-                    f"- texto={item.get('texto', '')} | href={item.get('href', '')}{extra}"
-                )
-
-        if foco_operacional and foco_resultados:
-            candidatos = dados.get("candidatosOrdem", [])
-            if candidatos:
-                linhas.extend(["", "Candidatos de link na ordem da pagina:"])
-                for i, item in enumerate(candidatos, 1):
-                    linhas.append(
-                        f"- posicao={i} | texto={item.get('texto', '')} | href={item.get('href', '')}"
-                    )
 
         if foco_resultados and faixa_fim >= 6:
             limite_final = 5200

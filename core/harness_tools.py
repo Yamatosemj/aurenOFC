@@ -92,6 +92,17 @@ def _executar_chamadas_rodada(
             expected = (destino_resultado(before, nome, argumentos, result_index)
                         if isinstance(before, dict) else None)
             if expected is None:
+                motivo = ('sem_contexto' if not isinstance(before, dict) else
+                          'sem_links' if not before.get('links') else
+                          'indice_divergente' if result_index is not None and
+                          destino_resultado(before, nome, argumentos, None) is not None else
+                          'link_nao_observado')
+                write_log(
+                    'TASK_RESULT_PRECONTEXT_REJECTED',
+                    task_id=task_id, rodada=rodada, motivo=motivo,
+                    links_observados=len(before.get('links', []))
+                    if isinstance(before, dict) else 0,
+                )
                 preflight_error = ToolResult.failure(
                     'Nao ha contexto de busca suficiente para confirmar este resultado.',
                     error_code='result_precontext_missing', tool_name=nome,
@@ -308,6 +319,7 @@ def _executar_chamadas_rodada(
                 "argumentos": argumentos,
                 "resultado": resultado_compacto,
                 "sucesso": ferramenta_sucesso,
+                "codigo_erro": resultado_estruturado.error_code,
                 "image_path": str(imagem_path) if imagem_path else "",
                 "dados": dict(resultado_estruturado.data or {}),
             }

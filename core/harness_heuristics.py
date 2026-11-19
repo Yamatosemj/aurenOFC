@@ -25,8 +25,6 @@ def _indice_resultado(objetivo: str) -> int | None:
         for indice, palavra in enumerate(('primeiro', 'segundo', 'terceiro'), 1):
             if re.search(rf'\b{palavra}\b', trecho):
                 return indice
-        if 'mais relevante' in trecho:
-            return 1
     return None
 
 
