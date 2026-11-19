@@ -79,7 +79,7 @@ def scenario(tmp_path, monkeypatch):
                 observed_url = SEARCH if stale_read[0] else current['url']
                 observed_title = 'Pesquisa' if stale_read[0] else current['title']
                 stale_read[0] = False
-                page = ((search_page or
+                page = (((search_page() if callable(search_page) else search_page) or
                          ('Links relevantes:\n- texto=Create Aeronautics - Minecraft Mods | '
                           f'href={RESULT}'))
                         if observed_url == SEARCH and include_links else 'Pagina atual')
@@ -303,3 +303,34 @@ def test_repeated_unverifiable_result_stops_before_model_round_limit(scenario):
     assert task.error == 'browser_result_no_progress'
     assert [name for name, _ in case.calls].count('navegar_navegador') == 1
     assert len(case.inputs) < case.harness._task_round_limit
+
+
+def test_third_rejection_can_recover_with_fresh_context_in_same_round(scenario):
+    observations = [0]
+
+    def search_page():
+        observations[0] += 1
+        if observations[0] < 4:
+            return 'Links relevantes:\n- Nenhum link relevante encontrado.'
+        return ('Links relevantes:\n- texto=Create Aeronautics - Minecraft Mods | '
+                f'href={RESULT}')
+
+    answers = [
+        response(call('navegar_navegador', url=SEARCH)),
+        response(call('obter_contexto_navegador', foco='resultados')),
+        response(call('navegar_navegador', url=RESULT)),
+        response(call('obter_contexto_navegador', foco='resultados')),
+        response(call('navegar_navegador', url=RESULT)),
+        response(call('obter_contexto_navegador', foco='resultados')),
+        response(call('navegar_navegador', url=RESULT),
+                 call('obter_contexto_navegador', foco='resultados atualizados'),
+                 call('navegar_navegador', url=RESULT)),
+        response(call('obter_contexto_navegador', foco='destino')),
+        response(text='Resultado aberto.'),
+    ]
+    case = scenario(answers, search_page=search_page)
+    case.harness.processar_mensagem(GOAL)
+    task = case.harness.current_task()
+    assert task.state is TaskState.COMPLETED, task.error
+    assert [name for name, _ in case.calls].count('navegar_navegador') == 2
+    assert case.harness._browser_destination_state['verified'] is True

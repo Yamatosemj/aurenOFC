@@ -11,7 +11,7 @@ def ler_pagina(foco):
     try:
         p = _browser.obter_pagina()
 
-        foco = (foco or "").strip()
+        foco = re.sub(r"\s+", " ", str(foco or "")).strip()
         foco_normalizado = normalizar_nome(foco)
         palavras_foco = [
             palavra for palavra in foco_normalizado.split()
@@ -68,7 +68,7 @@ def ler_pagina(foco):
 
         titulo = ""
         try:
-            titulo = p.title()
+            titulo = re.sub(r"\s+", " ", str(p.title())).strip()
         except Exception:
             titulo = ""
 

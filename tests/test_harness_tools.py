@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+import pytest
+
 from core.browser_verification import verificar_resultado_navegador
 from core.harness_tools import _executar_chamadas_rodada
 from core.tool_result import ToolResult
@@ -35,6 +37,42 @@ class _Trace:
 
 def _item(name, call_id, arguments="{}"):
     return SimpleNamespace(name=name, call_id=call_id, arguments=arguments)
+
+
+@pytest.mark.parametrize(('links', 'url', 'indice', 'motivo'), [
+    ([], 'https://site.test/one', None, 'sem_links'),
+    ([{'titulo': 'Um', 'url': 'https://site.test/one'}],
+     'https://site.test/other', None, 'link_nao_observado'),
+    ([{'titulo': 'Um', 'url': 'https://site.test/one'}],
+     'https://site.test/one', 2, 'indice_divergente'),
+])
+def test_precontext_rejection_logs_only_safe_diagnostics(links, url, indice, motivo):
+    logs = []
+
+    def unexpected_execution(_item):
+        raise AssertionError('Abertura sem vinculo nao pode ser executada')
+
+    result = _executar_chamadas_rodada(
+        [_item('navegar_navegador', 'call-1', '{"url":"' + url + '"}')],
+        historico=[], task_manager=_TaskManager(), task_id='task-1', rodada=2,
+        executar_ferramenta=unexpected_execution, trace=None,
+        vision_state_mutating_tools=set(), vision_reobserve_pending=False,
+        falha_nao_recuperada=False, max_tool_result_chars=1000,
+        get_active_vision_geometry=lambda: None,
+        clear_active_vision_geometry=lambda: None,
+        write_log=lambda event, **details: logs.append((event, details)),
+        destination_state={'search_done': True, 'before': {
+            'url': 'https://search.test/search?q=auren', 'links': links,
+        }},
+        result_index=indice,
+    )
+    assert result[0][0]['codigo_erro'] == 'result_precontext_missing'
+    diagnostics = [details for event, details in logs
+                   if event == 'TASK_RESULT_PRECONTEXT_REJECTED']
+    assert diagnostics == [{
+        'task_id': 'task-1', 'rodada': 2, 'motivo': motivo,
+        'links_observados': len(links),
+    }]
 
 
 def test_executes_calls_and_updates_history_and_results():

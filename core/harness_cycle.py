@@ -544,8 +544,11 @@ def executar_ciclo(
             write_log=write_log,
         )
         harness._browser_verification_pending = bool(browser_verification_state.get("pending", False))
-        if any(item.get('codigo_erro') == 'result_precontext_missing'
-               for item in resultados_rodada):
+        if any(item.get('ferramenta') in {'clicar_elemento', 'navegar_navegador'}
+               and item.get('sucesso') for item in resultados_rodada):
+            tentativas_precontexto = 0
+        elif any(item.get('codigo_erro') == 'result_precontext_missing'
+                 for item in resultados_rodada):
             tentativas_precontexto += 1
             if tentativas_precontexto >= 3:
                 return harness._encerrar_falha(
@@ -554,9 +557,6 @@ def executar_ciclo(
                     'Interrompi as tentativas sem abrir um destino nao confirmado.',
                     rodada,
                 )
-        elif any(item.get('ferramenta') in {'clicar_elemento', 'navegar_navegador'}
-                 and item.get('sucesso') for item in resultados_rodada):
-            tentativas_precontexto = 0
         if not harness._browser_verification_pending:
             harness._browser_verification_state.clear()
             harness._browser_verification_state["pending"] = False
