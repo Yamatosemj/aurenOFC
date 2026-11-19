@@ -292,7 +292,8 @@ def test_most_relevant_can_open_observed_nonfirst_result(scenario):
 def test_repeated_unverifiable_result_stops_before_model_round_limit(scenario):
     answers = [response(call('navegar_navegador', url=SEARCH)),
                response(call('obter_contexto_navegador', foco='resultados'))]
-    for _ in range(6):
+    # Respostas suficientes para que a versao sem guard alcance o limite de rodadas.
+    for _ in range(10):
         answers.extend((response(call('navegar_navegador', url=RESULT)),
                         response(call('obter_contexto_navegador', foco='resultados'))))
     case = scenario(answers, include_links=False)
