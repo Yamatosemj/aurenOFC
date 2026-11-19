@@ -37,7 +37,7 @@ jobs:
       - name: Testar servidor HTTP local no Windows
         run: python -m pytest -q tests/test_chrome_ui.py
       - name: Testar tarefas compostas e destino do navegador no Windows
-        run: python -m pytest -q tests/test_composite_goal_obligations.py tests/test_browser_destination_obligations.py
+        run: python -m pytest -q tests/test_composite_goal_obligations.py tests/test_browser_destination_obligations.py tests/test_browser_verification.py
       - name: Conferir testes do runner sem confirmacoes interativas
         env:
           AUREN_TEST_MODE: '1'
