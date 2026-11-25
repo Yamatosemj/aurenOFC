@@ -108,6 +108,23 @@ A correção inicial está na [PR #188](https://github.com/Yamatosemj/aurenOFC/p
 | P09 | Métricas de voz parcialmente separadas do trace | L / P1 para baseline | Vincular captura/ASR/execução/TTS a uma tarefa e distinguir sucesso e falha. |
 | P10 | Ciclo de vida de processo permanente | L / P2 | Testar suspensão, rede, dispositivos, ociosidade e desligamento; relacionado a M08/V07/V09. |
 
+## Plano de entrega — 25/11/2026
+
+Priorizar experiências utilizáveis, em vez de encerrar todos os 55 achados antes do uso. As pendências abaixo não autorizam implementação simultânea nem alteram os critérios de segurança.
+
+- [x] P08 — corrigir população das estatísticas. [PR #189](https://github.com/Yamatosemj/aurenOFC/pull/189) integrada na main em `03d1c8e`; três checks do HEAD revisado aprovados. Validação Live fora do escopo.
+- [ ] Contabilização de chamadas ao modelo — distinguir rodadas, chamadas ao provider, verificação de intenção, cache local, falhas e uso desconhecido. Achado adicional da auditoria de métricas; próxima missão.
+- [ ] P06 — estimativas de custo por modelo, sem tratar preço desconhecido como custo zero.
+- [ ] P09/V08 — métricas mínimas de voz e latência ponta a ponta; detalhar estágios apenas quando necessários.
+- [ ] P07 — medir sobrecarga no ambiente alvo quando autorizado; adiar alteração de arquitetura sem evidência de impacto.
+- [ ] S01 (pausado, P0), S02/S06 e demais bloqueios de segurança relevantes — retomar prioritariamente assim que possível; não liberar uso cotidiano com bloqueios efetivos pendentes.
+- [ ] Estudar soluções de voz atuais do Ari e de projetos comparáveis, incluindo licença e adequação ao ambiente alvo.
+- [ ] Entregar primeiro comando local de mídia, com confirmação do estado real, sem chamada paga para comando inequívoco (N01/N03, W01–W03, M05/P04 conforme aplicável).
+- [ ] Integrar ativação por nome opt-in e atalho global, preservar PTT, validar escuta e segurança (V01–V06/V10, S04; V07/V08).
+- [ ] Iniciar uso cotidiano após validação autorizada; priorizar problemas observados. Restante do backlog permanece aberto e não é condição geral para a primeira entrega.
+
+S01 não perde prioridade por estar abaixo das métricas nesta lista: a pausa é temporária, e a retomada de segurança precede a liberação. Cada tarefa em PR própria, revisão e aprovação explícita antes de merge. A ordem antiga abaixo permanece como referência técnica, subordinada a este plano de entrega.
+
 ## Ordem de trabalho proposta
 
 1. S01 reproduzido por mocks conforme parecer local acima; correção inicial em revisão, temporariamente pausada conforme registro de 25/11. Retomar antes de liberar o uso cotidiano com segurança pendente. Depois investigar S02 e S06 conforme reprodução; reclassificar se não houver bloqueio efetivo. Segurança compartilhada comprovadamente comprometida bloqueia avanço. Não presumir outros bypasses.
