@@ -10,12 +10,12 @@ from pathlib import Path
 from statistics import median
 from typing import Any
 
-from core.usage import calcular_custo_estimado
+from core.usage import MODEL_PRICES, PRICE_REFERENCE, calcular_custo_estimado, cost_status
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_TRACE_DB_PATH = PROJECT_ROOT / "data" / "traces" / "auren_trace.sqlite3"
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 def _now_iso() -> str:
@@ -65,9 +65,13 @@ def _statistics(rows: list[sqlite3.Row]) -> dict[str, int | float | None]:
     # default de uma linha aberta nao representam medidas observadas.
     samples = [row for row in rows if _status(row) in _TERMINAL_STATES
                and row["finished_at"] is not None and row["total_ms"] is not None]
-    result: dict[str, int | float | None] = {"samples": len(samples)}
+    result: dict[str, int | float | None] = {
+        "samples": len(samples),
+        "cost_samples": sum(row["cost_status"] in {"estimated", "zero"} for row in samples),
+    }
     for field, (median_key, p95_key) in _METRIC_FIELDS.items():
-        values = [float(row[field]) for row in samples if row[field] is not None]
+        values = [float(row[field]) for row in samples if row[field] is not None
+                  and (field != "cost_usd" or row["cost_status"] in {"estimated", "zero"})]
         result[median_key] = median(values) if values else None
         result[p95_key] = _percentile(values, 95)
     return result
@@ -119,6 +123,17 @@ class TaskTraceStore:
                 PRAGMA user_version = 1;
                 """
             )
+        if version < 2:
+            connection.execute("BEGIN")
+            try:
+                connection.execute("ALTER TABLE task_traces ADD COLUMN cost_status TEXT NOT NULL DEFAULT 'legacy_unverified'")
+                connection.execute("ALTER TABLE task_traces ADD COLUMN cost_known_calls INTEGER NOT NULL DEFAULT 0")
+                connection.execute("ALTER TABLE task_traces ADD COLUMN cost_unknown_calls INTEGER NOT NULL DEFAULT 0")
+                connection.execute("PRAGMA user_version = 2")
+                connection.commit()
+            except Exception:
+                connection.rollback()
+                raise
         connection.commit()
 
     def start_task(self, *, task_id: str, chat_id: str | None, objective: str,
@@ -154,11 +169,13 @@ class TaskTraceStore:
             "task_type", "finished_at", "status", "total_ms", "context_ms", "fast_path_ms",
             "model_rounds", "model_ms", "tool_calls", "tool_successes", "tool_failures", "tool_ms",
             "asr_ms", "tts_ms", "input_tokens", "output_tokens", "cached_tokens", "cache_write_tokens",
-            "cost_usd", "error",
+            "cost_usd", "cost_status", "cost_known_calls", "cost_unknown_calls", "error",
         )
-        values = [summary.get(field, "") if field in {"task_type", "finished_at", "status", "error"} else float(summary.get(field) or 0) for field in fields]
+        values = [summary.get(field, "") if field in {"task_type", "finished_at", "status", "cost_status", "error"} else float(summary.get(field) or 0) for field in fields]
         for index in (6, 8, 9, 10, 16, 17):
             values[index] = int(values[index])
+        values[20] = int(values[20])
+        values[21] = int(values[21])
         with self._connect() as connection:
             connection.execute(
                 "UPDATE task_traces SET " + ", ".join(f"{field}=?" for field in fields) + " WHERE task_id=?",
@@ -184,7 +201,7 @@ class TaskTraceStore:
             raise ValueError("limit deve ser maior que zero.")
         with self._connect() as connection:
             rows = connection.execute(
-                "SELECT task_type,status,finished_at,total_ms,model_ms,tool_ms,cost_usd "
+                "SELECT task_type,status,finished_at,total_ms,model_ms,tool_ms,cost_usd,cost_status "
                 "FROM task_traces ORDER BY started_at DESC LIMIT ?",
                 (int(limit),),
             ).fetchall()
@@ -234,6 +251,8 @@ class TaskTrace:
     cached_tokens: int = 0
     cache_write_tokens: int = 0
     cost_usd: float = 0.0
+    cost_known_calls: int = 0
+    cost_unknown_calls: int = 0
     _finished: bool = field(default=False, init=False, repr=False)
 
     def _span(self, category: str, name: str, duration_ms: float, *, success: bool | None = True, metadata: dict[str, Any] | None = None) -> None:
@@ -258,7 +277,17 @@ class TaskTrace:
         elif stage == "asr": self.asr_ms += duration
         elif stage == "tts": self.tts_ms += duration
 
-    def record_model(self, rodada: int, duration_ms: float, usage: dict[str, int] | None = None) -> None:
+    def _record_cost(self, usage: dict[str, int] | None, model: str | None) -> float | None:
+        amount = calcular_custo_estimado(usage, model)
+        if amount is None:
+            self.cost_unknown_calls += 1
+        else:
+            self.cost_known_calls += 1
+            self.cost_usd += amount
+        return amount
+
+    def record_model(self, rodada: int, duration_ms: float, usage: dict[str, int] | None = None,
+                     *, model: str | None = None, local_cache: bool = False) -> None:
         metrics = usage if isinstance(usage, dict) else {}
         values = {key: max(0, int(metrics.get(key) or 0)) for key in ("input_tokens", "output_tokens", "cached_tokens", "cache_write_tokens")}
         self.model_rounds += 1
@@ -267,12 +296,16 @@ class TaskTrace:
         self.output_tokens += values["output_tokens"]
         self.cached_tokens += values["cached_tokens"]
         self.cache_write_tokens += values["cache_write_tokens"]
-        self.cost_usd += calcular_custo_estimado(values)
+        amount = 0.0 if local_cache else self._record_cost(metrics if usage else None, model)
         self.task_type = "agentic"
-        self._span("model", f"round_{int(rodada)}", duration_ms, metadata=values)
+        self._span("model", f"round_{int(rodada)}", duration_ms, metadata={
+            **values, "model": model, "price_reference": PRICE_REFERENCE if amount is not None and model in MODEL_PRICES else None,
+            "estimated_cost_usd": amount, "cost_status": "zero" if local_cache or amount == 0 else
+            ("estimated" if amount is not None else "unknown"), "local_cache": local_cache,
+        })
 
     def record_provider_call(self, kind: str, duration_ms: float, *, success: bool,
-                             usage: dict[str, int] | None) -> None:
+                             usage: dict[str, int] | None, model: str | None = None) -> None:
         """Registra a chamada externa; so verificacao soma uso ao resumo legado.
 
         O uso da resposta principal continua sendo somado por record_model,
@@ -280,16 +313,23 @@ class TaskTrace:
         """
         keys = ("input_tokens", "output_tokens", "cached_tokens", "cache_write_tokens")
         values = {key: max(0, int(usage.get(key) or 0)) for key in keys} if usage is not None else None
-        metadata = {"usage_available": values is not None}
+        amount = calcular_custo_estimado(values, model) if success else None
+        metadata = {"usage_available": values is not None, "model": model,
+                    "price_reference": PRICE_REFERENCE if amount is not None and model in MODEL_PRICES else None,
+                    "estimated_cost_usd": amount,
+                    "cost_status": "unknown" if amount is None else ("zero" if amount == 0 else "estimated")}
         if values is not None:
             metadata.update(values)
         self._span("provider", kind, duration_ms, success=success, metadata=metadata)
+        if kind == "response" and not success:
+            self.cost_unknown_calls += 1
+        if kind == "verification":
+            self._record_cost(values if success else None, model)
         if kind == "verification" and success and values is not None:
             self.input_tokens += values["input_tokens"]
             self.output_tokens += values["output_tokens"]
             self.cached_tokens += values["cached_tokens"]
             self.cache_write_tokens += values["cache_write_tokens"]
-            self.cost_usd += calcular_custo_estimado(values)
 
     def record_tool(self, tool_name: str, duration_ms: float, *, success: bool) -> None:
         duration = max(0.0, float(duration_ms))
@@ -311,7 +351,10 @@ class TaskTrace:
             "model_ms": self.model_ms, "tool_calls": self.tool_calls, "tool_successes": self.tool_successes,
             "tool_failures": self.tool_failures, "tool_ms": self.tool_ms, "asr_ms": self.asr_ms, "tts_ms": self.tts_ms,
             "input_tokens": self.input_tokens, "output_tokens": self.output_tokens, "cached_tokens": self.cached_tokens,
-            "cache_write_tokens": self.cache_write_tokens, "cost_usd": self.cost_usd, "error": error,
+            "cache_write_tokens": self.cache_write_tokens, "cost_usd": self.cost_usd,
+            "cost_status": cost_status(self.cost_known_calls, self.cost_unknown_calls),
+            "cost_known_calls": self.cost_known_calls, "cost_unknown_calls": self.cost_unknown_calls,
+            "error": error,
         })
 
 

@@ -31,7 +31,7 @@ def test_trace_store_persists_spans_and_report(tmp_path: Path) -> None:
             "output_tokens": 200,
             "cached_tokens": 100,
             "cache_write_tokens": 0,
-        },
+        }, model="gpt-5.6-luna",
     )
     trace.record_tool("abrir_programa", 45.0, success=True)
     trace.finish(status="completed", total_ms=190.0)
@@ -190,7 +190,7 @@ def test_report_preserves_zero_and_marks_missing_samples_unavailable(tmp_path: P
 def test_report_excludes_unfinished_defaults_from_model_tool_and_cost(tmp_path: Path) -> None:
     store = TaskTraceStore(tmp_path / "metrics.sqlite3")
     complete = store.start_task(task_id="complete", chat_id="chat", objective="complete")
-    complete.record_model(1, 30.0, {"input_tokens": 1000, "output_tokens": 100})
+    complete.record_model(1, 30.0, {"input_tokens": 1000, "output_tokens": 100}, model="gpt-5.6-luna")
     complete.record_tool("tool", 20.0, success=True)
     complete.finish(status="completed", total_ms=60.0)
 

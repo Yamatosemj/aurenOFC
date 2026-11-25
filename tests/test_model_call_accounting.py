@@ -18,8 +18,8 @@ def _usage(input_tokens: int, output_tokens: int):
                            input_tokens_details=SimpleNamespace(cached_tokens=0, cache_write_tokens=0))
 
 
-def _response(*, text="", calls=(), usage=None):
-    return SimpleNamespace(output=list(calls), output_text=text, usage=usage)
+def _response(*, text="", calls=(), usage=None, model="gpt-5.6-luna"):
+    return SimpleNamespace(output=list(calls), output_text=text, usage=usage, model=model)
 
 
 def _provider(*responses):
@@ -56,7 +56,8 @@ def _harness(store, create_response, *, verifier=None):
 
 def test_main_response_and_semantic_verification_are_distinct_provider_calls(tmp_path, monkeypatch):
     for name in ("session_input_tokens", "session_output_tokens", "session_cached_tokens",
-                 "session_cache_write_tokens", "session_cost"):
+                 "session_cache_write_tokens", "session_cost", "session_cost_known_calls",
+                 "session_cost_unknown_calls"):
         monkeypatch.setattr(usage, name, 0)
     tool = SimpleNamespace(type="function_call", name="definir_volume_windows",
                            arguments='{"percentual":30}', call_id="call-1")
@@ -80,9 +81,12 @@ def test_main_response_and_semantic_verification_are_distinct_provider_calls(tmp
     assert (row["input_tokens"], row["output_tokens"]) == (120, 15)
     assert (usage.session_input_tokens, usage.session_output_tokens) == (120, 15)
     assert row["cost_usd"] == (
-        calcular_custo_estimado({"input_tokens": 100, "output_tokens": 10})
-        + calcular_custo_estimado({"input_tokens": 20, "output_tokens": 5})
+        calcular_custo_estimado({"input_tokens": 100, "output_tokens": 10}, "gpt-5.6-luna")
+        + calcular_custo_estimado({"input_tokens": 20, "output_tokens": 5}, "gpt-5.6-luna")
     )
+    assert row["cost_status"] == "estimated"
+    assert row["cost_usd"] == usage.session_cost
+    assert (row["cost_known_calls"], row["cost_unknown_calls"]) == (2, 0)
     assert [(span["name"], span["success"]) for span in provider_spans] == [
         ("response", 1), ("verification", 1),
     ]
@@ -107,6 +111,7 @@ def test_failed_provider_attempt_is_visible_without_invented_usage(tmp_path):
     assert provider_spans[0]["name"] == "response"
     assert provider_spans[0]["success"] == 0
     assert json.loads(provider_spans[0]["metadata_json"])["usage_available"] is False
+    assert row["cost_status"] == "unknown"
 
 
 def test_successful_provider_response_without_usage_is_marked_unavailable(tmp_path):
@@ -119,7 +124,9 @@ def test_successful_provider_response_without_usage_is_marked_unavailable(tmp_pa
     provider_span = next(span for span in store.get_spans(task_id) if span["category"] == "provider")
 
     assert provider_span["success"] == 1
-    assert json.loads(provider_span["metadata_json"]) == {"usage_available": False}
+    assert json.loads(provider_span["metadata_json"])["usage_available"] is False
+    assert json.loads(provider_span["metadata_json"])["cost_status"] == "unknown"
+    assert store.get_task(task_id)["cost_status"] == "unknown"
 
 
 def test_local_cache_hit_counts_as_harness_round_without_provider_call(tmp_path):
@@ -136,6 +143,7 @@ def test_local_cache_hit_counts_as_harness_round_without_provider_call(tmp_path)
     assert row["input_tokens"] == row["output_tokens"] == 0
     assert [span for span in spans if span["category"] == "provider"] == []
     assert len([span for span in spans if span["category"] == "local_cache"]) == 1
+    assert row["cost_status"] == "zero"
 
 
 def test_failed_semantic_verification_preserves_main_usage_and_records_attempt(tmp_path):
@@ -162,8 +170,9 @@ def test_failed_semantic_verification_preserves_main_usage_and_records_attempt(t
     ]
     assert json.loads(provider_spans[1]["metadata_json"])["usage_available"] is False
     assert row["cost_usd"] == calcular_custo_estimado(
-        {"input_tokens": 100, "output_tokens": 10},
+        {"input_tokens": 100, "output_tokens": 10}, "gpt-5.6-luna",
     )
+    assert row["cost_status"] == "partial"
 
 
 def test_observer_is_scoped_to_the_active_task(tmp_path):
