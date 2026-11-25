@@ -13,7 +13,7 @@
 - **Pendências anteriores:** navegação/links, CAPTCHA e retomada real permanecem abertas; não bloqueiam mídia enquanto isoladas. Defeitos reproduzidos no núcleo compartilhado são bloqueantes. Não encerrar PRs antigas ou mesclá-las sem triagem.
 - **Registro formal, evidências e critérios:** [decisão de transição para uso cotidiano](docs/history/2026-11-25-transicao-uso-cotidiano.md). Expansão depende do primeiro teste funcional. Nenhum teste Live nem alteração de runtime foi executado neste registro.
 
-- **Auditorias de 25/11:** [backlog técnico e critérios de reprodução](docs/history/2026-11-25-backlog-auditoria.md). Primeira investigação proposta: S01 (identidade do arquivo entre autorização e execução), isolada e sem alterar runtime; riscos não são bugs comprovados. A primeira entrega de mídia continua sendo o objetivo; corrigir bloqueios comprovados antes de avançar.
+- **Auditorias de 25/11:** [backlog técnico e critérios de reprodução](docs/history/2026-11-25-backlog-auditoria.md). S01 (identidade do arquivo entre autorização e execução) reproduzido por mocks conforme parecer local do Codex; exploração com link real não validada. Próxima tarefa proposta: correção focalizada com regressões; demais riscos não são bugs comprovados. A primeira entrega de mídia continua sendo o objetivo; corrigir bloqueios comprovados antes de avançar.
 
 As seções abaixo preservam o contexto de outubro e suas evidências; referências a trabalhos então "em foco", "candidatos" e PRs pendentes **não representam status atual verificado**. Consultar o GitHub antes de retomá-las. A prioridade acima prevalece sobre sugestões históricas.
 
