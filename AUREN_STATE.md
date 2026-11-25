@@ -6,7 +6,16 @@
 >
 > **Fontes:** [README](README.md) · [Regras para agentes](AGENTS.md) · [Inventário e estado por subsistema](docs/INVENTARIO.md) · [Histórico integral anterior à consolidação](docs/history/AUREN_STATE_SNAPSHOT_2026-10-10.md).
 
-## 1. Situação e trabalho em foco
+## Prioridade vigente — 25/11/2026
+
+- **Ciclo de implementação das Etapas 1–5 encerrado:** [#180](https://github.com/Yamatosemj/aurenOFC/pull/180), [#182](https://github.com/Yamatosemj/aurenOFC/pull/182), [#183](https://github.com/Yamatosemj/aurenOFC/pull/183), [#184](https://github.com/Yamatosemj/aurenOFC/pull/184) e correção complementar [#185](https://github.com/Yamatosemj/aurenOFC/pull/185) integradas. Base verificada `8158bf2`; CI pós-merge aprovado. **Validação Live pós-correção continua pendente.**
+- **Próximo objetivo autorizado:** entregar "Auren, pausa a música" por voz, com ativação pelo nome, estado final verificado e sem alternar reprodução quando já pausada. Revisar e testar ferramentas existentes antes de alterar código. Preservar fluxo único, contratos, permissões e segurança.
+- **Pendências anteriores:** navegação/links, CAPTCHA e retomada real permanecem abertas; não bloqueiam mídia enquanto isoladas. Defeitos reproduzidos no núcleo compartilhado são bloqueantes. Não encerrar PRs antigas ou mesclá-las sem triagem.
+- **Registro formal, evidências e critérios:** [decisão de transição para uso cotidiano](docs/history/2026-11-25-transicao-uso-cotidiano.md). Expansão depende do primeiro teste funcional. Nenhum teste Live nem alteração de runtime foi executado neste registro.
+
+As seções abaixo preservam o contexto de outubro e suas evidências; referências a trabalhos então "em foco", "candidatos" e PRs pendentes **não representam status atual verificado**. Consultar o GitHub antes de retomá-las. A prioridade acima prevalece sobre sugestões históricas.
+
+## 1. Situação e trabalho em foco na revisão anterior (histórico)
 
 - **Projeto:** Auren, assistente pessoal para desktop/voz no Windows, escrito em Python; o proprietário quer evolução por **uma tarefa/PR de cada vez**, com mudanças e testes rastreáveis no GitHub.
 - **Versão técnica configurada:** **V47** em [`config.py`](config.py), modelo padrão `gpt-5.6-luna`. O código de voz candidato à **V48** foi integrado pela [PR #119](https://github.com/Yamatosemj/aurenOFC/pull/119), **sem validação física de microfone/PTT/latência**. Não promover V48 a versão estável por decisão documental.
