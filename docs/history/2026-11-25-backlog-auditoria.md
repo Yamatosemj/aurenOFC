@@ -113,7 +113,7 @@ A correção inicial está na [PR #188](https://github.com/Yamatosemj/aurenOFC/p
 Priorizar experiências utilizáveis, em vez de encerrar todos os 55 achados antes do uso. As pendências abaixo não autorizam implementação simultânea nem alteram os critérios de segurança.
 
 - [x] P08 — corrigir população das estatísticas. [PR #189](https://github.com/Yamatosemj/aurenOFC/pull/189) integrada na main em `03d1c8e`; três checks do HEAD revisado aprovados. Validação Live fora do escopo.
-- [ ] Contabilização de chamadas ao modelo — distinguir rodadas, chamadas ao provider, verificação de intenção, cache local, falhas e uso desconhecido. Achado adicional da auditoria de métricas; próxima missão.
+- [x] Contabilização de chamadas ao modelo — distinguir rodadas, chamadas ao provider, verificação de intenção, cache local, falhas e uso desconhecido. [PR #190](https://github.com/Yamatosemj/aurenOFC/pull/190) integrada em `661f9b1`; três checks do HEAD revisado aprovados. Sem Live; retries internos e custos desconhecidos permanecem limites.
 - [ ] P06 — estimativas de custo por modelo, sem tratar preço desconhecido como custo zero.
 - [ ] P09/V08 — métricas mínimas de voz e latência ponta a ponta; detalhar estágios apenas quando necessários.
 - [ ] P07 — medir sobrecarga no ambiente alvo quando autorizado; adiar alteração de arquitetura sem evidência de impacto.
