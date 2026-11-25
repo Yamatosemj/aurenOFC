@@ -8,12 +8,20 @@ Base de leitura estática: [8158bf2](https://github.com/Yamatosemj/aurenOFC/comm
 
 | ID | Achado / fonte | Tipo / prioridade | Evidência de encerramento |
 |---|---|---|---|
-| S01 | Identidade do arquivo entre autorização e execução: tools/dispatcher.py, core/permission_manager.py, tools/file_intelligence.py | R / P0 | Teste determinístico de mudança do caminho resolvido entre etapas; negar acesso a alvo diferente sem nova autorização. Testar bloqueios e caminho normal. |
+| S01 | Identidade do arquivo entre autorização e execução: tools/dispatcher.py, core/permission_manager.py, tools/file_intelligence.py | Confirmado por mocks (relato Codex) / P0 | Regressão deve negar mudança de destino em AUTO e CONFIRM, preservar bloqueios e caminho normal; avaliar separadamente corrida na abertura. |
 | S02 | Marcação de fontes não confiáveis cobre conjunto específico de ferramentas: tools/dispatcher.py | R / P0 | Mapear todas as fontes e testar propagação, leitura e efeitos subsequentes; demonstrar proteção efetiva sem tornar conteúdo externo autorização. |
 | S03 | Detecção de credenciais por termos: memory/store.py | D / P2 | Testes com dados sintéticos; política explícita para histórico, fatos e estratégias, sem prometer detectar todo segredo. |
 | S04 | Confirmação falada pode consumir captura sem vínculo temporal explícito: voice/confirmation.py | R / P1, bloqueante para confirmação passiva | Testar áudio antigo, áudio durante TTS e solicitação nova; negar confirmação sem vínculo válido. |
 | S05 | Redação heurística dos logs: core/harness_logging.py, core/harness_runtime.py | R / P2 | Exercitar valores sintéticos em logs e traces; minimizar dados e declarar limites. |
 | S06 | Identidade UIA entre preflight e execução: tools/dispatcher.py, tools/windows_uia.py | R / P0 | Reproduzir troca de controle/alvo; negar mudança de identidade protegida ou exigir autorização adequada. |
+
+### S01 — reprodução reportada em 25/11/2026
+
+O proprietário trouxe o parecer do Codex sobre a main `2d1ac70`. Com arquivos sintéticos e resolução controlada por mocks, a leitura e a inspeção passaram de caminho permitido para externo sem confirmação; também foi possível ler destino externo B após confirmação de outro destino externo C. Destino sensível (.ssh) e confirmação negada continuaram bloqueados. O problema lógico de vinculação de autorização foi reproduzido; exploração por troca de link real não foi validada (Windows recusou criação do link). Não houve teste Live, mudança de runtime ou merge nessa investigação.
+
+Testes offline relevantes reportados: 77 aprovados, 1 ignorado, após repetir fora de AppData; primeira execução teve 28 falhas por política de caminhos do diretório temporário. Limpeza de pasta sintética temporária foi bloqueada pela política local; não contornar essa proteção. Os resultados são relato do executor local, não uma execução independente desta auditoria.
+
+Próxima tarefa: vincular autorização a destino canônico único, tanto AUTO quanto CONFIRM, incluindo destino apresentado na confirmação; rejeitar mudança de destino sem nova autorização, cobrir leitura e inspeção por regressão determinística e preservar bloqueios. A janela residual entre validação e abertura pelo SO deve ser explicitamente avaliada e não declarada resolvida por mera comparação textual.
 
 ## Núcleo e execução
 
@@ -96,7 +104,7 @@ Base de leitura estática: [8158bf2](https://github.com/Yamatosemj/aurenOFC/comm
 
 ## Ordem de trabalho proposta
 
-1. Investigação S01 primeiro; somente teste isolado, sem correção antecipada. Depois S02 e S06 conforme reprodução; reclassificar se não houver bloqueio efetivo. Segurança compartilhada comprovadamente comprometida bloqueia avanço. Não presumir bypass: handlers podem negar acesso independentemente.
+1. S01 reproduzido por mocks conforme parecer local acima; próxima tarefa é correção mínima e testes de regressão. Depois investigar S02 e S06 conforme reprodução; reclassificar se não houver bloqueio efetivo. Segurança compartilhada comprovadamente comprometida bloqueia avanço. Não presumir outros bypasses.
 2. N01/N03 e métricas mínimas de referência para a mídia, com mudanças pequenas e focadas.
 3. W01-W03 + M05/P04: uma pausa real e local; reaproveitar Dispatcher, contratos, PermissionManager e ToolResult.
 4. V01-V06/V10, incluindo S04 e medição V07/V08: wake word local, atalho e validação física autorizada; expansão só após a primeira experiência.
