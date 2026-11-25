@@ -141,6 +141,12 @@ O campo **agent.state.phase** do planejador local nao constitui o estado termina
 
 Os traces sao observacionais: nao representam um mecanismo para reproduzir comandos antigos ou reexecutar uma tarefa. Falhas ao gravar spans sao toleradas; falhas da persistencia principal de trace podem ser registradas sem impedir o processamento. Nao registrar tokens, segredos, clipboard bruto ou conteudo sensivel em novos logs; confira [harness_logging.py](../../core/harness_logging.py) antes de adicionar campos.
 
+### Semantica do relatorio de traces (correcao P08)
+
+[`TaskTraceStore.report()`](../../core/task_trace.py) consulta ate `limit` registros recentes (padrao 500). `tasks_considered` e `tasks` contam todos os registros selecionados, inclusive os ainda abertos. `status_counts` conta os valores de estado persistidos (`completed`, `failed`, `cancelled` e `incomplete` para `status` ausente); outros valores historicos, se houver, aparecem pelo proprio nome. Em `by_type`, as medianas e p95 principais usam somente tarefas `completed` com `finished_at` e `total_ms` registrados. `by_status` preserva as mesmas estatisticas separadamente para cada estado presente, incluindo falhas e cancelamentos; tarefas abertas continuam visiveis sem entrar nos percentis.
+
+`samples` informa quantos resumos finalizados contribuem para o grupo. Um `total_ms` igual a `0` e uma amostra valida. `None` em mediana ou p95 significa ausencia de amostras, inclusive para modelo, ferramentas e custo: os zeros default de uma linha aberta nao sao medidas. Em tarefas finalizadas sem chamada ao modelo, ferramenta ou custo, o zero persistido continua valido. Um registro historico sem duracao permanece no banco e nas contagens, mas nao fornece amostra estatistica. O relatorio nao reconstroi resumos parciais a partir dos spans nem corrige outras lacunas de contabilizacao de chamadas ou precos.
+
 ## 6. Matriz de testes e evidencia
 
 **Foram lidos o codigo do caminho critico e os testes abaixo**; eles usam predominantemente callbacks, stores temporarios e ferramentas simuladas. A lista cobre o contrato documentado, **nao equivale a teste real da interface/Windows/API**.
