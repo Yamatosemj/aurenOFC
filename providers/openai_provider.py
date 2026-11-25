@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 import os
+import time
 
 from config import CACHE_KEY, MODEL
 from core.prompt import instrucoes
@@ -38,6 +39,21 @@ class OpenAIProvider:
             return default_tools
         return toolset
 
+    def _request(self, kind: str, **params: Any) -> Any:
+        """Observa uma invocacao de responses.create, sem inferir retries do SDK."""
+        client = self.get_client()
+        started = time.perf_counter()
+        try:
+            response = client.responses.create(**params)
+        except Exception:
+            usage.observe_provider_call(kind, (time.perf_counter() - started) * 1000.0,
+                                        success=False)
+            raise
+        usage.observe_provider_call(kind, (time.perf_counter() - started) * 1000.0,
+                                    response=response, success=True)
+        usage.registrar_uso(response)
+        return response
+
     def create_response(
         self,
         entrada: Any,
@@ -62,14 +78,13 @@ class OpenAIProvider:
         if response_id:
             parametros["previous_response_id"] = response_id
 
-        resposta = self.get_client().responses.create(**parametros)
-        usage.registrar_uso(resposta)
-        return resposta
+        return self._request("response", **parametros)
 
     def verify_intent(self, objetivo, chamadas, historico):
         """Segunda leitura sem ferramentas: nenhuma acao e executada nesta chamada."""
         entrada = criar_entrada_verificacao(objetivo, chamadas, historico)
-        resposta = self.get_client().responses.create(
+        resposta = self._request(
+            "verification",
             model=MODEL,
             instructions=INSTRUCTIONS,
             input=entrada,
@@ -79,5 +94,4 @@ class OpenAIProvider:
             max_output_tokens=300,
             store=False,
         )
-        usage.registrar_uso(resposta)
         return interpretar_decisao(getattr(resposta, "output_text", ""))

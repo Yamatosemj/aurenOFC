@@ -1,11 +1,37 @@
 from __future__ import annotations
 
+from contextvars import ContextVar, Token
+from typing import Any, Callable
+
+_model_call_observer: ContextVar[Callable[[str, float, bool, dict[str, int] | None], None] | None] = ContextVar(
+    "auren_model_call_observer", default=None,
+)
+
 session_input_tokens = 0
 session_output_tokens = 0
 session_cached_tokens = 0
 session_cache_write_tokens = 0
 session_cost = 0.0
 
+
+def set_model_call_observer(observer: Callable[[str, float, bool, dict[str, int] | None], None]) -> Token:
+    return _model_call_observer.set(observer)
+
+
+def reset_model_call_observer(token: Token) -> None:
+    _model_call_observer.reset(token)
+
+
+def observe_provider_call(kind: str, duration_ms: float, *, response: Any = None, success: bool) -> None:
+    """Notifica o trace da tarefa; falhas da telemetria nao afetam o provider."""
+    observer = _model_call_observer.get()
+    if observer is None:
+        return
+    try:
+        metrics = extrair_metricas_uso(response) if success else {}
+        observer(kind, duration_ms, success, metrics or None)
+    except Exception:
+        pass
 
 
 def extrair_metricas_uso(resposta) -> dict[str, int]:

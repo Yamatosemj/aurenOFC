@@ -271,6 +271,26 @@ class TaskTrace:
         self.task_type = "agentic"
         self._span("model", f"round_{int(rodada)}", duration_ms, metadata=values)
 
+    def record_provider_call(self, kind: str, duration_ms: float, *, success: bool,
+                             usage: dict[str, int] | None) -> None:
+        """Registra a chamada externa; so verificacao soma uso ao resumo legado.
+
+        O uso da resposta principal continua sendo somado por record_model,
+        preservando traces criados por callbacks legados sem duplicar tokens.
+        """
+        keys = ("input_tokens", "output_tokens", "cached_tokens", "cache_write_tokens")
+        values = {key: max(0, int(usage.get(key) or 0)) for key in keys} if usage is not None else None
+        metadata = {"usage_available": values is not None}
+        if values is not None:
+            metadata.update(values)
+        self._span("provider", kind, duration_ms, success=success, metadata=metadata)
+        if kind == "verification" and success and values is not None:
+            self.input_tokens += values["input_tokens"]
+            self.output_tokens += values["output_tokens"]
+            self.cached_tokens += values["cached_tokens"]
+            self.cache_write_tokens += values["cache_write_tokens"]
+            self.cost_usd += calcular_custo_estimado(values)
+
     def record_tool(self, tool_name: str, duration_ms: float, *, success: bool) -> None:
         duration = max(0.0, float(duration_ms))
         self.tool_calls += 1

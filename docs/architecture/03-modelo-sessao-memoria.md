@@ -139,6 +139,8 @@ No orquestrador, só string não vazia, de até 700 caracteres após compactaç�
 
 [usage.py](../../core/usage.py) soma métricas após resposta do provider. Seus coeficientes fixos são usados para estimativa independentemente do modelo escolhido; **não são cotação atual nem fatura**. Os contadores são globais do processo, apesar do nome session, sem reset por chat implementado nesse módulo. Traces usam persistência separada e não alimentam automaticamente o contexto de memória.
 
+Para tarefas executadas pelo Harness, o adaptador registra no trace ativo cada invocação observável de `responses.create`, distinguindo resposta principal, verificação semântica e falha. O Harness marca separadamente acertos do cache local. O vínculo usa `ContextVar` durante `processar_mensagem`, sem alterar chamadas nem decisões. Tokens da resposta principal continuam no registro da rodada; os da verificação são adicionados separadamente, sem duplicação. Chamadas diretas ao provider fora de uma tarefa mantêm apenas os contadores globais. Veja a [semântica dos spans e seus limites](01-nucleo.md#chamadas-ao-provider-por-tarefa-correcao-focalizada).
+
 ## 7. Evidência, testes e lacunas
 
 | Área | Testes lidos | O que efetivamente demonstram |
