@@ -23,6 +23,12 @@ Testes offline relevantes reportados: 77 aprovados, 1 ignorado, após repetir fo
 
 Próxima tarefa: vincular autorização a destino canônico único, tanto AUTO quanto CONFIRM, incluindo destino apresentado na confirmação; rejeitar mudança de destino sem nova autorização, cobrir leitura e inspeção por regressão determinística e preservar bloqueios. A janela residual entre validação e abertura pelo SO deve ser explicitamente avaliada e não declarada resolvida por mera comparação textual.
 
+### S01 — PAUSADO em 25/11/2026 (decisão do proprietário)
+
+A correção inicial está na [PR #188](https://github.com/Yamatosemj/aurenOFC/pull/188), aberta em rascunho, HEAD `a9ab0f7`. Os três checks desse HEAD passaram, mas a revisão técnica permanece pendente. O proprietário reportou bloqueios recorrentes de respostas do Codex durante a revisão; a causa não foi confirmada. Há alterações locais de testes ainda não publicadas, que devem ser preservadas. O trabalho independente de métricas foi autorizado enquanto a questão é tratada.
+
+**Retomada:** recuperar o estado local e a revisão pendente da PR #188, concluir a validação e obter CI no HEAD revisado e aprovação explícita antes de qualquer merge. Não considerar S01 encerrado nem reduzir sua prioridade P0; manter as restrições de segurança e de liberação registradas. Daybreak/suporte serão avaliados separadamente pelo proprietário. Retomar assim que possível, inicialmente previsto para 26/11/2026.
+
 ## Núcleo e execução
 
 | ID | Achado / fonte | Tipo / prioridade | Evidência de encerramento |
@@ -104,7 +110,7 @@ Próxima tarefa: vincular autorização a destino canônico único, tanto AUTO q
 
 ## Ordem de trabalho proposta
 
-1. S01 reproduzido por mocks conforme parecer local acima; próxima tarefa é correção mínima e testes de regressão. Depois investigar S02 e S06 conforme reprodução; reclassificar se não houver bloqueio efetivo. Segurança compartilhada comprovadamente comprometida bloqueia avanço. Não presumir outros bypasses.
+1. S01 reproduzido por mocks conforme parecer local acima; correção inicial em revisão, temporariamente pausada conforme registro de 25/11. Retomar antes de liberar o uso cotidiano com segurança pendente. Depois investigar S02 e S06 conforme reprodução; reclassificar se não houver bloqueio efetivo. Segurança compartilhada comprovadamente comprometida bloqueia avanço. Não presumir outros bypasses.
 2. N01/N03 e métricas mínimas de referência para a mídia, com mudanças pequenas e focadas.
 3. W01-W03 + M05/P04: uma pausa real e local; reaproveitar Dispatcher, contratos, PermissionManager e ToolResult.
 4. V01-V06/V10, incluindo S04 e medição V07/V08: wake word local, atalho e validação física autorizada; expansão só após a primeira experiência.
