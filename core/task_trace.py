@@ -26,9 +26,9 @@ def _hash_objective(objective: str) -> str:
     return hashlib.sha256(str(objective or "").encode("utf-8")).hexdigest()
 
 
-def _percentile(values: list[float], percentile: float) -> float:
+def _percentile(values: list[float], percentile: float) -> float | None:
     if not values:
-        return 0.0
+        return None
     ordered = sorted(values)
     if len(ordered) == 1:
         return ordered[0]
@@ -37,6 +37,40 @@ def _percentile(values: list[float], percentile: float) -> float:
     upper = min(lower + 1, len(ordered) - 1)
     weight = position - lower
     return ordered[lower] + (ordered[upper] - ordered[lower]) * weight
+
+
+_TERMINAL_STATES = frozenset({"completed", "failed", "cancelled"})
+_METRIC_FIELDS = {
+    "total_ms": ("median_total_ms", "p95_total_ms"),
+    "model_ms": ("median_model_ms", "p95_model_ms"),
+    "tool_ms": ("median_tool_ms", "p95_tool_ms"),
+    "cost_usd": ("median_cost_usd", "p95_cost_usd"),
+}
+
+
+def _status(row: sqlite3.Row) -> str:
+    return str(row["status"] or "incomplete")
+
+
+def _status_counts(rows: list[sqlite3.Row]) -> dict[str, int]:
+    counts = {"completed": 0, "failed": 0, "cancelled": 0, "incomplete": 0}
+    for row in rows:
+        status = _status(row)
+        counts[status] = counts.get(status, 0) + 1
+    return counts
+
+
+def _statistics(rows: list[sqlite3.Row]) -> dict[str, int | float | None]:
+    # Os campos de resumo so sao persistidos ao terminar a tarefa. Os zeros
+    # default de uma linha aberta nao representam medidas observadas.
+    samples = [row for row in rows if _status(row) in _TERMINAL_STATES
+               and row["finished_at"] is not None and row["total_ms"] is not None]
+    result: dict[str, int | float | None] = {"samples": len(samples)}
+    for field, (median_key, p95_key) in _METRIC_FIELDS.items():
+        values = [float(row[field]) for row in samples if row[field] is not None]
+        result[median_key] = median(values) if values else None
+        result[p95_key] = _percentile(values, 95)
+    return result
 
 
 class TaskTraceStore:
@@ -150,7 +184,8 @@ class TaskTraceStore:
             raise ValueError("limit deve ser maior que zero.")
         with self._connect() as connection:
             rows = connection.execute(
-                "SELECT task_type,total_ms,model_ms,tool_ms,cost_usd FROM task_traces ORDER BY started_at DESC LIMIT ?",
+                "SELECT task_type,status,finished_at,total_ms,model_ms,tool_ms,cost_usd "
+                "FROM task_traces ORDER BY started_at DESC LIMIT ?",
                 (int(limit),),
             ).fetchall()
         groups: dict[str, list[sqlite3.Row]] = {}
@@ -158,18 +193,19 @@ class TaskTraceStore:
             groups.setdefault(str(row["task_type"] or "unknown"), []).append(row)
         result = {}
         for task_type, items in groups.items():
-            total = [float(x["total_ms"] or 0) for x in items]
-            model = [float(x["model_ms"] or 0) for x in items]
-            tool = [float(x["tool_ms"] or 0) for x in items]
-            cost = [float(x["cost_usd"] or 0) for x in items]
+            by_status: dict[str, list[sqlite3.Row]] = {}
+            for row in items:
+                by_status.setdefault(_status(row), []).append(row)
             result[task_type] = {
                 "tasks": len(items),
-                "median_total_ms": median(total) if total else 0.0, "p95_total_ms": _percentile(total, 95),
-                "median_model_ms": median(model) if model else 0.0, "p95_model_ms": _percentile(model, 95),
-                "median_tool_ms": median(tool) if tool else 0.0, "p95_tool_ms": _percentile(tool, 95),
-                "median_cost_usd": median(cost) if cost else 0.0, "p95_cost_usd": _percentile(cost, 95),
+                "status_counts": _status_counts(items),
+                **_statistics(by_status.get("completed", [])),
+                "by_status": {
+                    status: {"tasks": len(status_rows), **_statistics(status_rows)}
+                    for status, status_rows in by_status.items()
+                },
             }
-        return {"tasks_considered": len(rows), "by_type": result}
+        return {"tasks_considered": len(rows), "status_counts": _status_counts(rows), "by_type": result}
 
 
 @dataclass

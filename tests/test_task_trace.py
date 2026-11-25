@@ -130,3 +130,102 @@ def test_harness_records_real_task_trace(tmp_path: Path) -> None:
     assert sum(span["category"] == "model" for span in spans) == 2
     assert any(span["category"] == "tool" and span["name"] == "abrir_programa" for span in spans)
 
+
+def test_report_separates_terminal_states_and_excludes_incomplete_tasks(tmp_path: Path) -> None:
+    store = TaskTraceStore(tmp_path / "mixed.sqlite3")
+    for task_id, status, duration in (
+        ("zero", "completed", 0.0),
+        ("success", "completed", 100.0),
+        ("failure", "failed", 400.0),
+        ("cancel", "cancelled", 800.0),
+        ("pending", None, None),
+    ):
+        trace = store.start_task(task_id=task_id, chat_id="chat", objective=task_id)
+        if status is not None:
+            trace.finish(status=status, total_ms=duration)
+
+    report = store.report()
+    group = report["by_type"]["unknown"]
+    assert report["tasks_considered"] == 5
+    assert report["status_counts"] == {
+        "completed": 2, "failed": 1, "cancelled": 1, "incomplete": 1,
+    }
+    assert group["tasks"] == 5
+    assert group["status_counts"] == report["status_counts"]
+    assert group["samples"] == 2
+    assert group["median_total_ms"] == 50.0
+    assert group["p95_total_ms"] == 95.0
+    assert group["by_status"]["failed"]["median_total_ms"] == 400.0
+    assert group["by_status"]["cancelled"]["median_total_ms"] == 800.0
+    assert group["by_status"]["incomplete"]["median_total_ms"] is None
+
+
+def test_report_preserves_zero_and_marks_missing_samples_unavailable(tmp_path: Path) -> None:
+    store = TaskTraceStore(tmp_path / "empty.sqlite3")
+    assert store.report() == {
+        "tasks_considered": 0,
+        "status_counts": {"completed": 0, "failed": 0, "cancelled": 0, "incomplete": 0},
+        "by_type": {},
+    }
+    store.start_task(task_id="pending", chat_id="chat", objective="pending")
+    pending = store.report()["by_type"]["unknown"]
+    assert pending["samples"] == 0
+    for field in (
+        "median_total_ms", "p95_total_ms", "median_model_ms", "p95_model_ms",
+        "median_tool_ms", "p95_tool_ms", "median_cost_usd", "p95_cost_usd",
+    ):
+        assert pending[field] is None
+
+    trace = store.start_task(task_id="zero", chat_id="chat", objective="zero")
+    trace.finish(status="completed", total_ms=0.0)
+    completed = store.report()["by_type"]["unknown"]
+    assert completed["samples"] == 1
+    for field in (
+        "median_total_ms", "p95_total_ms", "median_model_ms", "p95_model_ms",
+        "median_tool_ms", "p95_tool_ms", "median_cost_usd", "p95_cost_usd",
+    ):
+        assert completed[field] == 0.0
+
+
+def test_report_excludes_unfinished_defaults_from_model_tool_and_cost(tmp_path: Path) -> None:
+    store = TaskTraceStore(tmp_path / "metrics.sqlite3")
+    complete = store.start_task(task_id="complete", chat_id="chat", objective="complete")
+    complete.record_model(1, 30.0, {"input_tokens": 1000, "output_tokens": 100})
+    complete.record_tool("tool", 20.0, success=True)
+    complete.finish(status="completed", total_ms=60.0)
+
+    pending = store.start_task(task_id="pending", chat_id="chat", objective="pending")
+    pending.record_model(1, 50.0, {"input_tokens": 1000, "output_tokens": 100})
+    # Um processo encerrado antes de finish deixa apenas defaults no resumo.
+    with store._connect() as connection:
+        connection.execute("UPDATE task_traces SET task_type='agentic' WHERE task_id='pending'")
+        connection.commit()
+
+    group = store.report()["by_type"]["agentic"]
+    assert group["tasks"] == 2
+    assert group["samples"] == 1
+    assert group["median_model_ms"] == 30.0
+    assert group["median_tool_ms"] == 20.0
+    assert group["median_cost_usd"] == store.get_task("complete")["cost_usd"]
+    assert group["by_status"]["incomplete"]["median_cost_usd"] is None
+
+
+def test_report_keeps_historical_rows_without_duration_but_does_not_sample_them(tmp_path: Path) -> None:
+    store = TaskTraceStore(tmp_path / "history.sqlite3")
+    trace = store.start_task(task_id="legacy", chat_id="chat", objective="legacy")
+    trace.finish(status="failed", total_ms=75.0)
+    with store._connect() as connection:
+        connection.execute("UPDATE task_traces SET total_ms=NULL WHERE task_id='legacy'")
+        connection.commit()
+    original = store.get_task("legacy")
+
+    group = store.report()["by_type"]["unknown"]
+    assert group["status_counts"]["failed"] == 1
+    assert group["by_status"]["failed"]["tasks"] == 1
+    assert group["by_status"]["failed"]["samples"] == 0
+    assert group["by_status"]["failed"]["median_total_ms"] is None
+    assert group["by_status"]["failed"]["median_model_ms"] is None
+    assert group["by_status"]["failed"]["median_tool_ms"] is None
+    assert group["by_status"]["failed"]["median_cost_usd"] is None
+    assert store.get_task("legacy") == original
+
