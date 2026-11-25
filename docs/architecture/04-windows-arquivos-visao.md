@@ -90,7 +90,9 @@ Leitura tem padrão de **12.000 caracteres**, máximo de **20.000** por chamada 
 2. **AUTO:** dentro de Downloads/Desktop/Documents/Documentos/Área de Trabalho do perfil, ou raízes OneDrive configuradas e resolvidas, se não estiver em caminho bloqueado.
 3. **CONFIRM:** fora dessas raízes, com consentimento específico para o caminho resolvido.
 
-O [PermissionManager](../../core/permission_manager.py) aplica a classificação antes do handler. Após confirmação, o [Dispatcher](../../tools/dispatcher.py) injeta `_caminho_confirmado` correspondente; **o próprio handler verifica novamente** o caminho e o bloqueio. Testes cobrem `..`, symlink para fora da raiz, perfis de browser, recusa do usuário e tentativa de contornar BLOCKED com confirmação.
+O [Dispatcher](../../tools/dispatcher.py) resolve o destino antes de chamar o [PermissionManager](../../core/permission_manager.py), que classifica e, quando necessário, apresenta esse caminho canônico para confirmação. O Dispatcher só injeta `_caminho_confirmado` para o destino autorizado; ele e o handler recusam uma mudança de destino antes da leitura ou inspeção, inclusive para ações AUTO. O handler preserva o bloqueio de caminhos sensíveis. Testes cobrem `..`, symlink para fora da raiz, perfis de browser, recusa, troca simulada de destino e tentativa de contornar BLOCKED.
+
+**Limite residual:** a verificação do caminho e a abertura pelo sistema operacional não são atômicas. Se o sistema de arquivos mudar depois da última verificação, esta correção não comprova a identidade do arquivo aberto por um identificador de arquivo/handle; o cenário requer avaliação própria antes de prometer proteção contra essa janela.
 
 **Observação:** isso não é sandbox de sistema operacional nem política global para toda possível operação de arquivos; é o comportamento das ferramentas de leitura/inspeção atuais. `buscar_arquivo` possui escopo de busca próprio, sem utilizar esse leitor de conteúdo.
 
