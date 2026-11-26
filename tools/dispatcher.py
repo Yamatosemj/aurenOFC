@@ -42,6 +42,7 @@ def _resolver_ui_automation_para_permissao(argumentos):
     }
     direto = windows._executar_ui_automation("resolver", dados)
     if direto.get("ok"):
+        direto["hwnd"] = dados["hwnd"]
         return direto
 
     # Alguns provedores UIA expõem PasswordBox de forma intermitente para a
@@ -66,10 +67,12 @@ def _resolver_ui_automation_para_permissao(argumentos):
             return {
                 "ok": True,
                 "operacao": "resolver",
-                "nome": controle.get("nome"),
-                "automation_id": controle.get("automation_id"),
+                "nome": "" if controle.get("nome") == "[sem nome]" else controle.get("nome"),
+                "automation_id": "" if controle.get("automation_id") == "[sem AutomationId]" else controle.get("automation_id"),
                 "tipo": controle.get("tipo"),
                 "protegido": bool(controle.get("protegido")),
+                "runtime_id": controle.get("runtime_id"),
+                "hwnd": dados["hwnd"],
                 "score": 999,
                 "resultado": "Controle resolvido por correspondencia exata durante o preflight.",
             }
@@ -118,8 +121,8 @@ def _ler_arquivo_handler(args, memory_store, context):
 def _preencher_windows_handler(args, memory_store, context):
     protegido = bool(context.get("uia_protected"))
 
-    # Para campos protegidos, reutilizamos a identidade resolvida no preflight
-    # para manter a verificacao de seguranca amarrada ao mesmo controle.
+    # Para campos protegidos, a busca continua usando o identificador resolvido.
+    # A identidade da instancia autorizada e conferida pelo executor UIA.
     # Para campos normais, preservamos o alvo/indice originais da V43: esse
     # caminho ja e estavel e evita alterar a semantica de busca de controles
     # apenas por causa da nova camada de permissoes.
@@ -140,6 +143,7 @@ def _preencher_windows_handler(args, memory_store, context):
         args["texto"],
         indice,
         protegido,
+        context["uia_expected_identity"],
     )
 
 
@@ -289,11 +293,26 @@ def executar_ferramenta(item, permission_manager, memory_store) -> ToolResult:
                 error_code="uia_preflight_failed",
                 tool_name=nome,
             )
+        if not str(preflight.get("runtime_id") or "").strip() or not preflight.get("hwnd"):
+            permission_manager.registrar_resultado(False, nome, argumentos)
+            return ToolResult.failure(
+                "Nao consegui verificar a identidade do controle antes da autorizacao.",
+                error_code="uia_identity_unavailable",
+                tool_name=nome,
+            )
         contexto.update({
             "uia_protected": bool(preflight.get("protegido")),
             "uia_resolved_name": str(preflight.get("nome") or ""),
             "uia_resolved_id": str(preflight.get("automation_id") or ""),
             "uia_resolved_type": str(preflight.get("tipo") or ""),
+            "uia_expected_identity": {
+                "hwnd": preflight["hwnd"],
+                "runtime_id": preflight["runtime_id"],
+                "nome": str(preflight.get("nome") or ""),
+                "automation_id": str(preflight.get("automation_id") or ""),
+                "tipo": str(preflight.get("tipo") or ""),
+                "protegido": bool(preflight.get("protegido")),
+            },
         })
         argumentos_execucao.update({
             "_uia_protegido": contexto["uia_protected"],

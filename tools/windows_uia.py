@@ -43,6 +43,29 @@ function Get-ControlTypeName($Element) {
     } catch { return '' }
 }
 
+function Get-RuntimeIdString($Element) {
+    try {
+        $parts = @($Element.GetRuntimeId())
+        if ($parts.Count -eq 0) { return '' }
+        return (($parts | ForEach-Object { [string]$_ }) -join ':')
+    } catch { return '' }
+}
+
+function Assert-FillIdentity($Item, $Expected) {
+    if ($null -eq $Expected -or -not $Expected.runtime_id) {
+        throw 'Identidade UIA autorizada indisponivel; preenchimento recusado.'
+    }
+    $actualRuntimeId = Get-RuntimeIdString $Item.Element
+    if (-not $actualRuntimeId -or
+        $actualRuntimeId -cne [string]$Expected.runtime_id -or
+        $Item.Name -cne [string]$Expected.nome -or
+        $Item.AutomationId -cne [string]$Expected.automation_id -or
+        $Item.ControlType -cne [string]$Expected.tipo -or
+        [bool]$Item.IsPassword -ne [bool]$Expected.protegido) {
+        throw 'A identidade do controle UIA mudou apos a autorizacao; preenchimento recusado.'
+    }
+}
+
 function Get-PatternNames($Element) {
     # Mantemos a inspeção inicial enxuta. Padrões caros como TextPattern/Scroll
     # não são necessários para localizar os controles básicos e podem provocar
@@ -318,6 +341,7 @@ function Format-Item($Item, [int]$Index) {
         indice = $Index
         nome = $name
         automation_id = $id
+        runtime_id = Get-RuntimeIdString $Item.Element
         classe = $Item.ClassName
         tipo = $Item.ControlType
         habilitado = $Item.Enabled
@@ -382,6 +406,7 @@ try {
         if ($payload.operacao -eq 'resolver') {
             $resultado = [pscustomobject]@{
                 ok=$true; operacao='resolver'; nome=$item.Name; automation_id=$item.AutomationId;
+                runtime_id=(Get-RuntimeIdString $item.Element);
                 tipo=$item.ControlType; protegido=$item.IsPassword; score=[int]$matches[$indice - 1].Score;
                 resultado="Controle resolvido: '$($item.Name)' ($($item.ControlType)); automation_id='$($item.AutomationId)'; protegido=$($item.IsPassword)."
             }
@@ -401,6 +426,7 @@ try {
             Start-Sleep -Milliseconds 120
             $resultado = [pscustomobject]@{ ok=$true; operacao='clicar'; nome=$item.Name; tipo=$item.ControlType; resultado="Clique executado em '$($item.Name)' ($($item.ControlType))." }
         } elseif ($payload.operacao -eq 'preencher') {
+            Assert-FillIdentity $item $payload.identidade_esperada
             if ($item.IsPassword -and -not [bool]$payload.permitir_protegido) {
                 throw "O controle '$($item.Name)' e protegido por IsPassword. O preenchimento de campos protegidos exige confirmacao explicita."
             }
@@ -420,6 +446,7 @@ try {
             # sem o foco do controle.
             try { $item.Element.SetFocus() } catch {}
             Start-Sleep -Milliseconds 100
+            Assert-FillIdentity $item $payload.identidade_esperada
             $setValueExecutado = $false
             $confirmado = ''
 
@@ -443,12 +470,14 @@ try {
                     $freshMatches = Find-Controls $freshItems $target 'Value'
                     if ($freshMatches.Count -gt 0) {
                         $freshItem = $freshMatches[0].Item
+                        Assert-FillIdentity $freshItem $payload.identidade_esperada
                         $freshPattern = $freshItem.Element.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
                         $confirmado = Safe-String $freshPattern.Current.Value
                         $item = $freshItem
                         $valuePattern = $freshPattern
                     }
                 } catch {
+                    if ($_.Exception.Message -like 'A identidade do controle UIA mudou*') { throw }
                     try { $confirmado = Safe-String $valuePattern.Current.Value } catch { $confirmado = '' }
                 }
             }
@@ -611,6 +640,7 @@ public static class AurenUiWin32 {
                 } catch {}
 
                 if ($foregroundSeguro) {
+                    Assert-FillIdentity $item $payload.identidade_esperada
                     # PasswordBox nao expoe ValuePattern de forma segura. Antes de
                     # qualquer entrada de teclado, o controle protegido precisa receber foco
                     # tanto pela UI Automation quanto por uma interacao fisica real.
@@ -629,12 +659,8 @@ public static class AurenUiWin32 {
                     try {
                         $focoAtual = [System.Windows.Automation.AutomationElement]::FocusedElement
                         if ($focoAtual) {
-                            $focoNome = Safe-String $focoAtual.Current.Name
-                            $focoId = Safe-String $focoAtual.Current.AutomationId
-                            $controleFocado = (
-                                ($focoId -and $item.AutomationId -and ($focoId -eq $item.AutomationId)) -or
-                                ($focoNome -and $item.Name -and ($focoNome -eq $item.Name))
-                            )
+                            $focoRuntimeId = Get-RuntimeIdString $focoAtual
+                            $controleFocado = ($focoRuntimeId -and $focoRuntimeId -ceq [string]$payload.identidade_esperada.runtime_id)
                         }
                     } catch {}
 
@@ -667,6 +693,7 @@ public static class AurenUiWin32 {
                     $freshMatches = Find-Controls $freshItems $target 'Value'
                     if ($freshMatches.Count -gt 0) {
                         $freshItem = $freshMatches[0].Item
+                        Assert-FillIdentity $freshItem $payload.identidade_esperada
                         $freshPattern = $freshItem.Element.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
                         $confirmado = Safe-String $freshPattern.Current.Value
                     }
@@ -896,7 +923,7 @@ def inspecionar_interface_windows(alvo_janela="", foco="", max_itens=40):
         linhas.append(f"Nenhum controle correspondeu a '{foco}'.")
     return "\n".join(linhas)
 
-def _executar_acao_ui_windows(operacao, alvo_janela, alvo, indice, texto=None, permitir_protegido=False):
+def _executar_acao_ui_windows(operacao, alvo_janela, alvo, indice, texto=None, permitir_protegido=False, identidade_esperada=None):
     hwnd, titulo, erro = _ui_automation_janela(alvo_janela)
     if erro:
         return erro
@@ -910,7 +937,12 @@ def _executar_acao_ui_windows(operacao, alvo_janela, alvo, indice, texto=None, p
     if texto is not None:
         dados["texto"] = str(texto)
     if operacao == "preencher":
+        if not isinstance(identidade_esperada, dict) or not str(identidade_esperada.get("runtime_id") or "").strip():
+            return "Nao consegui preencher: identidade UIA autorizada indisponivel."
+        if dados["hwnd"] != identidade_esperada.get("hwnd"):
+            return "Nao consegui preencher: a janela mudou apos a autorizacao."
         dados["permitir_protegido"] = bool(permitir_protegido)
+        dados["identidade_esperada"] = identidade_esperada
     resultado = _executar_ui_automation(operacao, dados)
     if not resultado.get("ok"):
         verbos = {"clicar": "clicar", "preencher": "preencher", "alternar": "alternar", "selecionar": "selecionar"}
@@ -926,8 +958,8 @@ def _executar_acao_ui_windows(operacao, alvo_janela, alvo, indice, texto=None, p
 def clicar_elemento_windows(alvo_janela="", alvo="", indice=1):
     return _executar_acao_ui_windows("clicar", alvo_janela, alvo, indice)
 
-def preencher_elemento_windows(alvo_janela="", alvo="", texto="", indice=1, permitir_protegido=False):
-    return _executar_acao_ui_windows("preencher", alvo_janela, alvo, indice, texto, permitir_protegido)
+def preencher_elemento_windows(alvo_janela="", alvo="", texto="", indice=1, permitir_protegido=False, identidade_esperada=None):
+    return _executar_acao_ui_windows("preencher", alvo_janela, alvo, indice, texto, permitir_protegido, identidade_esperada)
 
 def alternar_elemento_windows(alvo_janela="", alvo="", indice=1):
     return _executar_acao_ui_windows("alternar", alvo_janela, alvo, indice)
