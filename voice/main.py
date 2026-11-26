@@ -165,16 +165,23 @@ def _falar_interrompivel(
 
     if erro:
         if metrics is not None:
-            metrics.statuses["tts_first_chunk"] = "failed"
-            metrics.statuses["audio_delivery"] = "failed"
+            for stage in ("tts_first_chunk", "audio_delivery"):
+                if metrics.statuses[stage] == "unavailable":
+                    metrics.statuses[stage] = "failed"
+            metrics.audio_output_status = "failed"
         exc = erro[0]
         if isinstance(exc, RuntimeError):
             raise exc
         raise RuntimeError(str(exc)) from exc
 
-    if metrics is not None and (interrompido or sair):
-        metrics.statuses["tts_first_chunk"] = "cancelled"
-        metrics.statuses["audio_delivery"] = "cancelled"
+    if metrics is not None:
+        if interrompido or sair:
+            for stage in ("tts_first_chunk", "audio_delivery"):
+                if metrics.statuses[stage] == "unavailable":
+                    metrics.statuses[stage] = "cancelled"
+            metrics.audio_output_status = "cancelled"
+        elif metrics.delivery_at is not None:
+            metrics.audio_output_status = "completed"
     latencia = None
     if texto_recebido_em is not None and inicio_voz[0] is not None:
         latencia = max(0.0, inicio_voz[0] - texto_recebido_em)
@@ -231,10 +238,14 @@ def _processar_e_falar(
 
                 tts.falar("Tive um problema ao executar essa tarefa.",
                           on_synthesis_ready=_fallback_ready, on_audio_start=_fallback_delivery)
+                if metrics.delivery_at is not None:
+                    metrics.audio_output_status = "completed"
         except Exception:
             if metrics is not None:
-                metrics.statuses["tts_first_chunk"] = "failed"
-                metrics.statuses["audio_delivery"] = "failed"
+                for stage in ("tts_first_chunk", "audio_delivery"):
+                    if metrics.statuses[stage] == "unavailable":
+                        metrics.statuses[stage] = "failed"
+                metrics.audio_output_status = "failed"
         finally:
             recorder.definir_saida_ativa(False)
             recorder.limpar_pre_roll()
@@ -266,8 +277,10 @@ def _processar_e_falar(
         )
     except RuntimeError as exc:
         if metrics is not None:
-            metrics.statuses["tts_first_chunk"] = "failed"
-            metrics.statuses["audio_delivery"] = "failed"
+            for stage in ("tts_first_chunk", "audio_delivery"):
+                if metrics.statuses[stage] == "unavailable":
+                    metrics.statuses[stage] = "failed"
+            metrics.audio_output_status = "failed"
         print(f"Auren voz: TTS indisponível: {exc}")
         interrompido, sair, latencia = False, False, None
 

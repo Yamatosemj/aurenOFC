@@ -156,6 +156,11 @@ class TaskTraceStore:
                     started_at: str, duration_ms: float, success: bool | None = None,
                     metadata: dict[str, Any] | None = None) -> None:
         with self._connect() as connection:
+            # Voz pode ter anexado spans enquanto o TaskTrace aguarda esclarecimento.
+            last_sequence = connection.execute(
+                "SELECT COALESCE(MAX(sequence),0) FROM task_trace_spans WHERE task_id=?", (task_id,)
+            ).fetchone()[0]
+            sequence = max(int(sequence), last_sequence + 1)
             connection.execute(
                 "INSERT INTO task_trace_spans (task_id,sequence,category,name,started_at,duration_ms,success,metadata_json) VALUES (?,?,?,?,?,?,?,?)",
                 (task_id, int(sequence), str(category), str(name), str(started_at), max(0.0, float(duration_ms)),
@@ -178,7 +183,10 @@ class TaskTraceStore:
         values[21] = int(values[21])
         with self._connect() as connection:
             connection.execute(
-                "UPDATE task_traces SET " + ", ".join(f"{field}=?" for field in fields) + " WHERE task_id=?",
+                "UPDATE task_traces SET " + ", ".join(
+                    f"{field}={field}+?" if field in {"asr_ms", "tts_ms"} else f"{field}=?"
+                    for field in fields
+                ) + " WHERE task_id=?",
                 (*values, task_id),
             )
             connection.commit()
@@ -200,6 +208,12 @@ class TaskTraceStore:
         """Anexa etapas de voz a um trace existente, sem alterar o esquema."""
         with self._connect() as connection:
             if connection.execute("SELECT 1 FROM task_traces WHERE task_id=?", (task_id,)).fetchone() is None:
+                return
+            if connection.execute(
+                "SELECT 1 FROM task_trace_spans WHERE task_id=? AND category='voice_interval' "
+                "AND json_extract(metadata_json,'$.interaction_id')=? LIMIT 1",
+                (task_id, data["interaction_id"]),
+            ).fetchone() is not None:
                 return
             sequence = connection.execute(
                 "SELECT COALESCE(MAX(sequence),0) FROM task_trace_spans WHERE task_id=?", (task_id,)
@@ -229,6 +243,7 @@ class TaskTraceStore:
                  json.dumps({"interaction_id": data["interaction_id"],
                              "speech_end_source": data["speech_end_source"],
                              "delivery_kind": data["delivery_kind"],
+                             "audio_output_status": data["audio_output_status"],
                              "duration_available": interval is not None}, separators=(",", ":"))),
             )
             connection.execute(

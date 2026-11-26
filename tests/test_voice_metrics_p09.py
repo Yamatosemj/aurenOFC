@@ -73,6 +73,45 @@ def test_voice_metrics_unavailable_span_is_not_zero_sample(tmp_path):
     assert store.get_task("failed")["asr_ms"] == 0.0  # campo legado; span e autoritativo
 
 
+def test_waiting_task_resumed_by_second_voice_interaction_keeps_totals_and_span_order(tmp_path):
+    store = TaskTraceStore(tmp_path / "waiting.sqlite3")
+    trace = store.start_task(task_id="same-task", chat_id="chat", objective="pedido")
+    trace.record_stage("contexto inicial", 10.0, category="context")
+
+    first = VoiceInteractionMetrics(channel="ptt", task_id=trace.task_id, task_status="waiting")
+    first.record("asr", 1.0, 1.2)
+    first.record("tts_first_chunk", 1.2, 1.3)
+    first.persist(path=tmp_path / "voice.jsonl", trace_store=store)
+    assert store.get_task(trace.task_id)["status"] is None
+
+    # O Harness conserva o mesmo TaskTrace em WAITING e o retoma na resposta.
+    trace.record_stage("contexto retomado", 5.0, category="context")
+    trace.record_tool("ferramenta", 20.0, success=True)
+    trace.finish(status="completed", total_ms=100.0)
+
+    second = VoiceInteractionMetrics(channel="ptt", task_id=trace.task_id, task_status="completed")
+    second.record("asr", 2.0, 2.4)
+    second.record("tts_first_chunk", 2.4, 2.55)
+    second.persist(path=tmp_path / "voice.jsonl", trace_store=store)
+    # Reprocessar o mesmo envelope nao pode somar spans nem contadores novamente.
+    store.record_voice_interaction(trace.task_id, second.payload())
+
+    row = store.get_task(trace.task_id)
+    assert row["status"] == "completed"
+    assert row["context_ms"] == pytest.approx(15)
+    assert row["tool_calls"] == 1
+    assert row["asr_ms"] == pytest.approx(600)
+    assert row["tts_ms"] == pytest.approx(250)
+    spans = store.get_spans(trace.task_id)
+    sequences = [span["sequence"] for span in spans]
+    assert sequences == list(range(1, len(spans) + 1))
+    assert [span["name"] for span in spans if span["category"] == "context"] == [
+        "contexto inicial", "contexto retomado"]
+    assert [json.loads(span["metadata_json"])["interaction_id"]
+            for span in spans if span["category"] == "voice_interval"] == [
+                first.interaction_id, second.interaction_id]
+
+
 def test_voice_pipeline_links_task_and_measures_first_chunk_not_audibility(monkeypatch):
     from voice import main as voice_main
 
@@ -174,6 +213,42 @@ def test_tts_cancel_before_first_chunk_has_no_delivery_interval():
     assert metrics.durations_ms["tts_first_chunk"] is None
     assert metrics.interval_ms() is None
     assert calls == [True, False, "clear"]
+
+
+def test_tts_interruption_after_delivery_keeps_completed_stage_measurements():
+    from threading import Event
+
+    delivered = Event()
+
+    class FakeRecorder:
+        def definir_saida_ativa(self, _active):
+            pass
+
+        def limpar_pre_roll(self):
+            pass
+
+        def pediu_saida(self):
+            return False
+
+        def hotkey_pressionada(self):
+            return delivered.is_set()
+
+    class FakeTTS:
+        def falar(self, _text, *, cancel_event, on_audio_start, on_synthesis_ready):
+            on_synthesis_ready()
+            on_audio_start()
+            delivered.set()
+            assert cancel_event.wait(1.0)
+
+    metrics = VoiceInteractionMetrics(channel="ptt", speech_end_at=time.perf_counter())
+    interrupted, exiting, _ = _falar_interrompivel(FakeTTS(), FakeRecorder(), "resposta", metrics=metrics)
+    assert (interrupted, exiting) == (True, False)
+    assert metrics.statuses["tts_first_chunk"] == "completed"
+    assert metrics.statuses["audio_delivery"] == "completed"
+    assert metrics.durations_ms["tts_first_chunk"] is not None
+    assert metrics.durations_ms["audio_delivery"] == 0.0
+    assert metrics.interval_ms() is not None
+    assert metrics.payload()["audio_output_status"] == "cancelled"
 
 
 def test_tts_failure_marks_failed_without_invented_delivery():

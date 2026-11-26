@@ -19,6 +19,7 @@ class VoiceInteractionMetrics:
     interaction_id: str = field(default_factory=lambda: uuid4().hex)
     task_id: str | None = None
     task_status: str | None = None
+    audio_output_status: str = "unavailable"
     speech_end_at: float | None = None
     delivery_at: float | None = None
     durations_ms: dict[str, float | None] = field(default_factory=lambda: {name: None for name in STAGES})
@@ -44,6 +45,7 @@ class VoiceInteractionMetrics:
             "channel": self.channel,
             "task_id": self.task_id,
             "task_status": self.task_status,
+            "audio_output_status": self.audio_output_status,
             "stages_ms": dict(self.durations_ms),
             "stages_status": dict(self.statuses),
             "speech_end_to_audio_delivery_ms": self.interval_ms(),
