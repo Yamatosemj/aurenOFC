@@ -76,8 +76,8 @@ def test_allowed_destination_changed_to_external_is_rejected(paths, monkeypatch,
     manager = PermissionManager(confirmation_channel=channel)
     authorize = manager.autorizar
 
-    def switch_after_authorization(name, arguments):
-        decision = authorize(name, arguments)
+    def switch_after_authorization(name, arguments, **kwargs):
+        decision = authorize(name, arguments, **kwargs)
         current["target"] = other
         return decision
 
@@ -96,8 +96,8 @@ def test_confirmed_external_destination_changed_to_another_is_rejected(paths, mo
     manager = PermissionManager(confirmation_channel=channel)
     authorize = manager.autorizar
 
-    def switch_after_authorization(name, arguments):
-        decision = authorize(name, arguments)
+    def switch_after_authorization(name, arguments, **kwargs):
+        decision = authorize(name, arguments, **kwargs)
         current["target"] = other
         return decision
 
@@ -153,6 +153,90 @@ def test_allowed_destination_without_change_stays_automatic(paths, monkeypatch, 
         assert result.data["file_content"]["conteudo"] == "FIRST_SYNTHETIC"
     else:
         assert result.data["file_info"]["caminho"] == str(first)
+
+
+@pytest.mark.parametrize("tool", ["ler_arquivo", "inspecionar_arquivo"])
+def test_permission_resolution_cannot_substitute_an_allowed_target(paths, monkeypatch, tool):
+    first, other, _, _, alias = paths
+    _switching_alias(monkeypatch, alias, other)
+    # The Dispatcher sees external 'other'; PermissionManager transiently sees allowed 'first'.
+    monkeypatch.setattr(permission_module, "_resolve_path", lambda value: first)
+    channel = ConfirmationChannel()
+    result = _execute(tool, alias, PermissionManager(confirmation_channel=channel))
+    assert result.ok is False
+    assert result.error_code in {"permission_denied", "file_path_changed"}
+    assert channel.requests == []
+
+
+@pytest.mark.parametrize("tool", ["ler_arquivo", "inspecionar_arquivo"])
+def test_permission_resolution_cannot_substitute_another_external_target(paths, monkeypatch, tool):
+    _, other, third, _, alias = paths
+    _switching_alias(monkeypatch, alias, third)
+    monkeypatch.setattr(permission_module, "_resolve_path", lambda value: other)
+    channel = ConfirmationChannel()
+    result = _execute(tool, alias, PermissionManager(confirmation_channel=channel))
+    assert result.ok is False
+    assert result.error_code in {"permission_denied", "file_path_changed"}
+    assert channel.requests == []
+
+
+@pytest.mark.parametrize("tool", ["ler_arquivo", "inspecionar_arquivo"])
+def test_permission_policy_cannot_claim_a_different_file(paths, monkeypatch, tool):
+    first, other, _, _, alias = paths
+    _switching_alias(monkeypatch, alias, other)
+    monkeypatch.setattr(
+        permission_module, "_classify_read_path",
+        lambda path: file_intelligence.FileReadPathPolicy(
+            status="allowed", motivo="synthetic AUTO", caminho_resolvido=str(first), raiz_permitida=str(first.parent)
+        ),
+    )
+    channel = ConfirmationChannel()
+    result = _execute(tool, alias, PermissionManager(confirmation_channel=channel))
+    assert result.ok is False
+    assert result.error_code == "permission_denied"
+    assert channel.requests == []
+
+
+@pytest.mark.parametrize("tool", ["ler_arquivo", "inspecionar_arquivo"])
+def test_preclassification_does_not_create_a_confirmation_receipt(paths, monkeypatch, tool):
+    _, other, _, _, alias = paths
+    _switching_alias(monkeypatch, alias, other)
+    # Only the PermissionManager sees AUTO; Dispatcher/handler see CONFIRM.
+    monkeypatch.setattr(
+        permission_module,
+        "_classify_read_path",
+        lambda path: file_intelligence.FileReadPathPolicy(
+            status="allowed", motivo="synthetic AUTO", caminho_resolvido=str(path), raiz_permitida=str(path.parent)
+        ),
+    )
+    channel = ConfirmationChannel()
+    result = _execute(tool, alias, PermissionManager(confirmation_channel=channel))
+    assert result.ok is False
+    assert result.error_code == "path_confirmation_required"
+    assert channel.requests == []
+
+
+@pytest.mark.parametrize("tool", ["ler_arquivo", "inspecionar_arquivo"])
+def test_effective_confirmation_can_authorize_when_preclassification_was_auto(paths, monkeypatch, tool):
+    _, other, _, _, alias = paths
+    _switching_alias(monkeypatch, alias, other)
+    classify = file_intelligence._classify_read_path
+    calls = {"count": 0}
+
+    def first_classification_auto(path):
+        calls["count"] += 1
+        if calls["count"] == 1:
+            return file_intelligence.FileReadPathPolicy(
+                status="allowed", motivo="synthetic AUTO", caminho_resolvido=str(path), raiz_permitida=str(path.parent)
+            )
+        return classify(path)
+
+    monkeypatch.setattr(file_intelligence, "_classify_read_path", first_classification_auto)
+    channel = ConfirmationChannel()
+    result = _execute(tool, alias, PermissionManager(confirmation_channel=channel))
+    assert result.ok is True
+    assert len(channel.requests) == 1
+    assert repr(str(other)) in channel.requests[0].action
 
 
 @pytest.mark.parametrize("tool", ["ler_arquivo", "inspecionar_arquivo"])
