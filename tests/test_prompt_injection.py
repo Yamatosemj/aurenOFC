@@ -43,6 +43,111 @@ def test_from_legacy_preserves_untrusted_provenance():
     assert converted.tool_name == "ler_pagina"
 
 
+@pytest.mark.parametrize("source,arguments", [
+    ("buscar_arquivo", {"consulta": "teste"}),
+    ("ler_area_transferencia_windows", {}),
+    ("listar_abas", {}),
+])
+@pytest.mark.parametrize("approved", [False, True])
+def test_s02_external_read_requires_decision_before_simulated_action(
+    source, arguments, approved, monkeypatch,
+):
+    channel = RecordingConfirmation(approved=approved)
+    manager = PermissionManager(confirmation_channel=channel)
+    effects = []
+    monkeypatch.setitem(
+        dispatcher.TOOL_HANDLERS, source,
+        lambda args, memory, context: ToolResult.success("DADO EXTERNO SINTETICO", tool_name=source),
+    )
+    monkeypatch.setitem(
+        dispatcher.TOOL_HANDLERS, "abrir_programa",
+        lambda args, memory, context: effects.append("simulado") or ToolResult.success(
+            "acao simulada", tool_name="abrir_programa"),
+    )
+
+    read = dispatcher.executar_ferramenta(_item(source, arguments), manager, None)
+    action = dispatcher.executar_ferramenta(
+        _item("abrir_programa", {"programa": "calculadora"}), manager, None,
+    )
+
+    assert read.ok is True
+    assert read.conteudo_nao_confiavel is True
+    assert json.loads(read.for_model())["conteudo_nao_confiavel"] is True
+    assert manager.fonte_nao_confiavel_pendente == source
+    assert len(channel.requests) == 1
+    assert action.ok is approved
+    assert effects == (["simulado"] if approved else [])
+
+
+def test_s02_premarked_unlisted_success_arms_guard(monkeypatch):
+    channel = RecordingConfirmation(approved=False)
+    manager = PermissionManager(confirmation_channel=channel)
+    effects = []
+    monkeypatch.setitem(
+        dispatcher.TOOL_HANDLERS, "obter_status_windows",
+        lambda args, memory, context: ToolResult.success(
+            "DADO SINTETICO", tool_name="obter_status_windows", conteudo_nao_confiavel=True),
+    )
+    monkeypatch.setitem(
+        dispatcher.TOOL_HANDLERS, "abrir_programa",
+        lambda args, memory, context: effects.append("simulado") or ToolResult.success("acao simulada"),
+    )
+    read = dispatcher.executar_ferramenta(_item("obter_status_windows", {}), manager, None)
+    action = dispatcher.executar_ferramenta(
+        _item("abrir_programa", {"programa": "calculadora"}), manager, None,
+    )
+    assert read.conteudo_nao_confiavel is True
+    assert manager.fonte_nao_confiavel_pendente == "obter_status_windows"
+    assert action.ok is False
+    assert effects == []
+    assert len(channel.requests) == 1
+
+
+def test_s02_blocked_policy_precedes_untrusted_source(monkeypatch):
+    channel = RecordingConfirmation(approved=True)
+    manager = PermissionManager(confirmation_channel=channel)
+    manager.policy["application.open"] = PermissionLevel.BLOCKED
+    effects = []
+    monkeypatch.setitem(
+        dispatcher.TOOL_HANDLERS, "buscar_arquivo",
+        lambda args, memory, context: ToolResult.success("NOME SINTETICO"),
+    )
+    monkeypatch.setitem(
+        dispatcher.TOOL_HANDLERS, "abrir_programa",
+        lambda args, memory, context: effects.append("simulado") or ToolResult.success("acao simulada"),
+    )
+    read = dispatcher.executar_ferramenta(_item("buscar_arquivo", {"consulta": "teste"}), manager, None)
+    action = dispatcher.executar_ferramenta(
+        _item("abrir_programa", {"programa": "calculadora"}), manager, None,
+    )
+    assert read.conteudo_nao_confiavel is True
+    assert action.ok is False
+    assert effects == []
+    assert channel.requests == []
+
+
+def test_s02_does_not_expand_confirmation_to_uncounted_capabilities(monkeypatch):
+    channel = RecordingConfirmation(approved=False)
+    manager = PermissionManager(confirmation_channel=channel)
+    effects = []
+    monkeypatch.setitem(
+        dispatcher.TOOL_HANDLERS, "listar_abas",
+        lambda args, memory, context: ToolResult.success("ABA SINTETICA"),
+    )
+    monkeypatch.setitem(
+        dispatcher.TOOL_HANDLERS, "definir_area_transferencia_windows",
+        lambda args, memory, context: effects.append("simulado") or ToolResult.success("acao simulada"),
+    )
+    dispatcher.executar_ferramenta(_item("listar_abas", {}), manager, None)
+    action = dispatcher.executar_ferramenta(
+        _item("definir_area_transferencia_windows", {"texto": "sintetico"}), manager, None,
+    )
+    assert manager.fonte_nao_confiavel_pendente == "listar_abas"
+    assert action.ok is True
+    assert effects == ["simulado"]
+    assert channel.requests == []
+
+
 def test_untrusted_read_forces_confirmation_for_next_effectful_action():
     channel = RecordingConfirmation(approved=True)
     manager = PermissionManager(confirmation_channel=channel)
