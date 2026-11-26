@@ -114,7 +114,7 @@ Priorizar experiências utilizáveis, em vez de encerrar todos os 55 achados ant
 
 - [x] P08 — corrigir população das estatísticas. [PR #189](https://github.com/Yamatosemj/aurenOFC/pull/189) integrada na main em `03d1c8e`; três checks do HEAD revisado aprovados. Validação Live fora do escopo.
 - [x] Contabilização de chamadas ao modelo — distinguir rodadas, chamadas ao provider, verificação de intenção, cache local, falhas e uso desconhecido. [PR #190](https://github.com/Yamatosemj/aurenOFC/pull/190) integrada em `661f9b1`; três checks do HEAD revisado aprovados. Sem Live; retries internos e custos desconhecidos permanecem limites.
-- [ ] P06 — estimativas de custo por modelo, sem tratar preço desconhecido como custo zero.
+- [x] P06 — estimativas de custo por modelo, sem tratar preço desconhecido como custo zero. [PR #191](https://github.com/Yamatosemj/aurenOFC/pull/191) integrada em `87c0602`; três checks do HEAD revisado aprovados. Antes da primeira migração real v1→v2, preservar cópia consistente do banco de traces; rollback exige restaurá-la. Sem Live ou migração real.
 - [ ] P09/V08 — métricas mínimas de voz e latência ponta a ponta; detalhar estágios apenas quando necessários.
 - [ ] P07 — medir sobrecarga no ambiente alvo quando autorizado; adiar alteração de arquitetura sem evidência de impacto.
 - [ ] S01 (pausado, P0), S02/S06 e demais bloqueios de segurança relevantes — retomar prioritariamente assim que possível; não liberar uso cotidiano com bloqueios efetivos pendentes.
