@@ -148,9 +148,9 @@ def test_powershell_identity_guard_with_synthetic_elements():
     if not powershell:
         pytest.skip("PowerShell indisponivel neste ambiente")
     script = windows_uia._UI_AUTOMATION_POWERSHELL
-    helpers = script[script.index("function Get-RuntimeIdString"):script.index("function Get-PatternNames")]
+    helpers = script[script.index("function Safe-String"):script.index("function Get-PatternNames")]
     probe = helpers + r'''
-$element = [pscustomobject]@{}
+$element = [pscustomobject]@{ Current=[pscustomobject]@{ Name='busca'; AutomationId='field-a'; ControlType=[pscustomobject]@{ProgrammaticName='ControlType.Edit'}; IsPassword=$false } }
 $element | Add-Member ScriptMethod GetRuntimeId { return @(1,2,3) }
 $item = [pscustomobject]@{ Element=$element; Name='busca'; AutomationId='field-a'; ControlType='Edit'; IsPassword=$false }
 $expected = [pscustomobject]@{ runtime_id='1:2:3'; nome='busca'; automation_id='field-a'; tipo='Edit'; protegido=$false }
@@ -166,3 +166,71 @@ try { Assert-FillIdentity $item $expected; 'allow' } catch { 'deny' }
         capture_output=True, text=True, timeout=15, check=True,
     )
     assert completed.stdout.splitlines() == ["allow", "deny", "deny"]
+
+
+def test_powershell_rejects_stale_snapshot_attributes():
+    powershell = shutil.which("powershell.exe") or shutil.which("pwsh")
+    if not powershell:
+        pytest.skip("PowerShell indisponivel neste ambiente")
+    script = windows_uia._UI_AUTOMATION_POWERSHELL
+    helpers = script[script.index("function Safe-String"):script.index("function Get-PatternNames")]
+    probe = helpers + r'''
+$element = [pscustomobject]@{ Current=[pscustomobject]@{ Name='busca'; AutomationId='field-a'; ControlType=[pscustomobject]@{ProgrammaticName='ControlType.Edit'}; IsPassword=$false } }
+$element | Add-Member ScriptMethod GetRuntimeId { return @(1,2,3) }
+$item = [pscustomobject]@{ Element=$element; Name='busca'; AutomationId='field-a'; ControlType='Edit'; IsPassword=$false }
+$expected = [pscustomobject]@{ runtime_id='1:2:3'; nome='busca'; automation_id='field-a'; tipo='Edit'; protegido=$false }
+try { Assert-FillIdentity $item $expected; 'allow' } catch { 'deny' }
+$element.Current.Name = 'outro'
+try { Assert-FillIdentity $item $expected; 'allow' } catch { 'deny' }
+$element.Current.Name = 'busca'
+$element.Current.AutomationId = 'field-b'
+try { Assert-FillIdentity $item $expected; 'allow' } catch { 'deny' }
+$element.Current.AutomationId = 'field-a'
+$element.Current.ControlType.ProgrammaticName = 'ControlType.Button'
+try { Assert-FillIdentity $item $expected; 'allow' } catch { 'deny' }
+$element.Current.ControlType.ProgrammaticName = 'ControlType.Edit'
+$element.Current.IsPassword = $true
+try { Assert-FillIdentity $item $expected; 'allow' } catch { 'deny' }
+'''
+    completed = subprocess.run(
+        [powershell, "-NoProfile", "-NonInteractive", "-Command", probe],
+        capture_output=True, text=True, timeout=15, check=True,
+    )
+    assert completed.stdout.splitlines() == ["allow", "deny", "deny", "deny", "deny"]
+
+
+@pytest.mark.parametrize("fresh_control_found", [True, False])
+def test_powershell_post_fallback_identity_failure_cannot_report_success(fresh_control_found):
+    powershell = shutil.which("powershell.exe") or shutil.which("pwsh")
+    if not powershell:
+        pytest.skip("PowerShell indisponivel neste ambiente")
+    script = windows_uia._UI_AUTOMATION_POWERSHELL
+    helpers = script[script.index("function Safe-String"):script.index("function Get-PatternNames")]
+    start = script.index("                # Confirma novamente por um AutomationElement completamente novo.")
+    end = script.index("\n            }\n\n            $confirmadoBool", start)
+    confirmation_start = script.index("            $confirmadoBool = ($confirmado -eq $textoDesejado)", end)
+    confirmation_end = script.index("            $resultado = [pscustomobject]@{", confirmation_start)
+    refresh = script[start:end]
+    confirmation = script[confirmation_start:confirmation_end]
+    probe = helpers + r'''
+$element = [pscustomobject]@{ Current=[pscustomobject]@{ Name='senha'; AutomationId='id-b'; ControlType=[pscustomobject]@{ProgrammaticName='ControlType.Edit'}; IsPassword=$true } }
+$element | Add-Member ScriptMethod GetRuntimeId { return @(1,2,4) }
+$freshItem = [pscustomobject]@{ Element=$element; Name='senha'; AutomationId='id-b'; ControlType='Edit'; IsPassword=$true }
+function Get-RootElement { return 'root' }
+function Get-AllControls { return @('one') }
+    $freshControlFound = __FRESH_CONTROL_FOUND__
+    function Find-Controls { if ($freshControlFound) { return @([pscustomobject]@{ Item=$freshItem }) }; return @() }
+$payload = [pscustomobject]@{ hwnd=100; identidade_esperada=[pscustomobject]@{ runtime_id='1:2:3'; nome='senha'; automation_id='id-b'; tipo='Edit'; protegido=$true } }
+$target='senha'; $item=$freshItem; $textoDesejado='abc'; $confirmado=''
+$foregroundSeguro=$true; $physicalClickConfirmed=$true; $fallbackExecutado=$true; $controleFocado=$true
+try {
+''' + refresh + "\n" + confirmation + r'''
+if ($confirmadoBool) { 'success' } else { 'unconfirmed' }
+} catch { 'identity_rejected' }
+'''
+    probe = probe.replace("__FRESH_CONTROL_FOUND__", "$true" if fresh_control_found else "$false")
+    completed = subprocess.run(
+        [powershell, "-NoProfile", "-NonInteractive", "-Command", probe],
+        capture_output=True, text=True, timeout=15, check=True,
+    )
+    assert completed.stdout.splitlines() == ["identity_rejected"]

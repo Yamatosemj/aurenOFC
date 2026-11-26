@@ -56,12 +56,21 @@ function Assert-FillIdentity($Item, $Expected) {
         throw 'Identidade UIA autorizada indisponivel; preenchimento recusado.'
     }
     $actualRuntimeId = Get-RuntimeIdString $Item.Element
-    if (-not $actualRuntimeId -or
+    try {
+        $current = $Item.Element.Current
+        $actualName = [string]$current.Name
+        $actualAutomationId = [string]$current.AutomationId
+        $actualType = Get-ControlTypeName $Item.Element
+        $actualProtected = [bool]$current.IsPassword
+    } catch {
+        throw 'A identidade atual do controle UIA esta indisponivel; preenchimento recusado.'
+    }
+    if (-not $actualRuntimeId -or -not $actualType -or -not $Expected.tipo -or
         $actualRuntimeId -cne [string]$Expected.runtime_id -or
-        $Item.Name -cne [string]$Expected.nome -or
-        $Item.AutomationId -cne [string]$Expected.automation_id -or
-        $Item.ControlType -cne [string]$Expected.tipo -or
-        [bool]$Item.IsPassword -ne [bool]$Expected.protegido) {
+        $actualName -cne [string]$Expected.nome -or
+        $actualAutomationId -cne [string]$Expected.automation_id -or
+        $actualType -cne [string]$Expected.tipo -or
+        $actualProtected -ne [bool]$Expected.protegido) {
         throw 'A identidade do controle UIA mudou apos a autorizacao; preenchimento recusado.'
     }
 }
@@ -464,20 +473,28 @@ try {
 
                 # Releia o controle a partir da arvore atual para evitar depender de
                 # um AutomationElement/pattern que possa estar com estado desatualizado.
+                $freshItem = $null
                 try {
                     $freshRoot = Get-RootElement ([string]$payload.hwnd)
                     $freshItems = Get-AllControls $freshRoot
                     $freshMatches = Find-Controls $freshItems $target 'Value'
                     if ($freshMatches.Count -gt 0) {
                         $freshItem = $freshMatches[0].Item
-                        Assert-FillIdentity $freshItem $payload.identidade_esperada
+                    }
+                } catch {}
+                if ($freshItem) {
+                    try { Assert-FillIdentity $freshItem $payload.identidade_esperada } catch {
+                        throw "Nao consegui confirmar a identidade apos SetValue; o efeito pode ter ocorrido: $($_.Exception.Message)"
+                    }
+                    try {
                         $freshPattern = $freshItem.Element.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
                         $confirmado = Safe-String $freshPattern.Current.Value
                         $item = $freshItem
                         $valuePattern = $freshPattern
+                    } catch {
+                        try { $confirmado = Safe-String $valuePattern.Current.Value } catch { $confirmado = '' }
                     }
-                } catch {
-                    if ($_.Exception.Message -like 'A identidade do controle UIA mudou*') { throw }
+                } else {
                     try { $confirmado = Safe-String $valuePattern.Current.Value } catch { $confirmado = '' }
                 }
             }
@@ -687,16 +704,24 @@ public static class AurenUiWin32 {
                 }
 
                 # Confirma novamente por um AutomationElement completamente novo.
+                $freshItem = $null
                 try {
                     $freshRoot = Get-RootElement ([string]$payload.hwnd)
                     $freshItems = Get-AllControls $freshRoot
                     $freshMatches = Find-Controls $freshItems $target 'Value'
                     if ($freshMatches.Count -gt 0) {
                         $freshItem = $freshMatches[0].Item
-                        Assert-FillIdentity $freshItem $payload.identidade_esperada
-                        $freshPattern = $freshItem.Element.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
-                        $confirmado = Safe-String $freshPattern.Current.Value
                     }
+                } catch {}
+                if (-not $freshItem) {
+                    throw 'Nao consegui verificar a identidade do controle apos a entrada alternativa; o efeito pode ter ocorrido.'
+                }
+                try { Assert-FillIdentity $freshItem $payload.identidade_esperada } catch {
+                    throw "Nao consegui confirmar a identidade apos a entrada alternativa; o efeito pode ter ocorrido: $($_.Exception.Message)"
+                }
+                try {
+                    $freshPattern = $freshItem.Element.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
+                    $confirmado = Safe-String $freshPattern.Current.Value
                 } catch {}
             }
 
