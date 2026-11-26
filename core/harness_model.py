@@ -18,11 +18,13 @@ def _log_resposta_modelo(
     """Registra trace e resposta de uma rodada do modelo sem alterar o fluxo."""
     if trace is not None:
         try:
-            trace.record_model(
-                rodada,
-                latencia_ms,
-                uso_resposta(resposta),
-            )
+            details = {}
+            model = getattr(resposta, "model", None)
+            if isinstance(model, str) and model:
+                details["model"] = model
+            if getattr(resposta, "source", None) == "local_cache":
+                details["local_cache"] = True
+            trace.record_model(rodada, latencia_ms, uso_resposta(resposta), **details)
         except Exception as exc:
             write_log("TRACE_ERROR", task_id=task_id, etapa="model", erro=str(exc))
     write_log(

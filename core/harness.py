@@ -414,6 +414,12 @@ class AurenHarness:
     def _uso_resposta(resposta: Any) -> dict[str, int]:
         return usage.extrair_metricas_uso(resposta)
 
+    def _observar_chamada_provider(self, kind: str, duration_ms: float, success: bool,
+                                   metrics: dict[str, int] | None, model: str | None) -> None:
+        trace = self._trace
+        if trace is not None:
+            trace.record_provider_call(kind, duration_ms, success=success, usage=metrics, model=model)
+
     @staticmethod
     def _limite_adaptativo(objetivo: str) -> int:
         return _limite_adaptativo(objetivo, AurenHarness.DEFAULT_MAX_MODEL_ROUNDS)
@@ -427,6 +433,11 @@ class AurenHarness:
         inicio = time.perf_counter()
         resposta = self.criar_resposta(*args, **kwargs)
         latencia_ms = (time.perf_counter() - inicio) * 1000.0
+        if getattr(resposta, "source", None) == "local_cache" and self._trace is not None:
+            try:
+                self._trace.record_stage("response", latencia_ms, category="local_cache")
+            except Exception:
+                pass
 
         metricas: dict[str, Any] = {}
         callback = self.obter_metricas_roteamento
@@ -865,6 +876,7 @@ class AurenHarness:
         """Executa uma tarefa com isolamento de falha e ciclo de vida rastreado."""
         self._garantir_sessao_chat()
         token = _CURRENT_SESSION.set(self._session)
+        model_call_token = usage.set_model_call_observer(self._observar_chamada_provider)
         try:
             return self._processar_mensagem_impl(mensagem)
         except Exception as erro:
@@ -922,6 +934,7 @@ class AurenHarness:
                 }:
                     self._pergunta_pendente = None
                     self._clarification = None
+                usage.reset_model_call_observer(model_call_token)
                 _CURRENT_SESSION.reset(token)
 
     def current_task(self):

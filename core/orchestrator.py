@@ -18,6 +18,7 @@ class _CachedResponse:
         self.output = []
         self.id = "cached:" + cache_key[:16]
         self.usage = None
+        self.source = "local_cache"
 
 
 class AurenOrchestrator:
