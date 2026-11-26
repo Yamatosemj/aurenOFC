@@ -17,6 +17,7 @@ from voice.confirmation import (  # noqa: E402
     normalizar_resposta_falada,
 )
 from voice.input import PushToTalkRecorder  # noqa: E402
+from voice.metrics import VoiceInteractionMetrics  # noqa: E402
 from voice.speech_response import SpeechResponseFormatter  # noqa: E402
 from voice.stt import LocalPortugueseASR  # noqa: E402
 from voice.tts import LocalKokoroTTS  # noqa: E402
@@ -105,16 +106,25 @@ def _falar_interrompivel(
     recorder: PushToTalkRecorder,
     texto: str,
     texto_recebido_em: float | None = None,
+    metrics: VoiceInteractionMetrics | None = None,
 ) -> tuple[bool, bool, float | None]:
     """Fala em segundo plano para permitir ESC ou F8 interromper a fala."""
 
     cancel_event = Event()
     erro: list[BaseException] = []
     inicio_voz: list[float | None] = [None]
+    tts_started_at = time.perf_counter()
+
+    def _marcar_sintese_pronta() -> None:
+        if metrics is not None:
+            metrics.record("tts_first_chunk", tts_started_at, time.perf_counter())
 
     def _marcar_inicio_voz() -> None:
         if inicio_voz[0] is None:
             inicio_voz[0] = time.perf_counter()
+            if metrics is not None:
+                metrics.delivery_at = inicio_voz[0]
+                metrics.record("audio_delivery", inicio_voz[0], inicio_voz[0])
 
     def _worker() -> None:
         try:
@@ -122,6 +132,7 @@ def _falar_interrompivel(
                 texto,
                 cancel_event=cancel_event,
                 on_audio_start=_marcar_inicio_voz,
+                on_synthesis_ready=_marcar_sintese_pronta,
             )
         except BaseException as exc:
             erro.append(exc)
@@ -153,11 +164,17 @@ def _falar_interrompivel(
         recorder.limpar_pre_roll()
 
     if erro:
+        if metrics is not None:
+            metrics.statuses["tts_first_chunk"] = "failed"
+            metrics.statuses["audio_delivery"] = "failed"
         exc = erro[0]
         if isinstance(exc, RuntimeError):
             raise exc
         raise RuntimeError(str(exc)) from exc
 
+    if metrics is not None and (interrompido or sair):
+        metrics.statuses["tts_first_chunk"] = "cancelled"
+        metrics.statuses["audio_delivery"] = "cancelled"
     latencia = None
     if texto_recebido_em is not None and inicio_voz[0] is not None:
         latencia = max(0.0, inicio_voz[0] - texto_recebido_em)
@@ -180,18 +197,44 @@ def _processar_e_falar(
     recorder: PushToTalkRecorder,
     mensagem: str,
     texto_recebido_em: float | None,
+    metrics: VoiceInteractionMetrics | None = None,
 ) -> tuple[bool, float | None]:
     """Processa uma mensagem e fala a mesma resposta pelo canal de voz."""
 
+    previous = harness.current_task() if metrics is not None else None
+    previous_identity = (getattr(previous, "task_id", None), getattr(previous, "state", None))
+    task_started_at = time.perf_counter()
     try:
         tratado, resposta = harness.processar_mensagem(mensagem)
     except Exception as exc:
+        if metrics is not None:
+            metrics.record("task", task_started_at, time.perf_counter(), status="failed")
+            current = harness.current_task()
+            current_identity = (getattr(current, "task_id", None), getattr(current, "state", None))
+            if current is not None and current_identity != previous_identity:
+                metrics.task_id = current_identity[0]
+                metrics.task_status = getattr(current_identity[1], "value", "failed")
         print(f"Auren: erro ao processar a tarefa: {exc}")
         try:
             recorder.definir_saida_ativa(True)
-            tts.falar("Tive um problema ao executar essa tarefa.")
+            if metrics is None:
+                tts.falar("Tive um problema ao executar essa tarefa.")
+            else:
+                fallback_started = time.perf_counter()
+
+                def _fallback_ready() -> None:
+                    metrics.record("tts_first_chunk", fallback_started, time.perf_counter())
+
+                def _fallback_delivery() -> None:
+                    metrics.delivery_at = time.perf_counter()
+                    metrics.record("audio_delivery", metrics.delivery_at, metrics.delivery_at)
+
+                tts.falar("Tive um problema ao executar essa tarefa.",
+                          on_synthesis_ready=_fallback_ready, on_audio_start=_fallback_delivery)
         except Exception:
-            pass
+            if metrics is not None:
+                metrics.statuses["tts_first_chunk"] = "failed"
+                metrics.statuses["audio_delivery"] = "failed"
         finally:
             recorder.definir_saida_ativa(False)
             recorder.limpar_pre_roll()
@@ -200,6 +243,12 @@ def _processar_e_falar(
     texto = resposta if tratado else getattr(resposta, "output_text", str(resposta))
     texto = str(texto or "").strip()
     snapshot = harness.current_task()
+    if metrics is not None:
+        state = getattr(getattr(snapshot, "state", None), "value", None)
+        metrics.task_id = getattr(snapshot, "task_id", None)
+        metrics.task_status = state
+        metrics.record("task", task_started_at, time.perf_counter(),
+                       status=state or "unavailable")
     fala = SpeechResponseFormatter.formatar(
         objetivo=mensagem,
         texto=texto,
@@ -213,8 +262,12 @@ def _processar_e_falar(
             recorder,
             fala,
             texto_recebido_em,
+            metrics,
         )
     except RuntimeError as exc:
+        if metrics is not None:
+            metrics.statuses["tts_first_chunk"] = "failed"
+            metrics.statuses["audio_delivery"] = "failed"
         print(f"Auren voz: TTS indisponível: {exc}")
         interrompido, sair, latencia = False, False, None
 
@@ -294,13 +347,18 @@ def main() -> int:
                         print("Auren: Até mais.")
                         return 0
 
-                    deve_sair, _ = _processar_e_falar(
-                        harness=harness,
-                        tts=tts,
-                        recorder=recorder,
-                        mensagem=mensagem,
-                        texto_recebido_em=time.perf_counter(),
-                    )
+                    metrics = VoiceInteractionMetrics(channel="text")
+                    try:
+                        deve_sair, _ = _processar_e_falar(
+                            harness=harness,
+                            tts=tts,
+                            recorder=recorder,
+                            mensagem=mensagem,
+                            texto_recebido_em=time.perf_counter(),
+                            metrics=metrics,
+                        )
+                    finally:
+                        metrics.persist(trace_store=getattr(harness, "trace_store", None))
                     if deve_sair:
                         return 0
                 continue
@@ -311,6 +369,9 @@ def main() -> int:
                 continue
 
             if tipo_audio == "erro_captura":
+                metrics = VoiceInteractionMetrics(channel="ptt")
+                metrics.statuses["capture"] = "failed"
+                metrics.persist()
                 print("Auren voz: a captura sera tentada novamente.")
                 continue
 
@@ -319,39 +380,57 @@ def main() -> int:
                 return 0
 
             if audio is None:
+                metrics = VoiceInteractionMetrics(channel="ptt")
+                metrics.statuses["capture"] = "discarded"
+                metrics.persist()
                 continue
+
+            metrics = VoiceInteractionMetrics(channel="ptt")
+            metrics.speech_end_at = getattr(audio, "speech_end_at", None)
+            metrics.record("capture", getattr(audio, "capture_started_at", None),
+                           getattr(audio, "capture_finished_at", None))
 
             try:
-                inicio_stt = time.perf_counter()
-                mensagem = stt.transcrever(audio)
-                texto_recebido_em = time.perf_counter()
-                print(f"Latência ASR: {texto_recebido_em - inicio_stt:.3f}s")
-            except RuntimeError as exc:
-                print(f"Auren voz: STT indisponível nesta tentativa: {exc}")
-                continue
-            except Exception as exc:
-                print(f"Auren voz: erro inesperado no STT: {exc}")
-                continue
+                try:
+                    inicio_stt = time.perf_counter()
+                    mensagem = stt.transcrever(audio)
+                    texto_recebido_em = time.perf_counter()
+                    metrics.record("asr", inicio_stt, texto_recebido_em)
+                    print(f"Latência ASR: {texto_recebido_em - inicio_stt:.3f}s")
+                except RuntimeError as exc:
+                    metrics.record("asr", inicio_stt, time.perf_counter(), status="failed")
+                    print(f"Auren voz: STT indisponível nesta tentativa: {exc}")
+                    continue
+                except Exception as exc:
+                    metrics.record("asr", inicio_stt, time.perf_counter(), status="failed")
+                    print(f"Auren voz: erro inesperado no STT: {exc}")
+                    continue
 
-            mensagem = mensagem.strip()
-            if not mensagem:
-                print("Auren voz: não entendi o áudio.")
-                continue
+                mensagem = mensagem.strip()
+                if not mensagem:
+                    metrics.task_status = "no_transcript"
+                    print("Auren voz: não entendi o áudio.")
+                    continue
 
-            print(f"Você: {mensagem}")
-            if _eh_comando_saida(mensagem):
-                print("Auren: Até mais.")
-                return 0
+                print(f"Você: {mensagem}")
+                if _eh_comando_saida(mensagem):
+                    metrics.task_status = "exit_command"
+                    print("Auren: Até mais.")
+                    return 0
 
-            deve_sair, _ = _processar_e_falar(
-                harness=harness,
-                tts=tts,
-                recorder=recorder,
-                mensagem=mensagem,
-                texto_recebido_em=texto_recebido_em,
-            )
-            if deve_sair:
-                return 0
+                deve_sair, _ = _processar_e_falar(
+                    harness=harness,
+                    tts=tts,
+                    recorder=recorder,
+                    mensagem=mensagem,
+                    texto_recebido_em=texto_recebido_em,
+                    metrics=metrics,
+                )
+                if deve_sair:
+                    return 0
+
+            finally:
+                metrics.persist(trace_store=getattr(harness, "trace_store", None))
 
     except KeyboardInterrupt:
         print("\nAuren: Até mais.")

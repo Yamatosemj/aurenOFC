@@ -196,6 +196,47 @@ class TaskTraceStore:
             ).fetchall()
         return [dict(row) for row in rows]
 
+    def record_voice_interaction(self, task_id: str, data: dict[str, Any]) -> None:
+        """Anexa etapas de voz a um trace existente, sem alterar o esquema."""
+        with self._connect() as connection:
+            if connection.execute("SELECT 1 FROM task_traces WHERE task_id=?", (task_id,)).fetchone() is None:
+                return
+            sequence = connection.execute(
+                "SELECT COALESCE(MAX(sequence),0) FROM task_trace_spans WHERE task_id=?", (task_id,)
+            ).fetchone()[0]
+            stages = data["stages_ms"]
+            for name, duration in stages.items():
+                sequence += 1
+                metadata = {
+                    "interaction_id": data["interaction_id"], "channel": data["channel"],
+                    "task_status": data["task_status"], "stage_status": data["stages_status"][name],
+                    "duration_available": duration is not None,
+                }
+                connection.execute(
+                    "INSERT INTO task_trace_spans (task_id,sequence,category,name,started_at,duration_ms,success,metadata_json) "
+                    "VALUES (?,?,?,?,?,?,?,?)",
+                    (task_id, sequence, "voice", name, _now_iso(), 0.0 if duration is None else duration,
+                     int(data["stages_status"][name] == "completed"),
+                     json.dumps(metadata, ensure_ascii=False, separators=(",", ":"))),
+                )
+            interval = data["speech_end_to_audio_delivery_ms"]
+            sequence += 1
+            connection.execute(
+                "INSERT INTO task_trace_spans (task_id,sequence,category,name,started_at,duration_ms,success,metadata_json) "
+                "VALUES (?,?,?,?,?,?,?,?)",
+                (task_id, sequence, "voice_interval", "speech_end_to_audio_delivery", _now_iso(),
+                 0.0 if interval is None else interval, int(interval is not None),
+                 json.dumps({"interaction_id": data["interaction_id"],
+                             "speech_end_source": data["speech_end_source"],
+                             "delivery_kind": data["delivery_kind"],
+                             "duration_available": interval is not None}, separators=(",", ":"))),
+            )
+            connection.execute(
+                "UPDATE task_traces SET asr_ms=asr_ms+?, tts_ms=tts_ms+? WHERE task_id=?",
+                (stages["asr"] or 0.0, stages["tts_first_chunk"] or 0.0, task_id),
+            )
+            connection.commit()
+
     def report(self, *, limit: int = 500) -> dict[str, Any]:
         if limit < 1:
             raise ValueError("limit deve ser maior que zero.")
