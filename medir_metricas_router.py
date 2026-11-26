@@ -8,14 +8,23 @@ produzidos pelo runtime instrumentado.
 Uso:
     py medir_metricas_router.py
     py medir_metricas_router.py logs/chats/<chat_id>/chat/chat.log
+    py medir_metricas_router.py <chat.log> <auren_trace.sqlite3>
+
+Custos completos sao lidos do trace SQLite v2 em modo somente leitura. O log
+isolado nao permite identificar modelo efetivo nem todas as chamadas externas.
 """
 
 import json
+import math
 import re
+import sqlite3
 import sys
+from collections import Counter
 from pathlib import Path
 from statistics import mean
 from typing import Any
+
+from core.task_trace import DEFAULT_TRACE_DB_PATH
 
 TS = r"\[\d{4}-\d{2}-\d{2}T[^\]\n]+\]"
 TASK_RE = re.compile(rf"(?ms)^{TS} TASK_START\n.*?(?=^{TS} TASK_START\n|^{TS} CHAT_END\n|\Z)")
@@ -25,12 +34,6 @@ LOCAL_RE = re.compile(rf"(?m)^{TS} TASK_LOCAL_COMPLETION\b")
 TASK_END_RE = re.compile(rf"(?m)^(?P<ts>{TS}) TASK_END\n(?P<body>.*?)(?=^{TS} [A-Z_]+\n|\Z)")
 FLOAT_RE = re.compile(r"^  latencia_ms: ([0-9]+(?:\.[0-9]+)?)$", re.M)
 JSON_FIELD_RE = re.compile(r"^  (uso|router): (.+)$", re.M)
-
-PRICE_INPUT = 0.20 / 1_000_000
-PRICE_CACHE = 0.02 / 1_000_000
-PRICE_CACHE_WRITE = 0.25 / 1_000_000
-PRICE_OUTPUT = 1.20 / 1_000_000
-
 
 def find_log(argv: list[str]) -> Path:
     if len(argv) > 1:
@@ -95,12 +98,6 @@ def parse_tasks(text: str) -> list[dict[str, Any]]:
             key: sum(row[key] for row in responses)
             for key in ("input_tokens", "output_tokens", "cached_tokens", "cache_write_tokens")
         }
-        cost = (
-            max(0, tokens["input_tokens"] - tokens["cached_tokens"] - tokens["cache_write_tokens"]) * PRICE_INPUT
-            + tokens["cached_tokens"] * PRICE_CACHE
-            + tokens["cache_write_tokens"] * PRICE_CACHE_WRITE
-            + tokens["output_tokens"] * PRICE_OUTPUT
-        )
         tasks.append(
             {
                 "task_id": task_id,
@@ -109,16 +106,58 @@ def parse_tasks(text: str) -> list[dict[str, Any]]:
                 "status": task_end.strip().splitlines()[-1].strip() if task_end.strip() else "",
                 "model_rounds": len(responses),
                 "tokens": tokens,
-                "custo_estimado_usd": cost,
+                "custo_estimado_usd": None,
+                "custo_status": "unavailable",
                 "latencia_ms_total": sum(r["latencia_ms"] or 0.0 for r in responses),
             }
         )
     return tasks
 
 
-def aggregate(text: str) -> dict[str, Any]:
+def _trace_costs(tasks: list[dict[str, Any]], path: str | Path | None) -> None:
+    """Le apenas traces v2 finalizados; nao cria nem migra bancos historicos."""
+    if path is None or not Path(path).is_file():
+        return
+    try:
+        uri = Path(path).resolve().as_uri() + "?mode=ro"
+        with sqlite3.connect(uri, uri=True) as connection:
+            if connection.execute("PRAGMA user_version").fetchone()[0] != 2:
+                return
+            connection.row_factory = sqlite3.Row
+            task_ids = Counter(task["task_id"] for task in tasks)
+            updates: list[tuple[dict[str, Any], float, str]] = []
+            for task in tasks:
+                if not task["task_id"] or task_ids[task["task_id"]] != 1:
+                    continue
+                row = connection.execute(
+                    "SELECT cost_usd,cost_status,finished_at,model_rounds,input_tokens,output_tokens,"
+                    "cached_tokens,cache_write_tokens FROM task_traces WHERE task_id=?",
+                    (task["task_id"],),
+                ).fetchone()
+                if row is None or row["finished_at"] is None or row["cost_status"] not in {"estimated", "zero"}:
+                    continue
+                # O trace deve cobrir todas as rodadas e ao menos os tokens vistos no log.
+                # Pode conter tokens adicionais de verificacoes semanticas nao logadas aqui.
+                if row["model_rounds"] != task["model_rounds"] or any(
+                    row[key] < task["tokens"][key] for key in task["tokens"]
+                ):
+                    continue
+                amount = float(row["cost_usd"])
+                if not math.isfinite(amount) or amount < 0 or (row["cost_status"] == "zero" and amount != 0):
+                    continue
+                updates.append((task, amount, row["cost_status"]))
+            for task, amount, status in updates:
+                task["custo_estimado_usd"] = amount
+                task["custo_status"] = status
+    except (OSError, sqlite3.Error, TypeError, ValueError):
+        # O diagnostico de roteamento continua util mesmo sem trace compativel.
+        return
+
+
+def aggregate(text: str, *, trace_db_path: str | Path | None = None) -> dict[str, Any]:
     responses = parse_responses(text)
     tasks = parse_tasks(text)
+    _trace_costs(tasks, trace_db_path)
     routed = [r for r in responses if r.get("router")]
     tool_sizes = [int(r["router"].get("ferramentas", 0)) for r in routed if r["router"].get("ferramentas")]
     fallback = sum(1 for r in routed if bool(r["router"].get("fallback_45")))
@@ -129,7 +168,8 @@ def aggregate(text: str) -> dict[str, Any]:
         key: sum(r[key] for r in responses)
         for key in ("input_tokens", "output_tokens", "cached_tokens", "cache_write_tokens")
     }
-    total_cost = sum(t["custo_estimado_usd"] for t in tasks)
+    costs_available = bool(tasks) and all(t["custo_estimado_usd"] is not None for t in tasks)
+    total_cost = sum(t["custo_estimado_usd"] for t in tasks) if costs_available else None
     local_tasks = sum(1 for t in model_tasks if t["local_completion"])
     fast_tasks = sum(1 for t in tasks if t["fast_path"])
 
@@ -151,8 +191,9 @@ def aggregate(text: str) -> dict[str, Any]:
         "tokens": totals,
         "tokens_input_medio_por_tarefa_com_modelo": (totals["input_tokens"] / len(model_tasks)) if model_tasks else 0.0,
         "tokens_output_medio_por_tarefa_com_modelo": (totals["output_tokens"] / len(model_tasks)) if model_tasks else 0.0,
+        "tarefas_custo_disponivel": sum(t["custo_estimado_usd"] is not None for t in tasks),
         "custo_estimado_total_usd": total_cost,
-        "custo_estimado_medio_por_tarefa_usd": (total_cost / len(tasks)) if tasks else 0.0,
+        "custo_estimado_medio_por_tarefa_usd": (total_cost / len(tasks)) if costs_available else None,
         "tarefas": tasks,
     }
 
@@ -160,7 +201,8 @@ def aggregate(text: str) -> dict[str, Any]:
 def main() -> int:
     path = find_log(sys.argv)
     text = path.read_text(encoding="utf-8", errors="replace")
-    result = aggregate(text)
+    trace_db_path = Path(sys.argv[2]) if len(sys.argv) > 2 else DEFAULT_TRACE_DB_PATH
+    result = aggregate(text, trace_db_path=trace_db_path)
 
     out_dir = Path("logs/testes")
     out_dir.mkdir(parents=True, exist_ok=True)

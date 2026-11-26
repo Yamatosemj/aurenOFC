@@ -48,6 +48,7 @@ class OpenAIProvider:
         except Exception:
             usage.observe_provider_call(kind, (time.perf_counter() - started) * 1000.0,
                                         success=False)
+            usage.registrar_tentativa_sem_uso()
             raise
         usage.observe_provider_call(kind, (time.perf_counter() - started) * 1000.0,
                                     response=response, success=True)

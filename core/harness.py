@@ -415,10 +415,10 @@ class AurenHarness:
         return usage.extrair_metricas_uso(resposta)
 
     def _observar_chamada_provider(self, kind: str, duration_ms: float, success: bool,
-                                   metrics: dict[str, int] | None) -> None:
+                                   metrics: dict[str, int] | None, model: str | None) -> None:
         trace = self._trace
         if trace is not None:
-            trace.record_provider_call(kind, duration_ms, success=success, usage=metrics)
+            trace.record_provider_call(kind, duration_ms, success=success, usage=metrics, model=model)
 
     @staticmethod
     def _limite_adaptativo(objetivo: str) -> int:

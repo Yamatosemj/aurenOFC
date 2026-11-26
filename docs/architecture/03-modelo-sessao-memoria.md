@@ -17,7 +17,7 @@
 | [memory/store.py](../../memory/store.py) | SQLite: fatos, conversas e estratégias; valida dados, filtra termos de credenciais e consulta registros |
 | [tools/memory.py](../../tools/memory.py) | Wrappers JSON das três ferramentas de fatos; o Dispatcher adapta o retorno para ToolResult |
 | [core/harness_runtime.py](../../core/harness_runtime.py) | Identidade de chat e contexto de logs; diferente da composição de memória |
-| [core/usage.py](../../core/usage.py) | Contadores globais do processo e custo estimado com coeficientes fixos |
+| [core/usage.py](../../core/usage.py) | Contadores globais do processo e estimativas por modelo com tabela de precos versionada |
 
 A cadeia oficial continua passando pelo Harness. Métodos Python públicos de store/provider são APIs internas; não representam novas ferramentas autorizadas ao modelo.
 
@@ -137,7 +137,25 @@ No orquestrador, só string não vazia, de até 700 caracteres após compactaç�
 
 **Limite reproduzido em chamada direta:** a chave inclui mensagem, provider, modelo, prompt e rótulos estáticos, mas não `response_id` nem `reasoning_effort`. Duas chamadas diretas elegíveis com texto igual e IDs anteriores diferentes reutilizaram uma única resposta falsa. Não extrapolar esse caso ao Harness, que não usa previous_response_id e cujo estado padrão é inelegível. Antes de ampliar o cache, definir identidade de sessão/contexto e testes correspondentes.
 
-[usage.py](../../core/usage.py) soma métricas após resposta do provider. Seus coeficientes fixos são usados para estimativa independentemente do modelo escolhido; **não são cotação atual nem fatura**. Os contadores são globais do processo, apesar do nome session, sem reset por chat implementado nesse módulo. Traces usam persistência separada e não alimentam automaticamente o contexto de memória.
+[usage.py](../../core/usage.py) soma métricas após resposta do provider. A estimativa usa o `model` devolvido na resposta e a tabela `openai-standard-2026-11-25`; o modelo solicitado em `config.MODEL` não é tratado como prova da identidade efetiva. Os contadores são globais do processo, apesar do nome session, sem reset por chat implementado nesse módulo. Traces usam persistência separada e não alimentam automaticamente o contexto de memória.
+
+### Precos e semantica da estimativa (P06)
+
+Tabela em USD por 1 milhao de tokens, tarifa **Standard**, consultada em **2026-11-25** nas paginas oficiais [Luna](https://developers.openai.com/api/docs/models/gpt-5.6-luna), [Terra](https://developers.openai.com/api/docs/models/gpt-5.6-terra), [Sol](https://developers.openai.com/api/docs/models/gpt-5.6-sol) e no [guia de prompt caching](https://developers.openai.com/api/docs/guides/prompt-caching). A tarifa promocional do Sol e confirmada somente ate 2026-11-30; depois dessa data, a estimativa desse modelo fica indisponivel ate revisao explicita da tabela.
+
+| Modelo efetivo | Entrada | Entrada em cache | Escrita de cache 30m | Saida |
+| --- | ---: | ---: | ---: | ---: |
+| `gpt-5.6-luna` | 0.20 | 0.02 | 0.25 | 1.20 |
+| `gpt-5.6-terra` | 2.00 | 0.20 | 2.50 | 12.00 |
+| `gpt-5.6-sol` | 4.00 | 0.40 | 5.00 | 20.00 |
+
+`cached_tokens` e `cache_write_tokens` ja fazem parte de `input_tokens`: entrada comum = entrada total menos os dois subconjuntos. Acima de 272 mil tokens de entrada, a documentacao dos modelos indica 2x para entrada e 1.5x para saida, aplicados a requisicao inteira. Uso ausente, particao de cache inconsistente, modelo sem preco confirmado ou tentativa falha deixam o custo da chamada **desconhecido**; uso presente com zero tokens produz zero legitimo. A soma conhecida da tarefa/sessao e **parcial** quando coexistem chamadas precificadas e desconhecidas. `cost_usd` preserva a soma conhecida; `cost_status` impede interpreta-la como total em casos parciais ou desconhecidos. Spans de modelo/provider registram modelo efetivo, referencia da tabela e estimativa da chamada. Acerto de cache local nao e chamada externa e tem custo zero nesta medicao.
+
+O esquema SQLite v2 conserva `cost_usd` historico sem reprecificar registros; essas linhas recebem `cost_status=legacy_unverified`. Estatisticas de custo do relatorio incluem apenas tarefas com estimativa completa (`estimated` ou `zero`), com contagem `cost_samples`; historicos, parciais e desconhecidos permanecem acessiveis no detalhe, mas fora dos percentis. A tabela cobre apenas os tres modelos listados e nao infere aliases, outros modos de processamento, tarifas regionais, taxas de ferramentas nem ajustes da fatura. Valores sao **estimativas**, nao montantes faturados. Falhas da coleta e retries internos do SDK continuam fora da observacao completa.
+
+O diagnostico legado [`medir_metricas_router.py`](../../medir_metricas_router.py) agrega `chat.log`, que nao identifica o modelo efetivo nem cobre necessariamente verificacoes semanticas, tentativas falhas ou acertos de cache local. Por isso, seus campos de custo sao `null` sem trace compativel. Quando disponivel, ele le o banco de traces v2 **somente para leitura**, vincula `task_id`, exige tarefa finalizada e `cost_status` completo (`estimated` ou `zero`) e confere contagem de rodadas e limite inferior dos tokens vistos no log. O total e a media de custos ficam indisponiveis se qualquer tarefa do log nao tiver custo completo; `tarefas_custo_disponivel` informa a cobertura. O segundo argumento opcional do script permite apontar outro banco; por padrao usa `data/traces/auren_trace.sqlite3`. Essa verificacao nao prova que toda chamada externa foi observada quando a gravacao do trace falhou.
+
+**Rollback da migracao v1 -> v2:** abrir um banco v1 com `TaskTraceStore` desta versao adiciona colunas e eleva `PRAGMA user_version` para 2. O codigo anterior, que aceita no maximo v1, passa a rejeitar esse banco; nao existe downgrade automatico. **Antes da primeira abertura real que possa migrar um banco existente, preserve uma copia recuperavel do SQLite com o Auren parado** (ou use a API de backup do SQLite para uma copia consistente). Se houver arquivos `-wal`/`-shm`, nao copie apenas o arquivo principal enquanto o banco estiver ativo. Para voltar ao codigo v1, restaure a copia v1 antes de iniciar o processo antigo. O diagnostico de roteamento nao dispara essa migracao.
 
 Para tarefas executadas pelo Harness, o adaptador registra no trace ativo cada invocação observável de `responses.create`, distinguindo resposta principal, verificação semântica e falha. O Harness marca separadamente acertos do cache local. O vínculo usa `ContextVar` durante `processar_mensagem`, sem alterar chamadas nem decisões. Tokens da resposta principal continuam no registro da rodada; os da verificação são adicionados separadamente, sem duplicação. Chamadas diretas ao provider fora de uma tarefa mantêm apenas os contadores globais. Veja a [semântica dos spans e seus limites](01-nucleo.md#chamadas-ao-provider-por-tarefa-correcao-focalizada).
 
