@@ -141,6 +141,8 @@ O campo **agent.state.phase** do planejador local nao constitui o estado termina
 
 Os traces sao observacionais: nao representam um mecanismo para reproduzir comandos antigos ou reexecutar uma tarefa. Falhas ao gravar spans sao toleradas; falhas da persistencia principal de trace podem ser registradas sem impedir o processamento. Nao registrar tokens, segredos, clipboard bruto ou conteudo sensivel em novos logs; confira [harness_logging.py](../../core/harness_logging.py) antes de adicionar campos.
 
+No modo PTT, a [instrumentação de voz](06-voz-stt-tts.md#metricas-de-interacao-por-voz-p09) anexa spans de etapas e do intervalo derivado ao `task_id` depois do processamento. O intervalo de fala até a entrega ao dispositivo não é somado às etapas nem altera `total_ms` do Harness. Os campos legados `asr_ms`/`tts_ms` são atualizados apenas quando a medição existe; para distinguir ausência de zero, consulte `duration_available` nos spans de voz.
+
 ### Semantica do relatorio de traces (correcao P08)
 
 [`TaskTraceStore.report()`](../../core/task_trace.py) consulta ate `limit` registros recentes (padrao 500). `tasks_considered` e `tasks` contam todos os registros selecionados, inclusive os ainda abertos. `status_counts` conta os valores de estado persistidos (`completed`, `failed`, `cancelled` e `incomplete` para `status` ausente); outros valores historicos, se houver, aparecem pelo proprio nome. Em `by_type`, as medianas e p95 principais usam somente tarefas `completed` com `finished_at` e `total_ms` registrados. `by_status` preserva as mesmas estatisticas separadamente para cada estado presente, incluindo falhas e cancelamentos; tarefas abertas continuam visiveis sem entrar nos percentis.

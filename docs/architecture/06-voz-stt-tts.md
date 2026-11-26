@@ -101,7 +101,26 @@ Só aceita respostas normalizadas inteiras na allowlist (como `sim`, `sim pode`,
 
 ## 8. Latência, privacidade e estado operacional
 
-O programa registra **latência ASR** (tempo da chamada `stt.transcrever`) e **latência texto → voz** (depois de obter o texto transcrito ou receber a mensagem digitada até o callback do primeiro áudio). A métrica texto → voz inclui processamento do Harness e preparação de TTS até o primeiro chunk tocado, mas **exclui espera PTT, gravação, segmentação e transcrição**; não é latência ponta a ponta desde que o usuário começou a falar. Também não mede qualidade perceptiva ou tempo até terminar a fala.
+O programa conserva as mensagens de **latência ASR** (tempo da chamada `stt.transcrever`) e **latência texto → voz**. A segunda cobre processamento do Harness, formatação e preparação de TTS até a primeira tentativa de escrita no dispositivo; não mede áudio ouvido pelo usuário.
+
+### Métricas de interação por voz (P09)
+
+Cada envelope PTT recebe `interaction_id`; quando existe tarefa do Harness, o registro inclui também `task_id` e estado da tarefa. Uma linha JSON em `logs/voice/metrics.jsonl` guarda apenas IDs, canal (`ptt` ou `text`), durações e estados, sem áudio bruto nem transcrição. Para tarefas existentes, o mesmo conjunto é anexado ao SQLite de traces como spans `voice` e `voice_interval`, em uma transação. Falhas de captura/ASR antes da criação da tarefa ficam vinculadas somente à interação, com `task_id=null`. A coleta é observacional; falhas de gravação não mudam o PTT nem a resposta.
+
+| Campo | Limites medidos |
+| --- | --- |
+| `capture` | Do início da captura PTT até o áudio segmentado ficar pronto; inclui pós-roll e VAD, não a espera anterior pela hotkey |
+| `asr` | Chamada local `stt.transcrever`, inclusive duração de tentativa falha |
+| `task` | Chamada `harness.processar_mensagem`, sem somar seus spans internos de modelo/ferramentas |
+| `tts_first_chunk` | Início da preparação/execução TTS até o primeiro chunk não vazio sintetizado; **não** é duração da síntese integral em streaming |
+| `audio_delivery` | Evento de duração zero no instante da primeira tentativa de `OutputStream.write` após abrir o stream |
+| `speech_end_to_audio_delivery_ms` | Diferença entre liberação PTT detectada e primeira tentativa de escrita; inclui pós-roll, VAD, fila, ASR, Harness, formatação e preparação TTS |
+
+O fim de fala observável é a **liberação da tecla PTT**, não o último fonema acústico. `OutputStream.write` inicia entrega ao sistema de áudio; não comprova reprodução audível, latência do driver ou saída nos alto-falantes. O intervalo derivado `voice_interval` se sobrepõe às etapas e **não deve ser somado** a elas. A duração ausente aparece como `null` no JSON e como `duration_available=false` no span, separada de duração legitimamente zero; estados `failed`, `cancelled`, `discarded` e `unavailable` são distintos. Os campos legados `asr_ms` e `tts_ms` do resumo da tarefa são atualizados quando medidos (`tts_ms` reflete o primeiro chunk); seus zeros históricos ou sem span de voz não provam medição zero. Não houve alteração de esquema nem migração de banco real nesta correção. A instrumentação usa relógio monotônico, uma linha JSON e uma transação SQLite por interação com tarefa, sem novas chamadas externas.
+
+Quando uma tarefa entra em `WAITING`, o Harness conserva o mesmo `TaskTrace` para a resposta de esclarecimento. As duas interações mantêm IDs distintos e o mesmo `task_id`; `asr_ms`/`tts_ms` medidos antes da retomada são preservados quando o resumo final é gravado. Spans novos recebem sequência posterior à maior já persistida, inclusive quando o contador em memória do Harness ficou para trás. A sequência descreve a **ordem de gravação** dos spans, não reconstitui a cronologia exata das etapas internas da tarefa. Regravar o mesmo `interaction_id` no trace não duplica spans nem contadores.
+
+`audio_output_status` registra o resultado posterior da tentativa de saída (`completed`, `cancelled`, `failed` ou `unavailable`). Se a interrupção ocorrer depois do primeiro chunk e da primeira escrita, essas etapas continuam `completed`, com suas durações preservadas; somente a saída posterior fica `cancelled`. Esse campo não afirma que o áudio foi ouvido até o fim.
 
 Áudio bruto é processado localmente no caminho normal STT/TTS, mas o **texto** segue para o Harness e pode chegar ao provedor do modelo. Modelo ASR/TTS pode ser baixado pela rede; scripts e bibliotecas podem gerar dados locais em `data/voice/`. Não prometer ausência absoluta de rede, retenção zero ou confidencialidade integral apenas porque a inferência de áudio é local.
 

@@ -15,6 +15,7 @@ from core.task_manager import TaskManager, TaskState
 from core.task_trace import TaskTraceStore
 from core.tool_result import ToolResult
 from tools import dispatcher
+from voice.metrics import VoiceInteractionMetrics
 
 
 GOAL = 'perfeito auren, agora pesquise "create aeronautics" e entre no site com maior relevancia'
@@ -444,6 +445,42 @@ def test_command_shaped_answer_keeps_original_task(build, question, answer):
     assert case.harness.current_task().objective == waiting.objective
     assert any('Esclarecimento do usuario: ' + answer in goal
                for goal, _, _ in case.reviews)
+
+
+def test_voice_metrics_survive_real_harness_clarification_resume(build, tmp_path):
+    case = build([
+        response(call('preencher_elemento', alvo='pendente', texto='valor')),
+        response(call('preencher_elemento', alvo='esclarecido', texto='valor')),
+        response(text='Entendido.')],
+        [IntentDecision('esclarecer', 'alvo incerto', 'Qual campo devo preencher?'),
+         IntentDecision('aprovar', 'alvo esclarecido')])
+    harness = case.harness
+    harness.processar_mensagem('Preencha o campo escolhido.')
+    waiting = harness.current_task()
+    assert waiting.state is TaskState.WAITING
+
+    first = VoiceInteractionMetrics(channel='ptt', task_id=waiting.task_id, task_status='waiting')
+    first.record('asr', 1.0, 1.1)
+    first.record('tts_first_chunk', 1.1, 1.15)
+    first.persist(path=tmp_path / 'voice.jsonl', trace_store=harness.trace_store)
+
+    harness.processar_mensagem('o campo esclarecido')
+    completed = harness.current_task()
+    assert completed.task_id == waiting.task_id
+    assert completed.state is TaskState.COMPLETED
+    second = VoiceInteractionMetrics(channel='ptt', task_id=completed.task_id, task_status='completed')
+    second.record('asr', 2.0, 2.2)
+    second.record('tts_first_chunk', 2.2, 2.3)
+    second.persist(path=tmp_path / 'voice.jsonl', trace_store=harness.trace_store)
+
+    row = harness.trace_store.get_task(waiting.task_id)
+    assert row['asr_ms'] == pytest.approx(300)
+    assert row['tts_ms'] == pytest.approx(150)
+    spans = harness.trace_store.get_spans(waiting.task_id)
+    assert [span['sequence'] for span in spans] == list(range(1, len(spans) + 1))
+    assert [json.loads(span['metadata_json'])['interaction_id']
+            for span in spans if span['category'] == 'voice_interval'] == [
+                first.interaction_id, second.interaction_id]
 
 
 def test_independent_question_replaces_waiting_task(build):

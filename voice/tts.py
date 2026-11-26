@@ -120,7 +120,8 @@ class LocalKokoroTTS:
         except Exception as exc:
             raise RuntimeError(f"Falha ao carregar o Kokoro local: {exc}") from exc
 
-    def falar(self, texto: str, *, cancel_event: Event | None = None, on_audio_start: Any | None = None) -> None:
+    def falar(self, texto: str, *, cancel_event: Event | None = None, on_audio_start: Any | None = None,
+              on_synthesis_ready: Any | None = None) -> None:
         mensagem = str(texto or "").strip()
         if not mensagem:
             return
@@ -130,6 +131,8 @@ class LocalKokoroTTS:
 
         async def _play() -> None:
             stream = None
+            first_chunk = True
+            delivery_marked = False
             try:
                 stream = None
                 async for samples, sample_rate in self._model.create_stream(
@@ -146,6 +149,10 @@ class LocalKokoroTTS:
                     audio = np.asarray(samples, dtype=np.float32).reshape(-1)
                     if audio.size == 0:
                         continue
+                    if first_chunk:
+                        first_chunk = False
+                        if on_synthesis_ready is not None:
+                            on_synthesis_ready()
                     if stream is None:
                         stream = sd.OutputStream(
                             samplerate=int(sample_rate),
@@ -154,8 +161,9 @@ class LocalKokoroTTS:
                             latency="low",
                         )
                         stream.start()
-                        if on_audio_start is not None:
-                            on_audio_start()
+                    if on_audio_start is not None and not delivery_marked:
+                        delivery_marked = True
+                        on_audio_start()
                     stream.write(audio)
             finally:
                 if stream is not None:

@@ -37,6 +37,9 @@ class CapturedAudio:
     device_name: str
     speech_detected: bool = False
     vad_backend: str = "unknown"
+    capture_started_at: float | None = None
+    speech_end_at: float | None = None
+    capture_finished_at: float | None = None
 
 
 class PushToTalkRecorder:
@@ -381,6 +384,7 @@ class PushToTalkRecorder:
 
             self._registrar_inicio()
             started = time.perf_counter()
+            speech_end_at: float | None = None
 
             while True:
                 if keyboard.is_pressed("esc"):
@@ -403,6 +407,8 @@ class PushToTalkRecorder:
                         time.sleep(self.config.poll_interval)
 
                 if not keyboard.is_pressed("esc"):
+                    # Limite observavel do fim da fala no PTT: tecla solta.
+                    speech_end_at = time.perf_counter()
                     deadline = time.perf_counter() + max(0.0, self.config.post_roll_seconds)
                     while time.perf_counter() < deadline:
                         if keyboard.is_pressed("esc"):
@@ -481,6 +487,9 @@ class PushToTalkRecorder:
             device_name=device_name,
             speech_detected=segment.speech_detected,
             vad_backend=segment.vad_backend,
+            capture_started_at=started,
+            speech_end_at=speech_end_at,
+            capture_finished_at=time.perf_counter(),
         )
 
     def hotkey_pressionada(self) -> bool:

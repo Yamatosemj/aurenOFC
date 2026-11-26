@@ -501,6 +501,10 @@ def test_missing_named_microphone_uses_default_and_preserves_opened_rate(monkeyp
 
     assert captured is not None
     assert captured.sample_rate == 44_100
+    assert captured.capture_started_at is not None
+    assert captured.speech_end_at is not None
+    assert captured.capture_finished_at is not None
+    assert captured.capture_started_at <= captured.speech_end_at <= captured.capture_finished_at
     assert sd.attempted_rates == [16_000, 48_000, 44_100]
     assert sd.attempted_devices == [None, None, None]
     assert recorder._last_device_name == "Default Mic"
