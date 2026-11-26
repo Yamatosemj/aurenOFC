@@ -97,6 +97,7 @@ def _inspecionar_arquivo_handler(args, memory_store, context):
         args["procurar_copias"],
         args["limite_copias"],
         caminho_confirmado=args.get("_caminho_confirmado"),
+        caminho_autorizado=args.get("_caminho_autorizado"),
     )
 
 
@@ -106,6 +107,7 @@ def _ler_arquivo_handler(args, memory_store, context):
         args["inicio"],
         args["limite_caracteres"],
         caminho_confirmado=args.get("_caminho_confirmado"),
+        caminho_autorizado=args.get("_caminho_autorizado"),
     )
 
 def _preencher_windows_handler(args, memory_store, context):
@@ -241,6 +243,24 @@ def executar_ferramenta(item, permission_manager, memory_store) -> ToolResult:
     contexto = {}
     argumentos_execucao = dict(argumentos)
     vision_transform = None
+    caminho_original = None
+    caminho_autorizado = None
+    politica_caminho = None
+
+    if nome in {"inspecionar_arquivo", "ler_arquivo"}:
+        caminho_original = str(argumentos_execucao["caminho"])
+        if caminho_original.strip():
+            caminho_autorizado = file_intelligence._resolve_path(caminho_original)
+            politica_caminho = file_intelligence._classify_read_path(caminho_autorizado)
+            # A politica e a confirmacao devem enxergar o mesmo destino canonico.
+            argumentos_execucao["caminho"] = str(caminho_autorizado)
+            if (politica_caminho.status not in {"allowed", "confirm"}
+                    or politica_caminho.caminho_resolvido != str(caminho_autorizado)):
+                permission_manager.registrar_resultado(False, nome, argumentos)
+                return ToolResult.failure(
+                    f"ACAO NAO EXECUTADA: {politica_caminho.motivo}",
+                    error_code="permission_denied", tool_name=nome,
+                )
 
     if nome in {"clicar_mouse_windows", "arrastar_mouse_windows"}:
         argumentos_execucao, vision_transform, vision_error = transform_visual_tool_arguments(
@@ -277,7 +297,14 @@ def executar_ferramenta(item, permission_manager, memory_store) -> ToolResult:
             "_uia_resolvido_tipo": contexto["uia_resolved_type"],
         })
 
-    permitido, motivo = permission_manager.autorizar(nome, argumentos_execucao)
+    file_decision = {} if caminho_autorizado is not None else None
+    if file_decision is not None:
+        permitido, motivo = permission_manager.autorizar(
+            nome, argumentos_execucao, expected_file_path=str(caminho_autorizado),
+            file_decision=file_decision,
+        )
+    else:
+        permitido, motivo = permission_manager.autorizar(nome, argumentos_execucao)
     if not permitido:
         permission_manager.registrar_resultado(False, nome, argumentos)
         return ToolResult.failure(
@@ -286,11 +313,33 @@ def executar_ferramenta(item, permission_manager, memory_store) -> ToolResult:
             tool_name=nome,
         )
 
-    if nome in {"inspecionar_arquivo", "ler_arquivo"}:
-        path = file_intelligence._resolve_path(str(argumentos_execucao.get("caminho", "")))
-        path_policy = file_intelligence._classify_read_path(path)
-        if path_policy.status == "confirm":
-            argumentos_execucao["_caminho_confirmado"] = path_policy.caminho_resolvido
+    if caminho_autorizado is not None:
+        if (file_decision.get("path") != str(caminho_autorizado)
+                or file_decision.get("policy_path") != str(caminho_autorizado)
+                or file_decision.get("policy") not in {"allowed", "confirm"}):
+            permission_manager.registrar_resultado(False, nome, argumentos_execucao)
+            return ToolResult.failure(
+                "O destino do arquivo mudou durante a autorizacao.",
+                error_code="file_path_changed", tool_name=nome,
+            )
+        if ("confirm" in {politica_caminho.status, file_decision["policy"]}
+                and file_decision.get("authorized_level") != "confirm"):
+            permission_manager.registrar_resultado(False, nome, argumentos_execucao)
+            return ToolResult.failure(
+                "Confirmacao obrigatoria para o destino do arquivo.",
+                error_code="path_confirmation_required", tool_name=nome,
+            )
+        if file_intelligence._resolve_path(caminho_original) != caminho_autorizado:
+            permission_manager.registrar_resultado(False, nome, argumentos_execucao)
+            return ToolResult.failure(
+                "O destino do arquivo mudou apos a autorizacao; solicite uma nova autorizacao.",
+                error_code="file_path_changed",
+                tool_name=nome,
+            )
+        argumentos_execucao["caminho"] = caminho_original
+        argumentos_execucao["_caminho_autorizado"] = str(caminho_autorizado)
+        if file_decision["policy"] == "confirm":
+            argumentos_execucao["_caminho_confirmado"] = str(caminho_autorizado)
 
     try:
         resultado = TOOL_HANDLERS[nome](argumentos_execucao, memory_store, contexto)

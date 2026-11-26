@@ -428,6 +428,9 @@ class PermissionManager:
         self,
         nome_ferramenta: str,
         argumentos: dict[str, Any],
+        *,
+        expected_file_path: str | None = None,
+        file_decision: dict[str, Any] | None = None,
     ) -> tuple[bool, str]:
         """Retorna (permitido, motivo) antes da execucao real."""
 
@@ -487,7 +490,14 @@ class PermissionManager:
         nivel, motivo = self.nivel_da_acao(
             nome_ferramenta,
             argumentos,
+            file_decision=file_decision,
         )
+
+        if expected_file_path is not None and (
+            file_decision is None or file_decision.get("path") != expected_file_path
+            or file_decision.get("policy_path") != expected_file_path
+        ):
+            return False, "O destino do arquivo mudou durante a autorizacao."
 
         if nivel == PermissionLevel.BLOCKED:
             return (
@@ -496,6 +506,8 @@ class PermissionManager:
             )
 
         if nivel == PermissionLevel.AUTO:
+            if file_decision is not None:
+                file_decision["authorized_level"] = nivel.value
             self.last_authorized_action_signature = assinatura_atual
             self.last_authorized_action_tool = nome_ferramenta
             return True, motivo
@@ -508,6 +520,8 @@ class PermissionManager:
             )
 
             if aprovado:
+                if file_decision is not None:
+                    file_decision["authorized_level"] = nivel.value
                 self.last_authorized_action_signature = assinatura_atual
                 self.last_authorized_action_tool = nome_ferramenta
                 return True, "Usuario confirmou a acao."
@@ -520,6 +534,8 @@ class PermissionManager:
         self,
         nome_ferramenta: str,
         argumentos: dict[str, Any],
+        *,
+        file_decision: dict[str, Any] | None = None,
     ) -> tuple[PermissionLevel, str]:
         """Classifica a acao real, nao apenas o nome da ferramenta."""
 
@@ -553,11 +569,19 @@ class PermissionManager:
         if capacidade in {"file.read", "file.inspect"}:
             path = _resolve_path(str(argumentos.get("caminho", "")))
             path_policy = _classify_read_path(path)
+            if file_decision is not None:
+                file_decision["path"] = str(path)
+                file_decision["policy"] = path_policy.status
+                file_decision["policy_path"] = path_policy.caminho_resolvido
+            if path_policy.caminho_resolvido != str(path):
+                return PermissionLevel.BLOCKED, "A politica avaliou outro destino de arquivo."
             if path_policy.status == "blocked":
                 return PermissionLevel.BLOCKED, path_policy.motivo
             if path_policy.status == "confirm":
                 return PermissionLevel.CONFIRM, path_policy.motivo
-            return PermissionLevel.AUTO, path_policy.motivo
+            if path_policy.status == "allowed":
+                return PermissionLevel.AUTO, path_policy.motivo
+            return PermissionLevel.BLOCKED, "Politica de caminho desconhecida."
 
         if capacidade == "windows.window.control":
             if nome_ferramenta in self.REVERSIBLE_WINDOW_CONTROL_TOOLS:

@@ -520,7 +520,17 @@ def _resolve_path(value: str) -> Path:
     return Path(str(value or "").strip()).expanduser().resolve(strict=False)
 
 
-def inspect_file(caminho: str, procurar_copias: bool = False, limite_copias: int = 5, *, caminho_confirmado: str | None = None) -> ToolResult:
+def _changed_authorized_path(path: Path, caminho_autorizado: str | None, tool_name: str) -> ToolResult | None:
+    if caminho_autorizado is not None and str(path) != caminho_autorizado:
+        return ToolResult.failure(
+            "O destino do arquivo mudou apos a autorizacao; solicite uma nova autorizacao.",
+            error_code="file_path_changed",
+            tool_name=tool_name,
+        )
+    return None
+
+
+def inspect_file(caminho: str, procurar_copias: bool = False, limite_copias: int = 5, *, caminho_confirmado: str | None = None, caminho_autorizado: str | None = None) -> ToolResult:
     tool_name = "inspecionar_arquivo"
     raw = str(caminho or "").strip()
     if not raw:
@@ -535,6 +545,9 @@ def inspect_file(caminho: str, procurar_copias: bool = False, limite_copias: int
             data={"caminho": str(path), "motivo": path_policy.motivo},
             tool_name=tool_name,
         )
+    changed = _changed_authorized_path(path, caminho_autorizado, tool_name)
+    if changed is not None:
+        return changed
     if path_policy.status == "confirm" and caminho_confirmado != path_policy.caminho_resolvido:
         return ToolResult.failure(
             f"Confirmacao necessaria para ler este caminho: {path}",
@@ -657,7 +670,7 @@ def _read_text_range(path: Path, encoding: str, start: int, limit: int) -> tuple
         return content, bool(handle.read(1))
 
 
-def read_file(caminho: str, inicio: int = 0, limite_caracteres: int = 12_000, *, caminho_confirmado: str | None = None) -> ToolResult:
+def read_file(caminho: str, inicio: int = 0, limite_caracteres: int = 12_000, *, caminho_confirmado: str | None = None, caminho_autorizado: str | None = None) -> ToolResult:
     tool_name = "ler_arquivo"
     raw = str(caminho or "").strip()
     if not raw:
@@ -684,6 +697,9 @@ def read_file(caminho: str, inicio: int = 0, limite_caracteres: int = 12_000, *,
             data={"caminho": str(path), "motivo": path_policy.motivo},
             tool_name=tool_name,
         )
+    changed = _changed_authorized_path(path, caminho_autorizado, tool_name)
+    if changed is not None:
+        return changed
     if path_policy.status == "confirm" and caminho_confirmado != path_policy.caminho_resolvido:
         return ToolResult.failure(
             f"Confirmacao necessaria para ler este caminho: {path}",
