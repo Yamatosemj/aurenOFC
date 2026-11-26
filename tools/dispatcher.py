@@ -15,6 +15,11 @@ from core.tool_result import LEGACY_FAILURE_MARKERS, ToolResult, from_legacy
 # core.tool_result; novas ferramentas devem retornar ToolResult diretamente.
 _FALHAS_FERRAMENTA = LEGACY_FAILURE_MARKERS
 
+_FONTES_EXTERNAS_NAO_CONFIAVEIS = frozenset({
+    "ler_pagina", "ler_arquivo", "obter_contexto_navegador",
+    "buscar_arquivo", "ler_area_transferencia_windows", "listar_abas",
+})
+
 def _resultado_ferramenta_bem_sucedido(resultado):
     return from_legacy(resultado).ok
 
@@ -353,13 +358,12 @@ def executar_ferramenta(item, permission_manager, memory_store) -> ToolResult:
 
     resultado_estruturado = from_legacy(resultado, tool_name=nome)
 
-    # Conteudo retornado por pagina/arquivo e dado nao confiavel: ele pode
-    # conter texto escrito para induzir o agente a executar outra acao.
-    # O PermissionManager deve ser informado mesmo se o ToolResult ja veio
-    # marcado como nao confiavel pela propria ferramenta.
+    # Leituras externas identificadas e resultados ja marcados pela ferramenta
+    # usam a mesma guarda de origem; uma pre-marcacao nunca e descartada.
     if (
         resultado_estruturado.ok
-        and nome in {"ler_pagina", "ler_arquivo", "obter_contexto_navegador"}
+        and (nome in _FONTES_EXTERNAS_NAO_CONFIAVEIS
+             or resultado_estruturado.conteudo_nao_confiavel)
     ):
         if not resultado_estruturado.conteudo_nao_confiavel:
             resultado_estruturado = ToolResult(
