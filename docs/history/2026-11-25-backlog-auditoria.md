@@ -119,7 +119,8 @@ Priorizar experiências utilizáveis, em vez de encerrar todos os 55 achados ant
 - [ ] P07 — medir sobrecarga no ambiente alvo quando autorizado; adiar alteração de arquitetura sem evidência de impacto.
 - [x] S01 — correção focalizada de autorização de arquivos integrada na [PR #188](https://github.com/Yamatosemj/aurenOFC/pull/188), main `62c765a`; três checks do HEAD revisado aprovados. Pausa encerrada. Risco residual da identidade na abertura pelo SO permanece para avaliação antes da liberação; sem validação Live.
 - [x] S02 — correção focalizada das fontes externas confirmadas integrada na [PR #193](https://github.com/Yamatosemj/aurenOFC/pull/193), main `bed2ed0`; três checks do HEAD revisado aprovados. Proveniência de memória, demais fontes e transição entre tarefas permanecem riscos a avaliar; sem Live.
-- [ ] S06 e demais bloqueios de segurança relevantes — investigar S06 a seguir; não liberar uso cotidiano com bloqueios efetivos pendentes.
+- [x] S06 — correção focalizada da identidade do preenchimento UIA integrada na [PR #194](https://github.com/Yamatosemj/aurenOFC/pull/194), main `c6413e3`; três checks do HEAD revisado aprovados. Validação real de identidade, verificação após SetValue e entrada física permanecem pendentes; sem Live.
+- [ ] Avaliar os riscos residuais de S01/S02/S06 e demais bloqueios relevantes especificamente para a primeira entrega de mídia. Definir condições de liberação e validação supervisionada, sem reiniciar auditoria geral. Não liberar uso cotidiano com bloqueios efetivos pendentes.
 - [ ] Estudar soluções de voz atuais do Ari e de projetos comparáveis, incluindo licença e adequação ao ambiente alvo.
 - [ ] Entregar primeiro comando local de mídia, com confirmação do estado real, sem chamada paga para comando inequívoco (N01/N03, W01–W03, M05/P04 conforme aplicável).
 - [ ] Integrar ativação por nome opt-in e atalho global, preservar PTT, validar escuta e segurança (V01–V06/V10, S04; V07/V08).
