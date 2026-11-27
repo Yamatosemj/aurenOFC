@@ -368,10 +368,16 @@ def executar_ferramenta(item, permission_manager, memory_store) -> ToolResult:
     try:
         resultado = TOOL_HANDLERS[nome](argumentos_execucao, memory_store, contexto)
     except (OSError, RuntimeError, TypeError, ValueError, KeyError) as erro:
+        pausa_incerta = nome == "controle_midia_windows" and argumentos.get("acao") == "pausar"
+        if pausa_incerta:
+            registrar_incerta = getattr(permission_manager, "registrar_pausa_midia_incerta", None)
+            if callable(registrar_incerta):
+                registrar_incerta()
         permission_manager.registrar_resultado(False, nome, argumentos)
         return ToolResult.failure(
             f"Falha ao executar '{nome}': {erro}",
-            error_code="exception",
+            error_code="media_state_unknown" if pausa_incerta else "exception",
+            data={"estado": "desconhecido"} if pausa_incerta else None,
             tool_name=nome,
         )
 
@@ -408,5 +414,11 @@ def executar_ferramenta(item, permission_manager, memory_store) -> ToolResult:
             # do retorno original da ferramenta.
             conteudo_nao_confiavel=resultado_estruturado.conteudo_nao_confiavel,
         )
+    if (nome == "controle_midia_windows" and argumentos_execucao.get("acao") == "pausar"
+            and resultado_estruturado.error_code == "media_state_unknown"
+            and (resultado_estruturado.data or {}).get("comando_enviado") is not False):
+        registrar_incerta = getattr(permission_manager, "registrar_pausa_midia_incerta", None)
+        if callable(registrar_incerta):
+            registrar_incerta()
     permission_manager.registrar_resultado(resultado_estruturado.ok, nome, argumentos_execucao)
     return resultado_estruturado
