@@ -86,6 +86,8 @@ class LocalDecisionEngine:
                 acao = "anterior"
             elif normalized in {"para a musica", "parar musica"}:
                 acao = "parar"
+            elif normalized in {"pausa", "pause", "pausar"}:
+                acao = "pausar"
             else:
                 acao = "play_pause"
             return self._result("control_media", confidence=0.96, arguments={"acao": acao}, started=started)

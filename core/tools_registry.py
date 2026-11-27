@@ -519,14 +519,14 @@ tools = [
     {
         "type": "function",
         "name": "controle_midia_windows",
-        "description": "Envia um comando global de midia no Windows: play/pause, proxima, anterior ou parar.",
+        "description": "Pausar usa sessao de midia do Windows e confirma o estado; play_pause, proxima, anterior e parar enviam teclas globais sem verificacao. Para pedidos de pausa, use pausar.",
         "parameters": {
             "type": "object",
             "properties": {
                 "acao": {
                     "type": "string",
-                    "enum": ["play_pause", "proxima", "anterior", "parar"],
-                    "description": "Acao de midia a enviar."
+                    "enum": ["pausar", "play_pause", "proxima", "anterior", "parar"],
+                    "description": "Use pausar para pausa explicita e verificavel; play_pause apenas para alternancia explicitamente solicitada."
                 }
             },
             "required": ["acao"],

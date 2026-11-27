@@ -85,3 +85,18 @@ def test_audio_runtime_does_not_capture_music_search(monkeypatch):
     assert message == ""
     assert called == []
     assert metadata["reason"] == "not_resolved_audio_local"
+
+
+def test_failed_pause_does_not_fall_back_to_normal_route(monkeypatch):
+    monkeypatch.setenv(ENV_FLAG, "1")
+    calls = []
+
+    def execute(item):
+        calls.append(json.loads(item.arguments))
+        return ToolResult.failure("Pausa nao confirmada.", error_code="media_state_unknown")
+
+    handled, message, metadata = try_execute("pausa a música", executar_ferramenta=execute)
+    assert handled is True
+    assert message == "Nao consegui confirmar a pausa da midia: Pausa nao confirmada."
+    assert calls == [{"acao": "pausar"}]
+    assert metadata["reason"] == "pause_not_confirmed"

@@ -289,6 +289,7 @@ class PermissionManager:
         self.last_authorized_action_signature: str | None = None
         self.last_authorized_action_tool: str | None = None
         self._fonte_nao_confiavel_pendente: str | None = None
+        self._pausa_midia_na_tarefa = False
 
         # A politica base e definida por capacidade, nao por aplicativo ou
         # por cada nome concreto de ferramenta. Classificadores especificos
@@ -315,6 +316,7 @@ class PermissionManager:
         self.last_authorized_action_signature = None
         self.last_authorized_action_tool = None
         self._fonte_nao_confiavel_pendente = None
+        self._pausa_midia_na_tarefa = False
 
     def checkpoint_limits(self) -> dict[str, Any]:
         """Preserva contadores e travas de uma tarefa que aguarda resposta."""
@@ -324,6 +326,7 @@ class PermissionManager:
             'actions_failed', 'consecutive_failures', 'last_failed_action_signature',
             'same_failed_action_count', 'last_successful_action_signature',
             'same_successful_action_count', '_fonte_nao_confiavel_pendente',
+            '_pausa_midia_na_tarefa',
         )
         return {name: getattr(self, name) for name in fields}
 
@@ -341,6 +344,7 @@ class PermissionManager:
             'same_successful_action_count', '_fonte_nao_confiavel_pendente',
         ):
             setattr(self, name, checkpoint[name])
+        self._pausa_midia_na_tarefa = bool(checkpoint.get('_pausa_midia_na_tarefa', False))
         # O checkpoint preserva o orçamento, nunca uma autorização anterior.
         # Toda nova ação volta a passar por autorizar() e, se exigido, confirmar().
         self.last_authorized_action_signature = None
@@ -352,6 +356,8 @@ class PermissionManager:
 
     def registrar_resultado(self, sucesso: bool, nome_ferramenta: str | None = None, argumentos: dict[str, Any] | None = None) -> None:
         """Registra o resultado da execucao e atualiza as travas anti-loop."""
+        if nome_ferramenta == "controle_midia_windows" and (argumentos or {}).get("acao") == "pausar":
+            self._pausa_midia_na_tarefa = True
         if nome_ferramenta is not None and self._capability(nome_ferramenta) not in self.COUNTED_CAPABILITIES:
             return
 
@@ -551,6 +557,10 @@ class PermissionManager:
                     "esta bloqueada pela politica de permissoes."
                 ),
             )
+
+        if (self._pausa_midia_na_tarefa and nome_ferramenta == "controle_midia_windows"
+                and argumentos.get("acao") == "play_pause"):
+            return PermissionLevel.BLOCKED, "Alternancia global bloqueada apos pedido de pausa nesta tarefa."
 
         if (
             self._fonte_nao_confiavel_pendente is not None

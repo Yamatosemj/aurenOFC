@@ -12,6 +12,7 @@
 | [tools/windows_window.py](../../tools/windows_window.py) | Enumerar, identificar, focar, minimizar, maximizar, geometria, mover, redimensionar, restaurar e solicitar fechamento de janelas |
 | [tools/windows_uia.py](../../tools/windows_uia.py) | Inspeção e atuação em controles de UI Automation via Windows PowerShell / UIAutomationClient |
 | [tools/windows_input.py](../../tools/windows_input.py) | Teclas globais, cursor, clique, arraste, teclas de mídia e limites da área de trabalho virtual / DPI |
+| [tools/windows_media.py](../../tools/windows_media.py) | Pausa explícita de sessão GSMTC única, com leitura de estado antes e depois |
 | [tools/windows_screenshot.py](../../tools/windows_screenshot.py) | Screenshot de todos os monitores com Pillow e metadados físicos |
 | [tools/windows_processes.py](../../tools/windows_processes.py) | Listar processos e solicitar encerramento com `taskkill` e filtros de proteção |
 | [tools/windows_audio.py](../../tools/windows_audio.py) | Ler e alterar áudio por API de endpoint Core Audio/COM |
@@ -26,6 +27,18 @@
 | [core/harness_guards.py](../../core/harness_guards.py) | Evita conclusão positiva de ação visual composta sem reobservação exigida |
 
 O registry atual tem **49 ferramentas**. Esta área **não** adiciona ferramentas, não cria executor paralelo e **não** incorpora recursos de escrita de arquivos/undo que não constam em [core/tools_registry.py](../../core/tools_registry.py) e no Dispatcher da `main`.
+
+### Pausa de mídia local verificável (primeira entrega, 26/11/2026)
+
+`controle_midia_windows` com `acao="pausar"` preserva o Dispatcher, contrato e `windows.audio.control` do PermissionManager. `tools/windows_input.py` delega essa ação a `tools/windows_media.py`; as outras ações de mídia continuam legadas. O executor usa `GlobalSystemMediaTransportControlsSessionManager.get_sessions()`, sem escolher automaticamente `get_current_session()`. Com mais de uma sessão em reprodução, recusa o destino. Uma sessão em reprodução pode coexistir com sessões pausadas; sessões em transição ou com estado ilegível impedem a seleção. Sem sessão em reprodução, uma única sessão pausada resulta em `ja_pausada` sem comando; múltiplas sessões pausadas são ambíguas.
+
+Na sessão selecionada, o executor relê o estado e `is_pause_enabled` imediatamente antes de chamar **somente** `try_pause_async()`. Depois consulta `get_playback_info()` na mesma instância por um prazo curto. `ToolResult.data.estado` distingue `pausa_confirmada` (`ok=True`, antes reproduzindo/depois pausado), `ja_pausada` (`ok=True`, nenhum comando), `falha` (`ok=False`, ausência, ambiguidade, indisponibilidade ou recusa) e `desconhecido` (`ok=False`, leitura incerta, erro após a tentativa ou ausência de confirmação). O booleano retornado por `try_pause_async()` sozinho não é tratado como comprovação do estado final. O ID do aplicativo, quando disponível, é metadado de diagnóstico; não é usado como identidade única da sessão.
+
+Não há fallback para `VK_MEDIA_PLAY_PAUSE`. Após uma tentativa `pausar`, o PermissionManager bloqueia `play_pause` durante a mesma tarefa, inclusive após checkpoint/retomada; nova tarefa reinicia essa trava. O caminho experimental de áudio também encerra a tentativa de pausa com resposta de falha/estado incerto, sem abrir fallback do modelo. O roteamento normal ainda depende do modelo escolher `acao="pausar"`; o schema e o prompt explicitam essa escolha.
+
+O backend requer Windows 10 1809 ou posterior e um player que publique sessão nos controles de mídia do Windows. É importado apenas ao executar a pausa, para manter importação segura em Linux. `requirements.txt` fixa `winrt-Windows.Media.Control` e `winrt-Windows.Media` somente no Windows. A compatibilidade de importação foi verificada em CPython 3.13 no Windows com PyWinRT 4!10.0.28000.2957 e runtime resolvido 4.2.1; não houve chamada ao gerenciador real. A licença declarada do PyWinRT é MIT. [API GSMTC](https://learn.microsoft.com/en-us/uwp/api/windows.media.control.globalsystemmediatransportcontrolssessionmanager?view=winrt-26100) · [TryPauseAsync](https://learn.microsoft.com/en-us/uwp/api/windows.media.control.globalsystemmediatransportcontrolssession.trypauseasync?view=winrt-26100) · [pacote PyPI](https://pypi.org/project/winrt-Windows.Media.Control/).
+
+**Limites residuais:** o estado verificado é o publicado pelo player ao Windows, não prova áudio audível; cobertura de Spotify, navegadores e outros players, permissão `globalMediaControl` para o processo Python sem empacotamento, tempo de resposta e comportamento real de WinRT no PC do proprietário aguardam teste supervisionado. O backend não distingue música de vídeo quando o player não informa o tipo. Uma nova sessão pode surgir entre a enumeração e o comando; a pausa continua vinculada ao objeto inicialmente escolhido. Não houve teste Live, hardware ou chamada paga.
 
 Fluxo de execução:
 

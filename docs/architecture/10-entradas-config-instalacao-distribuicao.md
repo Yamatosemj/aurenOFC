@@ -49,7 +49,7 @@ Outras configurações ambientais no runtime, **com escopo próprio**, incluem `
 
 | Arquivo | Conteúdo fixado | Papel |
 | --- | --- | --- |
-| [`requirements.txt`](../../requirements.txt) | `openai==3.26.0`, `playwright==1.63.0`, `jsonschema==4.26.0`, `Pillow==12.3.0` | Dependências principais |
+| [`requirements.txt`](../../requirements.txt) | `openai==3.26.0`, `playwright==1.63.0`, `jsonschema==4.26.0`, `Pillow==12.3.0`; `winrt-Windows.Media.Control==4!10.0.28000.2957` e `winrt-Windows.Media==4!10.0.28000.2957` somente no Windows | Dependências principais; os dois módulos PyWinRT servem à pausa GSMTC |
 | [`requirements-voice.txt`](../../requirements-voice.txt) | `onnx-asr[cpu,hub]==0.12.0`, `kokoro-onnx==0.6.1`, `sounddevice==0.5.6`, `soundfile==0.13.1`, `keyboard==0.13.5`, `numpy==2.5.3`, `webrtcvad-wheels==2.0.14.post1` | Extras de áudio/STT/TTS; não instalados pelo instalador básico |
 | [`scripts/instalar/INSTALAR_AUREN.bat`](../../scripts/instalar/INSTALAR_AUREN.bat) | Executa `-m pip install -r requirements.txt` | Usa seletor compartilhado: `.venv` local → `..\\.venv` → `py -3` → `python`; preserva código de saída |
 | [`scripts/instalar/INSTALAR_VOZ.bat`](../../scripts/instalar/INSTALAR_VOZ.bat) | Executa `-m pip install -r requirements-voice.txt` | Mesmo seletor compartilhado do instalador principal; preserva caches ASR/TTS e não instala dependências básicas |

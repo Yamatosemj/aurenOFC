@@ -75,9 +75,9 @@ Quando `AUREN_EXPERIMENT_CAPABILITY_AUDIO` assume um valor verdadeiro (`1`, `tru
 
 1. Monta e valida TaskSpec com frase da solicitação.
 2. Resolve intenção e exige `status=resolved`, `route=local` e `capability_id=controlar_audio`.
-3. Converte `consultar`, `volume`, `mudo`, `mudo_off`, `play_pause`, `proxima` e `anterior` em **tool calls** já registradas.
+3. Converte `consultar`, `volume`, `mudo`, `mudo_off`, `pausar`, `play_pause`, `proxima` e `anterior` em **tool calls** já registradas. `pausar` usa a sessão GSMTC; `play_pause` permanece uma alternância legada explícita.
 4. Encaminha ao **`executar_ferramenta` injetado**, que leva ao Dispatcher → contrato → PermissionManager → ToolResult; valida tipo e `ok`.
-5. Se não casar intenção ou a execução falhar, retorna `False` e permite que o caminho normal tente resolver a mensagem.
+5. Se não casar intenção ou a execução falhar, normalmente retorna `False` e permite que o caminho normal tente resolver a mensagem. Para `pausar`, falha ou estado incerto encerra a tentativa com a mensagem recebida, sem fallback que possa alternar a reprodução.
 
 Portanto, **flag ativa não é autorização**, e o experimento **não** altera o pipeline PTT/STT/TTS. Ele é sobre volume/mudo/mídia do **Windows**, não sobre escuta contínua ou síntese de voz. O [`core/capability_audio_experiment.py`](../../core/capability_audio_experiment.py) executa apenas uma **matriz sintética de 12 frases**, comparando contagem/resolução com Router, sem ferramenta real, sem modelo e sem cobrança de tokens. Os scripts [ativar](../../scripts/experimentos/ATIVAR_EXPERIMENTO_AUDIO.bat) e [desativar](../../scripts/experimentos/DESATIVAR_EXPERIMENTO_AUDIO.bat) só preparam flag ambiental e chamam `py main.py` no processo lançado.
 

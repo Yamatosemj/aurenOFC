@@ -24,7 +24,7 @@ CASES: tuple[AudioExperimentCase, ...] = (
     AudioExperimentCase("coloque no mudo", "mudo", {}),
     AudioExperimentCase("silencia o som", "mudo", {}),
     AudioExperimentCase("tira o mudo", "mudo_off", {}),
-    AudioExperimentCase("pausa a música", "play_pause", {}),
+    AudioExperimentCase("pausa a música", "pausar", {}),
     AudioExperimentCase("próxima música", "proxima", {}),
     AudioExperimentCase("música anterior", "anterior", {}),
     AudioExperimentCase("qual está o volume?", "consultar", {}),
@@ -72,6 +72,7 @@ def _expected_tool(action: str) -> str:
         "mudo": "definir_mudo_windows",
         "mudo_off": "definir_mudo_windows",
         "play_pause": "controle_midia_windows",
+        "pausar": "controle_midia_windows",
         "proxima": "controle_midia_windows",
         "anterior": "controle_midia_windows",
         "consultar": "obter_audio_windows",
@@ -84,7 +85,7 @@ def _normalize_expected_params(case: AudioExperimentCase, resolved: dict[str, An
         params["ativado"] = True
     elif case.expected_action == "mudo_off":
         params["ativado"] = False
-    elif case.expected_action in {"play_pause", "proxima", "anterior"}:
+    elif case.expected_action in {"pausar", "play_pause", "proxima", "anterior"}:
         params["acao"] = case.expected_action
     return params
 
@@ -145,7 +146,7 @@ def run_experiment() -> dict[str, Any]:
         elif case.expected_action == "mudo_off":
             if action == "mudo_off":
                 registry_correct += 1
-        elif case.expected_action in {"play_pause", "proxima", "anterior"}:
+        elif case.expected_action in {"pausar", "play_pause", "proxima", "anterior"}:
             if action == case.expected_action:
                 registry_correct += 1
         elif case.expected_action == "consultar":

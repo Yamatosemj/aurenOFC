@@ -8,6 +8,7 @@ import time
 from ctypes import wintypes
 
 from core.tool_result import ToolResult
+from tools import windows_media
 
 
 def _configurar_user32_api(user32):
@@ -42,13 +43,16 @@ def _user32():
 
 
 def controle_midia_windows(acao):
+    chave = str(acao).strip().lower()
+    if chave in {"pausar", "pausa", "pause"}:
+        return windows_media.pausar_midia_windows()
+
     if os.name != "nt":
         return "Controle de midia so esta disponivel no Windows."
 
     mapa = {
         "play_pause": 0xB3,
         "play/pause": 0xB3,
-        "pausar": 0xB3,
         "reproduzir": 0xB3,
         "proxima": 0xB0,
         "proximo": 0xB0,
@@ -59,11 +63,10 @@ def controle_midia_windows(acao):
         "parar": 0xB2,
         "stop": 0xB2,
     }
-    chave = str(acao).strip().lower()
     vk = mapa.get(chave)
     if vk is None:
         return ToolResult.failure(
-            "Acao de midia invalida. Use play_pause, proxima, anterior ou parar.",
+            "Acao de midia invalida. Use pausar, play_pause, proxima, anterior ou parar.",
             error_code="media_action_invalid",
         )
 
