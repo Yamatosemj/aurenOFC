@@ -19,6 +19,7 @@ _TOOL_BY_ACTION: dict[str, str] = {
     "mudo": "definir_mudo_windows",
     "mudo_off": "definir_mudo_windows",
     "play_pause": "controle_midia_windows",
+    "pausar": "controle_midia_windows",
     "proxima": "controle_midia_windows",
     "anterior": "controle_midia_windows",
 }
@@ -65,7 +66,7 @@ def _tool_call_for_resolution(capability_id: str, params: dict[str, Any]) -> tup
     if action == "mudo_off":
         return tool_name, {"ativado": False}
 
-    if action in {"play_pause", "proxima", "anterior"}:
+    if action in {"pausar", "play_pause", "proxima", "anterior"}:
         return tool_name, {"acao": action}
 
     return None
@@ -113,6 +114,7 @@ def try_execute(
         return False, "", metadata
 
     tool_name, arguments = tool_call
+    action = str(arguments.get("acao") or "")
     item = SimpleNamespace(
         name=tool_name,
         arguments=json.dumps(arguments, ensure_ascii=False),
@@ -124,10 +126,14 @@ def try_execute(
     except Exception as exc:
         metadata["reason"] = "execution_exception"
         metadata["error"] = str(exc)
+        if action == "pausar":
+            return True, "Nao consegui confirmar a pausa da midia.", metadata
         return False, "", metadata
 
     if not isinstance(result, ToolResult):
         metadata["reason"] = "unexpected_result_type"
+        if action == "pausar":
+            return True, "Nao consegui confirmar a pausa da midia.", metadata
         return False, "", metadata
 
     metadata.update(
@@ -141,6 +147,11 @@ def try_execute(
 
     if result.ok:
         return True, result.message, metadata
+
+    if action == "pausar":
+        # Um resultado incerto nao autoriza uma segunda tentativa pelo modelo.
+        metadata["reason"] = "pause_not_confirmed"
+        return True, f"Nao consegui confirmar a pausa da midia: {result.message}", metadata
 
     # Um erro local não impede o caminho normal de tentar resolver o pedido.
     metadata["reason"] = "local_tool_failed"

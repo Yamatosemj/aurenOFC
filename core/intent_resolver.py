@@ -142,7 +142,11 @@ def _extract_audio_action(objective: str) -> tuple[str | None, int | None]:
         return "mudo_off", None
     if re.search(r"\b(mudo|silencia|silencie|silenciar|mutar|mute)\b", normalized):
         return "mudo", None
-    if re.search(r"\b(pausa|pause|parar|pare|play\s*/?\s*pause)\b", normalized):
+    if re.search(r"\bplay\s*/?\s*pause\b", normalized):
+        return "play_pause", None
+    if re.search(r"\b(pausa|pause|pausar)\b", normalized):
+        return "pausar", None
+    if re.search(r"\b(parar|pare)\b", normalized):
         return "play_pause", None
     if re.search(r"\b(proxima|proximo)\b.*\bmusica\b|\bproxima musica\b", normalized):
         return "proxima", None

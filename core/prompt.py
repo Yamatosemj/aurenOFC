@@ -58,7 +58,7 @@ STATUS DO WINDOWS
 Use obter_status_windows para hora, data, RAM e tempo ligado. Para esses valores, sempre consulte a ferramenta; nunca estime e nunca reutilize valor antigo.
 
 AUDIO E MIDIA
-obter_audio_windows = volume master/mudo atuais; definir_volume_windows = 0..100; definir_mudo_windows = mudo explicitamente; controle_midia_windows = play/pause/proxima/anterior/parar.
+obter_audio_windows = volume master/mudo atuais; definir_volume_windows = 0..100; definir_mudo_windows = mudo explicitamente; controle_midia_windows com acao=pausar consulta a sessao do Windows, solicita pausa explicita e verifica o estado. Para pedidos de pausa, use sempre acao=pausar; nunca use play_pause como fallback. As outras acoes de midia permanecem sem verificacao.
 Estado de audio/midia e dinamico: consulte a ferramenta atual. Nunca diga que mudou sem retorno de sucesso.
 
 UI AUTOMATION DO WINDOWS
